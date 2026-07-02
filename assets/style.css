@@ -1,0 +1,240 @@
+:root {
+  --bg: #0f1a14;
+  --card: #18261e;
+  --card-border: #24362b;
+  --text: #e8f0ea;
+  --text-dim: #9db2a6;
+  --accent: #4ade80;
+  --warn: #f87171;
+  --badge-blue: #60a5fa;
+  --badge-gray: #6b7280;
+  --max-width: 720px;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Hiragino Kaku Gothic ProN", sans-serif;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.6;
+}
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+.container {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 16px 48px;
+}
+
+header.site-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 16px;
+  border-bottom: 1px solid var(--card-border);
+}
+
+header.site-header .logo {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--text);
+}
+
+header.site-header nav a {
+  color: var(--text-dim);
+  font-size: 0.9rem;
+}
+
+section {
+  margin-top: 24px;
+}
+
+section > h2 {
+  font-size: 0.95rem;
+  color: var(--text-dim);
+  border-left: 3px solid var(--accent);
+  padding-left: 8px;
+  margin-bottom: 12px;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+.race-card {
+  display: block;
+  color: var(--text);
+}
+
+.race-card:hover {
+  text-decoration: none;
+  border-color: var(--accent);
+}
+
+.race-card .title {
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.race-card .meta {
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  margin-bottom: 8px;
+}
+
+.race-card .status-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 0.9rem;
+}
+
+.date-group {
+  margin: 20px 0 8px;
+  font-weight: 700;
+  color: var(--text-dim);
+  font-size: 0.9rem;
+}
+
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.badge-prediction { background: rgba(96,165,250,0.15); color: var(--badge-blue); }
+.badge-hit { background: rgba(74,222,128,0.15); color: var(--accent); }
+.badge-miss { background: rgba(248,113,113,0.15); color: var(--warn); }
+.badge-cancelled { background: rgba(107,114,128,0.2); color: var(--badge-gray); }
+.badge-pass { background: rgba(107,114,128,0.2); color: var(--badge-gray); }
+
+.stat-roi {
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.stat-roi.positive { color: var(--accent); }
+.stat-roi.negative { color: var(--warn); }
+
+.stat-sub {
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  margin-top: 4px;
+}
+
+.alert {
+  background: rgba(248,113,113,0.08);
+  border: 1px solid rgba(248,113,113,0.3);
+  color: var(--warn);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 0.85rem;
+  margin-top: 12px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+table th, table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--card-border);
+  text-align: right;
+}
+
+table th:first-child, table td:first-child,
+table th.text-left, table td.text-left {
+  text-align: left;
+}
+
+table th {
+  color: var(--text-dim);
+  font-weight: 600;
+}
+
+tr.scratched {
+  color: var(--text-dim);
+  opacity: 0.6;
+}
+
+.mark {
+  font-weight: 700;
+}
+
+.value-pos { color: var(--accent); }
+.value-neg { color: var(--warn); }
+
+details {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin-bottom: 10px;
+}
+
+details > summary {
+  cursor: pointer;
+  font-weight: 700;
+  list-style: none;
+}
+
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: "▸ "; color: var(--accent); }
+details[open] > summary::before { content: "▾ "; }
+
+.prose {
+  margin-top: 12px;
+  font-size: 0.9rem;
+}
+
+.prose table { margin: 12px 0; }
+.prose h3 { font-size: 0.95rem; margin-top: 16px; }
+
+.back-link {
+  display: inline-block;
+  margin-bottom: 12px;
+  color: var(--text-dim);
+}
+
+.error-box {
+  color: var(--warn);
+  padding: 24px 0;
+}
+
+.empty-state {
+  color: var(--text-dim);
+  padding: 24px 0;
+  text-align: center;
+}
+
+.conclusion-card .marks-line {
+  margin-top: 8px;
+  font-size: 0.95rem;
+}
+
+.bets-total {
+  margin-top: 8px;
+  font-weight: 700;
+}
+
+@media (max-width: 480px) {
+  .container { padding: 0 12px 32px; }
+  table { font-size: 0.78rem; }
+}
