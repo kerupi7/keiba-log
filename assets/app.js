@@ -10,8 +10,9 @@ async function getData(path) {
 function renderHeader(activePage) {
   const el = document.getElementById('site-header');
   if (!el) return;
+  el.classList.add('site-header');
   el.innerHTML = `
-    <a class="logo" href="index.html">keiba<span class="g">-log</span></a>
+    <a class="logo" href="index.html">Ans<span class="g">.</span></a>
     <nav>
       <a href="index.html" class="${activePage === 'index' ? 'active' : ''}">TOP</a>
       <a href="stats.html" class="${activePage === 'stats' ? 'active' : ''}">成績</a>
