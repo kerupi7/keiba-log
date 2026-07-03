@@ -1,241 +1,294 @@
-:root {
-  --bg: #0f1a14;
-  --card: #18261e;
-  --card-border: #24362b;
-  --text: #e8f0ea;
-  --text-dim: #9db2a6;
-  --accent: #4ade80;
-  --warn: #f87171;
-  --badge-blue: #60a5fa;
-  --badge-gray: #6b7280;
-  --max-width: 720px;
+:root{
+  /* テキスト3階調 */
+  --text:#333333;        /* 本文 */
+  --sub:#5C5C5C;         /* 補足 */
+  --cap:#757575;         /* キャプション・表ヘッダ */
+
+  /* ブランド・リンク */
+  --navy:#003E70;        /* ブランド・◎印・重賞バッジ・見出しアクセント・有利判定 */
+  --link:#326691;        /* 通常リンク */
+  --cta:#0068BC;         /* 発走前ピル・土曜色 */
+  --orange:#F58700;      /* 買い印★ */
+
+  /* セマンティック */
+  --hit:#0F7A3D;         /* 的中・プラス回収率・妙味（緑はこの用途専用） */
+  --live:#EB1400;        /* 不的中・マイナス・地雷・日曜色・不利判定 */
+  --upcoming:#003E70;    /* R箱: 発走前 */
+  --finished:#C8102E;    /* R箱: 終了（勝敗とは無関係） */
+
+  /* 馬場種別（netkeiba踏襲） */
+  --turf:#2f8f4e;        /* 芝 */
+  --dirt:#D97A00;        /* ダート */
+
+  /* 印のランク色（馬名の文字色に使う。濃→薄） */
+  --mk-hon:#003E70;      /* ◎ */
+  --mk-tai:#35617f;      /* ○ */
+  --mk-tan:#566b7a;      /* ▲ */
+  --mk-oku:#6f7883;      /* △ */
+  /* 印バッジの背景色（◎○▲△の塗りチップ） */
+  --mkb-hon:#003E70; --mkb-tai:#5C7A99; --mkb-tan:#8a97a3; --mkb-oku:#aab2b8;
+
+  /* 背景・罫線 */
+  --bg:#FFFFFF;
+  --sub-bg:#FAFAFA;      /* 薄背景（1着行など） */
+  --sub-bg2:#F1F1F0;     /* 濃いめ薄背景（バー土台・開催メタ） */
+  --rule:#E3E3E3;        /* 通常罫線 */
+  --rule-strong:#333333; /* 強罫線（ヘッダ下・表ヘッダ下・折り見出し） */
+  --sep:#EAEAE7;         /* 数値列を区切る縦罫線 */
+
+  /* チップ（過小/過剰/妥当・達成/未達/蓄積中） */
+  --chip-under-bg:#E7F3EA; --chip-under-fg:#0F6A34;   /* 過小=買い得（緑系） */
+  --chip-over-bg:#F0F0EE;  --chip-over-fg:#7a6a6a;    /* 過剰（グレー） */
+  --chip-fair-bg:#EEF1F5;  --chip-fair-fg:#4a5766;    /* 妥当（青グレー） */
+  --chip-ok-bg:#E7F3EA;    --chip-ok-fg:#0F6A34;      /* 達成 */
+  --chip-ng-bg:#FBE9E9;    --chip-ng-fg:#b23b3b;      /* 未達 */
+  --chip-acc-bg:#F0F0EE;   --chip-acc-fg:#7a7a72;     /* 蓄積中 */
+
+  /* その他の実値 */
+  --pred-row:#F4F8FC;    /* 印あり馬の行背景 */
+  --pred-race:#FCFCFB;   /* 予想済みレース行の背景 */
+  --ev-max-bg:#E7F3EA;   /* 期待値最大セルの背景 */
+  --cal-bar:#9db8cf;     /* 校正バー */
+  --win5:#1f6feb;        /* WIN5マーク（当面未使用） */
+
+  --font:-apple-system,"system-ui","Segoe UI",Roboto,Oxygen,Ubuntu,"Helvetica Neue",Arial,sans-serif;
+  --max-width:720px;
 }
 
-* { box-sizing: border-box; }
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--text);
+  font-family:var(--font);line-height:1.5;letter-spacing:normal}
+a{color:var(--link);text-decoration:none}
+a:hover{text-decoration:underline}
+.container{max-width:var(--max-width);margin:0 auto;padding:0 14px 32px}
 
-html, body {
-  margin: 0;
-  padding: 0;
-  background: var(--bg);
-  color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Hiragino Kaku Gothic ProN", sans-serif;
-  font-variant-numeric: tabular-nums;
-  line-height: 1.6;
-}
+/* ===== 2.1 ヘッダー ===== */
+.site-header{max-width:var(--max-width);margin:0 auto;display:flex;align-items:center;
+  justify-content:space-between;padding:11px 14px;border-bottom:2px solid var(--rule-strong)}
+.site-header .logo{font-size:18px;font-weight:700;color:var(--text)}
+.site-header .logo .g{color:var(--navy)}
+.site-header nav{display:flex;gap:14px;font-size:13px;font-weight:700}
+.site-header nav a{color:var(--link)}
+.site-header nav a.active{color:var(--text)}
 
-a { color: var(--accent); text-decoration: none; }
-a:hover { text-decoration: underline; }
+/* ===== 2.2 セクション見出し ===== */
+.eyebrow{font-size:14px;font-weight:700;color:var(--text);border-bottom:1px solid var(--rule);
+  padding:14px 0 6px;margin-bottom:2px;display:flex;align-items:baseline;justify-content:space-between}
+.eyebrow .note{font-size:12px;font-weight:400;color:var(--cap)}
 
-.container {
-  max-width: var(--max-width);
-  margin: 0 auto;
-  padding: 0 16px 48px;
-}
+/* ===== 2.3 状態ピル ===== */
+.pill{display:inline-block;font-size:12px;font-weight:700;color:#fff;
+  padding:2px 9px;border-radius:16px;vertical-align:middle;white-space:nowrap}
+.pill.pre{background:var(--cta)}      /* 発走前 */
+.pill.hit{background:var(--hit)}      /* 的中 */
+.pill.miss{background:#8a8a8a}        /* 不的中・結果確定（グレー。赤はピルに使わない） */
+.pill.accum{background:var(--cap)}    /* データ蓄積中 */
+.pill.pass{background:#8a8a8a}        /* 見送り */
+.pill.cancel{background:#8a8a8a}      /* 中止 */
 
-header.site-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  max-width: var(--max-width);
-  margin: 0 auto;
-  padding: 16px;
-  border-bottom: 1px solid var(--card-border);
-}
+/* ===== 2.4 テーブル作法 ===== */
+table{width:100%;border-collapse:collapse;font-size:13px;
+  font-variant-numeric:tabular-nums;margin-top:8px}
+th,td{padding:6px 5px;border-bottom:1px solid var(--rule);text-align:right;white-space:nowrap}
+th:first-child,td:first-child,th.l,td.l{text-align:left}
+thead th{color:var(--cap);font-weight:700;border-bottom:1px solid var(--rule-strong)}
 
-header.site-header .logo {
-  font-weight: 700;
-  font-size: 1.1rem;
-  color: var(--text);
-}
+th.sep,td.sep{border-left:1px solid var(--sep);padding-left:7px}
 
-header.site-header nav a {
-  color: var(--text-dim);
-  font-size: 0.9rem;
-}
+td.cell-hl{background:var(--ev-max-bg)}
 
-section {
-  margin-top: 24px;
-}
+td.x{color:var(--live);font-weight:700}   /* ✕・不的中 */
+td.o{color:var(--hit);font-weight:700}    /* ✓・的中 */
+.value-pos{color:var(--hit);font-weight:700}
+.value-neg{color:var(--live)}
 
-section > h2 {
-  font-size: 0.95rem;
-  color: var(--text-dim);
-  border-left: 3px solid var(--accent);
-  padding-left: 8px;
-  margin-bottom: 12px;
-}
+td.name{text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  font-feature-settings:"palt" 1;letter-spacing:-0.01em}
+table.fixed{table-layout:fixed}
 
-.card {
-  background: var(--card);
-  border: 1px solid var(--card-border);
-  border-radius: 10px;
-  padding: 16px;
-  margin-bottom: 12px;
-}
+tr.pred td{background:var(--pred-row)}
+tr.top1 td{background:var(--sub-bg)}
+tr.scratched td{color:var(--cap);opacity:.6}
 
-.race-card {
-  display: block;
-  color: var(--text);
-}
+/* ===== 2.4 チップ ===== */
+.chip{display:inline-block;font-size:11px;font-weight:700;padding:1px 7px;
+  border-radius:2px;white-space:nowrap}
+.chip.under{background:var(--chip-under-bg);color:var(--chip-under-fg)}
+.chip.over{background:var(--chip-over-bg);color:var(--chip-over-fg)}
+.chip.fair{background:var(--chip-fair-bg);color:var(--chip-fair-fg)}
+.chip.ok{background:var(--chip-ok-bg);color:var(--chip-ok-fg)}
+.chip.ng{background:var(--chip-ng-bg);color:var(--chip-ng-fg)}
+.chip.acc{background:var(--chip-acc-bg);color:var(--chip-acc-fg)}
 
-.race-card:hover {
-  text-decoration: none;
-  border-color: var(--accent);
-}
+/* ===== 2.5 グレード・クラスバッジ ===== */
+.gbadge{font-size:11px;font-weight:700;color:#fff;background:var(--navy);border-radius:12px;padding:1px 8px}
+.cbadge{font-size:11px;font-weight:700;color:#555;background:#E1E1DE;border-radius:12px;padding:1px 8px}
 
-.race-card .title {
-  font-weight: 700;
-  margin-bottom: 4px;
-}
+/* ===== 2.6 印バッジ・印色の馬名 ===== */
+.mkb{display:inline-block;min-width:17px;text-align:center;font-weight:700;color:#fff;
+  border-radius:2px;font-size:12px;padding:1px 5px;margin-right:3px}
+.mkb.m-hon{background:var(--mkb-hon)} .mkb.m-tai{background:var(--mkb-tai)}
+.mkb.m-tan{background:var(--mkb-tan)} .mkb.m-oku{background:var(--mkb-oku)}
 
-.race-card .meta {
-  color: var(--text-dim);
-  font-size: 0.85rem;
-  margin-bottom: 8px;
-}
+td.n-hon{color:var(--mk-hon);font-weight:700} td.n-tai{color:var(--mk-tai);font-weight:700}
+td.n-tan{color:var(--mk-tan);font-weight:700} td.n-oku{color:var(--mk-oku);font-weight:700}
 
-.race-card .status-line {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  font-size: 0.9rem;
-}
+.star{color:var(--orange);font-weight:700}
+.mine{color:var(--live);font-weight:700}
 
-.date-group {
-  margin: 20px 0 8px;
-  font-weight: 700;
-  color: var(--text-dim);
-  font-size: 0.9rem;
-}
+/* ===== 2.7 折りたたみ ===== */
+details.fold{border-bottom:1px solid var(--rule)}
+details.fold:first-of-type{border-top:1px solid var(--rule)}
+details.fold>summary{display:flex;align-items:center;gap:8px;padding:13px 2px;
+  font-size:15px;font-weight:700;color:var(--text);cursor:pointer;list-style:none}
+details.fold>summary::-webkit-details-marker{display:none}
+details.fold>summary .tri::before{content:"▸";color:var(--navy);font-size:12px}
+details.fold[open]>summary .tri::before{content:"▾"}
+details.fold[open]>summary{font-size:16px;border-bottom:2px solid var(--rule-strong);padding-bottom:8px}
+details.fold>summary .cnt{margin-left:auto;font-size:12px;font-weight:400;color:var(--cap)}
+.fold-body{padding:0 0 14px}
 
-.badge {
-  display: inline-block;
-  padding: 2px 8px;
-  border-radius: 999px;
-  font-size: 0.75rem;
-  font-weight: 700;
-}
+details.subfold{border-bottom:1px solid var(--rule)}
+details.subfold>summary{display:flex;align-items:center;gap:8px;padding:11px 2px;
+  font-size:14px;font-weight:700;cursor:pointer;list-style:none}
+details.subfold>summary::-webkit-details-marker{display:none}
+details.subfold>summary .tri::before{content:"▸";color:var(--navy);font-size:11px}
+details.subfold[open]>summary .tri::before{content:"▾"}
+details.subfold>summary .sc{margin-left:auto;color:var(--navy);
+  font-variant-numeric:tabular-nums;font-weight:400;font-size:12px}
 
-.badge-prediction { background: rgba(96,165,250,0.15); color: var(--badge-blue); }
-.badge-hit { background: rgba(74,222,128,0.15); color: var(--accent); }
-.badge-miss { background: rgba(248,113,113,0.15); color: var(--warn); }
-.badge-cancelled { background: rgba(107,114,128,0.2); color: var(--badge-gray); }
-.badge-pass { background: rgba(107,114,128,0.2); color: var(--badge-gray); }
+.fold-intro{font-size:13px;color:var(--cap);padding:14px 0 2px}
 
-.stat-roi {
-  font-size: 2rem;
-  font-weight: 700;
-}
+/* ===== 2.8 prose ===== */
+.prose{font-size:14px;line-height:1.75;color:var(--text);margin-top:8px;overflow-x:auto}
+.prose h3,.prose h4{font-size:14px;font-weight:700;margin:14px 0 4px}
+.prose p{margin:6px 0}
+.prose ul{margin:6px 0;padding-left:20px}
+.prose strong{color:var(--text)}
+.prose blockquote{margin:6px 0;padding:2px 0 2px 10px;border-left:3px solid var(--rule);
+  color:var(--cap);font-size:12px}
+.prose table{margin:8px 0}
+.prose th,.prose td{white-space:normal;text-align:left}
+.prose th[align="right"],.prose td[align="right"]{text-align:right;white-space:nowrap;
+  font-variant-numeric:tabular-nums}
+.prose th[align="center"],.prose td[align="center"]{text-align:center}
 
-.stat-roi.positive { color: var(--accent); }
-.stat-roi.negative { color: var(--warn); }
+/* ===== 2.9 校正バー ===== */
+.cal .row{display:flex;align-items:center;gap:8px;margin:6px 0;font-size:12px}
+.cal .band{width:76px;color:var(--sub);font-variant-numeric:tabular-nums}
+.cal .track{flex:1;height:16px;background:var(--sub-bg2);border-radius:2px;position:relative}
+.cal .act{height:100%;background:var(--cal-bar);border-radius:2px}
+.cal .pred{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--cap)}
 
-.stat-sub {
-  color: var(--text-dim);
-  font-size: 0.85rem;
-  margin-top: 4px;
-}
+/* ===== 2.10 注意書き・エラー・空状態 ===== */
+.scrollnote{font-size:11px;color:var(--cap);margin-top:4px}
+.alert{background:#FBE9E9;border:1px solid #EFC7C7;color:#b23b3b;border-radius:2px;
+  padding:10px 12px;font-size:13px;margin:12px 0}
+.error-box{color:var(--live);padding:24px 0}
+.empty-state{color:var(--cap);padding:24px 0;text-align:center}
+.foot{margin-top:16px;padding-top:10px;border-top:1px solid var(--rule);
+  font-size:12px;color:var(--cap);line-height:1.6}
 
-.alert {
-  background: rgba(248,113,113,0.08);
-  border: 1px solid rgba(248,113,113,0.3);
-  color: var(--warn);
-  border-radius: 8px;
-  padding: 10px 12px;
-  font-size: 0.85rem;
-  margin-top: 12px;
-}
+/* ===== 3. TOP ===== */
+.roi{padding:12px 0 14px;border-bottom:1px solid var(--rule)}
+.roi .lab{font-size:13px;font-weight:700;color:var(--sub)}
+.roi .num{font-size:44px;font-weight:700;line-height:1.1;font-variant-numeric:tabular-nums;margin:2px 0}
+.roi .num.pos{color:var(--hit)} .roi .num.neg{color:var(--live)}
+.roi .sub{font-size:15px;color:var(--sub);font-variant-numeric:tabular-nums}
+.roi .accum-line{margin-top:8px;font-size:12px;color:var(--cap)}
+.mini{display:flex;gap:18px;margin-top:12px}
+.mini .k{color:var(--cap);font-size:12px}
+.mini .v{font-weight:700;font-size:16px;font-variant-numeric:tabular-nums}
 
-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.85rem;
-}
+.datetabs{display:flex;align-items:center;gap:6px;padding:10px 0 8px}
+.datetabs .arw{color:var(--cap);font-size:18px;padding:0 4px;cursor:pointer;user-select:none}
+.datetabs .arw.disabled{opacity:.3;cursor:default}
+.datetabs .dt{flex:1;text-align:center;font-size:16px;font-weight:700;color:var(--cap);
+  padding:6px 0 8px;position:relative;cursor:pointer;font-variant-numeric:tabular-nums}
+.datetabs .dt .sun{color:var(--live)}
+.datetabs .dt .sat{color:var(--cta)}
+.datetabs .dt.active{color:var(--text)}
+.datetabs .dt.active:after{content:"";position:absolute;left:12%;right:12%;bottom:0;
+  height:3px;background:var(--navy);border-radius:2px}
 
-table th, table td {
-  padding: 6px 8px;
-  border-bottom: 1px solid var(--card-border);
-  text-align: right;
-}
+.tracks{display:flex;gap:8px;padding:4px 0 10px;flex-wrap:wrap}
+.trk{font-size:14px;font-weight:700;padding:7px 20px;border-radius:20px;
+  border:1px solid #C9C9C4;color:var(--sub);background:#fff;cursor:pointer;user-select:none}
+.trk.on{background:var(--navy);color:#fff;border-color:var(--navy)}
 
-table th:first-child, table td:first-child,
-table th.text-left, table td.text-left {
-  text-align: left;
-}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--cap);padding:8px 2px 2px;align-items:center}
+.legend .sw{display:inline-block;width:22px;height:16px;border-radius:2px;vertical-align:-3px;margin-right:4px}
 
-table th {
-  color: var(--text-dim);
-  font-weight: 600;
-}
+.race{display:flex;gap:10px;padding:11px 2px 11px 0;border-bottom:1px solid var(--rule);
+  text-decoration:none;color:var(--text);align-items:flex-start}
+.race:hover{text-decoration:none}
+.race.pred{border-left:3px solid var(--navy);padding-left:8px;margin-left:-8px;background:var(--pred-race)}
+.race.muted{pointer-events:none}
+.race.muted .rn,.race.muted .rname,.race.muted .rmeta{opacity:.55}
+.rn{flex:0 0 44px;height:44px;border-radius:3px;color:#fff;font-weight:700;
+  display:flex;align-items:center;justify-content:center;font-size:15px;line-height:1;
+  font-variant-numeric:tabular-nums}
+.rn.fin{background:var(--finished)}
+.rn.up{background:var(--upcoming)}
+.rmain{flex:1;min-width:0}
+.rname{font-size:17px;font-weight:700;line-height:1.3;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.rmeta{font-size:13px;color:var(--cap);margin-top:3px;font-variant-numeric:tabular-nums}
+.rmeta .t{color:var(--turf);font-weight:700}
+.rmeta .d{color:var(--dirt);font-weight:700}
+.rmeta .win5{color:var(--win5);font-weight:700;font-style:italic;margin-left:4px}
+.rpick{margin-top:7px;font-size:14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.rpick .pk{color:var(--text);font-weight:700}
+.rpick .amt{font-weight:700;font-variant-numeric:tabular-nums;margin-left:auto}
+.rpick .amt.miss{color:var(--live)}
+.rpick .amt.hit{color:var(--hit)}
 
-tr.scratched {
-  color: var(--text-dim);
-  opacity: 0.6;
-}
+/* ===== 4. レース詳細 ===== */
+.back-link{font-size:13px;color:var(--link);display:inline-block;padding:12px 0 4px}
 
-.mark {
-  font-weight: 700;
-}
+.dtitle{font-size:24px;font-weight:700;line-height:1.35;padding-top:2px}
+.dtitle .grade{color:var(--navy);font-size:15px;margin-left:5px}
+.dtitle .pill{margin-left:6px}
+.dmeta{font-size:13px;color:var(--sub);margin-top:4px;font-variant-numeric:tabular-nums}
+.dmeta .row2{color:var(--cap);font-size:12px;margin-top:2px}
 
-.value-pos { color: var(--accent); }
-.value-neg { color: var(--warn); }
+.concl{border-top:2px solid var(--rule-strong);margin-top:12px;padding-top:12px}
+.concl .h{font-size:14px;font-weight:700;margin-bottom:6px}
+.concl p{font-size:15px;line-height:1.7;color:var(--text);margin:0}
+.concl .kv{font-size:13px;color:var(--sub);margin-top:8px}
+.marks{margin-top:10px;font-size:15px;line-height:1.9}
+.buyline{margin-top:6px;font-size:15px}
+.buyline .lead{font-weight:700;color:var(--sub);margin-right:6px}
 
-details {
-  background: var(--card);
-  border: 1px solid var(--card-border);
-  border-radius: 10px;
-  padding: 12px 16px;
-  margin-bottom: 10px;
-}
+.total{font-size:15px;font-weight:700;margin-top:8px}
+.total .miss{color:var(--live)} .total .hit{color:var(--hit)}
 
-details > summary {
-  cursor: pointer;
-  font-weight: 700;
-  list-style: none;
-}
+.markcell{font-weight:700}
+.kv{font-size:13px;color:var(--sub);margin-top:8px}
 
-details > summary::-webkit-details-marker { display: none; }
-details > summary::before { content: "▸ "; color: var(--accent); }
-details[open] > summary::before { content: "▾ "; }
+.conf{font-size:12px;color:var(--cap)}
 
-.prose {
-  margin-top: 12px;
-  font-size: 0.9rem;
-}
+.horse{border-bottom:1px solid var(--rule);padding-bottom:10px;margin-top:10px}
+.horse .hh{display:flex;align-items:baseline;gap:6px;font-size:15px;font-weight:700}
+.horse .hh .meta{font-size:12px;font-weight:400;color:var(--cap)}
+.horse .hh .sc{margin-left:auto;font-variant-numeric:tabular-nums;color:var(--navy)}
+.horse .prose td,.subfold .prose td{white-space:normal}
+.horse .prose td:nth-child(2),.horse .prose td:nth-child(3),
+.subfold .prose td:nth-child(2),.subfold .prose td:nth-child(3){
+  text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.horse .prose td:first-child,.subfold .prose td:first-child{font-weight:700;white-space:nowrap}
 
-.prose table { margin: 12px 0; }
-.prose table th, .prose table td { text-align: left; }
-.prose h3 { font-size: 0.95rem; margin-top: 16px; }
+.rev ul{list-style:none;padding-left:2px;margin-top:8px}
+.rev li{font-size:13px;line-height:1.7;padding:6px 0 6px 16px;position:relative;
+  border-bottom:1px solid var(--rule)}
+.rev li:before{content:"▪";position:absolute;left:0;color:var(--navy)}
 
-.back-link {
-  display: inline-block;
-  margin-bottom: 12px;
-  color: var(--text-dim);
-}
+/* ===== 5. 成績 ===== */
+.mkcol{font-weight:700}
+.pace-line{font-size:15px;margin-top:8px}
+.pace-line b{font-size:20px}
+.pace-line span{color:var(--sub);font-size:13px}
 
-.error-box {
-  color: var(--warn);
-  padding: 24px 0;
-}
-
-.empty-state {
-  color: var(--text-dim);
-  padding: 24px 0;
-  text-align: center;
-}
-
-.conclusion-card .marks-line {
-  margin-top: 8px;
-  font-size: 0.95rem;
-}
-
-.bets-total {
-  margin-top: 8px;
-  font-weight: 700;
-}
-
-@media (max-width: 480px) {
-  .container { padding: 0 12px 32px; }
-  table { font-size: 0.78rem; }
+/* ===== 7. レスポンシブ ===== */
+@media (max-width:480px){
+  .container{padding:0 12px 28px}
 }
