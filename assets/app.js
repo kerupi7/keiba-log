@@ -58,11 +58,14 @@ function fmtDateTab(dateStr) {
 }
 
 // "2026-06-28T13:46:21" → "6/28 13:46"
+// 区切りは 'T' でも半角スペースでもよく、時刻部が無い場合も許容する（LLM由来の表記ゆれ対策）
 function fmtDateTimeShort(iso) {
   if (!iso) return '—';
-  const [d, t] = iso.split('T');
+  const [d, t] = String(iso).split(/[T ]/);
   const [, m, day] = d.split('-');
-  return `${Number(m)}/${Number(day)} ${t.slice(0, 5)}`;
+  if (m == null || day == null) return String(iso);
+  const hm = t ? t.slice(0, 5) : '';
+  return `${Number(m)}/${Number(day)}${hm ? ' ' + hm : ''}`;
 }
 
 const MARK_CLASS = { '◎': 'hon', '○': 'tai', '▲': 'tan', '△': 'oku' };
