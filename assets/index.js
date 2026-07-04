@@ -31,11 +31,28 @@ function renderSummary(stats) {
   `;
 }
 
+// 当日（実日付）に最も近い開催日を返す。同着の場合は未来側（これから開催）を優先。
+// 例: 土曜に [6/28(日), 7/4(土)] → 7/4 / 金曜に [7/4(土)] → 7/4(1日先)
+function pickDefaultDate(dates) {
+  if (!dates.length) return undefined;
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime(); // 当日0:00(ローカル)
+  let best = dates[0];
+  let bestScore = Infinity;
+  for (const ds of dates) {
+    const t = new Date(ds + 'T00:00:00').getTime();
+    // 距離を主キー、同距離なら未来(t>=today)を優先するため過去に +1 のペナルティ
+    const score = Math.abs(t - today) * 2 + (t < today ? 1 : 0);
+    if (score < bestScore) { bestScore = score; best = ds; }
+  }
+  return best;
+}
+
 function initStateFromHash(races) {
   const dates = [...new Set(races.map((r) => r.date))].sort();
   const params = new URLSearchParams(window.location.hash.replace(/^#/, ''));
   let activeDate = params.get('d');
-  if (!activeDate || !dates.includes(activeDate)) activeDate = dates[dates.length - 1];
+  if (!activeDate || !dates.includes(activeDate)) activeDate = pickDefaultDate(dates);
 
   const tracksForDate = (d) => {
     const set = new Set(races.filter((r) => r.date === d).map((r) => r.track));

@@ -81,14 +81,58 @@ function renderMarksBlock(site) {
     .sort((a, b) => order.indexOf(a.ability_mark) - order.indexOf(b.ability_mark));
   const nonOku = abilityHorses.filter((h) => h.ability_mark !== '△');
   const oku = abilityHorses.filter((h) => h.ability_mark === '△');
-  let marksLine = nonOku
-    .map((h) => `${markBadge(h.ability_mark)}${h.number} ${escapeHtml(h.name)}`)
-    .join('&nbsp; ');
+  const marksRows = nonOku
+    .map((h) => `<div class="marks-row">${markBadge(h.ability_mark)}${h.number} ${escapeHtml(h.name)}</div>`);
   if (oku.length) {
     const okuLine = `${markBadge('△')}${oku.map((h) => h.number).join('・')}`;
-    marksLine = marksLine ? `${marksLine}&nbsp; ${okuLine}` : okuLine;
+    marksRows.push(`<div class="marks-row">${okuLine}</div>`);
   }
-  const marksHtml = marksLine ? `<div class="marks">${marksLine}</div>` : '';
+  const marksHtml = marksRows.length ? `<div class="marks">${marksRows.join('')}</div>` : '';
+
+  const v11 = site.schema_version === 'keiba-log-1.1';
+  if (v11) {
+    // mark-2.0: 買いラインは role（軸/相手/穴）から構成する（原因D）
+    const axis = site.horses.filter((h) => h.role === '軸');
+    const aite = site.horses.filter((h) => h.role === '相手');
+    const ana = site.horses.filter((h) => h.role === '穴');
+    let buyLine = '';
+    if (axis.length || aite.length || ana.length) {
+      const axisTxt = axis.map((h) => h.number).join('・');
+      const restParts = [
+        aite.length ? `相手${aite.map((h) => h.number).join('・')}` : '',
+        ana.length ? `穴${ana.map((h) => h.number).join('・')}` : '',
+      ].filter(Boolean).join(' ／ ');
+      buyLine = `<div class="buyline"><span class="lead">買い</span>軸${axisTxt}${restParts ? ' → ' + restParts : ''}</div>`;
+    }
+
+    const landmines = site.horses.filter((h) => h.bet_mark === '地雷').map((h) => h.number);
+    const landmineLine = landmines.length
+      ? `<div class="buyline"><span class="lead">地雷</span><span class="mine">${landmines.join(', ')}</span></div>`
+      : '';
+
+    // ひとことリスト（能力印馬＋役割馬＋地雷馬。原因H）
+    const roleOrder = { '軸': 0, '相手': 1, '穴': 2 };
+    const verdictHorses = site.horses
+      .filter((h) => h.ability_mark || h.role || h.bet_mark === '地雷')
+      .sort((a, b) => {
+        const ma = order.indexOf(a.ability_mark) === -1 ? 9 : order.indexOf(a.ability_mark);
+        const mb = order.indexOf(b.ability_mark) === -1 ? 9 : order.indexOf(b.ability_mark);
+        if (ma !== mb) return ma - mb;
+        const ra = a.role in roleOrder ? roleOrder[a.role] : 9;
+        const rb = b.role in roleOrder ? roleOrder[b.role] : 9;
+        if (ra !== rb) return ra - rb;
+        return (a.rank ?? 999) - (b.rank ?? 999);
+      });
+    const verdictLines = verdictHorses.map((h) => {
+      const badge = h.ability_mark
+        ? markBadge(h.ability_mark)
+        : (h.role ? roleChip(h.role) : (h.bet_mark === '地雷' ? mineChip() : ''));
+      return `<div class="verdict-line">${badge}${h.number} ${escapeHtml(h.name)} — ${escapeHtml(h.verdict || '—')}</div>`;
+    }).join('');
+    const verdictBlock = verdictLines ? `<div class="verdicts">${verdictLines}</div>` : '';
+
+    return `${marksHtml}${buyLine}${landmineLine}${verdictBlock}`;
+  }
 
   const betMarkOrder = ['★', '◎', '○', '▲', '△', '☆'];
   const betHorses = site.horses
@@ -117,7 +161,48 @@ function renderMarksBlock(site) {
 }
 
 // ===== 4.3 買い目 =====
+function renderBetsSectionV11(site) {
+  const bets = site.bets || [];
+  if (!bets.length) {
+    return `<div class="eyebrow">買い目</div><div>見送り（買い目なし）</div>`;
+  }
+  const totalPoints = bets.reduce((sum, b) => sum + b.tickets.length, 0);
+  const totalCost = bets.reduce((sum, b) => sum + (b.stake ?? b.tickets.length * 100), 0);
+  const showResult = site.status === 'final';
+  const header = showResult
+    ? '<tr><th class="l">券種</th><th>買い目</th><th>金額</th><th class="l">狙い</th><th>結果</th><th>払戻</th></tr>'
+    : '<tr><th class="l">券種</th><th>買い目</th><th>金額</th><th class="l">狙い</th></tr>';
+  const rows = bets.map((b) => {
+    const resultCell = showResult
+      ? `<td class="${b.hit ? 'o' : 'x'}">${b.hit ? '✓' : '✕'}</td><td>${fmtYen(b.payout)}</td>`
+      : '';
+    return `
+      <tr>
+        <td class="l">${escapeHtml(b.type)}</td>
+        <td>${b.combination.join('-')}</td>
+        <td>${fmtYen(b.stake ?? b.tickets.length * 100)}</td>
+        <td class="l">${b.note ? escapeHtml(b.note) : '—'}</td>
+        ${resultCell}
+      </tr>
+    `;
+  }).join('');
+  let totalLine = '';
+  if (showResult && site.verification) {
+    const v = site.verification;
+    const cls = v.bets_hit ? 'hit' : 'miss';
+    const icon = v.bets_hit ? '✓' : '✕';
+    totalLine = `<div class="total">合計 ${totalPoints}点 ${fmtYen(v.bets_cost)} → 払戻 <span class="${cls}">${fmtYen(v.bets_return)} ${icon}</span></div>`;
+  }
+  return `
+    <div class="eyebrow">買い目 <span class="note">${totalPoints}点 ${fmtYen(totalCost)}</span></div>
+    <table><thead>${header}</thead><tbody>${rows}</tbody></table>
+    ${totalLine}
+  `;
+}
+
 function renderBetsSection(site) {
+  if (site.schema_version === 'keiba-log-1.1') return renderBetsSectionV11(site);
+
   const bets = site.bets || [];
   const totalPoints = bets.reduce((sum, b) => sum + b.tickets.length, 0);
   if (!bets.length) {
@@ -168,6 +253,7 @@ function renderVerificationSection(site) {
 
   const byNumber = {};
   for (const h of site.horses) byNumber[h.number] = h;
+  const v11 = site.schema_version === 'keiba-log-1.1';
 
   const topRows = result.top3.map((t, idx) => {
     const h = byNumber[t.number];
@@ -177,6 +263,12 @@ function renderVerificationSection(site) {
       if (h.bet_mark === '地雷') {
         markCell = '地雷';
         cls = 'x';
+      } else if (v11) {
+        const marks = (h.ability_mark || '') + (h.role ? '/' + h.role : '');
+        if (marks) {
+          markCell = marks;
+          cls = 'o';
+        }
       } else {
         const marks = (h.ability_mark || '') + (h.bet_mark && h.bet_mark !== h.ability_mark && h.bet_mark !== '地雷' ? h.bet_mark : '');
         if (marks) {
@@ -242,6 +334,7 @@ function renderVerificationSection(site) {
 
 // ===== ①全頭評価表 =====
 function renderAllHorsesTable(site) {
+  const v11 = site.schema_version === 'keiba-log-1.1';
   const rows = [...site.horses]
     .sort((a, b) => (a.rank ?? 999) - (b.rank ?? 999))
     .map((h) => {
@@ -249,11 +342,14 @@ function renderAllHorsesTable(site) {
         return `<tr class="scratched"><td>${h.rank ?? '—'}</td><td>${h.number}</td><td class="name">${escapeHtml(h.name)}</td><td colspan="4">取消</td></tr>`;
       }
       const rowCls = h.ability_mark ? ' class="pred"' : '';
+      const extraChips = v11
+        ? `${h.role ? roleChip(h.role) : ''}${h.bet_mark === '地雷' ? mineChip() : ''}${marketEvalChip(h.market_eval)}`
+        : '';
       return `
         <tr${rowCls}>
           <td>${h.rank ?? '—'}</td>
           <td>${h.number}</td>
-          <td class="name ${markNameClass(h.ability_mark)}">${h.ability_mark || ''}${escapeHtml(h.name)}</td>
+          <td class="name ${markNameClass(h.ability_mark)}">${h.ability_mark || ''}${escapeHtml(h.name)}${extraChips}</td>
           <td>${fmtNum(h.total, 1)}</td>
           <td>${h.odds ?? '—'}</td>
           <td>${h.popularity ?? '—'}</td>
@@ -381,6 +477,23 @@ function renderHorsesFold(site) {
   const { preamble, blocks } = splitHorsesMd(md);
   const byNumber = {};
   for (const h of site.horses) byNumber[h.number] = h;
+  const v11 = site.schema_version === 'keiba-log-1.1';
+
+  if (v11) {
+    const markOrder = { '◎': 0, '○': 1, '▲': 2, '△': 3 };
+    const roleOrder = { '軸': 0, '相手': 1, '穴': 2 };
+    blocks.sort((a, b) => {
+      const ha = byNumber[a.number] || {};
+      const hb = byNumber[b.number] || {};
+      const ma = ha.ability_mark in markOrder ? markOrder[ha.ability_mark] : 9;
+      const mb = hb.ability_mark in markOrder ? markOrder[hb.ability_mark] : 9;
+      if (ma !== mb) return ma - mb;
+      const ra = ha.role in roleOrder ? roleOrder[ha.role] : 9;
+      const rb = hb.role in roleOrder ? roleOrder[hb.role] : 9;
+      if (ra !== rb) return ra - rb;
+      return (ha.rank ?? 999) - (hb.rank ?? 999);
+    });
+  }
 
   let body;
   if (!blocks.length) {
@@ -393,8 +506,13 @@ function renderHorsesFold(site) {
         ? `${markBadge(h.ability_mark)}${b.number} ${escapeHtml(b.name)} <span class="meta">${escapeHtml(b.meta)}</span><span class="sc">${fmtNum(h.total, 1)} / ${h.popularity ?? '—'}人気</span>`
         : escapeHtml(b.name);
       const bodyHtml = `<div class="prose">${renderMarkdown(b.body)}</div>`;
-      if (h && h.ability_mark === '◎') {
-        return `<div class="horse"><div class="hh">${heading}</div>${bodyHtml}</div>`;
+      if (v11) {
+        return `
+          <details class="subfold">
+            <summary><span class="tri"></span>${heading}</summary>
+            <div class="fold-body">${bodyHtml}</div>
+          </details>
+        `;
       }
       return `
         <details class="subfold">

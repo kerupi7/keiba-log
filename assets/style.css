@@ -137,6 +137,23 @@ td.n-tan{color:var(--mk-tan);font-weight:700} td.n-oku{color:var(--mk-oku);font-
 .star{color:var(--orange);font-weight:700}
 .mine{color:var(--live);font-weight:700}
 
+/* ===== 2.6b mark-2.0: 役割チップ・地雷チップ・市場評価チップ ===== */
+.chip-role{display:inline-block;font-size:10px;font-weight:700;color:#fff;
+  border-radius:2px;padding:0 5px;margin-right:3px;vertical-align:middle}
+.chip-role.r-axis{background:var(--navy)}
+.chip-role.r-aite{background:var(--mkb-tai)}
+.chip-role.r-ana{background:var(--orange)}
+.chip-mine{display:inline-block;font-size:10px;font-weight:700;color:#fff;
+  background:var(--live);border-radius:2px;padding:0 5px;margin-right:3px;vertical-align:middle}
+.mchip{display:inline-block;font-size:10px;font-weight:700;padding:0 5px;
+  border-radius:2px;margin-left:3px;vertical-align:middle}
+.mchip.good{background:var(--chip-under-bg);color:var(--hit)}
+.mchip.over{background:#FBE9E9;color:var(--live)}
+.mchip.fair{background:var(--chip-fair-bg);color:var(--chip-fair-fg)}
+
+.verdicts{margin-top:8px;font-size:13px;line-height:1.8}
+.verdict-line{margin-bottom:2px}
+
 /* ===== 2.7 折りたたみ ===== */
 details.fold{border-bottom:1px solid var(--rule)}
 details.fold:first-of-type{border-top:1px solid var(--rule)}
@@ -212,9 +229,10 @@ details.subfold>summary .sc{margin-left:auto;color:var(--navy);
 .datetabs .dt.active:after{content:"";position:absolute;left:12%;right:12%;bottom:0;
   height:3px;background:var(--navy);border-radius:2px}
 
-.tracks{display:flex;gap:8px;padding:4px 0 10px;flex-wrap:wrap}
-.trk{font-size:14px;font-weight:700;padding:7px 20px;border-radius:20px;
-  border:1px solid #C9C9C4;color:var(--sub);background:#fff;cursor:pointer;user-select:none}
+.tracks{display:flex;gap:8px;padding:4px 0 10px}
+.trk{flex:1;text-align:center;min-width:0;font-size:14px;font-weight:700;padding:7px 0;
+  border-radius:20px;border:1px solid #C9C9C4;color:var(--sub);background:#fff;
+  cursor:pointer;user-select:none}
 .trk.on{background:var(--navy);color:#fff;border-color:var(--navy)}
 
 .legend{display:flex;gap:14px;font-size:12px;color:var(--cap);padding:8px 2px 2px;align-items:center}
@@ -256,7 +274,8 @@ details.subfold>summary .sc{margin-left:auto;color:var(--navy);
 .concl .h{font-size:14px;font-weight:700;margin-bottom:6px}
 .concl p{font-size:15px;line-height:1.7;color:var(--text);margin:0}
 .concl .kv{font-size:13px;color:var(--sub);margin-top:8px}
-.marks{margin-top:10px;font-size:15px;line-height:1.9}
+.marks{margin-top:10px;font-size:15px}
+.marks-row{line-height:1.9}
 .buyline{margin-top:6px;font-size:15px}
 .buyline .lead{font-weight:700;color:var(--sub);margin-right:6px}
 
