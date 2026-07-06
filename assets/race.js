@@ -49,7 +49,30 @@ function renderHeaderBlock(site) {
   `;
 }
 
-// ===== 4.2 結論カード =====
+// ===== 印まとめ（項目3: 独立セクション。印+馬番+馬名のみ。mockup-4のフラット骨格） =====
+function renderMarksSection(site) {
+  const order = ['◎', '○', '▲', '△'];
+  const rows = [];
+  [...site.horses]
+    .filter((h) => h.ability_mark)
+    .sort((a, b) => order.indexOf(a.ability_mark) - order.indexOf(b.ability_mark))
+    .forEach((h) => rows.push(`<div class="marks-row">${markBadge(h.ability_mark)}<span class="no">${h.number}</span><span class="nm">${escapeHtml(h.name)}</span></div>`));
+  site.horses
+    .filter((h) => h.role === '穴')
+    .forEach((h) => rows.push(`<div class="marks-row"><span class="mkb m-ana">穴</span><span class="no">${h.number}</span><span class="nm">${escapeHtml(h.name)}</span></div>`));
+  site.horses
+    .filter((h) => h.bet_mark === '地雷')
+    .forEach((h) => rows.push(`<div class="marks-row"><span class="mkb m-jir">地雷</span><span class="no">${h.number}</span><span class="nm">${escapeHtml(h.name)}</span></div>`));
+  const body = rows.length ? rows.join('') : '<div class="marks-row">見送り（印なし）</div>';
+  return `
+    <details class="fold" open>
+      <summary><span class="tri"></span>印</summary>
+      <div class="fold-body"><div class="marks">${body}</div></div>
+    </details>
+  `;
+}
+
+// ===== 4.2 印まとめ（項目2/3: §7結論の文章・印まとめの説明文は廃止。印+馬番+馬名のみ） =====
 function renderConclusionCard(site) {
   const p = site.prediction;
   if (p.stance === 'pass') {
@@ -59,7 +82,6 @@ function renderConclusionCard(site) {
       <div class="concl">
         <div class="h">結論</div>
         <p>今回は見送りレースです。</p>
-        <p>${escapeHtml(p.conclusion)}</p>
         ${abilityMarks.length || betMarks.length ? renderMarksBlock(site) : ''}
       </div>
     `;
@@ -67,7 +89,6 @@ function renderConclusionCard(site) {
   return `
     <div class="concl">
       <div class="h">結論</div>
-      <p>${escapeHtml(p.conclusion)}</p>
       <div class="kv">展開: ${escapeHtml(p.pace)} ・ ${escapeHtml(p.bias ?? '—')}</div>
       ${renderMarksBlock(site)}
     </div>
@@ -164,14 +185,14 @@ function renderMarksBlock(site) {
 function renderBetsSectionV11(site) {
   const bets = site.bets || [];
   if (!bets.length) {
-    return `<div class="eyebrow">買い目</div><div>見送り（買い目なし）</div>`;
+    return `<div class="secthead">買い目</div><div>見送り（買い目なし）</div>`;
   }
   const totalPoints = bets.reduce((sum, b) => sum + b.tickets.length, 0);
   const totalCost = bets.reduce((sum, b) => sum + (b.stake ?? b.tickets.length * 100), 0);
   const showResult = site.status === 'final';
   const header = showResult
-    ? '<tr><th class="l">券種</th><th>買い目</th><th>金額</th><th class="l">狙い</th><th>結果</th><th>払戻</th></tr>'
-    : '<tr><th class="l">券種</th><th>買い目</th><th>金額</th><th class="l">狙い</th></tr>';
+    ? '<tr><th class="l">券種</th><th>買い目</th><th>金額</th><th>結果</th><th>払戻</th></tr>'
+    : '<tr><th class="l">券種</th><th>買い目</th><th>金額</th></tr>';
   const rows = bets.map((b) => {
     const resultCell = showResult
       ? `<td class="${b.hit ? 'o' : 'x'}">${b.hit ? '✓' : '✕'}</td><td>${fmtYen(b.payout)}</td>`
@@ -181,7 +202,6 @@ function renderBetsSectionV11(site) {
         <td class="l">${escapeHtml(b.type)}</td>
         <td>${b.combination.join('-')}</td>
         <td>${fmtYen(b.stake ?? b.tickets.length * 100)}</td>
-        <td class="l">${b.note ? escapeHtml(b.note) : '—'}</td>
         ${resultCell}
       </tr>
     `;
@@ -194,7 +214,7 @@ function renderBetsSectionV11(site) {
     totalLine = `<div class="total">合計 ${totalPoints}点 ${fmtYen(v.bets_cost)} → 払戻 <span class="${cls}">${fmtYen(v.bets_return)} ${icon}</span></div>`;
   }
   return `
-    <div class="eyebrow">買い目 <span class="note">${totalPoints}点 ${fmtYen(totalCost)}</span></div>
+    <div class="secthead">買い目<span class="cnt">${totalPoints}点 ${fmtYen(totalCost)}</span></div>
     <table><thead>${header}</thead><tbody>${rows}</tbody></table>
     ${totalLine}
   `;
@@ -206,7 +226,7 @@ function renderBetsSection(site) {
   const bets = site.bets || [];
   const totalPoints = bets.reduce((sum, b) => sum + b.tickets.length, 0);
   if (!bets.length) {
-    return `<div class="eyebrow">買い目</div><div>見送り（買い目なし）</div>`;
+    return `<div class="secthead">買い目</div><div>見送り（買い目なし）</div>`;
   }
   const showResult = site.status === 'final';
   const header = showResult
@@ -235,7 +255,7 @@ function renderBetsSection(site) {
   }
 
   return `
-    <div class="eyebrow">買い目 <span class="note">${totalPoints}点 ${totalPoints * 100}円</span></div>
+    <div class="secthead">買い目<span class="cnt">${totalPoints}点 ${totalPoints * 100}円</span></div>
     <table><thead>${header}</thead><tbody>${rows}</tbody></table>
     ${totalLine}
   `;
@@ -245,7 +265,7 @@ function renderBetsSection(site) {
 function renderVerificationSection(site) {
   if (site.status === 'cancelled') return '';
   if (site.status !== 'final') {
-    return `<div class="eyebrow">答え合わせ</div><div class="kv">結果はレース後に反映されます</div>`;
+    return `<div class="secthead">答え合わせ</div><div class="kv">結果はレース後に反映されます</div>`;
   }
   const result = site.result;
   const verification = site.verification;
@@ -281,18 +301,23 @@ function renderVerificationSection(site) {
     return `<tr${rowCls}><td>${t.finish}</td><td class="l">${t.number} ${escapeHtml(t.name)}</td><td>${t.popularity}</td><td class="l sep markcell ${cls}">${markCell}</td></tr>`;
   }).join('');
 
-  const paceMatchIcon = verification.pace_match === true ? '✓' : verification.pace_match === false ? '✕' : '—';
-  const markFinishLine = Object.entries(verification.mark_finishes || {})
-    .map(([k, v]) => `${k.replace(/[()]/g, '')}=${v}着`)
-    .join('・');
+  const paceChipCls = verification.pace_match === true ? 'ok' : verification.pace_match === false ? 'ng' : '';
+  const paceChip = `<span class="vchip ${paceChipCls}">予想 ${escapeHtml(site.prediction.pace)} → 実際 ${escapeHtml(result.pace ?? '—')} ${paceMatchIconOf(verification.pace_match)}</span>`;
+
+  const markChips = Object.entries(verification.mark_finishes || {})
+    .map(([k, finish]) => {
+      const inTop3 = typeof finish === 'number' && finish <= 3;
+      return `<span class="mg${inTop3 ? ' hit' : ''}">${escapeHtml(k)} ${finish}着</span>`;
+    })
+    .join('');
 
   const landmineNumbers = Object.keys(verification.landmine_result || {}).sort((a, b) => Number(a) - Number(b));
-  const landmineLine = landmineNumbers
+  const landmineChips = landmineNumbers
     .map((n) => {
       const lr = verification.landmine_result[n];
-      return `${n}=${lr.finish}着 ${lr.ok ? '✓' : '✕'}`;
+      return `<span class="jchip ${lr.ok ? 'ok' : 'ng'}">${lr.ok ? '✓' : '✕'} ${n} ${lr.finish}着</span>`;
     })
-    .join(' ・ ');
+    .join('');
 
   let biasLine = '';
   if (result.bias_actual !== null && result.bias_actual !== undefined) {
@@ -317,13 +342,16 @@ function renderVerificationSection(site) {
   if (result.winning_style) summaryLines.push(`<div class="kv">勝ちパターン: ${escapeHtml(result.winning_style)}</div>`);
 
   return `
-    <div class="eyebrow">答え合わせ</div>
+    <div class="secthead">答え合わせ</div>
     <table>
       <thead><tr><th class="l">着</th><th class="l">馬</th><th>人気</th><th class="l sep">印</th></tr></thead>
       <tbody>${topRows}</tbody>
     </table>
-    <div class="kv">ペース ${escapeHtml(result.pace ?? '—')}（予想 ${escapeHtml(site.prediction.pace)} ${paceMatchIcon}）／ 印の着順 ${markFinishLine}</div>
-    <div class="kv">地雷判定 ${landmineLine}</div>
+    <div class="vcard">
+      <div class="vrow">${paceChip}</div>
+      ${markChips ? `<div class="vsub">印別の着順（緑=馬券圏内）</div><div class="markgrid">${markChips}</div>` : ''}
+      ${landmineChips ? `<div class="vsub">地雷判定</div><div class="jgrid">${landmineChips}</div>` : ''}
+    </div>
     ${biasLine}
     <details class="fold"><summary><span class="tri"></span>払戻表</summary>
       <div class="fold-body"><table><tbody>${payoutRows}</tbody></table></div>
@@ -332,14 +360,18 @@ function renderVerificationSection(site) {
   `;
 }
 
-// ===== ①全頭評価表 =====
+function paceMatchIconOf(v) {
+  return v === true ? '✓' : v === false ? '✕' : '—';
+}
+
+// ===== ①全頭評価表（項目8: 印を独立列に分離・馬名フル幅／項目9: grade列／項目11: キャプション削除） =====
 function renderAllHorsesTable(site) {
   const v11 = site.schema_version === 'keiba-log-1.1';
   const rows = [...site.horses]
     .sort((a, b) => (a.rank ?? 999) - (b.rank ?? 999))
     .map((h) => {
       if (h.scratched) {
-        return `<tr class="scratched"><td>${h.rank ?? '—'}</td><td>${h.number}</td><td class="name">${escapeHtml(h.name)}</td><td colspan="4">取消</td></tr>`;
+        return `<tr class="scratched"><td>${h.rank ?? '—'}</td><td class="mkc"></td><td>${h.number}</td><td class="name">${escapeHtml(h.name)}</td><td colspan="4">取消</td></tr>`;
       }
       const rowCls = h.ability_mark ? ' class="pred"' : '';
       const extraChips = v11
@@ -348,27 +380,27 @@ function renderAllHorsesTable(site) {
       return `
         <tr${rowCls}>
           <td>${h.rank ?? '—'}</td>
+          <td class="mkc">${h.ability_mark ? markBadge(h.ability_mark) : ''}</td>
           <td>${h.number}</td>
-          <td class="name ${markNameClass(h.ability_mark)}">${h.ability_mark || ''}${escapeHtml(h.name)}${extraChips}</td>
+          <td class="name">${escapeHtml(h.name)}${extraChips}</td>
           <td>${fmtNum(h.total, 1)}</td>
           <td>${h.odds ?? '—'}</td>
           <td>${h.popularity ?? '—'}</td>
-          <td class="conf">${h.confidence ?? '—'}</td>
+          <td>${h.grade ? gradeBadge(h.grade) : '—'}</td>
         </tr>
       `;
     })
     .join('');
   return `
-    <details class="fold">
+    <details class="fold" open>
       <summary><span class="tri"></span>全頭評価表<span class="cnt">${site.horses.length}頭</span></summary>
       <div class="fold-body">
         <table class="fixed">
-          <colgroup><col style="width:8%"><col style="width:8%"><col style="width:33%">
-            <col style="width:13%"><col style="width:14%"><col style="width:9%"><col style="width:15%"></colgroup>
-          <thead><tr><th>順</th><th>番</th><th class="l">馬名</th><th>総合</th><th>オッズ</th><th>人気</th><th>信頼</th></tr></thead>
+          <colgroup><col style="width:7%"><col style="width:8%"><col style="width:7%"><col style="width:29%">
+            <col style="width:13%"><col style="width:14%"><col style="width:9%"><col style="width:13%"></colgroup>
+          <thead><tr><th>順</th><th>印</th><th>番</th><th class="l">馬名</th><th>総合</th><th>オッズ</th><th>人気</th><th>評価</th></tr></thead>
           <tbody>${rows}</tbody>
         </table>
-        <div class="scrollnote">※ 印は馬名の色で判別（◎ネイビー→△薄グレー）。全${site.horses.length}頭を掲載（総合スコア順）</div>
       </div>
     </details>
   `;
@@ -419,7 +451,7 @@ function renderEvTable(site) {
   }).join('');
 
   return `
-    <details class="fold">
+    <details class="fold" open>
       <summary><span class="tri"></span>勝率・期待値表<span class="cnt">${horses.length}頭</span></summary>
       <div class="fold-body">
         <table class="fixed" style="font-size:12px">
@@ -429,9 +461,109 @@ function renderEvTable(site) {
             <th class="sep">期待値</th><th class="l sep">評価</th></tr></thead>
           <tbody>${rows}</tbody>
         </table>
-        <div class="scrollnote">勝率＝推定勝率／適正・現在＝オッズ／期待値＝期待収益率。適正＜現在なら妙味（緑）。順位は勝率順のため省略</div>
       </div>
     </details>
+  `;
+}
+
+// ===== 項目19: §2情報ブロック（1行ずつ改行） =====
+function renderInfoBlock(site) {
+  const r = site.race;
+  const bd = site.prediction && site.prediction.baba_detail;
+  const babaStr = (bd && bd.going_weather) ? escapeHtml(bd.going_weather) : (r.going ? escapeHtml(r.going) : '—');
+  const rows = [
+    ['コース', `${r.surface}${r.distance}m${r.direction ? '（' + escapeHtml(r.direction) + '）' : ''}`],
+    ['馬場', babaStr],
+    ['頭数', `${r.field_size}頭`],
+    ['クラス', r.class ? escapeHtml(r.class) : '—'],
+  ];
+  return `<div class="info1">${rows.map(([k, v]) => `<div class="irow"><b>${k}</b> ${v}</div>`).join('')}</div>`;
+}
+
+// ===== 項目1/20: 馬場踏み込み表示＋この馬場が得意な馬 =====
+function renderBabaDetailBlock(site) {
+  const b = site.prediction.baba_detail;
+  if (!b) return '';
+  const favLine = b.favorites && b.favorites.length
+    ? `<div class="l2"><span class="h">この馬場が得意</span>${b.favorites.map((f) => `<span class="fav"><span class="nm">${f.number} ${escapeHtml(f.name)}</span><span class="rs">${escapeHtml(f.reason || '')}</span></span>`).join('')}</div>`
+    : '';
+  return `<div class="babadetail"><div class="l1">${escapeHtml(b.display_text)}</div>${favLine}</div>`;
+}
+
+// ===== 項目6: 展開シナリオ（見出し＋確率＋有利馬3頭＋タイプ札） =====
+function renderScenarioBlock(site) {
+  const s = site.prediction.scenario;
+  if (!s) return '';
+  const rowHtml = (key, label) => {
+    const v = s[key];
+    if (!v) return '';
+    const favs = v.favorites && v.favorites.length
+      ? v.favorites.map((f) => `${f.number} ${escapeHtml(f.name)}`).join('・')
+      : '該当薄';
+    return `<div class="scn"><b>${label}（${Math.round(v.prob * 100)}%）: ${escapeHtml(v.title)}</b>
+      <span class="tag">${escapeHtml(v.type_tag)}</span><div class="favs">${favs}</div></div>`;
+  };
+  return `<div class="scenario">${rowHtml('main', 'メイン展開')}${rowHtml('sub', 'サブ展開')}${rowHtml('other', 'その他')}</div>`;
+}
+
+// ===== 項目18: 内外バイアス（カラーストリップ） =====
+function biasBand(ratio) {
+  if (ratio >= 1.15) return 'b1';
+  if (ratio >= 1.05) return 'b2';
+  if (ratio >= 0.95) return 'b3';
+  if (ratio >= 0.85) return 'b4';
+  return 'b5';
+}
+function renderInnerOuterStrip(site) {
+  const bias = site.prediction.inner_outer_bias;
+  if (!bias || !bias.gates || !bias.gates.length) return '';
+  const cells = bias.gates.map((g) =>
+    `<div class="cell ${biasBand(g.ratio)}"><div class="g">${g.gate}枠</div><div class="v">${g.ratio.toFixed(2)}</div></div>`
+  ).join('');
+  return `<div class="biaslabel"><b>内外バイアス</b> ${escapeHtml(bias.label)}</div>
+    <div class="strip">${cells}</div>
+    <div class="striplegend">濃緑=有利 / 薄緑=やや有利 / 灰=標準 / 薄赤=やや不利 / 濃赤=不利（1.0=標準）</div>`;
+}
+
+// ===== 脚質傾向テーブル（mockup準拠。BE emit の leg_bias を描画） =====
+function renderLegBiasTable(site) {
+  const lb = site.prediction && site.prediction.leg_bias;
+  if (!lb || !lb.length) return '';
+  const jc = (j) => (j === '有利' || j === 'やや有利') ? 'good' : (j === '不利' ? 'vbad' : (j === 'やや不利' ? 'bad' : ''));
+  const rows = lb.map((r) =>
+    `<tr><td class="l">${escapeHtml(r.style)}</td><td>${r.win_rate}</td><td>${r.rentai_rate}</td><td>${r.fukusho_rate}</td><td>${r.runs}</td><td class="l sep"><span class="jw ${jc(r.judgment)}">${escapeHtml(r.judgment)}</span></td></tr>`
+  ).join('');
+  return `
+    <div class="subh">脚質傾向（コースデータ）</div>
+    <table class="fixed">
+      <colgroup><col style="width:16%"><col style="width:14%"><col style="width:14%"><col style="width:14%"><col style="width:14%"><col style="width:28%"></colgroup>
+      <thead><tr><th class="l">脚質</th><th>勝率</th><th>連対</th><th>複勝</th><th>走数</th><th class="l sep">判定</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+}
+
+// ===== 項目21: 逃げ候補・先行圧（数値テーブル） =====
+function renderFrontRunnersTable(site) {
+  const fr = site.prediction.front_runners;
+  if (!fr || !fr.length) return '';
+  const rows = fr.map((f) => `<tr><td>${f.number}</td><td class="l">${escapeHtml(f.name)}</td><td class="l">${escapeHtml(f.type)}</td><td>${f.front_rate.toFixed(2)}</td></tr>`).join('');
+  const fp = site.prediction.front_pressure;
+  let statline = '';
+  if (fp && fp.index != null) {
+    const clause = fp.label === '高い' ? '。先行馬が多く楽な逃げにはなりにくい'
+      : fp.label === '低い' ? '。ハナを主張する馬が少なく緩みやすい' : '';
+    const nige = (fp.main_nige && fp.main_nige.length) ? `（主逃げ=${escapeHtml(fp.main_nige.join('・'))}）` : '（主逃げ不在）';
+    statline = `<div class="statline"><b>先行圧指数</b><span class="big">${fp.index}</span>→ ${escapeHtml(fp.label)}${clause}${nige}</div>`;
+  }
+  return `
+    <div class="subh">逃げ候補・先行圧</div>
+    <table class="fixed">
+      <colgroup><col style="width:12%"><col style="width:38%"><col style="width:30%"><col style="width:20%"></colgroup>
+      <thead><tr><th>番</th><th class="l">馬名</th><th class="l">分類</th><th>先行率</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    ${statline}
   `;
 }
 
@@ -439,106 +571,53 @@ function renderEvTable(site) {
 function renderOverviewFold(site) {
   const md = site.sections && site.sections.overview_md;
   return `
-    <details class="fold">
+    <details class="fold" open>
       <summary><span class="tri"></span>展開・レース分析</summary>
-      <div class="fold-body"><div class="prose">${renderMarkdown(md)}</div></div>
+      <div class="fold-body">
+        ${renderInfoBlock(site)}
+        ${renderBabaDetailBlock(site)}
+        ${renderLegBiasTable(site)}
+        ${renderInnerOuterStrip(site)}
+        ${renderFrontRunnersTable(site)}
+        ${renderScenarioBlock(site)}
+      </div>
     </details>
   `;
 }
 
-// ===== ④個別評価 =====
-function splitHorsesMd(md) {
-  const idx = md.search(/^### /m);
-  if (idx === -1) return { preamble: md, blocks: [] };
-  const preamble = md.slice(0, idx);
-  const blocks = md.slice(idx).split(/\n(?=### )/).map((chunk) => {
-    const m = chunk.match(/^### (\d+)\.\s*([^（(\n]+)[（(]?([^）)\n]*)/);
-    return {
-      number: m ? Number(m[1]) : null,
-      name: m ? m[2].trim() : '',
-      meta: m ? m[3].trim() : '',
-      body: chunk.replace(/^### .*\n?/, ''),
-    };
-  });
-  return { preamble, blocks };
+// ===== ④個別評価（項目14/15/16: 全頭アコーディオン＋①〜⑧＋/−ラベル。加重列は出力しない） =====
+function renderFactorsTable(factors, total) {
+  if (!factors || !factors.length) return '<div class="prose">データなし</div>';
+  const ptFmt = (v) => (v == null ? '—' : (Number.isInteger(v) ? String(v) : fmtNum(v, 1)));
+  const rows = factors.map((f) => {
+    const items = (f.items || [])
+      .map((it) => `<span class="fac ${it.sign === '+' ? 'plus' : 'minus'}">${it.sign === '+' ? '＋' : '−'} ${escapeHtml(it.label)}</span>`)
+      .join('');
+    return `<tr><td class="item">${escapeHtml(f.label)}</td><td class="pt">${ptFmt(f.score)}</td><td class="l">${items || '—'}</td></tr>`;
+  }).join('');
+  const totalRow = (total != null)
+    ? `<tr class="tot"><td class="item">総合</td><td class="pt">${fmtNum(total, 1)}</td><td class="l"></td></tr>`
+    : '';
+  return `<table class="dim"><tbody>${rows}${totalRow}</tbody></table>`;
 }
 
 function renderHorsesFold(site) {
-  const md = site.sections && site.sections.horses_md;
-  const detailCount = site.horses.filter((h) => h.detail_target).length;
-  if (!md) {
+  const horses = [...site.horses].filter((h) => !h.scratched).sort((a, b) => (a.rank ?? 999) - (b.rank ?? 999));
+  const blocksHtml = horses.map((h) => {
+    const heading = `${markBadge(h.ability_mark)}${h.number} ${escapeHtml(h.name)}${h.grade ? gradeBadge(h.grade) : ''}<span class="sc">${fmtNum(h.total, 1)}</span>`;
+    const openAttr = h.ability_mark === '◎' ? ' open' : '';
     return `
-      <details class="fold">
-        <summary><span class="tri"></span>個別評価<span class="cnt">詳細${detailCount}頭</span></summary>
-        <div class="fold-body"></div>
+      <details class="subfold"${openAttr}>
+        <summary><span class="tri"></span>${heading}</summary>
+        <div class="fold-body">${renderFactorsTable(h.factors, h.total)}</div>
       </details>
     `;
-  }
-  const { preamble, blocks } = splitHorsesMd(md);
-  const byNumber = {};
-  for (const h of site.horses) byNumber[h.number] = h;
-  const v11 = site.schema_version === 'keiba-log-1.1';
-
-  if (v11) {
-    const markOrder = { '◎': 0, '○': 1, '▲': 2, '△': 3 };
-    const roleOrder = { '軸': 0, '相手': 1, '穴': 2 };
-    blocks.sort((a, b) => {
-      const ha = byNumber[a.number] || {};
-      const hb = byNumber[b.number] || {};
-      const ma = ha.ability_mark in markOrder ? markOrder[ha.ability_mark] : 9;
-      const mb = hb.ability_mark in markOrder ? markOrder[hb.ability_mark] : 9;
-      if (ma !== mb) return ma - mb;
-      const ra = ha.role in roleOrder ? roleOrder[ha.role] : 9;
-      const rb = hb.role in roleOrder ? roleOrder[hb.role] : 9;
-      if (ra !== rb) return ra - rb;
-      return (ha.rank ?? 999) - (hb.rank ?? 999);
-    });
-  }
-
-  let body;
-  if (!blocks.length) {
-    body = `<div class="prose">${renderMarkdown(md)}</div>`;
-  } else {
-    const preambleHtml = preamble.trim() ? `<div class="prose">${renderMarkdown(preamble)}</div>` : '';
-    const blocksHtml = blocks.map((b) => {
-      const h = byNumber[b.number];
-      const heading = h
-        ? `${markBadge(h.ability_mark)}${b.number} ${escapeHtml(b.name)} <span class="meta">${escapeHtml(b.meta)}</span><span class="sc">${fmtNum(h.total, 1)} / ${h.popularity ?? '—'}人気</span>`
-        : escapeHtml(b.name);
-      const bodyHtml = `<div class="prose">${renderMarkdown(b.body)}</div>`;
-      if (v11) {
-        return `
-          <details class="subfold">
-            <summary><span class="tri"></span>${heading}</summary>
-            <div class="fold-body">${bodyHtml}</div>
-          </details>
-        `;
-      }
-      return `
-        <details class="subfold">
-          <summary><span class="tri"></span>${heading}</summary>
-          <div class="fold-body">${bodyHtml}</div>
-        </details>
-      `;
-    }).join('');
-    body = preambleHtml + blocksHtml;
-  }
+  }).join('');
 
   return `
-    <details class="fold">
-      <summary><span class="tri"></span>個別評価<span class="cnt">詳細${detailCount}頭</span></summary>
-      <div class="fold-body">${body}</div>
-    </details>
-  `;
-}
-
-// ===== ⑤予想が外れるとしたら =====
-function renderCounterFold(site) {
-  const md = site.sections && site.sections.counter_md;
-  return `
-    <details class="fold">
-      <summary><span class="tri"></span>予想が外れるとしたら<span class="cnt">弱点・崩れる条件</span></summary>
-      <div class="fold-body"><div class="prose rev">${renderMarkdown(md)}</div></div>
+    <details class="fold" open>
+      <summary><span class="tri"></span>個別評価<span class="cnt">全${horses.length}頭・タップで開閉</span></summary>
+      <div class="fold-body">${blocksHtml}</div>
     </details>
   `;
 }
@@ -563,15 +642,13 @@ async function main() {
   const html = `
     ${renderHeaderBlock(site)}
     ${banner}
-    ${renderConclusionCard(site)}
-    ${renderBetsSection(site)}
-    ${renderVerificationSection(site)}
-    <div class="fold-intro">▼ ここから下はデータ・全文解説（タップで開く）</div>
+    ${renderMarksSection(site)}
     ${renderAllHorsesTable(site)}
     ${renderEvTable(site)}
     ${renderOverviewFold(site)}
     ${renderHorsesFold(site)}
-    ${renderCounterFold(site)}
+    ${renderBetsSection(site)}
+    ${renderVerificationSection(site)}
   `;
   document.getElementById('race-content').innerHTML = html;
 }

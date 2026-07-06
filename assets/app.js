@@ -72,6 +72,13 @@ const MARK_CLASS = { '◎': 'hon', '○': 'tai', '▲': 'tan', '△': 'oku' };
 function markNameClass(mark) { return MARK_CLASS[mark] ? 'n-' + MARK_CLASS[mark] : ''; }
 function markBadge(mark) { return MARK_CLASS[mark] ? `<span class="mkb m-${MARK_CLASS[mark]}">${mark}</span>` : ''; }
 
+// 項目9: A〜E格付けバッジ（12-fullpython-redesign-spec.md）
+function gradeBadge(grade) {
+  if (!grade) return '';
+  const cls = grade.includes('+') ? 'plus' : '';
+  return `<span class="grade g-${grade.replace('+', 'p').toLowerCase()} ${cls}">${grade}</span>`;
+}
+
 // mark-2.0: 役割チップ（軸/相手/穴）・地雷チップ・市場評価チップ（14-mark-redesign-spec.md §8.3）
 const ROLE_CHIP_CLASS = { '軸': 'axis', '相手': 'aite', '穴': 'ana' };
 function roleChip(role) {

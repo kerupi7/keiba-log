@@ -130,6 +130,7 @@ tr.scratched td{color:var(--cap);opacity:.6}
   border-radius:2px;font-size:12px;padding:1px 5px;margin-right:3px}
 .mkb.m-hon{background:var(--mkb-hon)} .mkb.m-tai{background:var(--mkb-tai)}
 .mkb.m-tan{background:var(--mkb-tan)} .mkb.m-oku{background:var(--mkb-oku)}
+.mkb.m-ana{background:#F58700} .mkb.m-jir{background:#EB1400}
 
 td.n-hon{color:var(--mk-hon);font-weight:700} td.n-tai{color:var(--mk-tai);font-weight:700}
 td.n-tan{color:var(--mk-tan);font-weight:700} td.n-oku{color:var(--mk-oku);font-weight:700}
@@ -155,16 +156,16 @@ td.n-tan{color:var(--mk-tan);font-weight:700} td.n-oku{color:var(--mk-oku);font-
 .verdict-line{margin-bottom:2px}
 
 /* ===== 2.7 折りたたみ ===== */
-details.fold{border-bottom:1px solid var(--rule)}
-details.fold:first-of-type{border-top:1px solid var(--rule)}
-details.fold>summary{display:flex;align-items:center;gap:8px;padding:13px 2px;
-  font-size:15px;font-weight:700;color:var(--text);cursor:pointer;list-style:none}
+/* 項目7: 全頭評価/勝率期待値/展開レース分析/個別評価の4見出しにネイビー帯 */
+details.fold{margin-top:16px}
+details.fold>summary,.secthead{display:flex;align-items:center;gap:8px;padding:8px 11px;
+  font-size:15px;font-weight:700;color:#fff;background:var(--navy);border-radius:3px;
+  cursor:pointer;list-style:none}
+.secthead{margin-top:16px;cursor:default}
 details.fold>summary::-webkit-details-marker{display:none}
-details.fold>summary .tri::before{content:"▸";color:var(--navy);font-size:12px}
-details.fold[open]>summary .tri::before{content:"▾"}
-details.fold[open]>summary{font-size:16px;border-bottom:2px solid var(--rule-strong);padding-bottom:8px}
-details.fold>summary .cnt{margin-left:auto;font-size:12px;font-weight:400;color:var(--cap)}
-.fold-body{padding:0 0 14px}
+details.fold>summary .tri{display:none}
+details.fold>summary .cnt,.secthead .cnt{margin-left:auto;font-size:11px;font-weight:400;color:#fff;opacity:.85}
+.fold-body{padding:6px 0 14px}
 
 details.subfold{border-bottom:1px solid var(--rule)}
 details.subfold>summary{display:flex;align-items:center;gap:8px;padding:11px 2px;
@@ -206,6 +207,78 @@ details.subfold>summary .sc{margin-left:auto;color:var(--navy);
 .empty-state{color:var(--cap);padding:24px 0;text-align:center}
 .foot{margin-top:16px;padding-top:10px;border-top:1px solid var(--rule);
   font-size:12px;color:var(--cap);line-height:1.6}
+
+/* ===== 2.11 完全Python化リデザイン（12-fullpython-redesign-spec.md） ===== */
+
+/* 項目9: A〜E格付けバッジ */
+td.mkc{text-align:center;width:1%}
+.grade{display:inline-block;min-width:26px;text-align:center;font-weight:700;font-size:12px;
+  border-radius:3px;padding:1px 4px;color:#fff;white-space:nowrap}
+.grade.g-ap{background:#0F7A3D} .grade.g-a{background:#2f8f4e}
+.grade.g-bp{background:#5a9bd4} .grade.g-b{background:#8aadc9}
+.grade.g-cp{background:#b0b0a8} .grade.g-c{background:#c2c2ba}
+.grade.g-d{background:#d8b48a} .grade.g-e{background:#d89a9a}
+
+/* 項目19: §2情報ブロック（1行ずつ改行） */
+.info1{margin-top:10px}
+.info1 .irow{font-size:13px;color:var(--sub);padding:4px 0;border-bottom:1px dotted var(--rule)}
+.info1 .irow b{color:var(--text);font-weight:700;display:inline-block;min-width:44px;margin-right:6px}
+
+/* 項目1/20: 馬場踏み込みブロック */
+.babadetail{background:var(--pred-row);border-left:3px solid var(--navy);border-radius:2px;
+  padding:8px 10px;margin-top:8px}
+.babadetail .l1{font-size:13px;color:var(--text)}
+.babadetail .l2{margin-top:6px;font-size:12px}
+.babadetail .h{display:block;font-weight:700;color:var(--navy);margin-bottom:3px}
+.babadetail .fav{display:block;padding:1px 0}
+.babadetail .fav .nm{font-weight:700;color:var(--text)}
+.babadetail .fav .rs{color:var(--cap);margin-left:3px}
+.statline{margin-top:8px;padding:7px 10px;background:#F1F1F0;border-radius:2px;font-size:12.5px;color:var(--sub)}
+.statline b{color:var(--text)} .statline .big{font-size:16px;font-weight:700;color:var(--navy);margin:0 3px}
+.dim tr.tot td{border-bottom:none;font-weight:700;padding-top:6px} .dim tr.tot .pt{color:var(--navy)}
+
+/* 項目6: 展開シナリオ */
+.scenario{margin-top:10px}
+.scn{font-size:13px;line-height:1.8;margin-bottom:4px}
+.scn .tag{display:inline-block;font-size:10px;font-weight:700;color:#fff;background:var(--mkb-tai);
+  border-radius:2px;padding:0 5px;margin-left:6px;vertical-align:middle}
+.scn .favs{color:var(--sub);font-size:12px}
+
+/* 項目18: 内外バイアス カラーストリップ */
+.biaslabel{font-size:12.5px;color:var(--sub);margin:9px 0 5px}
+.biaslabel b{color:var(--text)}
+.strip{display:flex;gap:3px}
+.strip .cell{flex:1;text-align:center;border-radius:3px;padding:5px 0;font-size:11px;line-height:1.35}
+.strip .cell .g{font-size:10px;color:#3a3a35;font-weight:700}
+.strip .cell .v{font-weight:700;font-variant-numeric:tabular-nums}
+.strip .b1{background:#0F7A3D;color:#fff} .strip .b1 .g{color:#eafff0}
+.strip .b2{background:#A9DCB8} .strip .b3{background:#E6E6E1} .strip .b4{background:#F3CFCF}
+.strip .b5{background:#E38A8A;color:#fff} .strip .b5 .g{color:#ffecec}
+.striplegend{font-size:10.5px;color:var(--cap);margin-top:4px;margin-bottom:6px}
+.subh{font-size:13px;font-weight:700;margin:14px 0 4px;color:var(--navy)}
+.jw{font-weight:700} .jw.good{color:var(--navy)} .jw.bad{color:#b23b3b} .jw.vbad{color:var(--live)}
+
+/* 項目14/15/16: 個別評価アコーディオン＋/−ラベル */
+table.dim{margin-top:2px;font-size:12px}
+table.dim td{white-space:normal;text-align:left;vertical-align:top;padding:5px 4px}
+table.dim td.item{font-weight:700;white-space:nowrap;width:64px;color:var(--text)}
+table.dim td.pt{text-align:right;white-space:nowrap;width:24px;font-variant-numeric:tabular-nums;color:var(--sub);font-weight:700}
+.fac{display:block;line-height:1.55}
+.fac.plus{color:var(--hit)}
+.fac.minus{color:var(--live)}
+
+/* 項目22: 答え合わせ検証カード */
+.vcard{background:var(--sub-bg);border-radius:2px;padding:8px 10px;margin-top:8px}
+.vrow{font-size:13px}
+.vchip{display:inline-block;font-size:12px;padding:1px 6px;border-radius:2px}
+.vchip.ok{color:var(--hit)} .vchip.ng{color:var(--live)}
+.vsub{font-size:11px;color:var(--cap);margin-top:8px}
+.markgrid,.jgrid{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.mg{font-size:12px;padding:2px 7px;border-radius:2px;background:#fff;border:1px solid var(--rule)}
+.mg.hit{background:var(--chip-under-bg);color:var(--hit);border-color:transparent;font-weight:700}
+.jchip{font-size:12px;padding:2px 7px;border-radius:2px}
+.jchip.ok{background:var(--chip-ok-bg);color:var(--chip-ok-fg)}
+.jchip.ng{background:var(--chip-ng-bg);color:var(--chip-ng-fg)}
 
 /* ===== 3. TOP ===== */
 .roi{padding:12px 0 14px;border-bottom:1px solid var(--rule)}
@@ -274,8 +347,11 @@ details.subfold>summary .sc{margin-left:auto;color:var(--navy);
 .concl .h{font-size:14px;font-weight:700;margin-bottom:6px}
 .concl p{font-size:15px;line-height:1.7;color:var(--text);margin:0}
 .concl .kv{font-size:13px;color:var(--sub);margin-top:8px}
-.marks{margin-top:10px;font-size:15px}
-.marks-row{line-height:1.9}
+.marks{margin-top:9px;display:flex;flex-direction:column}
+.marks-row{display:flex;align-items:center;gap:7px;font-size:14px;padding:6px 2px;border-bottom:1px solid var(--rule)}
+.marks .mkb{min-width:30px;margin-right:0}
+.marks .no{color:var(--cap);font-variant-numeric:tabular-nums;min-width:18px;text-align:right}
+.marks .nm{font-weight:700}
 .buyline{margin-top:6px;font-size:15px}
 .buyline .lead{font-weight:700;color:var(--sub);margin-right:6px}
 
