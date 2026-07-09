@@ -1071,7 +1071,7 @@ function renderBets20(site) {
   if (showResult && site.verification) {
     const v = site.verification;
     const icon = v.bets_hit ? '✓' : '✕';
-    const clsAttr = v.bets_hit ? '' : ' class="result-miss"';
+    const clsAttr = v.bets_hit ? ' class="hit"' : ' class="miss"';
     totalLine = `<div class="betsum">合計 ${totalPoints}点 ${fmtYen(totalCost)} → 払戻 <span${clsAttr}>${fmtYen(v.bets_return)} ${icon}</span></div>`;
   } else {
     totalLine = `<div class="betsum">合計 ${totalPoints}点 ${fmtYen(totalCost)}</div>`;
