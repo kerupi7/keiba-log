@@ -96,6 +96,9 @@ thead th{color:var(--cap);font-weight:700;border-bottom:1px solid var(--rule-str
 
 th.sep,td.sep{border-left:1px solid var(--sep);padding-left:7px}
 
+/* テキスト列の折り返し許可（横スクロール防止・数値列は nowrap のまま） */
+td.wrap,th.wrap{white-space:normal}
+
 td.cell-hl{background:var(--ev-max-bg)}
 
 td.x{color:var(--live);font-weight:700}   /* ✕・不的中 */
@@ -312,3 +315,50 @@ details.subfold>summary .sc{margin-left:auto;color:var(--navy);
 @media (max-width:480px){
   .container{padding:0 12px 28px}
 }
+
+/* ===== 8. 買い目シミュレーター（17-odds-master-spec.md §6。T4: B.手動 / T5: A.おすすめ） ===== */
+.om-subhead{font-size:13px;font-weight:700;color:var(--sub);margin:12px 0 8px}
+.om-subhead:first-child{margin-top:2px}
+.om-note{font-size:12px;color:var(--cap);margin:4px 0 6px}
+.om-more{font-size:12px;color:var(--cap);margin-top:6px}
+
+.chip.buy{background:var(--chip-under-bg);color:var(--chip-under-fg)}
+.chip.pass{background:var(--chip-over-bg);color:var(--chip-over-fg)}
+.chip.lowp{background:var(--chip-acc-bg);color:var(--chip-acc-fg);margin-left:4px}
+
+.om-tabs{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.om-tab{font-size:13px;font-weight:700;padding:6px 10px;border-radius:16px;
+  border:1px solid #C9C9C4;background:#fff;color:var(--sub);cursor:pointer}
+.om-tab.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+.om-tab:disabled{opacity:.4;cursor:not-allowed}
+
+.om-modes{display:flex;gap:6px;margin-top:8px}
+.om-mode{font-size:12px;font-weight:700;padding:4px 10px;border-radius:14px;
+  border:1px solid #C9C9C4;background:#fff;color:var(--sub);cursor:pointer}
+.om-mode.active{background:var(--sub-bg2);color:var(--text);border-color:#B5B5AE}
+
+.om-chiprow{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin-top:8px}
+.om-chiplabel{font-size:12px;color:var(--cap);flex:0 0 auto;width:26px}
+.om-chip{font-size:12px;font-weight:700;min-width:26px;padding:4px 6px;
+  border-radius:3px;border:1px solid #C9C9C4;background:#fff;color:var(--text);
+  cursor:pointer;font-variant-numeric:tabular-nums}
+.om-chip.sel{background:var(--navy);color:#fff;border-color:var(--navy)}
+.om-chip.scratched{text-decoration:line-through}
+.om-chip:disabled{opacity:.35;cursor:not-allowed}
+
+.om-count{font-size:12px;color:var(--cap);margin-top:10px}
+.om-empty{font-size:13px;color:var(--cap);padding:14px 0}
+.om-table{margin-top:4px;font-size:12px}
+.om-table th,.om-table td{padding:6px 3px}
+/* 買い目セルのみ折り返し可（馬ごとに改行）。他の数値列は nowrap のまま */
+.om-table td.om-combo{white-space:normal;line-height:1.9}
+/* 判定セルも折り返し可（「見送り＋低確率」の2チップが固定列幅を超えないように） */
+.om-table td.om-judge{white-space:normal;line-height:1.7}
+.om-table td.om-judge .chip{display:inline-block;margin:1px 0}
+.om-table td.om-judge .chip.lowp{margin-left:3px}
+/* 表内の印バッジはコンパクト化（固定列幅に収めるため） */
+.om-table .mkb{min-width:0;padding:0 3px;margin-right:1px;font-size:11px}
+
+.om-footnote{font-size:11px;color:var(--cap);line-height:1.7;margin-top:14px;
+  padding-top:8px;border-top:1px solid var(--rule)}
+.om-footnote div{margin-bottom:2px}

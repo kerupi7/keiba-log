@@ -341,6 +341,8 @@
   }
 
   var Harville = {
+    EV_TARGET: EV_TARGET,
+    P_MIN: P_MIN,
     buildProbs: buildProbs,
     harvilleOrdered: harvilleOrdered,
     probTansho: probTansho,
