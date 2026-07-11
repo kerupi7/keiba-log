@@ -613,11 +613,10 @@ function omFmtBuyLine(buyLine) {
   return buyLine === null || buyLine === undefined ? '—' : `${buyLine.toFixed(1)}倍`;
 }
 
-// 複勝・ワイドはmin側を表示（§3.2・§6.4）。幅がある旨を「〜」で示す
+// 複勝・ワイドはmin側（最低オッズ）を表示。「〜」は付けない（最低倍率だけ載せる方針）
 function omFmtOdds(type, odds) {
   if (odds === null || odds === undefined) return '—';
-  const suffix = (type === 'fukusho' || type === 'wide') ? '〜' : '';
-  return `${odds}${suffix}`;
+  return `${odds}`;
 }
 
 function omFmtEv(ev) {
