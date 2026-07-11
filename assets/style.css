@@ -326,9 +326,9 @@ details.subfold>summary .sc{margin-left:auto;color:var(--navy);
 .chip.pass{background:var(--chip-over-bg);color:var(--chip-over-fg)}
 .chip.lowp{background:var(--chip-acc-bg);color:var(--chip-acc-fg);margin-left:4px}
 
-.om-tabs{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.om-tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
 .om-tab{font-size:13px;font-weight:700;padding:6px 10px;border-radius:16px;
-  border:1px solid #C9C9C4;background:#fff;color:var(--sub);cursor:pointer}
+  border:1px solid #C9C9C4;background:#fff;color:var(--sub);cursor:pointer;text-align:center}
 .om-tab.active{background:var(--navy);color:#fff;border-color:var(--navy)}
 .om-tab:disabled{opacity:.4;cursor:not-allowed}
 
@@ -350,12 +350,10 @@ details.subfold>summary .sc{margin-left:auto;color:var(--navy);
 .om-empty{font-size:13px;color:var(--cap);padding:14px 0}
 .om-table{margin-top:4px;font-size:12px}
 .om-table th,.om-table td{padding:6px 3px}
-/* 買い目セルのみ折り返し可（馬ごとに改行）。他の数値列は nowrap のまま */
-.om-table td.om-combo{white-space:normal;line-height:1.9}
-/* 判定セルも折り返し可（「見送り＋低確率」の2チップが固定列幅を超えないように） */
-.om-table td.om-judge{white-space:normal;line-height:1.7}
-.om-table td.om-judge .chip{display:inline-block;margin:1px 0}
-.om-table td.om-judge .chip.lowp{margin-left:3px}
+/* 買い目セルは1段固定（折り返さない）。列幅は勝率・判定を外して広げた分で吸収する */
+.om-table td.om-combo{white-space:nowrap}
+/* 期待値プラス（判定「買い」の代替）は緑で強調 */
+.om-table td .om-ev-plus{color:var(--hit);font-weight:700}
 /* 表内の印バッジはコンパクト化（固定列幅に収めるため） */
 .om-table .mkb{min-width:0;padding:0 3px;margin-right:1px;font-size:11px}
 

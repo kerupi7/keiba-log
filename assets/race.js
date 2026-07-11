@@ -14,9 +14,15 @@ function renderError(message) {
 function payoutTypeLabel(type) {
   const map = {
     tansho: '単勝', fukusho: '複勝', wakuren: '枠連', umaren: '馬連',
-    wide: 'ワイド', umatan: '馬単', sanrenpuku: '三連複', sanrentan: '三連単',
+    wide: 'ワイド', umatan: '馬単', sanrenpuku: '3連複', sanrentan: '3連単',
   };
   return map[type] || type;
+}
+
+// 券種の表示順（単勝→複勝→ワイド→馬連→馬単→3連複→3連単）。bets[].type はデータ由来の日本語ラベル。
+const BET_JA_ORDER = { '単勝': 0, '複勝': 1, 'ワイド': 2, '枠連': 2.5, '馬連': 3, '馬単': 4, '三連複': 5, '3連複': 5, '三連単': 6, '3連単': 6 };
+function sortedBets(site) {
+  return [...(site.bets || [])].sort((a, b) => (BET_JA_ORDER[a.type] ?? 99) - (BET_JA_ORDER[b.type] ?? 99));
 }
 
 // ===== 4.1 ヘッダブロック =====
@@ -162,7 +168,7 @@ function renderMarksBlock(site) {
 
 // ===== 4.3 買い目 =====
 function renderBetsSectionV11(site) {
-  const bets = site.bets || [];
+  const bets = sortedBets(site);
   if (!bets.length) {
     return `<div class="eyebrow">買い目</div><div>見送り（買い目なし）</div>`;
   }
@@ -178,7 +184,7 @@ function renderBetsSectionV11(site) {
       : '';
     return `
       <tr>
-        <td class="l">${escapeHtml(b.type)}</td>
+        <td class="l">${escapeHtml(b.type.replace('三連', '3連'))}</td>
         <td>${b.combination.join('-')}</td>
         <td>${fmtYen(b.stake ?? b.tickets.length * 100)}</td>
         <td class="l wrap">${b.note ? escapeHtml(b.note) : '—'}</td>
@@ -203,7 +209,7 @@ function renderBetsSectionV11(site) {
 function renderBetsSection(site) {
   if (site.schema_version === 'keiba-log-1.1') return renderBetsSectionV11(site);
 
-  const bets = site.bets || [];
+  const bets = sortedBets(site);
   const totalPoints = bets.reduce((sum, b) => sum + b.tickets.length, 0);
   if (!bets.length) {
     return `<div class="eyebrow">買い目</div><div>見送り（買い目なし）</div>`;
@@ -218,7 +224,7 @@ function renderBetsSection(site) {
       : '';
     return `
       <tr>
-        <td class="l">${escapeHtml(b.type)}</td>
+        <td class="l">${escapeHtml(b.type.replace('三連', '3連'))}</td>
         <td>${b.combination.join('-')}</td>
         <td>${b.buy_line !== null ? b.buy_line.toFixed(1) + '倍〜' : '—'}</td>
         ${resultCell}
@@ -556,6 +562,8 @@ const OM_TICKET_TYPES = [
   { type: 'sanrenpuku', label: '3連複' },
   { type: 'sanrentan', label: '3連単' },
 ];
+// 表A（印馬のおすすめ）の表示順に使う券種インデックス（OM_TICKET_TYPESの並び＝単勝→…→3連単）
+const OM_TYPE_ORDER = Object.fromEntries(OM_TICKET_TYPES.map((t, i) => [t.type, i]));
 const OM_NAGASHI_TYPES = new Set(['umaren', 'wide', 'umatan', 'sanrenpuku', 'sanrentan']);
 const OM_AXIS_MAX = { umaren: 1, wide: 1, umatan: 1, sanrenpuku: 2, sanrentan: 2 };
 
@@ -602,7 +610,7 @@ function omFmtProb(p) {
 }
 
 function omFmtBuyLine(buyLine) {
-  return buyLine === null || buyLine === undefined ? '—' : `${buyLine.toFixed(1)}倍〜`;
+  return buyLine === null || buyLine === undefined ? '—' : `${buyLine.toFixed(1)}倍`;
 }
 
 // 複勝・ワイドはmin側を表示（§3.2・§6.4）。幅がある旨を「〜」で示す
@@ -613,7 +621,10 @@ function omFmtOdds(type, odds) {
 }
 
 function omFmtEv(ev) {
-  return ev === null || ev === undefined ? '—' : ev.toFixed(2);
+  if (ev === null || ev === undefined) return '—';
+  const txt = ev.toFixed(2);
+  // 判定列の代替: 期待値プラス（>1.0）は緑で強調する
+  return ev > 1.0 ? `<span class="om-ev-plus">${txt}</span>` : txt;
 }
 
 // 買い目表示: normKeyを整形（馬単/3連単は→区切り、他は-区切り。§6.4）。
@@ -621,7 +632,7 @@ function omFmtEv(ev) {
 // 返り値はHTML（馬番は整数由来で安全）。呼び出し側は escapeHtml しないこと。
 function omFmtCombo(type, ids) {
   const sep = (type === 'umatan' || type === 'sanrentan') ? '→' : '-';
-  return Harville.normKey(type, ids).split('-').join(sep + '<wbr>');
+  return Harville.normKey(type, ids).split('-').join(sep);
 }
 
 // 判定セル: ev>1.0→買い(緑) / それ以外→見送り(灰)。p<P_MINの行は追加で「低確率」チップ（§4.5・§4.6）
@@ -715,25 +726,23 @@ function omRenderChips(site, probs, state) {
     `;
   }
   const pickedRow = horses.map((h) => chip(h, state.picked.includes(h.number))).join('');
-  return `<div class="om-chiprow"><span class="om-chiplabel">馬</span>${pickedRow}</div>`;
+  return `<div class="om-chiprow">${pickedRow}</div>`;
 }
 
-const OM_COLGROUP_B = '<colgroup><col style="width:22%"><col style="width:14%"><col style="width:18%">' +
-  '<col style="width:13%"><col style="width:12%"><col style="width:21%"></colgroup>';
+const OM_COLGROUP_B = '<colgroup><col style="width:42%"><col style="width:22%">' +
+  '<col style="width:18%"><col style="width:18%"></colgroup>';
 
 function omRenderTable(rows) {
   if (!rows.length) {
     return `<div class="om-empty">組み合わせを選んでください</div>`;
   }
-  const headerRow = `<tr><th class="l">買い目</th><th>勝率</th><th>買いライン</th><th class="sep">現在</th><th class="sep">EV</th><th class="l sep">判定</th></tr>`;
+  const headerRow = `<tr><th class="l">買い目</th><th>買いライン</th><th class="sep">現在</th><th class="sep">EV</th></tr>`;
   const bodyRows = rows.map((r) => `
     <tr>
       <td class="l om-combo">${omFmtCombo(r.type, r.ids)}</td>
-      <td>${omFmtProb(r.p)}</td>
       <td>${omFmtBuyLine(r.buyLine)}</td>
       <td class="sep">${omFmtOdds(r.type, r.odds)}</td>
       <td class="sep">${omFmtEv(r.ev)}</td>
-      <td class="l sep om-judge">${omJudgeCell(r.ev, r.lowP)}</td>
     </tr>
   `).join('');
   return `
@@ -774,19 +783,17 @@ function omFmtComboWithMarks(type, ids, markByNumber) {
   return key.split('-').map((numStr) => {
     const num = Number(numStr);
     return `${markBadge(markByNumber[num])}${num}`;
-  }).join(sep + '<wbr>');
+  }).join(sep);
 }
 
 function omRenderRecommendRow(entry, markByNumber) {
   return `
     <tr>
       <td class="l">${escapeHtml(payoutTypeLabel(entry.type))}</td>
-      <td class="l om-combo">${omFmtComboWithMarks(entry.type, entry.ids, markByNumber)}</td>
-      <td>${omFmtProb(entry.p)}</td>
+      <td class="l om-combo">${omFmtCombo(entry.type, entry.ids)}</td>
       <td>${omFmtBuyLine(entry.buyLine)}</td>
       <td class="sep">${omFmtOdds(entry.type, entry.odds)}</td>
       <td class="sep">${omFmtEv(entry.ev)}</td>
-      <td class="l sep om-judge">${omJudgeCell(entry.ev, false)}</td>
     </tr>
   `;
 }
@@ -803,7 +810,7 @@ function omRenderBlockA(site, probs, heads, oddsAll) {
     return `${heading}<div class="om-empty">印馬がありません</div>`;
   }
 
-  const intro = `<div class="om-note">◎○▲△の全組み合わせ×全券種を試し、期待値が1.0倍を超えるものだけをEV順に表示</div>`;
+  const intro = `<div class="om-note">◎○▲△の全組み合わせ×全券種を試し、期待値が1.0倍を超えるものだけを券種順に表示（各券種内はEV順）</div>`;
   const entries = Harville.recommend(markedNums, probs, heads, oddsAll);
   if (entries.length === 0) {
     return `${heading}${intro}<div class="om-empty">現在のオッズでは、期待値が1.0倍を超える印馬の組み合わせはありません</div>`;
@@ -812,13 +819,18 @@ function omRenderBlockA(site, probs, heads, oddsAll) {
   const markByNumber = {};
   for (const h of site.horses) markByNumber[h.number] = h.ability_mark;
 
-  const shown = entries.slice(0, OM_RECOMMEND_LIMIT);
+  // 上位20点（EV順）を選んだうえで、表示は券種順（各券種内はEV降順）に並べ替える
+  const shown = entries.slice(0, OM_RECOMMEND_LIMIT).sort((a, b) => {
+    const ta = OM_TYPE_ORDER[a.type] ?? 99, tb = OM_TYPE_ORDER[b.type] ?? 99;
+    if (ta !== tb) return ta - tb;
+    return (b.ev ?? -Infinity) - (a.ev ?? -Infinity);
+  });
   const restCount = entries.length - shown.length;
-  const headerRow = `<tr><th class="l">券種</th><th class="l">買い目</th><th>勝率</th><th>買いライン</th><th class="sep">現在</th><th class="sep">EV</th><th class="l sep">判定</th></tr>`;
+  const headerRow = `<tr><th class="l">券種</th><th class="l">買い目</th><th>買いライン</th><th class="sep">現在</th><th class="sep">EV</th></tr>`;
   const bodyRows = shown.map((r) => omRenderRecommendRow(r, markByNumber)).join('');
   const moreLine = restCount > 0 ? `<div class="om-more">…他${restCount}点</div>` : '';
-  const colgroupA = '<colgroup><col style="width:10%"><col style="width:26%"><col style="width:11%">' +
-    '<col style="width:16%"><col style="width:12%"><col style="width:9%"><col style="width:16%"></colgroup>';
+  const colgroupA = '<colgroup><col style="width:15%"><col style="width:37%"><col style="width:18%">' +
+    '<col style="width:15%"><col style="width:15%"></colgroup>';
 
   return `
     ${heading}
@@ -1040,7 +1052,7 @@ function renderEv20(site) {
 
 // 買い目セルの組番整形・合計式は既存renderBetsSectionV11（:164-201）と同一ロジックをコピー（23-spec §3-9）
 function renderBets20(site) {
-  const bets = site.bets || [];
+  const bets = sortedBets(site);
   if (site.prediction.stance === 'pass' || !bets.length) {
     return `
       <div class="secthead">買い目</div>
@@ -1059,7 +1071,7 @@ function renderBets20(site) {
       : '';
     return `
       <tr>
-        <td class="l">${escapeHtml(b.type)}</td>
+        <td class="l">${escapeHtml(b.type.replace('三連', '3連'))}</td>
         <td>${b.combination.join('-')}</td>
         <td>${fmtYen(b.stake ?? b.tickets.length * 100)}</td>
         ${resultCell}
