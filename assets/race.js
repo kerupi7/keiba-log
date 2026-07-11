@@ -706,6 +706,9 @@ function omRenderModes(state) {
 function omRenderChips(site, probs, state) {
   const horses = [...site.horses].sort((a, b) => a.number - b.number);
   const isNagashi = state.mode === 'nagashi' && OM_NAGASHI_TYPES.has(state.betType);
+  // 列数＝ceil(頭数/2)。常に2段に収め、頭数が少ないほどボタンを大きくする（18頭→9列/2段）
+  const cols = Math.max(1, Math.ceil(horses.length / 2));
+  const gridStyle = `grid-template-columns:repeat(${cols},1fr)`;
 
   function chip(h, selected) {
     const disabled = h.scratched || !(h.number in probs);
@@ -720,12 +723,12 @@ function omRenderChips(site, probs, state) {
     const axisRow = horses.map((h) => chip(h, state.axis.includes(h.number))).join('');
     const partnerRow = horses.map((h) => chip(h, state.partners.includes(h.number))).join('');
     return `
-      <div class="om-chiprow"><span class="om-chiplabel">軸</span>${axisRow}</div>
-      <div class="om-chiprow"><span class="om-chiplabel">相手</span>${partnerRow}</div>
+      <div class="om-chiprow" style="${gridStyle}"><span class="om-chiplabel">軸</span>${axisRow}</div>
+      <div class="om-chiprow" style="${gridStyle}"><span class="om-chiplabel">相手</span>${partnerRow}</div>
     `;
   }
   const pickedRow = horses.map((h) => chip(h, state.picked.includes(h.number))).join('');
-  return `<div class="om-chiprow">${pickedRow}</div>`;
+  return `<div class="om-chiprow" style="${gridStyle}">${pickedRow}</div>`;
 }
 
 const OM_COLGROUP_B = '<colgroup><col style="width:42%"><col style="width:22%">' +
