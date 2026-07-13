@@ -19,10 +19,36 @@ function renderHero(stats) {
   `;
 }
 
-const TICKET_ORDER = ['単勝', '複勝', 'ワイド', '馬連', '馬単', '三連複', '三連単', '枠連'];
+const TICKET_ORDER = ['単勝', '複勝', 'ワイド', '馬連', '馬単', '3連複', '3連単', '枠連'];
 
-function renderByType(byType) {
-  const keys = Object.keys(byType || {});
+// 45-spec §1.6: manifestが古い（ローマ字/三連キー混在）ままでも表示側で券種ごと1行に正規化する防御層。
+// 正本の統合はPython側（keiba_sitestats.normalize_bet_type）だが、再生成前のstale manifestにも耐える。
+const TYPE_NORM = {
+  tansho: '単勝', fukusho: '複勝', wakuren: '枠連', wide: 'ワイド',
+  umaren: '馬連', umatan: '馬単', sanrenpuku: '3連複', sanrentan: '3連単',
+  '三連複': '3連複', '三連単': '3連単',
+};
+function normType(t) { return TYPE_NORM[t] || t; }
+
+function normalizeByType(byType) {
+  const merged = {};
+  for (const [type, v] of Object.entries(byType || {})) {
+    const key = normType(type);
+    if (!merged[key]) merged[key] = { cost: 0, return: 0, hits: 0, bets: 0 };
+    merged[key].cost += v.cost;
+    merged[key].return += v.return;
+    merged[key].hits += v.hits;
+    merged[key].bets += v.bets;
+  }
+  for (const v of Object.values(merged)) {
+    v.roi = v.cost ? (v.return - v.cost) / v.cost : 0;
+  }
+  return merged;
+}
+
+function renderByType(byTypeRaw) {
+  const byType = normalizeByType(byTypeRaw);
+  const keys = Object.keys(byType);
   const ordered = TICKET_ORDER.filter((k) => keys.includes(k)).concat(keys.filter((k) => !TICKET_ORDER.includes(k)));
   const rows = ordered.map((type) => {
     const v = byType[type];

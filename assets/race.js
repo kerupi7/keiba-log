@@ -88,9 +88,9 @@ function renderMarksBlock(site) {
   const nonOku = abilityHorses.filter((h) => h.ability_mark !== '△');
   const oku = abilityHorses.filter((h) => h.ability_mark === '△');
   const marksRows = nonOku
-    .map((h) => `<div class="marks-row">${markBadge(h.ability_mark)}${h.number} ${escapeHtml(h.name)}</div>`);
+    .map((h) => `<div class="marks-row">${markBadge(h.ability_mark)}${umaBox(h.number, h.gate, 'sm')} ${escapeHtml(h.name)}</div>`);
   if (oku.length) {
-    const okuLine = `${markBadge('△')}${oku.map((h) => h.number).join('・')}`;
+    const okuLine = `${markBadge('△')}${oku.map((h) => umaBox(h.number, h.gate, 'sm')).join('・')}`;
     marksRows.push(`<div class="marks-row">${okuLine}</div>`);
   }
   const marksHtml = marksRows.length ? `<div class="marks">${marksRows.join('')}</div>` : '';
@@ -103,17 +103,17 @@ function renderMarksBlock(site) {
     const ana = site.horses.filter((h) => h.role === '穴');
     let buyLine = '';
     if (axis.length || aite.length || ana.length) {
-      const axisTxt = axis.map((h) => h.number).join('・');
+      const axisTxt = axis.map((h) => umaBox(h.number, h.gate, 'sm')).join('・');
       const restParts = [
-        aite.length ? `相手${aite.map((h) => h.number).join('・')}` : '',
-        ana.length ? `穴${ana.map((h) => h.number).join('・')}` : '',
+        aite.length ? `相手${aite.map((h) => umaBox(h.number, h.gate, 'sm')).join('・')}` : '',
+        ana.length ? `穴${ana.map((h) => umaBox(h.number, h.gate, 'sm')).join('・')}` : '',
       ].filter(Boolean).join(' ／ ');
       buyLine = `<div class="buyline"><span class="lead">買い</span>軸${axisTxt}${restParts ? ' → ' + restParts : ''}</div>`;
     }
 
-    const landmines = site.horses.filter((h) => h.bet_mark === '地雷').map((h) => h.number);
-    const landmineLine = landmines.length
-      ? `<div class="buyline"><span class="lead">地雷</span><span class="mine">${landmines.join(', ')}</span></div>`
+    const landmineHorses = site.horses.filter((h) => h.bet_mark === '地雷');
+    const landmineLine = landmineHorses.length
+      ? `<div class="buyline"><span class="lead">地雷</span><span class="mine">${landmineHorses.map((h) => umaBox(h.number, h.gate, 'sm')).join(', ')}</span></div>`
       : '';
 
     // ひとことリスト（能力印馬＋役割馬＋地雷馬。原因H）
@@ -133,7 +133,7 @@ function renderMarksBlock(site) {
       const badge = h.ability_mark
         ? markBadge(h.ability_mark)
         : (h.role ? roleChip(h.role) : (h.bet_mark === '地雷' ? mineChip() : ''));
-      return `<div class="verdict-line">${badge}${h.number} ${escapeHtml(h.name)} — ${escapeHtml(h.verdict || '—')}</div>`;
+      return `<div class="verdict-line">${badge}${umaBox(h.number, h.gate, 'sm')} ${escapeHtml(h.name)} — ${escapeHtml(h.verdict || '—')}</div>`;
     }).join('');
     const verdictBlock = verdictLines ? `<div class="verdicts">${verdictLines}</div>` : '';
 
@@ -149,18 +149,18 @@ function renderMarksBlock(site) {
     const star = betHorses.find((h) => h.bet_mark === '★');
     if (star) {
       const rest = betHorses.filter((h) => h !== star)
-        .map((h) => `${escapeHtml(h.bet_mark)}${h.number}`)
+        .map((h) => `${escapeHtml(h.bet_mark)}${umaBox(h.number, h.gate, 'sm')}`)
         .join(' ／ ');
-      buyLine = `<div class="buyline"><span class="lead">買い</span><span class="star">★</span>${star.number} → ${rest}</div>`;
+      buyLine = `<div class="buyline"><span class="lead">買い</span><span class="star">★</span>${umaBox(star.number, star.gate, 'sm')} → ${rest}</div>`;
     } else {
-      const line = betHorses.map((h) => `${escapeHtml(h.bet_mark)}${h.number}`).join(' ');
+      const line = betHorses.map((h) => `${escapeHtml(h.bet_mark)}${umaBox(h.number, h.gate, 'sm')}`).join(' ');
       buyLine = `<div class="buyline"><span class="lead">買い</span>${line}</div>`;
     }
   }
 
-  const landmines = site.horses.filter((h) => h.bet_mark === '地雷').map((h) => h.number);
-  const landmineLine = landmines.length
-    ? `<div class="buyline"><span class="lead">地雷</span><span class="mine">${landmines.join(', ')}</span></div>`
+  const landmineHorses = site.horses.filter((h) => h.bet_mark === '地雷');
+  const landmineLine = landmineHorses.length
+    ? `<div class="buyline"><span class="lead">地雷</span><span class="mine">${landmineHorses.map((h) => umaBox(h.number, h.gate, 'sm')).join(', ')}</span></div>`
     : '';
 
   return `${marksHtml}${buyLine}${landmineLine}`;
@@ -172,6 +172,8 @@ function renderBetsSectionV11(site) {
   if (!bets.length) {
     return `<div class="eyebrow">買い目</div><div>見送り（買い目なし）</div>`;
   }
+  const byNumberV11 = {};
+  for (const h of site.horses) byNumberV11[h.number] = h;
   const totalPoints = bets.reduce((sum, b) => sum + b.tickets.length, 0);
   const totalCost = bets.reduce((sum, b) => sum + (b.stake ?? b.tickets.length * 100), 0);
   const showResult = site.status === 'final';
@@ -185,7 +187,7 @@ function renderBetsSectionV11(site) {
     return `
       <tr>
         <td class="l">${escapeHtml(b.type.replace('三連', '3連'))}</td>
-        <td>${b.combination.join('-')}</td>
+        <td>${comboBoxes(b.type, b.combination, byNumberV11)}</td>
         <td>${fmtYen(b.stake ?? b.tickets.length * 100)}</td>
         <td class="l wrap">${b.note ? escapeHtml(b.note) : '—'}</td>
         ${resultCell}
@@ -214,6 +216,8 @@ function renderBetsSection(site) {
   if (!bets.length) {
     return `<div class="eyebrow">買い目</div><div>見送り（買い目なし）</div>`;
   }
+  const byNumberBets = {};
+  for (const h of site.horses) byNumberBets[h.number] = h;
   const showResult = site.status === 'final';
   const header = showResult
     ? '<tr><th class="l">券種</th><th>買い目</th><th>ライン</th><th>結果</th><th>払戻</th></tr>'
@@ -225,7 +229,7 @@ function renderBetsSection(site) {
     return `
       <tr>
         <td class="l">${escapeHtml(b.type.replace('三連', '3連'))}</td>
-        <td>${b.combination.join('-')}</td>
+        <td>${comboBoxes(b.type, b.combination, byNumberBets)}</td>
         <td>${b.buy_line !== null ? b.buy_line.toFixed(1) + '倍〜' : '—'}</td>
         ${resultCell}
       </tr>
@@ -284,7 +288,7 @@ function renderVerificationSection(site) {
       }
     }
     const rowCls = idx === 0 ? ' class="top1"' : '';
-    return `<tr${rowCls}><td>${t.finish}</td><td class="l">${t.number} ${escapeHtml(t.name)}</td><td>${t.popularity}</td><td class="l sep markcell ${cls}">${markCell}</td></tr>`;
+    return `<tr${rowCls}><td>${t.finish}</td><td class="l">${umaBox(t.number, h && h.gate, 'sm')} ${escapeHtml(t.name)}</td><td>${t.popularity}</td><td class="l sep markcell ${cls}">${markCell}</td></tr>`;
   }).join('');
 
   const paceMatchIcon = verification.pace_match === true ? '✓' : verification.pace_match === false ? '✕' : '—';
@@ -296,7 +300,8 @@ function renderVerificationSection(site) {
   const landmineLine = landmineNumbers
     .map((n) => {
       const lr = verification.landmine_result[n];
-      return `${n}=${lr.finish}着 ${lr.ok ? '✓' : '✕'}`;
+      const h = byNumber[n];
+      return `${umaBox(Number(n), h && h.gate, 'sm')}=${lr.finish}着 ${lr.ok ? '✓' : '✕'}`;
     })
     .join(' ・ ');
 
@@ -309,10 +314,11 @@ function renderVerificationSection(site) {
   const payoutRows = Object.entries(result.payouts || {})
     .map(([type, val]) => {
       const list = Array.isArray(val) ? val : [val];
+      const label = payoutTypeLabel(type);
       const line = list
-        .map((p) => `${p.combination.join('-')} ${fmtYen(p.payout)}${p.popularity ? `（${p.popularity}人気）` : ''}`)
+        .map((p) => `${comboBoxes(label, p.combination, byNumber)} ${fmtYen(p.payout)}${p.popularity ? `（${p.popularity}人気）` : ''}`)
         .join(' / ');
-      return `<tr><td class="l">${escapeHtml(payoutTypeLabel(type))}</td><td class="l">${line}</td></tr>`;
+      return `<tr><td class="l">${escapeHtml(label)}</td><td class="l">${line}</td></tr>`;
     })
     .join('');
 
@@ -345,7 +351,7 @@ function renderAllHorsesTable(site) {
     .sort((a, b) => (a.rank ?? 999) - (b.rank ?? 999))
     .map((h) => {
       if (h.scratched) {
-        return `<tr class="scratched"><td>${h.rank ?? '—'}</td><td>${h.number}</td><td class="name">${escapeHtml(h.name)}</td><td colspan="4">取消</td></tr>`;
+        return `<tr class="scratched"><td>${h.rank ?? '—'}</td><td>${umaBox(h.number, h.gate)}</td><td class="name">${escapeHtml(h.name)}</td><td colspan="4">取消</td></tr>`;
       }
       const rowCls = h.ability_mark ? ' class="pred"' : '';
       const extraChips = v11
@@ -354,7 +360,7 @@ function renderAllHorsesTable(site) {
       return `
         <tr${rowCls}>
           <td>${h.rank ?? '—'}</td>
-          <td>${h.number}</td>
+          <td>${umaBox(h.number, h.gate)}</td>
           <td class="name ${markNameClass(h.ability_mark)}">${h.ability_mark || ''}${escapeHtml(h.name)}${extraChips}</td>
           <td>${fmtNum(h.total, 1)}</td>
           <td>${h.odds ?? '—'}</td>
@@ -414,7 +420,7 @@ function renderEvTable(site) {
     const evText = h.ev === null || h.ev === undefined ? '—' : fmtSignedPercent(h.ev, 0);
     return `
       <tr${h.ability_mark ? ' class="pred"' : ''}>
-        <td class="name ${markNameClass(h.ability_mark)}">${h.ability_mark || ''}${h.number} ${escapeHtml(h.name)}</td>
+        <td class="name ${markNameClass(h.ability_mark)}">${h.ability_mark || ''}${umaBox(h.number, h.gate, 'sm')} ${escapeHtml(h.name)}</td>
         <td>${fmtPercent(h.estimated_prob, 0)}</td>
         <td class="sep">${h.fair_odds !== null && h.fair_odds !== undefined ? h.fair_odds.toFixed(1) : '—'}</td>
         <td class="sep">${h.odds ?? '—'}</td>
@@ -509,7 +515,7 @@ function renderHorsesFold(site) {
     const blocksHtml = blocks.map((b) => {
       const h = byNumber[b.number];
       const heading = h
-        ? `${markBadge(h.ability_mark)}${b.number} ${escapeHtml(b.name)} <span class="meta">${escapeHtml(b.meta)}</span><span class="sc">${fmtNum(h.total, 1)} / ${h.popularity ?? '—'}人気</span>`
+        ? `${markBadge(h.ability_mark)}${umaBox(b.number, h.gate, 'sm')} ${escapeHtml(b.name)} <span class="meta">${escapeHtml(b.meta)}</span><span class="sc">${fmtNum(h.total, 1)} / ${h.popularity ?? '—'}人気</span>`
         : escapeHtml(b.name);
       const bodyHtml = `<div class="prose">${renderMarkdown(b.body)}</div>`;
       if (v11) {
@@ -564,51 +570,11 @@ const OM_TICKET_TYPES = [
 ];
 // 表A（印馬のおすすめ）の表示順に使う券種インデックス（OM_TICKET_TYPESの並び＝単勝→…→3連単）
 const OM_TYPE_ORDER = Object.fromEntries(OM_TICKET_TYPES.map((t, i) => [t.type, i]));
-const OM_NAGASHI_TYPES = new Set(['umaren', 'wide', 'umatan', 'sanrenpuku', 'sanrentan']);
-const OM_AXIS_MAX = { umaren: 1, wide: 1, umatan: 1, sanrenpuku: 2, sanrentan: 2 };
+// 45-spec §2: 手動シミュレーター(Block B)のstate/列挙/描画は assets/simulator.js（window.Simulator）に移設。
+// Block A（印馬のおすすめ・以下）はそのまま。OM_TICKET_TYPES/OM_TYPE_ORDERはBlock Aの表示順に使うため残す。
 
-function omEligibility(type, heads) {
-  if (type === 'fukusho' && heads <= 4) return { ok: false, reason: '5頭未満のため発売なし' };
-  if (type === 'wide' && heads < 8) return { ok: false, reason: '8頭未満のため発売なし' };
-  return { ok: true, reason: null };
-}
-
-function omInitialState() {
-  return { betType: 'tansho', mode: 'box', picked: [], axis: [], partners: [] };
-}
-
-function omToggleChip(state, number) {
-  if (state.mode === 'nagashi' && OM_NAGASHI_TYPES.has(state.betType)) {
-    const axisMax = OM_AXIS_MAX[state.betType] || 1;
-    if (state.axis.includes(number)) {
-      state.axis = state.axis.filter((n) => n !== number);
-      return;
-    }
-    if (state.partners.includes(number)) {
-      state.partners = state.partners.filter((n) => n !== number);
-      return;
-    }
-    if (state.axis.length < axisMax) {
-      state.axis.push(number);
-    } else {
-      state.partners.push(number);
-    }
-    return;
-  }
-  if (state.picked.includes(number)) {
-    state.picked = state.picked.filter((n) => n !== number);
-  } else {
-    state.picked.push(number);
-  }
-}
-
-// §4.5: 勝率はp>=1%なら小数1桁%・p<1%なら小数2桁%
-function omFmtProb(p) {
-  if (p === null || p === undefined) return '—';
-  const pct = p * 100;
-  return pct >= 1 ? `${pct.toFixed(1)}%` : `${pct.toFixed(2)}%`;
-}
-
+// omFmtBuyLine/Odds/Ev/Combo は Block A（印馬のおすすめ）で使用。omFmtProb/omJudgeCell/
+// omFmtComboWithMarks は Block B 撤去に伴い未使用となったため削除（45-spec レビュー指摘③）。
 function omFmtBuyLine(buyLine) {
   return buyLine === null || buyLine === undefined ? '—' : `${buyLine.toFixed(1)}倍`;
 }
@@ -634,136 +600,6 @@ function omFmtCombo(type, ids) {
   return Harville.normKey(type, ids).split('-').join(sep);
 }
 
-// 判定セル: ev>1.0→買い(緑) / それ以外→見送り(灰)。p<P_MINの行は追加で「低確率」チップ（§4.5・§4.6）
-function omJudgeCell(ev, lowP) {
-  const parts = [];
-  if (ev === null || ev === undefined) {
-    parts.push('—');
-  } else if (ev > 1.0) {
-    parts.push('<span class="chip buy">買い</span>');
-  } else {
-    parts.push('<span class="chip pass">見送り</span>');
-  }
-  if (lowP) parts.push('<span class="chip lowp">低確率</span>');
-  return parts.join(' ');
-}
-
-// §4.7 決定性: EV降順 → 確率降順 → normKey昇順（文字列比較）。EV無しの行はEVあり行より後ろ
-function omSortRows(rows) {
-  rows.sort((a, b) => {
-    const hasA = a.ev !== null && a.ev !== undefined;
-    const hasB = b.ev !== null && b.ev !== undefined;
-    if (hasA && hasB && a.ev !== b.ev) return b.ev - a.ev;
-    if (hasA !== hasB) return hasA ? -1 : 1;
-    if (a.p !== b.p) return b.p - a.p;
-    return a.key < b.key ? -1 : a.key > b.key ? 1 : 0;
-  });
-}
-
-function omComputeRows(type, mode, state, probs, heads, oddsAll) {
-  const sel = { picked: state.picked, axis: state.axis, partners: state.partners };
-  const entries = Harville.enumerate(type, mode, sel, probs, heads);
-  // F4: その券種の status が "result" でなければ（発売前・取得失敗=ng）オッズ列は「—」。
-  // タブ自体は有効のまま（買いラインは表示）。status依存の判断はここに集約する。
-  const oddsForType = (oddsAll && oddsAll.status && oddsAll.status[type] === 'result') ? oddsAll : null;
-  const rows = [];
-  for (const { ids, p } of entries) {
-    if (p === null || p === undefined) continue; // p計算不能なら行自体を出さない（§6.4）
-    const odds = oddsForType ? Harville.oddsUsed(oddsForType, type, ids) : null;
-    const evVal = Harville.ev(p, odds);
-    const buyLine = Harville.buyLine(p);
-    const lowP = p < (Harville.P_MIN[type] ?? 0);
-    rows.push({ type, ids, p, odds, ev: evVal, buyLine, lowP, key: Harville.normKey(type, ids) });
-  }
-  omSortRows(rows);
-  return rows;
-}
-
-function omRenderTabs(state, heads) {
-  return OM_TICKET_TYPES.map(({ type, label }) => {
-    const elig = omEligibility(type, heads);
-    const cls = ['om-tab'];
-    if (state.betType === type) cls.push('active');
-    const attrs = [`data-type="${type}"`];
-    if (!elig.ok) {
-      cls.push('disabled');
-      attrs.push('disabled', `title="${escapeHtml(elig.reason)}"`);
-    }
-    return `<button type="button" class="${cls.join(' ')}" ${attrs.join(' ')}>${label}</button>`;
-  }).join('');
-}
-
-function omRenderModes(state) {
-  if (!OM_NAGASHI_TYPES.has(state.betType)) return '';
-  return `
-    <div class="om-modes">
-      <button type="button" class="om-mode ${state.mode === 'box' ? 'active' : ''}" data-mode="box">ボックス</button>
-      <button type="button" class="om-mode ${state.mode === 'nagashi' ? 'active' : ''}" data-mode="nagashi">流し</button>
-    </div>
-  `;
-}
-
-function omRenderChips(site, probs, state) {
-  const horses = [...site.horses].sort((a, b) => a.number - b.number);
-  const isNagashi = state.mode === 'nagashi' && OM_NAGASHI_TYPES.has(state.betType);
-  // 列数＝ceil(頭数/2)。常に2段に収め、頭数が少ないほどボタンを大きくする（18頭→9列/2段）
-  const cols = Math.max(1, Math.ceil(horses.length / 2));
-  const gridStyle = `grid-template-columns:repeat(${cols},1fr)`;
-
-  function chip(h, selected) {
-    const disabled = h.scratched || !(h.number in probs);
-    const cls = ['om-chip'];
-    if (selected) cls.push('sel');
-    if (h.scratched) cls.push('scratched');
-    const title = h.scratched ? '取消' : (disabled ? '勝率なし' : h.name);
-    return `<button type="button" class="${cls.join(' ')}" data-number="${h.number}" ${disabled ? 'disabled' : ''} title="${escapeHtml(title)}">${h.number}</button>`;
-  }
-
-  if (isNagashi) {
-    const axisRow = horses.map((h) => chip(h, state.axis.includes(h.number))).join('');
-    const partnerRow = horses.map((h) => chip(h, state.partners.includes(h.number))).join('');
-    return `
-      <div class="om-chiprow" style="${gridStyle}"><span class="om-chiplabel">軸</span>${axisRow}</div>
-      <div class="om-chiprow" style="${gridStyle}"><span class="om-chiplabel">相手</span>${partnerRow}</div>
-    `;
-  }
-  const pickedRow = horses.map((h) => chip(h, state.picked.includes(h.number))).join('');
-  return `<div class="om-chiprow" style="${gridStyle}">${pickedRow}</div>`;
-}
-
-const OM_COLGROUP_B = '<colgroup><col style="width:42%"><col style="width:22%">' +
-  '<col style="width:18%"><col style="width:18%"></colgroup>';
-
-function omRenderTable(rows) {
-  if (!rows.length) {
-    return `<div class="om-empty">組み合わせを選んでください</div>`;
-  }
-  const headerRow = `<tr><th class="l">買い目</th><th>買いライン</th><th class="sep">現在</th><th class="sep">EV</th></tr>`;
-  const bodyRows = rows.map((r) => `
-    <tr>
-      <td class="l om-combo">${omFmtCombo(r.type, r.ids)}</td>
-      <td>${omFmtBuyLine(r.buyLine)}</td>
-      <td class="sep">${omFmtOdds(r.type, r.odds)}</td>
-      <td class="sep">${omFmtEv(r.ev)}</td>
-    </tr>
-  `).join('');
-  return `
-    <div class="om-count">${rows.length}点</div>
-    <table class="fixed om-table">${OM_COLGROUP_B}<thead>${headerRow}</thead><tbody>${bodyRows}</tbody></table>
-  `;
-}
-
-function omRenderBlockB(site, probs, heads, oddsAll, state) {
-  const rows = omComputeRows(state.betType, state.mode, state, probs, heads, oddsAll);
-  return `
-    <div class="om-subhead">B. 手動シミュレーター</div>
-    <div class="om-tabs">${omRenderTabs(state, heads)}</div>
-    ${omRenderModes(state)}
-    ${omRenderChips(site, probs, state)}
-    ${omRenderTable(rows)}
-  `;
-}
-
 // ===== §6.2 A. 印馬のおすすめ（自動・T5） =====
 // ability_mark ∈ {◎,○,▲,△} かつ非取消かつ estimated_prob 有効な馬のみを候補にする（§6.5）。
 // アルゴリズムは Harville.recommend()（T1・軸固定しない完全総当たり）に一任し、ここでは計算しない。
@@ -775,17 +611,6 @@ function omMarkedNumbers(site, probs) {
   return site.horses
     .filter((h) => OM_CANDIDATE_MARKS.has(h.ability_mark) && !h.scratched && (h.number in probs))
     .map((h) => h.number);
-}
-
-// 買い目表示に印を添える（例 ◎5→○2。.mkb バッジ再利用。§6.5）。
-// 区切りの直後に <wbr> を入れ、狭い列でも馬ごとに折り返せるようにする。
-function omFmtComboWithMarks(type, ids, markByNumber) {
-  const sep = (type === 'umatan' || type === 'sanrentan') ? '→' : '-';
-  const key = Harville.normKey(type, ids);
-  return key.split('-').map((numStr) => {
-    const num = Number(numStr);
-    return `${markBadge(markByNumber[num])}${num}`;
-  }).join(sep);
 }
 
 function omRenderRecommendRow(entry, markByNumber) {
@@ -866,6 +691,8 @@ function renderOddsMasterSection(site, oddsAll) {
   `;
 }
 
+// 45-spec §2.12: 手動シミュレーター(Block B)の描画・stateは Simulator（assets/simulator.js）に一任。
+// ここではDOM書き込みとイベント委譲のみ（クリック/change委譲は #om-panel-body に集約）。
 function setupOddsMasterPanel(site, oddsAll) {
   const body = document.getElementById('om-panel-body');
   if (!body) return; // F1でセクション自体が無い場合はDOMも存在しない
@@ -873,34 +700,17 @@ function setupOddsMasterPanel(site, oddsAll) {
   const built = Harville.buildProbs(site.horses);
   const probs = built.probs;
   const heads = built.heads;
-  let state = omInitialState();
+  const state = Simulator.initialState();
 
   function rerender() {
-    body.innerHTML = omRenderBlockB(site, probs, heads, oddsAll, state);
+    body.innerHTML = Simulator.renderBlockB(site, probs, heads, oddsAll, state);
   }
 
   body.addEventListener('click', (ev) => {
-    const tab = ev.target.closest('.om-tab');
-    if (tab && !tab.disabled) {
-      state = omInitialState();
-      state.betType = tab.dataset.type;
-      rerender();
-      return;
-    }
-    const modeBtn = ev.target.closest('.om-mode');
-    if (modeBtn && !modeBtn.disabled) {
-      state.mode = modeBtn.dataset.mode;
-      state.picked = [];
-      state.axis = [];
-      state.partners = [];
-      rerender();
-      return;
-    }
-    const chipEl = ev.target.closest('.om-chip');
-    if (chipEl && !chipEl.disabled) {
-      omToggleChip(state, Number(chipEl.dataset.number));
-      rerender();
-    }
+    if (Simulator.handleClick(state, ev.target)) rerender();
+  });
+  body.addEventListener('change', (ev) => {
+    if (Simulator.handleChange(state, ev.target)) rerender();
   });
 
   rerender();
@@ -908,14 +718,8 @@ function setupOddsMasterPanel(site, oddsAll) {
 
 // ===== 完全Python化2.0（schema_version: keiba-log-2.0）描画パス =====
 // T9〜T12。既存関数は一切呼ばない・変更しない（23-fullpython-fe-spec.md）。
-
-function gradeClass(grade) {
-  return { 'A+': 'g-ap', 'A': 'g-a', 'B+': 'g-bp', 'B': 'g-b', 'C+': 'g-cp', 'C': 'g-c', 'D': 'g-d', 'E': 'g-e' }[grade] ?? '';
-}
-
-function gradeDisp(grade) {
-  return grade ? grade.replace('+', '＋') : '';
-}
+// gradeClass/gradeDispは app.js（共通層）に移設（45-spec §2.8: 手動シミュレーターの評価バッジが
+// 既存の評価体系に合わせて参照するため。呼び出しは従来どおりグローバル解決される）。
 
 function ratioClass(ratio) {
   if (ratio >= 1.15) return 'b1';
@@ -952,14 +756,14 @@ function renderMarks20(site) {
   const rows = [];
   for (const mark of ['◎', '○', '▲', '△']) {
     horses.filter((h) => h.ability_mark === mark).sort((a, b) => a.number - b.number)
-      .forEach((h) => rows.push({ cls: markCls[mark], label: mark, number: h.number, name: h.name }));
+      .forEach((h) => rows.push({ cls: markCls[mark], label: mark, number: h.number, gate: h.gate, name: h.name }));
   }
   horses.filter((h) => h.role === '穴').sort((a, b) => a.number - b.number)
-    .forEach((h) => rows.push({ cls: 'm-ana', label: '穴', number: h.number, name: h.name }));
+    .forEach((h) => rows.push({ cls: 'm-ana', label: '穴', number: h.number, gate: h.gate, name: h.name }));
   horses.filter((h) => h.bet_mark === '地雷').sort((a, b) => a.number - b.number)
-    .forEach((h) => rows.push({ cls: 'm-jir', label: '地雷', number: h.number, name: h.name }));
+    .forEach((h) => rows.push({ cls: 'm-jir', label: '地雷', number: h.number, gate: h.gate, name: h.name }));
   if (!rows.length) return '';
-  const rowsHtml = rows.map((r) => `<div class="mrow"><span class="mkb ${r.cls}">${escapeHtml(r.label)}</span><span class="no">${r.number}</span><span class="nm">${escapeHtml(r.name)}</span></div>`).join('');
+  const rowsHtml = rows.map((r) => `<div class="mrow"><span class="mkb ${r.cls}">${escapeHtml(r.label)}</span>${umaBox(r.number, r.gate)}<span class="nm">${escapeHtml(r.name)}</span></div>`).join('');
   return `
     <div class="secthead">印</div>
     <div class="marks">${rowsHtml}</div>
@@ -976,7 +780,7 @@ function renderAllHorses20(site) {
   });
   const rows = horses.map((h) => {
     if (h.scratched) {
-      return `<tr class="scratched"><td>—</td><td class="mkc"></td><td>${h.number}</td><td class="name">${escapeHtml(h.name)}（取消）</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>`;
+      return `<tr class="scratched"><td>—</td><td class="mkc"></td><td>${umaBox(h.number, h.gate)}</td><td class="name">${escapeHtml(h.name)}（取消）</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>`;
     }
     const markLabel = h.ability_mark ?? (h.bet_mark === '地雷' ? '地雷' : '');
     const markCellClass = h.ability_mark ? (markCellCls[h.ability_mark] || '') : '';
@@ -985,7 +789,7 @@ function renderAllHorses20(site) {
       <tr${h.ability_mark ? ' class="pred"' : ''}>
         <td>${h.rank}</td>
         <td class="mkc ${markCellClass}">${escapeHtml(markLabel)}</td>
-        <td>${h.number}</td>
+        <td>${umaBox(h.number, h.gate)}</td>
         <td class="name">${escapeHtml(h.name)}</td>
         <td>${fmtNum(h.total, 1)}</td>
         <td>${h.odds !== null && h.odds !== undefined ? h.odds.toFixed(1) : '—'}</td>
@@ -1029,7 +833,7 @@ function renderEv20(site) {
     const evText = h.ev === null || h.ev === undefined ? '—' : fmtSignedPercent(h.ev, 0);
     return `
       <tr${h.ability_mark ? ' class="pred"' : ''}>
-        <td class="name ${markNameClass(h.ability_mark)}">${h.ability_mark || ''}${h.number} ${escapeHtml(h.name)}</td>
+        <td class="name ${markNameClass(h.ability_mark)}">${h.ability_mark || ''}${umaBox(h.number, h.gate, 'sm')} ${escapeHtml(h.name)}</td>
         <td>${fmtPercent(h.estimated_prob, 0)}</td>
         <td class="sep">${h.fair_odds !== null && h.fair_odds !== undefined ? h.fair_odds.toFixed(1) : '—'}</td>
         <td class="sep">${h.odds ?? '—'}</td>
@@ -1061,6 +865,8 @@ function renderBets20(site) {
       <div class="conf">本レースは見送り（買い目なし）</div>
     `;
   }
+  const byNumberBets20 = {};
+  for (const h of site.horses) byNumberBets20[h.number] = h;
   const totalPoints = bets.reduce((sum, b) => sum + b.tickets.length, 0);
   const totalCost = bets.reduce((sum, b) => sum + (b.stake ?? b.tickets.length * 100), 0);
   const showResult = site.status === 'final';
@@ -1074,7 +880,7 @@ function renderBets20(site) {
     return `
       <tr>
         <td class="l">${escapeHtml(b.type.replace('三連', '3連'))}</td>
-        <td>${b.combination.join('-')}</td>
+        <td>${comboBoxes(b.type, b.combination, byNumberBets20)}</td>
         <td>${fmtYen(b.stake ?? b.tickets.length * 100)}</td>
         ${resultCell}
       </tr>
@@ -1123,6 +929,8 @@ function renderOverview20(site) {
   const r = site.race;
   const p = site.prediction;
   const sections = [];
+  const byNumberOv = {};
+  for (const h of site.horses) byNumberOv[h.number] = h;
 
   // (a) 基本情報
   const babaLine = p.baba_detail?.going_weather ?? r.going ?? '—';
@@ -1138,7 +946,7 @@ function renderOverview20(site) {
   // (b) 馬場踏み込み
   if (p.baba_detail) {
     const favs = p.baba_detail.favorites || [];
-    const favHtml = favs.map((f) => `<span class="fav"><span class="nm">${f.number} ${escapeHtml(f.name)}</span> <span class="rs">（${escapeHtml(f.reason)}）</span></span>`).join('');
+    const favHtml = favs.map((f) => `<span class="fav"><span class="nm">${umaBox(Number(f.number), (byNumberOv[f.number] || {}).gate, 'sm')} ${escapeHtml(f.name)}</span> <span class="rs">（${escapeHtml(f.reason)}）</span></span>`).join('');
     const l2Html = favs.length ? `<div class="l2"><span class="h">この馬場が得意:</span>${favHtml}</div>` : '';
     sections.push(`
       <div class="babadetail">
@@ -1180,7 +988,7 @@ function renderOverview20(site) {
     const runners = p.front_runners || [];
     let tableHtml = '';
     if (runners.length) {
-      const rows = runners.map((fr) => `<tr><td>${fr.number}</td><td class="l">${escapeHtml(fr.name)}</td><td class="l">${escapeHtml(fr.type)}</td><td>${fr.front_rate.toFixed(2)}</td></tr>`).join('');
+      const rows = runners.map((fr) => `<tr><td>${umaBox(Number(fr.number), (byNumberOv[fr.number] || {}).gate)}</td><td class="l">${escapeHtml(fr.name)}</td><td class="l">${escapeHtml(fr.type)}</td><td>${fr.front_rate.toFixed(2)}</td></tr>`).join('');
       tableHtml = `
         <table class="kg">
           <thead><tr><th>番</th><th class="l">馬名</th><th class="l">分類</th><th>先行率</th></tr></thead>
@@ -1211,7 +1019,7 @@ function renderOverview20(site) {
       if (!s) return '';
       const favs = s.favorites || [];
       const favText = favs.length
-        ? favs.map((f) => `<span class="nm">${f.number} ${escapeHtml(f.name)}</span>`).join('・')
+        ? favs.map((f) => `<span class="nm">${umaBox(Number(f.number), (byNumberOv[f.number] || {}).gate, 'sm')} ${escapeHtml(f.name)}</span>`).join('・')
         : '該当薄';
       return `
         <div class="scn${cls}">
@@ -1238,7 +1046,7 @@ function renderHorsesAccordion20(site) {
   });
   const itemsHtml = horses.map((h) => {
     if (h.scratched) {
-      return `<div class="acchead"><span class="no">${h.number}</span> ${escapeHtml(h.name)}<span class="sc">取消</span></div>`;
+      return `<div class="acchead">${umaBox(h.number, h.gate)} ${escapeHtml(h.name)}<span class="sc">取消</span></div>`;
     }
     const factorsRows = (h.factors || []).map((f) => {
       const items = f.items || [];
@@ -1251,7 +1059,7 @@ function renderHorsesAccordion20(site) {
     }).join('');
     return `
       <div class="acchead" data-acc="${h.number}">
-        <span class="no">${h.number}</span> ${escapeHtml(h.name)}
+        ${umaBox(h.number, h.gate)} ${escapeHtml(h.name)}
         <span class="gr grade ${gradeClass(h.grade)}">${gradeDisp(h.grade)}</span>
         <span class="sc">${fmtNum(h.total, 1)}</span><span class="tri">▸</span>
       </div>
@@ -1309,7 +1117,7 @@ function renderVerification20(site) {
   const topRows = result.top3.map((t) => {
     const h = byNumber[t.number];
     const markCell = h ? (h.ability_mark ?? (h.bet_mark === '地雷' ? '地雷' : '—')) : '—';
-    return `<tr><td>${t.finish}</td><td class="name">${t.number} ${escapeHtml(t.name)}</td><td>${t.popularity}</td><td>${t.odds}</td><td class="l">${escapeHtml(markCell)}</td></tr>`;
+    return `<tr><td>${t.finish}</td><td class="name">${umaBox(t.number, h && h.gate, 'sm')} ${escapeHtml(t.name)}</td><td>${t.popularity}</td><td>${t.odds}</td><td class="l">${escapeHtml(markCell)}</td></tr>`;
   }).join('');
 
   const paceMatch = verification.pace_match;
@@ -1330,7 +1138,8 @@ function renderVerification20(site) {
   });
   const markgridHtml = markFinishEntries.map((e) => {
     const hitCls = e.finish <= 3 ? ' hit' : '';
-    return `<div class="mg${hitCls}"><span class="mkb ${markClsMap[e.mark] || ''}">${escapeHtml(e.mark)}</span><span class="mno">${e.number}</span><span class="pos">${e.finish}着</span></div>`;
+    const eh = byNumber[e.number];
+    return `<div class="mg${hitCls}"><span class="mkb ${markClsMap[e.mark] || ''}">${escapeHtml(e.mark)}</span>${umaBox(Number(e.number), eh && eh.gate, 'sm')}<span class="pos">${e.finish}着</span></div>`;
   }).join('');
   const markSection = markFinishEntries.length
     ? `<div class="vsub">印別の着順（緑=馬券圏内）</div><div class="markgrid">${markgridHtml}</div>`
@@ -1340,11 +1149,12 @@ function renderVerification20(site) {
   const jgridHtml = landmineEntries.map(([number, lr]) => {
     const h = byNumber[number];
     const name = h ? escapeHtml(h.name) : '—';
+    const box = umaBox(Number(number), h && h.gate, 'sm');
     const cls = lr.ok ? 'ok' : 'ng';
     const icon = lr.ok ? '✓' : '✕';
     const text = lr.ok
-      ? `${icon} ${number} ${name} ${lr.finish}着 — 圏外に沈め成功`
-      : `${icon} ${number} ${name} ${lr.finish}着 — 3着内に好走、判定ミス`;
+      ? `${icon} ${box} ${name} ${lr.finish}着 — 圏外に沈め成功`
+      : `${icon} ${box} ${name} ${lr.finish}着 — 3着内に好走、判定ミス`;
     return `<span class="jchip ${cls}">${text}</span>`;
   }).join('');
   const landmineSection = landmineEntries.length
@@ -1354,10 +1164,11 @@ function renderVerification20(site) {
   const payoutRows = Object.entries(result.payouts || {})
     .map(([type, val]) => {
       const list = Array.isArray(val) ? val : [val];
+      const label = payoutTypeLabel(type);
       const line = list
-        .map((pv) => `${pv.combination.join('-')} ${fmtYen(pv.payout)}${pv.popularity ? `（${pv.popularity}人気）` : ''}`)
+        .map((pv) => `${comboBoxes(label, pv.combination, byNumber)} ${fmtYen(pv.payout)}${pv.popularity ? `（${pv.popularity}人気）` : ''}`)
         .join(' / ');
-      return `<tr><td class="l">${escapeHtml(payoutTypeLabel(type))}</td><td class="l">${line}</td></tr>`;
+      return `<tr><td class="l">${escapeHtml(label)}</td><td class="l">${line}</td></tr>`;
     })
     .join('');
 

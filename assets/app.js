@@ -116,3 +116,39 @@ function escapeHtml(s) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
 }
+
+// 評価バッジ（総合点→ランク）。元は race.js 内定義（23-fullpython-fe-spec.md T9〜T12）。
+// 45-spec §2.8: 手動シミュレーターの馬行がこの表示に合わせるため共通層に移設。
+function gradeClass(grade) {
+  return { 'A+': 'g-ap', 'A': 'g-a', 'B+': 'g-bp', 'B': 'g-b', 'C+': 'g-cp', 'C': 'g-c', 'D': 'g-d', 'E': 'g-e' }[grade] ?? '';
+}
+function gradeDisp(grade) {
+  return grade ? grade.replace('+', '＋') : '';
+}
+
+// 45-spec §3.2: 馬番の枠色ボックス（JRA標準色）。gate(1..8)→wk1..wk8。範囲外はプレーン数字にフォールバック
+function frameClass(gate) {
+  return (gate >= 1 && gate <= 8) ? `wk${gate}` : '';
+}
+function umaBox(number, gate, size) {
+  const cls = frameClass(gate);
+  const sizeCls = size ? ` ${size}` : '';
+  if (!cls) return `<span class="hn plain${sizeCls}">${number}</span>`;
+  return `<span class="hn ${cls}${sizeCls}">${number}</span>`;
+}
+function wakuBox(frameNo, size) {
+  return umaBox(frameNo, frameNo, size);
+}
+
+// 45-spec §3.4: 買い目・払戻の組番を枠色ボックス連結にする。順序券種（馬単/3連単）は→、他は-。
+// typeLabel には日本語ラベル（漢字/数字ゆれ両対応）またはローマ字を渡してよい。
+// byNumber は 馬番→horse の辞書（gate参照用）。枠連は combination が枠番そのものなので wakuBox。
+function comboBoxes(typeLabel, numbers, byNumber) {
+  const t = String(typeLabel);
+  const ordered = /馬単|[3三]連単|umatan|sanrentan/.test(t);
+  const isWaku = /枠連|wakuren/.test(t);
+  const sep = `<span class="cbsep">${ordered ? '→' : '-'}</span>`;
+  return numbers.map((n) =>
+    isWaku ? wakuBox(n, 'sm') : umaBox(n, (byNumber[n] || {}).gate, 'sm')
+  ).join(sep);
+}

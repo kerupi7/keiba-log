@@ -155,7 +155,8 @@ function renderRaceRow(race) {
       pickHtml = `<div class="rpick">${pillHtml('pass', '見送り')}</div>`;
     } else {
       const pick = race.pick || {};
-      pickHtml = `<div class="rpick">${pillHtml('pre', '発走前')}<span class="pk">◎${pick.honmei_number ?? '—'} ${escapeHtml(pick.honmei_name ?? '')}</span></div>`;
+      const honmeiBox = pick.honmei_number != null ? umaBox(pick.honmei_number, pick.honmei_gate, 'sm') : '—';
+      pickHtml = `<div class="rpick">${pillHtml('pre', '発走前')}<span class="pk">◎${honmeiBox} ${escapeHtml(pick.honmei_name ?? '')}</span></div>`;
     }
   } else if (race.status === 'final') {
     if (race.stance === 'pass') {
@@ -165,9 +166,10 @@ function renderRaceRow(race) {
       const outcome = race.outcome || {};
       const hit = outcome.bets_hit;
       const net = (outcome.bets_return ?? 0) - (outcome.bets_cost ?? 0);
-      pickHtml = `<div class="rpick">${hit ? pillHtml('hit', '的中') : pillHtml('miss', '不的中')}<span class="pk">◎${pick.honmei_number ?? '—'} ${escapeHtml(pick.honmei_name ?? '')}</span><span class="amt ${hit ? 'hit' : 'miss'}">${fmtNet(net)}</span></div>`;
+      const honmeiBox = pick.honmei_number != null ? umaBox(pick.honmei_number, pick.honmei_gate, 'sm') : '—';
+      pickHtml = `<div class="rpick">${hit ? pillHtml('hit', '的中') : pillHtml('miss', '不的中')}<span class="pk">◎${honmeiBox} ${escapeHtml(pick.honmei_name ?? '')}</span><span class="amt ${hit ? 'hit' : 'miss'}">${fmtNet(net)}</span></div>`;
       if (!hit && outcome.winner_number) {
-        pickHtml += `<div class="rmeta">勝ち馬: ${outcome.winner_number}番（${outcome.winner_popularity}人気）</div>`;
+        pickHtml += `<div class="rmeta">勝ち馬: ${umaBox(outcome.winner_number, outcome.winner_gate, 'sm')}（${outcome.winner_popularity}人気）</div>`;
       }
     }
   } else if (race.status === 'cancelled') {

@@ -50,6 +50,7 @@
   --ev-max-bg:#E7F3EA;   /* 期待値最大セルの背景 */
   --cal-bar:#9db8cf;     /* 校正バー */
   --win5:#1f6feb;        /* WIN5マーク（当面未使用） */
+  --green-row:#E3F4E8;   /* 45-spec: EV>1の買える馬・買い目の行背景 */
 
   --font:-apple-system,"system-ui","Segoe UI",Roboto,Oxygen,Ubuntu,"Helvetica Neue",Arial,sans-serif;
   --max-width:720px;
@@ -139,6 +140,22 @@ td.n-tan{color:var(--mk-tan);font-weight:700} td.n-oku{color:var(--mk-oku);font-
 
 .star{color:var(--orange);font-weight:700}
 .mine{color:var(--live);font-weight:700}
+
+/* ===== 2.6c 45-spec §3.2: 馬番の枠色ボックス（JRA標準色）。修正B(手動シミュレーター)と共有 ===== */
+.hn{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;
+  border-radius:4px;font-weight:700;font-size:12.5px;vertical-align:middle;
+  font-variant-numeric:tabular-nums;flex:none}
+.hn.sm{width:18px;height:18px;font-size:11px;border-radius:3px}
+.hn.plain{background:none;color:var(--text)}
+.hn.wk1{background:#fff;color:#000;border:1.5px solid #333}
+.hn.wk2{background:#000;color:#fff}
+.hn.wk3{background:#e60012;color:#fff}
+.hn.wk4{background:#0068c8;color:#fff}
+.hn.wk5{background:#ffd900;color:#000}
+.hn.wk6{background:#009944;color:#fff}
+.hn.wk7{background:#f39800;color:#fff}
+.hn.wk8{background:#e85298;color:#fff}
+.cbsep{color:var(--cap);font-weight:700;margin:0 2px}
 
 /* ===== 2.6b mark-2.0: 役割チップ・地雷チップ・市場評価チップ ===== */
 .chip-role{display:inline-block;font-size:10px;font-weight:700;color:#fff;
@@ -326,29 +343,86 @@ details.subfold>summary .sc{margin-left:auto;color:var(--navy);
 .chip.pass{background:var(--chip-over-bg);color:var(--chip-over-fg)}
 .chip.lowp{background:var(--chip-acc-bg);color:var(--chip-acc-fg);margin-left:4px}
 
-.om-tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
-.om-tab{font-size:13px;font-weight:700;padding:6px 10px;border-radius:16px;
-  border:1px solid #C9C9C4;background:#fff;color:var(--sub);cursor:pointer;text-align:center}
-.om-tab.active{background:var(--navy);color:#fff;border-color:var(--navy)}
-.om-tab:disabled{opacity:.4;cursor:not-allowed}
-
-.om-modes{display:flex;gap:6px;margin-top:8px}
-.om-mode{font-size:12px;font-weight:700;padding:4px 10px;border-radius:14px;
-  border:1px solid #C9C9C4;background:#fff;color:var(--sub);cursor:pointer}
-.om-mode.active{background:var(--sub-bg2);color:var(--text);border-color:#B5B5AE}
-
-/* 番号ボタンはグリッド（列数はJSが頭数から算出＝常に2段）。タップしやすいよう大きめ */
-.om-chiprow{display:grid;gap:6px;margin-top:8px}
-.om-chiplabel{grid-column:1/-1;font-size:12px;color:var(--cap);margin-bottom:-2px}
-.om-chip{font-size:16px;font-weight:700;min-width:0;padding:11px 2px;
-  border-radius:6px;border:1px solid #C9C9C4;background:#fff;color:var(--text);
-  cursor:pointer;font-variant-numeric:tabular-nums}
-.om-chip.sel{background:var(--navy);color:#fff;border-color:var(--navy)}
-.om-chip.scratched{text-decoration:line-through}
-.om-chip:disabled{opacity:.35;cursor:not-allowed}
-
-.om-count{font-size:12px;color:var(--cap);margin-top:10px}
 .om-empty{font-size:13px;color:var(--cap);padding:14px 0}
+
+/* ===== 8b. 手動シミュレーター IPAT型UI（45-spec §2。Block B専用。Aは上のom-table/om-comboを共用） ===== */
+.sim-types{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}
+.sim-type{font-size:12.5px;font-weight:700;padding:8px 2px;border-radius:7px;
+  border:1px solid #C9C9C4;background:#fff;color:var(--text);cursor:pointer;text-align:center}
+.sim-type.wide2{grid-column:span 2}
+.sim-type.active{background:var(--cta);color:#fff;border-color:var(--cta)}
+.sim-type:disabled{opacity:.4;cursor:not-allowed}
+
+.sim-methods{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.sim-method{flex:1;min-width:88px;font-size:12.5px;font-weight:700;padding:8px 4px;
+  border-radius:7px;border:1px solid #C9C9C4;background:#fff;color:var(--text);cursor:pointer}
+.sim-method.active{background:var(--cta);color:#fff;border-color:var(--cta)}
+.sim-method.sub{flex:none;min-width:72px}
+
+.sim-axispos{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px}
+.sim-axispos button{font-size:12px;font-weight:700;padding:6px 9px;border-radius:6px;
+  border:1px solid #C9C9C4;background:#fff;color:var(--text);cursor:pointer}
+.sim-axispos button.active{background:var(--cta);color:#fff;border-color:var(--cta)}
+.sim-multi{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;margin:8px 2px 0}
+.sim-multi input{width:16px;height:16px}
+
+.sim-band{color:#fff;font-weight:700;font-size:14px;padding:7px 10px;border-radius:6px 6px 0 0;margin-top:10px}
+.sim-band.tansho{background:#4657b8}.sim-band.wakuren{background:#009944}
+.sim-band.umaren{background:#8b5fbf}.sim-band.wide{background:#4bb3b3}
+.sim-band.umatan{background:#e59300}.sim-band.sanrenpuku{background:#4aa3d6}
+.sim-band.sanrentan{background:#e57d1e}
+
+.sim-sel{width:100%;border-collapse:collapse;font-size:12.5px}
+.sim-sel th{background:var(--sub-bg2);color:var(--cap);font-size:10.5px;font-weight:700;
+  padding:5px 2px;border-bottom:1px solid var(--rule);text-align:center}
+.sim-sel th.l{text-align:left}
+.sim-sel td{border-bottom:1px solid var(--rule);padding:6px 2px;text-align:center;vertical-align:middle}
+.sim-sel td.l{text-align:left;padding-left:4px}
+.sim-sel tr.green td{background:var(--green-row)}
+/* 45-spec §2.8: 印は既存の色トークンを流用（.n-honなどの命名は使わず新規スコープ） */
+.sim-mk{font-weight:700;font-size:12px;min-width:13px;display:inline-block;text-align:center}
+.sim-mk.hon{color:var(--mk-hon)}.sim-mk.tai{color:var(--mk-tai)}
+.sim-mk.tan{color:var(--mk-tan)}.sim-mk.oku{color:var(--mk-oku)}
+.sim-mk.none{color:#ccc}
+/* 45-spec §2.8: 評価バッジは既存.race20 .gradeと同色だが、Block Bは1.xページでは.race20外に
+   出るためスコープなしで複製（.race20 .gradeは変更しない） */
+.sim-grade{display:inline-block;min-width:22px;text-align:center;font-weight:700;
+  font-size:10.5px;border-radius:3px;padding:1px 4px;color:#fff}
+.sim-grade.g-ap{background:#0F7A3D} .sim-grade.g-a{background:#2f8f4e}
+.sim-grade.g-bp{background:#5a9bd4} .sim-grade.g-b{background:#8aadc9}
+.sim-grade.g-cp{background:#b0b0a8} .sim-grade.g-c{background:#c2c2ba}
+.sim-grade.g-d{background:#d8b48a} .sim-grade.g-e{background:#d89a9a}
+.sim-hname{font-weight:700;font-size:12.5px;line-height:1.25}
+.sim-hodds{font-size:10.5px;color:var(--cap)}
+.sim-hodds .hot{color:var(--live);font-weight:700}
+.sim-hmeta{font-size:10px;color:var(--sub)}
+.sim-gflag{display:inline-block;font-size:9.5px;font-weight:700;color:var(--hit);
+  border:1px solid var(--hit);border-radius:3px;padding:0 4px;margin-left:3px}
+.sim-pick{width:22px;height:22px;border:1.5px solid #bbb;border-radius:5px;background:#fff;
+  cursor:pointer;display:inline-flex;align-items:center;justify-content:center;
+  font-size:13px;color:transparent}
+.sim-pick.on{background:var(--cta);border-color:var(--cta);color:#fff}
+.sim-pick.on::after{content:"✓"}
+.sim-pick.radio{border-radius:50%}
+.sim-pick.radio.on{background:var(--navy);border-color:var(--navy)}
+.sim-pick.radio.on::after{content:"";width:8px;height:8px;border-radius:50%;background:#fff}
+.sim-pick:disabled{opacity:.35;cursor:not-allowed}
+
+.sim-summary{display:flex;justify-content:center;gap:12px;font-size:13px;font-weight:700;padding:10px 0 4px}
+.sim-summary b{color:var(--cta)}
+.sim-confirm{border:1px solid var(--rule);border-radius:8px;margin-top:6px;overflow:hidden}
+.sim-confirm .ch{background:var(--sub-bg);font-size:12px;font-weight:700;padding:7px 9px;
+  border-bottom:1px solid var(--rule);display:flex;justify-content:space-between}
+.sim-confirm .ch .rng{color:var(--cap);font-weight:600}
+.sim-combo{display:flex;flex-direction:column;gap:3px;padding:8px 9px;border-bottom:1px solid var(--rule)}
+.sim-combo:last-child{border-bottom:none}
+.sim-combo.buy{background:var(--green-row)}
+.sim-combo .seq{display:flex;align-items:center;gap:2px;flex-wrap:wrap}
+.sim-combo .seq .hn{margin-right:1px}
+.sim-combo .abbr{font-size:10px;color:var(--cap);margin-right:2px}
+.sim-combo .nums{display:flex;gap:12px;font-size:11px;color:var(--cap);flex-wrap:wrap}
+.sim-combo .nums b{color:var(--text);font-variant-numeric:tabular-nums}
+.sim-more{font-size:12px;color:var(--cap);margin-top:6px;padding:0 2px}
 .om-table{margin-top:4px;font-size:12px}
 .om-table th,.om-table td{padding:6px 3px}
 /* 買い目セルは1段固定（折り返さない）。列幅は勝率・判定を外して広げた分で吸収する */
