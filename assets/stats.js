@@ -129,10 +129,15 @@ function renderCalibration(stats) {
       </div>
     `;
   }).join('');
+  const tableRows = stats.calibration.map((c) => `<tr><td class="l">${escapeHtml(c.bucket)}</td><td>${c.n}</td><td>${fmtPercent(c.actual, 1)}</td><td>${c.rentai_rate == null ? '—' : fmtPercent(c.rentai_rate, 1)}</td><td class="sep">${c.top3_rate == null ? '—' : fmtPercent(c.top3_rate, 1)}</td></tr>`).join('');
   return `
     <div class="eyebrow">確率の校正 <span class="note">予測勝率帯 → 実際の勝率</span></div>
     <div class="cal">${rows}</div>
     <div class="scrollnote">帯＝予測した勝率の範囲／バー＝実際の勝率／縦線＝予測の中心。近いほど予測が正確</div>
+    <table class="caltable">
+      <thead><tr><th class="l">予測勝率帯</th><th>頭数</th><th>勝率</th><th>連対率</th><th class="sep">複勝率</th></tr></thead>
+      <tbody>${tableRows}</tbody>
+    </table>
   `;
 }
 
