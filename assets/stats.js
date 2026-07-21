@@ -86,18 +86,25 @@ function renderKpi(thresholds) {
   `;
 }
 
+const MK_COLOR = { '◎': '--mk-hon', '○': '--mk-tai', '▲': '--mk-tan', '△': '--mk-oku', '無印': '--cap' };
+
 function renderMarks(marks) {
-  const honmei = marks.honmei;
   const landmine = marks.landmine;
-  const rows = [
-    `<tr><td class="l mkcol" style="color:var(--mk-hon)">◎ 本命</td><td>${fmtPercent(honmei.top3_rate, 0)}</td><td>${fmtPercent(honmei.win / Math.max(honmei.n, 1), 0)}</td><td class="sep">${fmtNum(honmei.avg_finish, 1)}</td></tr>`,
-    `<tr><td class="l mkcol" style="color:var(--live)">地雷</td><td style="color:var(--cap)">圏外率</td><td colspan="2" class="l sep"><b>${fmtPercent(landmine.out_rate, 0)}</b>（過剰人気を回避できた割合）</td></tr>`,
-  ].join('');
+  const list = marks.by_mark || (marks.honmei
+    ? [{ mark: '◎', name: '本命', win_rate: marks.honmei.win / Math.max(marks.honmei.n, 1), rentai_rate: null, top3_rate: marks.honmei.top3_rate, avg_finish: marks.honmei.avg_finish, n: marks.honmei.n }]
+    : []);
+  const markRows = list.map((m) => {
+    const color = MK_COLOR[m.mark] || '--fg';
+    const label = (m.mark + ' ' + (m.name || '')).trim();
+    const rentai = m.rentai_rate == null ? '—' : fmtPercent(m.rentai_rate, 0);
+    return `<tr><td class="l mkcol" style="color:var(${color})">${escapeHtml(label)}</td><td>${fmtPercent(m.win_rate, 0)}</td><td>${rentai}</td><td>${fmtPercent(m.top3_rate, 0)}</td><td class="sep">${fmtNum(m.avg_finish, 1)}</td></tr>`;
+  }).join('');
+  const landmineRow = `<tr><td class="l mkcol" style="color:var(--live)">地雷</td><td style="color:var(--cap)">圏外率</td><td colspan="3" class="l sep"><b>${fmtPercent(landmine.out_rate, 0)}</b>（過剰人気を回避できた割合）</td></tr>`;
   return `
     <div class="eyebrow">印の精度</div>
     <table>
-      <thead><tr><th class="l">印</th><th>3着内率</th><th>勝率</th><th class="sep">平均着順</th></tr></thead>
-      <tbody>${rows}</tbody>
+      <thead><tr><th class="l">印</th><th>勝率</th><th>連対率</th><th>3着内率</th><th class="sep">平均着順</th></tr></thead>
+      <tbody>${markRows}${landmineRow}</tbody>
     </table>
   `;
 }
