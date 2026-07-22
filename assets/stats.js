@@ -109,6 +109,29 @@ function renderMarks(marks) {
   `;
 }
 
+// 評価（A＋〜E）別の成績。印と違い全出走馬に付くので、ランクどおりに成績が並ぶかを見る表。
+function renderGrades(grades) {
+  const list = (grades || []).filter((g) => g.n > 0);
+  if (!list.length) return '';
+  const rows = list.map((g) => `
+    <tr>
+      <td class="l gradecol"><span class="sim-grade ${gradeClass(g.grade)}">${escapeHtml(gradeDisp(g.grade))}</span>
+        <span class="note">${g.n.toLocaleString()}頭</span></td>
+      <td>${fmtPercent(g.win_rate, 1)}</td>
+      <td>${fmtPercent(g.rentai_rate, 1)}</td>
+      <td>${fmtPercent(g.top3_rate, 1)}</td>
+      <td class="sep">${fmtNum(g.avg_finish, 1)}</td>
+    </tr>
+  `).join('');
+  return `
+    <div class="eyebrow">評価別の成績 <span class="note">全出走馬を8次元の総合点でランク分け</span></div>
+    <table>
+      <thead><tr><th class="l">評価</th><th>勝率</th><th>連対率</th><th>3着内率</th><th class="sep">平均着順</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+}
+
 function renderPace(pace) {
   return `
     <div class="eyebrow">ペース予想の的中</div>
@@ -158,6 +181,7 @@ function renderStatsPage(stats) {
     ${renderByType(stats.roi.by_type)}
     ${renderKpi(stats.thresholds)}
     ${renderMarks(stats.marks)}
+    ${renderGrades(stats.grades)}
     ${renderPace(stats.pace)}
     ${renderCalibration(stats)}
     ${renderFoot(stats.n_final)}
