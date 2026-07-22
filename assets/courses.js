@@ -1,0 +1,424 @@
+// コース別データページ描画（60-course-data-spec.md）
+(function () {
+
+const TRACK_ORDER = ['札幌', '函館', '福島', '新潟', '東京', '中山', '中京', '京都', '阪神', '小倉'];
+const CLASSES = [['all', '全体'], ['未勝利', '未勝利'], ['1勝', '1勝'], ['2勝', '2勝'], ['3勝', '3勝'], ['OP', 'OP']];
+const GOINGS = [['all', '全体'], ['良', '良'], ['稍重', '稍重'], ['重', '重'], ['不良', '不良']];
+const ENTITIES = [['jockey', '騎手'], ['sire', '種牡馬'], ['trainer', '調教師'], ['damsire', '母父']];
+const METRICS = { 1: '勝率', 2: '連対率', 3: '複勝率', 4: '単回収', 5: '複回収' };
+const RATE_IDX = new Set([1, 2, 3]);   // ①②③バッジ・順位付けの対象は率3指標のみ（60-spec D5）
+
+const RUNS_THIN = 30;    // これ未満の走数は率をグレー表示（60-spec D4）
+const LAP_PACE_LOW = 20; // このペースの該当レース数がこれ未満なら注記を出す
+
+// サンプル信頼度。閾値はコース別レース数の実分布（中央値67R・25%点38R）から設定（60-spec D4）。
+function tier(n) {
+  return n >= 50 ? { k: 'ok', l: '', msg: '' }
+    : n >= 20 ? { k: 'mid', l: '標準', msg: `サンプル ${n}レース。全体傾向は読めますが、走数の少ない行は率が振れます。` }
+    : { k: 'low', l: '少', msg: `サンプル ${n}レース。率は偶然の振れが支配的で、傾向としては読めません。着別度数だけを見てください。` };
+}
+
+function mmss(sec) {
+  return sec == null ? '—' : `${Math.floor(sec / 60)}:${(sec % 60).toFixed(1).padStart(4, '0')}`;
+}
+
+function getQueryCourse() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get('c');
+}
+
+function filterAxisLabel(filterKey) {
+  if (filterKey.startsWith('cls:')) return `${filterKey.slice(4)}クラス`;
+  if (filterKey.startsWith('year:')) return `${filterKey.slice(5)}年`;
+  if (filterKey.startsWith('going:')) return `馬場:${filterKey.slice(6)}`;
+  return '全クラス・全期間・全馬場';
+}
+
+/* ---------- 画面1: コース一覧 ---------- */
+
+function renderList(index) {
+  const byTrack = {};
+  index.courses.forEach((c) => { (byTrack[c.track] = byTrack[c.track] || []).push(c); });
+
+  const groups = TRACK_ORDER.filter((t) => byTrack[t] && byTrack[t].length).map((t) => {
+    const rows = byTrack[t].map((c) => `
+      <a class="crow" href="courses.html?c=${encodeURIComponent(c.id)}">
+        <div class="cl">
+          <span class="sfc ${c.surface === '芝' ? 'turf' : 'dirt'}">${c.surface === '芝' ? '芝' : 'ダ'}</span>
+          <span class="cn">${c.distance}m</span>
+          ${c.grade !== 'high' ? `<span class="ctier ${c.grade}">${c.grade === 'mid' ? '標準' : '少'}</span>` : ''}
+        </div>
+        <span class="cm">${c.n}R ／ 勝ち ${mmss(c.wt)}</span>
+        <span class="arw">›</span>
+      </a>`).join('');
+    return `<div class="cgroup"><div class="thead2">${escapeHtml(t)}</div>${rows}</div>`;
+  }).join('');
+
+  return `
+    <div class="eyebrow">コース別データ<span class="note">収録 ${index.source_races.toLocaleString('ja-JP')}レース（${index.period.from}〜${index.period.to}）</span></div>
+    ${groups}
+    <div class="notebox">
+      蓄積済み ${index.source_races.toLocaleString('ja-JP')} レースから集計した全 ${index.courses.length} コース。サンプルが薄いコースも除外せず、
+      <span class="ctier mid">標準</span>（20〜49R）<span class="ctier low">少</span>（20R未満）のバッジで信頼度の目安を示す
+      （バッジ無しは50R以上）。判定には表内の走数を見てください。
+    </div>
+    <div class="foot">Ans.収録レース（2023年〜・JRA平地）の自社集計です。netkeiba等の公表値とは集計範囲・期間が異なります。</div>`;
+}
+
+async function initList(container) {
+  container.innerHTML = '<div class="empty-state">読み込み中…</div>';
+  let index;
+  try {
+    index = await getData('data/courses/index.json');
+  } catch (e) {
+    renderError(container, 'コース一覧の読み込みに失敗しました');
+    return;
+  }
+  container.innerHTML = renderList(index);
+}
+
+/* ---------- 画面2: コース詳細（renderDetailは純関数。DOM操作はinitDetail側で行う） ---------- */
+
+function renderFilterRow(label, axisPrefix, options, data, filterKey) {
+  const chips = options.map(([v, l]) => {
+    const key = v === 'all' ? 'all' : `${axisPrefix}:${v}`;
+    const f = data.filters[key];
+    if (!f) return `<button type="button" disabled>${escapeHtml(l)}<i>0R</i></button>`;
+    const t = tier(f.n);
+    const active = filterKey === key;
+    return `<button type="button" data-fkey="${key}" class="${active ? 'active' : ''} t-${t.k}">${escapeHtml(l)}<i>${f.n}R</i></button>`;
+  }).join('');
+  return `<div class="frow"><span class="flab">${escapeHtml(label)}</span><div class="chips">${chips}</div></div>`;
+}
+
+function renderKpis(f) {
+  return `<div class="kpis">
+    <div class="kpi"><div class="k">勝ちタイム平均</div><div class="v">${mmss(f.wt)}</div></div>
+    <div class="kpi"><div class="k">同 最速</div><div class="v">${mmss(f.wtb)}</div></div>
+    <div class="kpi"><div class="k">勝ち馬 上がり3F</div><div class="v">${f.l3 != null ? f.l3.toFixed(1) : '—'}<span class="u">秒</span></div></div>
+    <div class="kpi"><div class="k">平均出走頭数</div><div class="v">${f.field}<span class="u">頭</span></div></div>
+  </div>`;
+}
+
+// 区間は原則200mだが、先頭区間だけ lap_first_m（100/150m等）になりうる（60-spec §3-3-6）。
+function renderLapSection(f, dist, lapFirstM, curPaceIn) {
+  const PACES = [['all', '全体'], ['S', 'スロー'], ['M', '平均'], ['H', 'ハイ']];
+  // 8R未満のペースはボタンごと消さず disabled で存在を示す（省略すると「データが無い」に見えて誤解を招くため）
+  const hasP = (p) => p === 'all' || Boolean((f.lapP || {})[p]);
+  const curPace = hasP(curPaceIn) ? curPaceIn : 'all';
+
+  const paceButtons = PACES.map(([p, l]) => {
+    const n = p === 'all' ? f.n : (f.paceN[p] || 0);
+    if (!hasP(p)) return `<button type="button" disabled class="p-${p}">${l}<i>${n}R</i></button>`;
+    return `<button type="button" data-pace="${p}" class="${p === curPace ? 'active' : ''} p-${p}">${l}<i>${n}R</i></button>`;
+  }).join('');
+
+  const sel = curPace === 'all' ? { lap: f.lap || [], races: f.n } : f.lapP[curPace];
+  const lap = sel.lap || [];
+  if (!lap.length) {
+    return `<div class="eyebrow">平均ラップ</div><div class="lapbox"><div class="lappace">${paceButtons}</div>
+      <div class="lapnote">ラップデータなし</div></div>`;
+  }
+
+  const segs = [lapFirstM, ...Array(lap.length - 1).fill(200)];
+  const irregular = segs[0] !== 200;
+  const paceLab = curPace === 'all' ? '' : { S: 'スローペース時', M: '平均ペース時', H: 'ハイペース時' }[curPace] + '・';
+  const unitNote = `（${paceLab}${sel.races}レース平均・200m区間）`;
+
+  const from = irregular ? 1 : 0;
+  const pts = lap.slice(from);
+  const ref = (curPace !== 'all' && (f.lap || []).length === lap.length) ? f.lap.slice(from) : null;
+  const W = 366, H = 96, PL = 26, PR = 6, PT = 10, PB = 16;
+  const allV = ref ? pts.concat(ref) : pts;
+  const min = Math.min(...pts), max = Math.max(...pts);
+  const lmin = Math.min(...allV), lmax = Math.max(...allV);
+  const pad = Math.max(0.35, (lmax - lmin) * 0.18);
+  const lo = lmin - pad, hi = lmax + pad;
+  const x = (i) => PL + (pts.length === 1 ? 0 : (W - PL - PR) * i / (pts.length - 1));
+  const y = (v) => PT + (H - PT - PB) * (1 - (v - lo) / (hi - lo));
+  const line = pts.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
+  const fastest = pts.indexOf(min), slowest = pts.indexOf(max);
+
+  const svg = `<svg viewBox="0 0 ${W} ${H}" class="lapsvg">
+    ${[lo, (lo + hi) / 2, hi].map((v) =>
+      `<line x1="${PL}" y1="${y(v).toFixed(1)}" x2="${W - PR}" y2="${y(v).toFixed(1)}" class="gl"/>
+       <text x="${PL - 4}" y="${(y(v) + 3).toFixed(1)}" class="ax">${v.toFixed(1)}</text>`).join('')}
+    ${ref ? `<polyline points="${ref.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ')}" class="lapref"/>` : ''}
+    <polyline points="${line}" class="lapline"/>
+    ${pts.map((v, i) => `<circle cx="${x(i).toFixed(1)}" cy="${y(v).toFixed(1)}" r="${i === fastest || i === slowest ? 3.6 : 2.4}"
+      class="dot ${i === fastest ? 'fast' : i === slowest ? 'slow' : ''}"/>`).join('')}
+    <text x="${PL}" y="${H - 4}" class="ax l">${irregular ? `${segs[0]}m通過後` : 'スタート'}</text>
+    <text x="${W - PR}" y="${H - 4}" class="ax r">ゴール</text>
+  </svg>`;
+
+  const strip = lap.map((v, i) => {
+    const cls = i < from ? 'head' : (i - from === fastest ? 'fast' : i - from === slowest ? 'slow' : '');
+    return `<span class="lv ${cls}">${v.toFixed(1)}${i < from ? `<i>${segs[i]}m</i>` : ''}</span>`;
+  }).join('<em>-</em>');
+
+  // 序盤の平均通過タイム。距離帯で計測地点を変える（〜1400m:600m / 1500〜1700m:800m / 1800m〜:1000m）
+  const target = dist <= 1400 ? 600 : dist <= 1700 ? 800 : 1000;
+  let cum = 0, best = null;
+  segs.forEach((m, i) => {
+    cum += m;
+    const gap = Math.abs(cum - target);
+    if (!best || gap < best.gap) best = { gap, at: cum, idx: i };
+  });
+  const passing = lap.slice(0, best.idx + 1).reduce((s, v) => s + v, 0);
+  const exact = best.at === target;
+  const last3 = lap.slice(-3).reduce((s, v) => s + v, 0);
+
+  const kpi = [
+    [`${best.at}m通過`, passing.toFixed(1), exact ? `目標${target}m` : `目標${target}m→最寄り`, exact ? '' : 'approx'],
+    ['後半3F', last3.toFixed(1), '600m', ''],
+    ['最速区間', min.toFixed(1), `${fastest + 1 + from}区間目`, ''],
+    ['最遅区間', max.toFixed(1), `${slowest + 1 + from}区間目`, ''],
+  ];
+  const kpiHtml = kpi.map(([k, v, u, cls]) =>
+    `<div class="${cls}"><div class="k">${k}</div><div class="v">${v}<span class="u">秒</span></div><div class="u2">${u}</div></div>`).join('');
+
+  const notes = [];
+  if (ref) {
+    const dt = lap.reduce((s, v) => s + v, 0) - f.lap.reduce((s, v) => s + v, 0);
+    notes.push(`薄い線は全体平均。走破時計は全体比 <b>${dt >= 0 ? '+' : ''}${dt.toFixed(1)}秒</b>。`);
+  }
+  if (curPace !== 'all' && sel.races < LAP_PACE_LOW) {
+    notes.push(`<b>このペースの該当は${sel.races}レース</b>のみで、ラップの形は数レースで変わります。`);
+  }
+  if (irregular) {
+    notes.push(`このコースは先頭区間が<b>${segs[0]}m</b>（${lap[0].toFixed(1)}秒）で他と長さが違うため、折れ線からは除外し数値のみグレーで表示しています。`);
+  }
+  if (!exact) {
+    notes.push(`区間の境目が${target}mに来ないため、通過タイムは<b>${best.at}m地点</b>の実測値です（補間はしていません）。${target}m地点の他コースとは直接比較できません。`);
+  }
+
+  return `
+    <div class="eyebrow">平均ラップ<span class="note">${escapeHtml(unitNote)}</span></div>
+    <div class="lapbox">
+      <div class="lappace">${paceButtons}</div>
+      ${svg}
+      <div class="lapstrip">${strip}</div>
+      <div class="lapkpi">${kpiHtml}</div>
+      <div class="lapnote">${notes.join(' ')}</div>
+    </div>`;
+}
+
+function renderPaceTrend(f) {
+  const order = ['S', 'M', 'H'], name = { S: 'スロー', M: '平均', H: 'ハイ' };
+  const bar = order.filter((p) => f.pace[p]).map((p) =>
+    `<div class="${p.toLowerCase()}" style="width:${f.pace[p]}%">${f.pace[p] >= 12 ? f.pace[p] + '%' : ''}</div>`).join('');
+  const top = order.filter((p) => f.pace[p]).sort((a, b) => f.pace[b] - f.pace[a])[0];
+  const t = tier(f.n);
+
+  let note;
+  if (!top) {
+    note = 'ペースデータなし';
+  } else if (t.k === 'low') {
+    note = `内訳は ${order.filter((p) => f.paceN[p]).map((p) => `${name[p]} ${f.paceN[p]}R`).join('／')}（計 ${f.n}R）。` +
+      `<b>この母数では傾向を断定できません。</b>`;
+  } else {
+    note = `最も多いのは <b>${name[top]}ペース（${f.pace[top]}%・${f.paceN[top]}R）</b>。`;
+    // 最有利脚質の断定は、走数30以上の脚質行が1つもなければ出さない（60-spec §5-2 点4）
+    const eligible = Object.entries(f.style).filter(([, v]) => v[0] >= RUNS_THIN);
+    const styleTop = eligible.sort((a, b) => b[1][3] - a[1][3])[0];
+    if (styleTop) {
+      note += `この条件で最も3着内に来やすい脚質は <b>${escapeHtml(styleTop[0])}（複勝率 ${styleTop[1][3]}%）</b>。`;
+    }
+  }
+
+  return `
+    <div class="eyebrow">ペース傾向</div>
+    <div class="pacebox">
+      <div class="pacebar">${bar}</div>
+      <div class="pacekey">
+        <span><i class="sw s"></i>スロー</span><span><i class="sw m"></i>平均</span><span><i class="sw h"></i>ハイ</span>
+      </div>
+      <div class="pacenote">${note}</div>
+    </div>`;
+}
+
+function tableHead(tblKey, sortState) {
+  const s = sortState[tblKey] || { idx: 3, on: false };
+  const cols = Object.entries(METRICS).map(([i, l]) =>
+    `<th class="sortable${+i === s.idx ? ' on' : ''}" data-tbl="${tblKey}" data-i="${i}">${l}</th>`).join('');
+  return `<thead><tr><th>区分</th><th>走数</th>${cols}</tr></thead>`;
+}
+
+function tableRow(label, v, rank, sortIdx, lowTier) {
+  const dim = lowTier || v[0] < RUNS_THIN;
+  const badge = rank ? `<span class="rk r${rank}">${rank}</span>` : '';
+  const cell = (i) => {
+    const val = v[i];
+    const isRoi = i === 4 || i === 5;
+    const txt = isRoi ? `${val.toFixed(0)}%` : `${val.toFixed(1)}%`;
+    // 単回収・複回収は常時無彩色（着色は率3指標にも付けない。60-spec D5）
+    const bar = i === 3 ? `<span class="bar" style="width:${Math.min(72, v[3] * 1.15)}%"></span>` : '';
+    return `<td class="${isRoi ? 'roi' : ''}${i === 3 ? ' fk' : ''}${i === sortIdx ? ' sorted' : ''}">${txt}${bar}</td>`;
+  };
+  return `<tr class="${rank ? 'rank' + rank : ''}${dim ? ' dim' : ''}">
+    <td>${badge}${label}</td>
+    <td class="${v[0] < RUNS_THIN ? 'thin' : ''}">${v[0]}</td>
+    ${[1, 2, 3, 4, 5].map(cell).join('')}
+  </tr>`;
+}
+
+function renderTable(tblKey, entries, fmtLabel, sortState, lowTier) {
+  const s = sortState[tblKey] || { idx: 3, on: false };
+  let ranked = new Map();
+  if (RATE_IDX.has(s.idx) && !lowTier) {
+    const eligible = entries.filter(([, v]) => v[0] >= RUNS_THIN);
+    ranked = new Map([...eligible].sort((a, b) => b[1][s.idx] - a[1][s.idx]).slice(0, 3).map(([k], n) => [k, n + 1]));
+  }
+  const shown = s.on ? [...entries].sort((a, b) => b[1][s.idx] - a[1][s.idx]) : entries;
+  const rows = shown.map(([k, v]) => tableRow(fmtLabel(k), v, ranked.get(k), s.idx, lowTier)).join('');
+  // 7列(区分/走数/勝率/連対率/複勝率/単回収/複回収)はモバイル幅に収まらないため横スクロール容器で包む
+  return `<div class="tblwrap"><table class="st" data-tbl="${tblKey}">${tableHead(tblKey, sortState)}<tbody>${rows}</tbody></table></div>`;
+}
+
+function renderEntitySection(f, ent, sortState, lowTier) {
+  const entLabel = ENTITIES.find((e) => e[0] === ent)[1];
+  const tabs = ENTITIES.map(([v, l]) =>
+    `<button type="button" data-ent="${v}" class="${v === ent ? 'active' : ''}">${escapeHtml(l)}</button>`).join('');
+  const entries = Object.entries(f[ent] || {});
+  let body, note;
+  if (!entries.length) {
+    body = '';
+    note = `この母数（${f.n}レース）では${entLabel}別の集計を出していません。1人あたりの走数が数走にしかならず、率が意味を持たないためです。`;
+  } else {
+    body = renderTable('tblEnt', entries, (k) => escapeHtml(k), sortState, lowTier);
+    note = `${entLabel}別・走数上位${entries.length}件（4走以上）。名前は出馬表の表記のまま（例: ルメー／美浦・宮田）。`;
+  }
+  return `
+    <div class="eyebrow">人物・血統別成績</div>
+    <div class="enttabs">${tabs}</div>
+    ${body}
+    <div class="entnote">${note}</div>`;
+}
+
+// renderDetail: 純関数。data(コースJSON)とfilterKeyだけで完全なHTML文字列を返す。
+// opts省略時は pace='all' / ent='jockey' / sort={} の既定値で描画できる（QA全数走査用）。
+function renderDetail(data, filterKey, opts) {
+  opts = opts || {};
+  const pace = opts.pace || 'all';
+  const ent = opts.ent || 'jockey';
+  const sortState = opts.sort || {};
+
+  const f = data.filters[filterKey] || data.filters.all;
+  const t = tier(f.n);
+  const lowTier = t.k === 'low';
+  const years = Object.keys(data.filters)
+    .filter((k) => k.startsWith('year:')).map((k) => k.slice(5)).sort();
+  const yearOptions = [['all', '全期間'], ...years.map((y) => [y, `${y.slice(2)}年`])];
+
+  const label = filterAxisLabel(data.filters[filterKey] ? filterKey : 'all');
+  const totalRuns = Object.values(f.gate).reduce((s, v) => s + v[0], 0);
+  const warnHtml = t.msg ? `<div class="warn ${t.k}">${escapeHtml(t.msg)}</div>` : '';
+
+  const styleEntries = ['逃', '先', '差', '追'].filter((s) => f.style[s]).map((s) => [s, f.style[s]]);
+  const gateEntries = Object.entries(f.gate).sort((a, b) => +a[0] - +b[0]);
+  const popEntries = Object.entries(f.pop)
+    .sort((a, b) => (a[0] === '11+' ? 99 : +a[0]) - (b[0] === '11+' ? 99 : +b[0]));
+
+  return `
+    <a class="back-link" href="courses.html">← コース一覧</a>
+    <div class="chead">
+      <div class="ctitle">${escapeHtml(data.track)} ${escapeHtml(data.surface)} ${data.distance}m</div>
+      <div class="cmeta">${escapeHtml(label)}／${f.n}レース・延べ${totalRuns}頭</div>
+    </div>
+    <div class="filters">
+      ${renderFilterRow('クラス', 'cls', CLASSES, data, filterKey)}
+      ${renderFilterRow('年代', 'year', yearOptions, data, filterKey)}
+      ${renderFilterRow('馬場', 'going', GOINGS, data, filterKey)}
+    </div>
+    ${warnHtml}
+    <div class="eyebrow">サマリー</div>
+    ${renderKpis(f)}
+    ${renderLapSection(f, data.distance, data.lap_first_m, pace)}
+    ${renderPaceTrend(f)}
+    <div class="eyebrow">脚質別成績</div>
+    ${renderTable('tblStyle', styleEntries, (k) => escapeHtml(k), sortState, lowTier)}
+    <div class="eyebrow">枠順別成績</div>
+    ${renderTable('tblGate', gateEntries, (k) => `${wakuBox(+k, 'sm')}枠`, sortState, lowTier)}
+    <div class="eyebrow">人気別成績</div>
+    ${renderTable('tblPop', popEntries, (k) => k === '11+' ? '11番人気〜' : `${k}番人気`, sortState, lowTier)}
+    ${renderEntitySection(f, ent, sortState, lowTier)}
+    <div class="notebox">
+      勝率・連対率・複勝率は該当区分の全出走馬ベース。単回収・複回収は単勝／複勝100円購入時の回収率（100%＝収支トントン）。
+      平均タイムは1着馬のみ、上がりは1着馬の上がり3F平均。ペースは各レースの確定ラップ判定（S/M/H）。
+      脚質は最終コーナー通過順を頭数で正規化して判定。
+      <b>走数30未満の行は率をグレー表示</b>（複勝率の標準誤差が約8ポイント以上になり、1〜2着分の偶然で数値が動く水準のため）。
+      <span class="rk r1">1</span><span class="rk r2">2</span><span class="rk r3">3</span>
+      は各表で数字が良い順の上位3件（勝率・連対率・複勝率のみが対象）。
+      <b>指標名をタップすると、その数字の良い順に並べ替わります</b>（もう一度タップで元の並びに戻る）。
+      順位付けは走数30以上の行のみが対象です。<b>単回収・複回収は参考情報として無着色で表示</b>しています。
+      サンプル量では最大配当1〜2本で結果が反転しうるため、買い判断には使わず勝率・複勝率を見てください。
+    </div>
+    <div class="foot">Ans.収録レース（2023年〜・JRA平地）の自社集計です。netkeiba等の公表値とは集計範囲・期間が異なります。率がグレーの行は走数30未満で参考値です。</div>`;
+}
+
+async function initDetail(container, courseId) {
+  container.innerHTML = '<div class="empty-state">読み込み中…</div>';
+  let data;
+  try {
+    data = await getData(`data/courses/${courseId}.json`);
+  } catch (e) {
+    renderError(container, 'コースデータが見つかりません');
+    return;
+  }
+
+  const state = { filterKey: 'all', pace: 'all', ent: 'jockey', sort: {} };
+
+  function refresh() {
+    container.innerHTML = renderDetail(data, state.filterKey, { pace: state.pace, ent: state.ent, sort: state.sort });
+  }
+
+  container.addEventListener('click', (e) => {
+    const chip = e.target.closest('.chips button[data-fkey]');
+    if (chip) {
+      state.filterKey = chip.dataset.fkey;
+      state.pace = 'all';
+      refresh();
+      window.scrollTo(0, 0);
+      return;
+    }
+    const paceBtn = e.target.closest('.lappace button[data-pace]');
+    if (paceBtn) {
+      state.pace = paceBtn.dataset.pace;
+      refresh();
+      return;
+    }
+    const entBtn = e.target.closest('.enttabs button[data-ent]');
+    if (entBtn) {
+      state.ent = entBtn.dataset.ent;
+      refresh();
+      return;
+    }
+    const th = e.target.closest('th.sortable[data-tbl]');
+    if (th) {
+      const tbl = th.dataset.tbl, idx = +th.dataset.i;
+      const cur = state.sort[tbl] || { idx: 3, on: false };
+      state.sort[tbl] = (cur.idx === idx && cur.on) ? { idx, on: false } : { idx, on: true };
+      refresh();
+      return;
+    }
+  });
+
+  refresh();
+}
+
+function renderError(container, message) {
+  container.innerHTML = `<div class="error-box">${escapeHtml(message)}</div>`;
+}
+
+function main() {
+  renderHeader('courses');
+  const container = document.getElementById('courses-content');
+  const cid = getQueryCourse();
+  if (cid) initDetail(container, cid); else initList(container);
+}
+
+// QA(60-spec §7 A6)から直接呼べるように公開しておく。
+window.CourseStats = { renderDetail };
+
+main();
+})();

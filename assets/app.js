@@ -16,6 +16,7 @@ function renderHeader(activePage) {
     <nav>
       <a href="index.html" class="${activePage === 'index' ? 'active' : ''}">TOP</a>
       <a href="stats.html" class="${activePage === 'stats' ? 'active' : ''}">成績</a>
+      <a href="courses.html" class="${activePage === 'courses' ? 'active' : ''}">コースデータ</a>
     </nav>
   `;
 }
