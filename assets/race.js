@@ -592,12 +592,11 @@ function omFmtEv(ev) {
   return ev > 1.0 ? `<span class="om-ev-plus">${txt}</span>` : txt;
 }
 
-// 買い目表示: normKeyを整形（馬単/3連単は→区切り、他は-区切り。§6.4）。
-// 区切りの直後に <wbr>（改行可能ポイント）を入れ、狭い列でも馬ごとに折り返せるようにする。
-// 返り値はHTML（馬番は整数由来で安全）。呼び出し側は escapeHtml しないこと。
-function omFmtCombo(type, ids) {
-  const sep = (type === 'umatan' || type === 'sanrentan') ? '→' : '-';
-  return Harville.normKey(type, ids).split('-').join(sep);
+// 買い目表示: normKeyで並びを正規化し、馬番を枠色ボックスで表示する（買い目・払戻表と同じ見た目）。
+// byNumber は 馬番→horse の辞書（gate参照用）。返り値はHTML。呼び出し側は escapeHtml しないこと。
+function omFmtCombo(type, ids, byNumber) {
+  const nums = Harville.normKey(type, ids).split('-').map(Number);
+  return comboBoxes(type, nums, byNumber || {});
 }
 
 // ===== §6.2 A. 印馬のおすすめ（自動・T5） =====
@@ -613,11 +612,11 @@ function omMarkedNumbers(site, probs) {
     .map((h) => h.number);
 }
 
-function omRenderRecommendRow(entry, markByNumber) {
+function omRenderRecommendRow(entry, byNumber) {
   return `
     <tr>
       <td class="l">${escapeHtml(payoutTypeLabel(entry.type))}</td>
-      <td class="l om-combo">${omFmtCombo(entry.type, entry.ids)}</td>
+      <td class="l om-combo">${omFmtCombo(entry.type, entry.ids, byNumber)}</td>
       <td>${omFmtBuyLine(entry.buyLine)}</td>
       <td class="sep">${omFmtOdds(entry.type, entry.odds)}</td>
       <td class="sep">${omFmtEv(entry.ev)}</td>
@@ -643,8 +642,9 @@ function omRenderBlockA(site, probs, heads, oddsAll) {
     return `${heading}${intro}<div class="om-empty">現在のオッズでは、期待値が1.0倍を超える印馬の組み合わせはありません</div>`;
   }
 
-  const markByNumber = {};
-  for (const h of site.horses) markByNumber[h.number] = h.ability_mark;
+  // 馬番→horse（枠色ボックスの gate 参照用）
+  const byNumber = {};
+  for (const h of site.horses) byNumber[h.number] = h;
 
   // 上位20点（EV順）を選んだうえで、表示は券種順（各券種内はEV降順）に並べ替える
   const shown = entries.slice(0, OM_RECOMMEND_LIMIT).sort((a, b) => {
@@ -654,7 +654,7 @@ function omRenderBlockA(site, probs, heads, oddsAll) {
   });
   const restCount = entries.length - shown.length;
   const headerRow = `<tr><th class="l">券種</th><th class="l">買い目</th><th>買いライン</th><th class="sep">現在</th><th class="sep">EV</th></tr>`;
-  const bodyRows = shown.map((r) => omRenderRecommendRow(r, markByNumber)).join('');
+  const bodyRows = shown.map((r) => omRenderRecommendRow(r, byNumber)).join('');
   const moreLine = restCount > 0 ? `<div class="om-more">…他${restCount}点</div>` : '';
   const colgroupA = '<colgroup><col style="width:15%"><col style="width:37%"><col style="width:18%">' +
     '<col style="width:15%"><col style="width:15%"></colgroup>';
@@ -727,6 +727,16 @@ function ratioClass(ratio) {
   if (ratio > 0.95) return 'b3';
   if (ratio > 0.85) return 'b4';
   return 'b5';
+}
+
+// 内外バイアスの偏差バー: 1.00 を基準線に、上=有利 / 下=不利。
+// 長さは |ratio-1| を 0.4 で頭打ちにして最大 16px。極端値でもレイアウトを壊さない。
+const BIAS_BAR_MAX = 16;
+function biasBar(ratio) {
+  const d = Math.max(-1, Math.min(1, (ratio - 1) / 0.4));
+  const h = Math.max(1, Math.round(Math.abs(d) * BIAS_BAR_MAX));
+  const dir = d >= 0 ? 'up' : 'dn';
+  return `<div class="bar"><i class="${dir} ${ratioClass(ratio)}" style="height:${h}px"></i></div>`;
 }
 
 function renderHeader20(site) {
@@ -973,13 +983,14 @@ function renderOverview20(site) {
 
   // (d) 内外バイアス
   if (p.inner_outer_bias) {
+    // 枠の識別は馬番と同じJRA枠色バッジ、有利不利は基準線からの偏差バーで表す
     const cellsHtml = p.inner_outer_bias.gates.map((g) => `
-      <div class="cell ${ratioClass(g.ratio)}"><div class="g">${g.gate}枠</div><div class="v">${g.ratio.toFixed(2)}</div></div>
+      <div class="cell">${wakuBox(g.gate, 'sm')}${biasBar(g.ratio)}<div class="v ${ratioClass(g.ratio)}">${g.ratio.toFixed(2)}</div></div>
     `).join('');
     sections.push(`
       <div class="biaslabel"><b>内外バイアス</b> ${escapeHtml(p.inner_outer_bias.label)}</div>
       <div class="strip">${cellsHtml}</div>
-      <div class="striplegend">濃緑=有利 / 薄緑=やや有利 / 灰=標準 / 薄赤=やや不利 / 濃赤=不利（1.0=標準）</div>
+      <div class="striplegend">バーが基準線より上＝有利 / 下＝不利。長さ＝1.00からの差（1.00=標準）</div>
     `);
   }
 

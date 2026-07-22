@@ -48,11 +48,27 @@ function pickDefaultDate(dates) {
   return best;
 }
 
-function initStateFromHash(races) {
+// 開催日を「開催週」単位にまとめる。間隔2日以内を同じ開催（土日／土日月の3日開催に対応）。
+// 例: [7/11,7/12,7/18,7/19] → [[7/11,7/12],[7/18,7/19]]
+function groupMeetings(dates) {
+  const out = [];
+  for (const ds of dates) {
+    const last = out.length ? out[out.length - 1][out[out.length - 1].length - 1] : null;
+    const gap = last
+      ? (new Date(ds + 'T00:00:00') - new Date(last + 'T00:00:00')) / 86400000
+      : Infinity;
+    if (gap <= 2) out[out.length - 1].push(ds);
+    else out.push([ds]);
+  }
+  return out;
+}
+
+function initState(races) {
+  // URLハッシュは読まない。ブックマークや復元タブに古い #d= が残っていると
+  // 過去の開催に固定されてしまうため、常に最新の開催週を既定にする。
   const dates = [...new Set(races.map((r) => r.date))].sort();
-  const params = new URLSearchParams(window.location.hash.replace(/^#/, ''));
-  let activeDate = params.get('d');
-  if (!activeDate || !dates.includes(activeDate)) activeDate = pickDefaultDate(dates);
+  const meetings = groupMeetings(dates);
+  const activeDate = pickDefaultDate(dates);
 
   const tracksForDate = (d) => {
     const set = new Set(races.filter((r) => r.date === d).map((r) => r.track));
@@ -61,25 +77,20 @@ function initStateFromHash(races) {
     );
   };
 
-  let activeTrack = params.get('t');
-  const tracks = tracksForDate(activeDate);
-  if (!activeTrack || !tracks.includes(activeTrack)) activeTrack = tracks[0];
+  const activeTrack = tracksForDate(activeDate)[0];
 
-  return { dates, activeDate, activeTrack, tracksForDate };
-}
-
-function updateHash(state) {
-  history.replaceState(null, '', `#d=${state.activeDate}&t=${state.activeTrack}`);
+  return { dates, meetings, activeDate, activeTrack, tracksForDate };
 }
 
 function renderDateTabs(state, rerender) {
   const el = document.getElementById('datetabs');
-  const { dates, activeDate } = state;
-  const i = dates.indexOf(activeDate);
-  const window_ = dates.length <= 1 ? dates : dates.slice(Math.max(0, i - 1), Math.max(0, i - 1) + 2);
+  const { meetings, activeDate } = state;
+  // 開催週まるごとを常に表示する（土日が両方見える）。矢印は開催週ごとに移動。
+  const mi = meetings.findIndex((m) => m.includes(activeDate));
+  const window_ = mi >= 0 ? meetings[mi] : [activeDate];
 
-  const prevDisabled = i <= 0;
-  const nextDisabled = i >= dates.length - 1;
+  const prevDisabled = mi <= 0;
+  const nextDisabled = mi < 0 || mi >= meetings.length - 1;
 
   let html = `<span class="arw prev ${prevDisabled ? 'disabled' : ''}">‹</span>`;
   for (const d of window_) {
@@ -90,19 +101,20 @@ function renderDateTabs(state, rerender) {
   html += `<span class="arw next ${nextDisabled ? 'disabled' : ''}">›</span>`;
   el.innerHTML = `<div class="datetabs">${html}</div>`;
 
-  el.querySelector('.arw.prev')?.addEventListener('click', () => {
-    if (prevDisabled) return;
-    state.activeDate = dates[i - 1];
+  const goMeeting = (idx, pickLast) => {
+    const m = meetings[idx];
+    state.activeDate = pickLast ? m[m.length - 1] : m[0];
     const tracks = state.tracksForDate(state.activeDate);
     if (!tracks.includes(state.activeTrack)) state.activeTrack = tracks[0];
     rerender();
+  };
+  el.querySelector('.arw.prev')?.addEventListener('click', () => {
+    if (prevDisabled) return;
+    goMeeting(mi - 1, true); // 前の開催週へ（その週の最終日＝いま見ている日に近い側）
   });
   el.querySelector('.arw.next')?.addEventListener('click', () => {
     if (nextDisabled) return;
-    state.activeDate = dates[i + 1];
-    const tracks = state.tracksForDate(state.activeDate);
-    if (!tracks.includes(state.activeTrack)) state.activeTrack = tracks[0];
-    rerender();
+    goMeeting(mi + 1, false); // 次の開催週へ（初日から）
   });
   el.querySelectorAll('.dt').forEach((dtEl) => {
     dtEl.addEventListener('click', () => {
@@ -219,13 +231,14 @@ async function main() {
     renderEmpty();
     return;
   }
-  const state = initStateFromHash(races);
+  // 旧版が書き込んだ #d=&t= が残っていると紛らわしいので消す
+  if (window.location.hash) history.replaceState(null, '', window.location.pathname);
+  const state = initState(races);
   const rerender = () => {
     renderDateTabs(state, rerender);
     renderTracks(state, rerender);
     renderLegend();
     renderRaceList(state, races);
-    updateHash(state);
   };
   rerender();
 }

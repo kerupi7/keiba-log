@@ -366,12 +366,8 @@
     });
     return best;
   }
-  // 通常フォーメーションの「馬1/1着」列＝各馬を個別シナリオとして試す。
   // ながしの軸列（軸／軸1+軸2／p1+p2+p3）＝すべて併用した1シナリオとして試す
   function anchorScenarios(state, t) {
-    if (state.method === 'normal') {
-      return (state.cols.c0 || []).map(function (a) { return [a]; });
-    }
     if (state.method === 'nagashi') {
       var combined;
       if (t.type === 'sanrenpuku') combined = (state.cols.axis1 || []).concat(state.cols.axis2 || []);
@@ -401,6 +397,66 @@
     });
     return best;
   }
+
+  // slots: 長さ arity の配列。数値=確定した馬、null=未定（残り全馬で総当たりする）。
+  // 順序券種は slots の並びがそのまま着順なので、埋める組み合わせも順列で試す。
+  function bestEvForSlots(t, slots, probs, heads, oddsAll, pool) {
+    var open = [];
+    var used = {};
+    slots.forEach(function (v, i) {
+      if (v === null || v === undefined) open.push(i); else used[v] = true;
+    });
+    if (!open.length) {
+      var e0 = evForIds(t.type, slots.slice(), probs, heads, oddsAll);
+      return e0 === null ? 0 : e0;
+    }
+    var candidates = pool.filter(function (n) { return !used[n]; });
+    var fills = t.ordered ? permsOf(candidates, open.length) : combosOf(candidates, open.length);
+    var best = 0;
+    fills.forEach(function (fill) {
+      var ids = slots.slice();
+      open.forEach(function (p, i) { ids[p] = fill[i]; });
+      var e = evForIds(t.type, ids, probs, heads, oddsAll);
+      if (e !== null && e > best) best = e;
+    });
+    return best;
+  }
+
+  // 通常・フォーメーションの緑判定プラン。
+  // すでに選んだ列を確定スロットに置き、「次に選ぶ列」を候補スロットにする。
+  // 例) 3連複で 馬1=1 → 「1と組んでEV>1になる馬」が緑。さらに 馬2=4 を選ぶと
+  //     → 「1-4と組んでEV>1になる3頭目」が緑に変わる。
+  // 複数選択されている列は組み合わせを総当たりし、どれか1つでもEV>1なら緑にする。
+  function normalSlotPlans(state, t) {
+    var keys = columns(state).map(function (c) { return c.key; });
+    var sel = keys.map(function (k) { return (state.cols[k] || []).slice(); });
+    var any = sel.some(function (a) { return a.length > 0; });
+    if (!any) return []; // 1頭も選んでいなければ緑なし（従来どおり）
+
+    var target = -1;
+    for (var i = 0; i < sel.length; i++) { if (!sel[i].length) { target = i; break; } }
+    if (target === -1) target = sel.length - 1; // 全列が埋まっていれば最終列を対象にする
+
+    var anchorPos = [];
+    for (var j = 0; j < sel.length; j++) { if (j !== target && sel[j].length) anchorPos.push(j); }
+    var combos = anchorPos.length ? cartesian(anchorPos.map(function (p) { return sel[p]; })) : [[]];
+
+    return combos.map(function (ids) {
+      var slots = [];
+      for (var k = 0; k < t.arity; k++) slots.push(null);
+      anchorPos.forEach(function (p, idx) { slots[p] = ids[idx]; });
+      return { slots: slots, target: target };
+    }).filter(function (pl) {
+      // 同じ馬を2スロットに置くシナリオは買い目として成立しないので捨てる
+      var seen = {}, ok = true;
+      pl.slots.forEach(function (v) {
+        if (v === null) return;
+        if (seen[v]) ok = false;
+        seen[v] = true;
+      });
+      return ok;
+    });
+  }
   function greenSet(state, site, probs, heads, oddsAll) {
     var t = typeOf(state.betType);
     var g = {};
@@ -414,9 +470,32 @@
       return g;
     }
     if (t.frame || state.method === 'box') return g; // 枠連・ボックスは対象外（45-spec §2.9）
+    var pool = Object.keys(probs).map(Number).sort(function (a, b) { return (probs[b] || 0) - (probs[a] || 0); });
+
+    // 通常・フォーメーション: 選択済みの列すべてを踏まえ、次に選ぶ列の候補を緑にする
+    if (state.method === 'normal') {
+      var plans = normalSlotPlans(state, t);
+      if (!plans.length) return g;
+      var chosen = {};
+      Object.keys(state.cols).forEach(function (k) {
+        (state.cols[k] || []).forEach(function (n) { chosen[n] = true; });
+      });
+      site.horses.forEach(function (h) {
+        if (h.scratched || !(h.number in probs) || chosen[h.number]) return;
+        var bestN = 0;
+        plans.forEach(function (pl) {
+          var slots = pl.slots.slice();
+          slots[pl.target] = h.number;
+          var e = bestEvForSlots(t, slots, probs, heads, oddsAll, pool);
+          if (e > bestN) bestN = e;
+        });
+        if (bestN > 1.0) g[h.number] = true;
+      });
+      return g;
+    }
+
     var scenarios = anchorScenarios(state, t);
     if (!scenarios.length) return g;
-    var pool = Object.keys(probs).map(Number).sort(function (a, b) { return (probs[b] || 0) - (probs[a] || 0); });
     var anchorSet = {};
     scenarios.forEach(function (sc) { sc.forEach(function (n) { anchorSet[n] = true; }); });
     site.horses.forEach(function (h) {
