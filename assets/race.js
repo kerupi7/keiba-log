@@ -729,16 +729,6 @@ function ratioClass(ratio) {
   return 'b5';
 }
 
-// 内外バイアスの偏差バー: 1.00 を基準線に、上=有利 / 下=不利。
-// 長さは |ratio-1| を 0.4 で頭打ちにして最大 16px。極端値でもレイアウトを壊さない。
-const BIAS_BAR_MAX = 16;
-function biasBar(ratio) {
-  const d = Math.max(-1, Math.min(1, (ratio - 1) / 0.4));
-  const h = Math.max(1, Math.round(Math.abs(d) * BIAS_BAR_MAX));
-  const dir = d >= 0 ? 'up' : 'dn';
-  return `<div class="bar"><i class="${dir} ${ratioClass(ratio)}" style="height:${h}px"></i></div>`;
-}
-
 function renderHeader20(site) {
   const r = site.race;
   const p = site.prediction;
@@ -983,14 +973,15 @@ function renderOverview20(site) {
 
   // (d) 内外バイアス
   if (p.inner_outer_bias) {
-    // 枠の識別は馬番と同じJRA枠色バッジ、有利不利は基準線からの偏差バーで表す
-    const cellsHtml = p.inner_outer_bias.gates.map((g) => `
-      <div class="cell">${wakuBox(g.gate, 'sm')}${biasBar(g.ratio)}<div class="v ${ratioClass(g.ratio)}">${g.ratio.toFixed(2)}</div></div>
-    `).join('');
+    // 枠の識別は馬番と同じJRA枠色バッジ、有利不利はセルの背景色の濃淡で表す（C-1案）
+    const cellsHtml = p.inner_outer_bias.gates.map((g) => {
+      const c = ratioClass(g.ratio);
+      return `<div class="cell h${c}">${wakuBox(g.gate, 'sm')}<span class="v ${c}">${g.ratio.toFixed(2)}</span></div>`;
+    }).join('');
     sections.push(`
       <div class="biaslabel"><b>内外バイアス</b> ${escapeHtml(p.inner_outer_bias.label)}</div>
       <div class="strip">${cellsHtml}</div>
-      <div class="striplegend">バーが基準線より上＝有利 / 下＝不利。長さ＝1.00からの差（1.00=標準）</div>
+      <div class="striplegend">緑=有利 / 赤=不利、濃いほど強い（1.00=標準）</div>
     `);
   }
 

@@ -496,21 +496,17 @@ details.subfold>summary .sc{margin-left:auto;color:var(--navy);
 /* 内外バイアス */
 .race20 .biaslabel{font-size:12.5px;color:var(--sub);margin:9px 0 5px}
 .race20 .biaslabel b{color:var(--text)}
-/* 枠の識別＝馬番と同じJRA枠色バッジ / 有利不利＝1.00基準線からの偏差バー（上=有利・下=不利） */
+/* 枠の識別＝馬番と同じJRA枠色バッジ / 有利不利＝セル背景の濃淡（緑=有利・赤=不利）。並びは枠順のまま */
 .race20 .strip{display:flex;gap:3px;padding:2px 0}
-.race20 .strip .cell{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:0}
-.race20 .strip .bar{position:relative;width:100%;height:35px}
-.race20 .strip .bar:before{content:"";position:absolute;left:0;right:0;top:17px;height:1px;background:#CFCFCA}
-.race20 .strip .bar i{position:absolute;left:50%;transform:translateX(-50%);width:62%;max-width:18px;border-radius:1px}
-.race20 .strip .bar i.up{bottom:18px}
-.race20 .strip .bar i.dn{top:18px}
-.race20 .strip .cell .v{font-size:11px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--cap)}
-/* 5段階（b1=有利 … b5=不利）。バーの色と数値の色を揃える */
-.race20 .strip .bar i.b1{background:#0F7A3D} .race20 .strip .v.b1{color:#0F7A3D}
-.race20 .strip .bar i.b2{background:#7FBF95} .race20 .strip .v.b2{color:#3E8A5C}
-.race20 .strip .bar i.b3{background:#C4C4BE} .race20 .strip .v.b3{color:var(--cap)}
-.race20 .strip .bar i.b4{background:#E0A0A0} .race20 .strip .v.b4{color:#B05656}
-.race20 .strip .bar i.b5{background:#D14545} .race20 .strip .v.b5{color:#D14545}
+.race20 .strip .cell{flex:1;min-width:0;border-radius:4px;padding:6px 0 7px;
+  display:flex;flex-direction:column;align-items:center;gap:3px}
+.race20 .strip .cell .v{font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.2}
+/* 5段階（b1=有利 … b5=不利）。背景の濃淡と数値の色を揃える */
+.race20 .strip .cell.hb1{background:#DCEDE2} .race20 .strip .v.b1{color:#0F7A3D}
+.race20 .strip .cell.hb2{background:#EDF5EF} .race20 .strip .v.b2{color:#3E8A5C}
+.race20 .strip .cell.hb3{background:#F1F1EE} .race20 .strip .v.b3{color:var(--cap)}
+.race20 .strip .cell.hb4{background:#FAEDED} .race20 .strip .v.b4{color:#B05656}
+.race20 .strip .cell.hb5{background:#F6DADA} .race20 .strip .v.b5{color:#D14545}
 .race20 .striplegend{font-size:10.5px;color:var(--cap);margin-top:5px}
 
 /* 先行圧 */
