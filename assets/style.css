@@ -574,6 +574,18 @@ details.subfold>summary .sc{margin-left:auto;color:var(--navy);
   background:var(--sub-bg);border-radius:6px;line-height:1.65}
 
 /* --- 画面1: コース一覧 --- */
+/* 競馬場選択ボタン。TOPページの汎用.tracks/.trkとは別物なので独自クラスにする */
+.cstats .picklab{font-size:12.5px;font-weight:700;color:var(--sub);
+  padding:14px 2px 6px;display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.cstats .picklab .sub{font-size:11px;font-weight:400;color:var(--cap);
+  font-variant-numeric:tabular-nums;white-space:nowrap}
+.cstats .trackpick{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.cstats .trackpick button{padding:9px 2px;font-size:13px;font-weight:700;border:1px solid #C9C9C4;
+  background:#fff;border-radius:7px;color:var(--text);cursor:pointer}
+.cstats .trackpick button:hover:not(.active):not(:disabled){background:var(--sub-bg)}
+.cstats .trackpick button.active{background:var(--navy);border-color:var(--navy);color:#fff}
+.cstats .trackpick button:disabled{color:#c4c4c4;background:var(--sub-bg2);
+  border-color:var(--sub-bg2);cursor:not-allowed}
 .cstats .cgroup{margin-top:4px}
 .cstats .thead2{font-size:12.5px;font-weight:700;color:var(--sub);padding:10px 2px 4px}
 .cstats .crow{display:flex;align-items:center;justify-content:space-between;gap:8px;

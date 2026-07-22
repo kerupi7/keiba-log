@@ -27,6 +27,13 @@ function getQueryCourse() {
   return params.get('c');
 }
 
+// 一覧で選択中の競馬場は場コード2桁（course_idの先頭2桁と同じ体系）でURLに持つ。
+// 詳細ページの「← コース一覧」もこれを付けて戻すため、選んだ場が保たれる。
+function getQueryTrackCode() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get('t');
+}
+
 function filterAxisLabel(filterKey) {
   if (filterKey.startsWith('cls:')) return `${filterKey.slice(4)}クラス`;
   if (filterKey.startsWith('year:')) return `${filterKey.slice(5)}年`;
@@ -36,27 +43,42 @@ function filterAxisLabel(filterKey) {
 
 /* ---------- 画面1: コース一覧 ---------- */
 
-function renderList(index) {
+// 場コード（course_idの先頭2桁）→ 競馬場名。index.jsonの実データから作るので対応表を二重管理しない。
+function trackCodeMap(index) {
+  const map = {};
+  index.courses.forEach((c) => { map[c.id.slice(0, 2)] = c.track; });
+  return map;
+}
+
+function renderList(index, curTrack) {
   const byTrack = {};
   index.courses.forEach((c) => { (byTrack[c.track] = byTrack[c.track] || []).push(c); });
 
-  const groups = TRACK_ORDER.filter((t) => byTrack[t] && byTrack[t].length).map((t) => {
-    const rows = byTrack[t].map((c) => `
-      <a class="crow" href="courses.html?c=${encodeURIComponent(c.id)}">
-        <div class="cl">
-          <span class="sfc ${c.surface === '芝' ? 'turf' : 'dirt'}">${c.surface === '芝' ? '芝' : 'ダ'}</span>
-          <span class="cn">${c.distance}m</span>
-          ${c.grade !== 'high' ? `<span class="ctier ${c.grade}">${c.grade === 'mid' ? '標準' : '少'}</span>` : ''}
-        </div>
-        <span class="cm">${c.n}R ／ 勝ち ${mmss(c.wt)}</span>
-        <span class="arw">›</span>
-      </a>`).join('');
-    return `<div class="cgroup"><div class="thead2">${escapeHtml(t)}</div>${rows}</div>`;
+  const tabs = TRACK_ORDER.map((t) => {
+    const courses = byTrack[t];
+    if (!courses || !courses.length) return `<button type="button" disabled>${escapeHtml(t)}</button>`;
+    return `<button type="button" data-track="${escapeHtml(t)}" class="${t === curTrack ? 'active' : ''}">${escapeHtml(t)}</button>`;
   }).join('');
+
+  const rows = (byTrack[curTrack] || []).map((c) => `
+    <a class="crow" href="courses.html?c=${encodeURIComponent(c.id)}">
+      <div class="cl">
+        <span class="sfc ${c.surface === '芝' ? 'turf' : 'dirt'}">${c.surface === '芝' ? '芝' : 'ダ'}</span>
+        <span class="cn">${c.distance}m</span>
+        ${c.grade !== 'high' ? `<span class="ctier ${c.grade}">${c.grade === 'mid' ? '標準' : '少'}</span>` : ''}
+      </div>
+      <span class="cm">${c.n}R ／ 勝ち ${mmss(c.wt)}</span>
+      <span class="arw">›</span>
+    </a>`).join('');
+
+  const total = (byTrack[curTrack] || []).reduce((s, c) => s + c.n, 0);
 
   return `
     <div class="eyebrow">コース別データ<span class="note">収録 ${index.source_races.toLocaleString('ja-JP')}レース（${index.period.from}〜${index.period.to}）</span></div>
-    ${groups}
+    <div class="picklab">競馬場を選ぶ</div>
+    <div class="trackpick">${tabs}</div>
+    <div class="picklab">距離を選ぶ<span class="sub">${escapeHtml(curTrack)}・${(byTrack[curTrack] || []).length}コース／${total.toLocaleString('ja-JP')}レース</span></div>
+    ${rows}
     <div class="notebox">
       蓄積済み ${index.source_races.toLocaleString('ja-JP')} レースから集計した全 ${index.courses.length} コース。サンプルが薄いコースも除外せず、
       <span class="ctier mid">標準</span>（20〜49R）<span class="ctier low">少</span>（20R未満）のバッジで信頼度の目安を示す
@@ -74,7 +96,32 @@ async function initList(container) {
     renderError(container, 'コース一覧の読み込みに失敗しました');
     return;
   }
-  container.innerHTML = renderList(index);
+
+  const available = TRACK_ORDER.filter((t) => index.courses.some((c) => c.track === t));
+  if (!available.length) {
+    renderError(container, '表示できるコースがありません');
+    return;
+  }
+  // 初期選択: URLの?t=（詳細から戻ってきた場合）→ 東京 → データのある先頭
+  const fromUrl = trackCodeMap(index)[getQueryTrackCode()];
+  let curTrack = available.includes(fromUrl) ? fromUrl : (available.includes('東京') ? '東京' : available[0]);
+
+  const codeOf = (track) => (index.courses.find((c) => c.track === track) || {}).id.slice(0, 2);
+
+  function refresh() {
+    container.innerHTML = renderList(index, curTrack);
+  }
+
+  container.addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-track]');
+    if (!btn) return;
+    curTrack = btn.dataset.track;
+    refresh();
+    // リロード・詳細からの復帰で同じ場が開くようURLを同期（履歴は増やさない）
+    history.replaceState(null, '', `courses.html?t=${codeOf(curTrack)}`);
+  });
+
+  refresh();
 }
 
 /* ---------- 画面2: コース詳細（renderDetailは純関数。DOM操作はinitDetail側で行う） ---------- */
@@ -320,7 +367,7 @@ function renderDetail(data, filterKey, opts) {
     .sort((a, b) => (a[0] === '11+' ? 99 : +a[0]) - (b[0] === '11+' ? 99 : +b[0]));
 
   return `
-    <a class="back-link" href="courses.html">← コース一覧</a>
+    <a class="back-link" href="courses.html?t=${encodeURIComponent(data.id.slice(0, 2))}">← ${escapeHtml(data.track)}のコース一覧</a>
     <div class="chead">
       <div class="ctitle">${escapeHtml(data.track)} ${escapeHtml(data.surface)} ${data.distance}m</div>
       <div class="cmeta">${escapeHtml(label)}／${f.n}レース・延べ${totalRuns}頭</div>
