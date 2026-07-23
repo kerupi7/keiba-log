@@ -1178,17 +1178,9 @@ function renderVerification20(site) {
   const byNumber = {};
   for (const h of site.horses) byNumber[h.number] = h;
 
-  const topRows = result.top3.map((t) => {
-    const h = byNumber[t.number];
-    const markCell = h ? (h.ability_mark ?? (h.bet_mark === '地雷' ? '地雷' : '—')) : '—';
-    return `<tr><td>${t.finish}</td><td class="name">${umaBox(t.number, h && h.gate, 'sm')} ${escapeHtml(t.name)}</td><td>${t.popularity}</td><td>${t.odds}</td><td class="l">${escapeHtml(markCell)}</td></tr>`;
-  }).join('');
-
+  // ---- 成績タイル（買い目・印・ペース）----
   const paceMatch = verification.pace_match;
-  const paceCls = paceMatch === true ? ' ok' : paceMatch === false ? ' ng' : '';
-  const paceIcon = paceMatch === true ? ' ✓' : paceMatch === false ? ' ✕' : '';
   const paceExpected = site.prediction.pace_class ?? site.prediction.pace;
-  const paceRow = `<div class="vrow"><span class="vlabel">ペース</span><span class="vchip${paceCls}">予想 ${escapeHtml(paceExpected)} → 実際 ${escapeHtml(result.pace)}${paceIcon}</span></div>`;
 
   const markOrder = { '◎': 0, '○': 1, '▲': 2, '△': 3 };
   const markClsMap = { '◎': 'm-hon', '○': 'm-tai', '▲': 'm-tan', '△': 'm-oku' };
@@ -1200,29 +1192,68 @@ function renderVerification20(site) {
     const mb = b.mark in markOrder ? markOrder[b.mark] : 9;
     return ma - mb;
   });
-  const markgridHtml = markFinishEntries.map((e) => {
-    const hitCls = e.finish <= 3 ? ' hit' : '';
-    const eh = byNumber[e.number];
-    return `<div class="mg${hitCls}"><span class="mkb ${markClsMap[e.mark] || ''}">${escapeHtml(e.mark)}</span>${umaBox(Number(e.number), eh && eh.gate, 'sm')}<span class="pos">${e.finish}着</span></div>`;
+  const markInTop3 = markFinishEntries.filter((e) => e.finish <= 3).length;
+  const landmineEntries = Object.entries(verification.landmine_result || {});
+  const landmineOk = landmineEntries.filter(([, lr]) => lr.ok).length;
+
+  const betCost = verification.bets_cost;
+  const betReturn = verification.bets_return;
+  const hasBets = betCost !== null && betCost !== undefined && betCost > 0;
+  const betTile = hasBets
+    ? `<div class="vtile wide ${verification.bets_hit ? 'hit' : 'miss'}">
+        <div class="cap">買い目</div>
+        <div class="val">${verification.bets_hit ? '的中' : '不的中'}　${fmtYen(betCost)} → ${fmtYen(betReturn)}</div>
+        <div class="sub">回収率 ${Math.round((betReturn / betCost) * 100)}%</div>
+      </div>`
+    : `<div class="vtile wide"><div class="cap">買い目</div><div class="val">見送り</div>
+        <div class="sub">このレースは買っていません</div></div>`;
+  const markTile = markFinishEntries.length
+    ? `<div class="vtile ${markInTop3 ? 'hit' : 'miss'}"><div class="cap">印</div>
+        <div class="val">${markInTop3} / ${markFinishEntries.length}</div><div class="sub">が馬券圏内</div></div>`
+    : `<div class="vtile"><div class="cap">印</div><div class="val">—</div><div class="sub">印なし</div></div>`;
+  const paceTile = `
+    <div class="vtile ${paceMatch === true ? 'hit' : paceMatch === false ? 'miss' : ''}">
+      <div class="cap">ペース</div>
+      <div class="val">${paceMatch === true ? '的中' : paceMatch === false ? '外れ' : '—'}</div>
+      <div class="sub">${escapeHtml(paceExpected)} → ${escapeHtml(result.pace ?? '—')}</div>
+    </div>`;
+  const tilesHtml = `<div class="vtiles">${betTile}${markTile}${paceTile}</div>`;
+
+  // ---- 「予想 → 結果」リスト（結果／印／地雷の3グループ。緑は的中の意味だけに使う）----
+  const vrow = (left, right, note, inCls, arrow) => `
+    <div class="vcr${inCls ? ' in' : ''}">
+      <div class="yo">${left}</div>
+      ${arrow ? '<span class="arw">→</span>' : ''}
+      <span class="re">${right}</span>
+      <span class="note">${note}</span>
+    </div>`;
+
+  const resultRows = result.top3.map((t) => {
+    const h = byNumber[t.number];
+    const mark = h && h.ability_mark ? `<span class="mkb ${markClsMap[h.ability_mark] || ''}">${escapeHtml(h.ability_mark)}</span>` : '';
+    return vrow(`${mark}${umaBox(t.number, h && h.gate, 'sm')}<span class="nm">${escapeHtml(t.name)}</span>`,
+      `${t.finish}着`, `${t.popularity}人気`, false, false);
   }).join('');
-  const markSection = markFinishEntries.length
-    ? `<div class="vsub">印別の着順（緑=馬券圏内）</div><div class="markgrid">${markgridHtml}</div>`
+  const resultGroup = `<div class="vgh">結果<span class="s">（1〜3着）</span></div><div class="g-res">${resultRows}</div>`;
+
+  const markRows = markFinishEntries.map((e) => {
+    const h = byNumber[e.number];
+    return vrow(`<span class="mkb ${markClsMap[e.mark] || ''}">${escapeHtml(e.mark)}</span>`
+      + `${umaBox(Number(e.number), h && h.gate, 'sm')}<span class="nm">${h ? escapeHtml(h.name) : '—'}</span>`,
+      `${e.finish}着`, h && h.popularity ? `${h.popularity}人気` : '', e.finish <= 3, true);
+  }).join('');
+  const markGroup = markFinishEntries.length
+    ? `<div class="vgh">印 → 着順<span class="s">（${markInTop3}/${markFinishEntries.length} が馬券圏内）</span></div><div class="g-mark">${markRows}</div>`
     : '';
 
-  const landmineEntries = Object.entries(verification.landmine_result || {});
-  const jgridHtml = landmineEntries.map(([number, lr]) => {
+  const landmineRows = landmineEntries.map(([number, lr]) => {
     const h = byNumber[number];
-    const name = h ? escapeHtml(h.name) : '—';
-    const box = umaBox(Number(number), h && h.gate, 'sm');
-    const cls = lr.ok ? 'ok' : 'ng';
-    const icon = lr.ok ? '✓' : '✕';
-    const text = lr.ok
-      ? `${icon} ${box} ${name} ${lr.finish}着 — 圏外に沈め成功`
-      : `${icon} ${box} ${name} ${lr.finish}着 — 3着内に好走、判定ミス`;
-    return `<span class="jchip ${cls}">${text}</span>`;
+    return vrow(`<span class="jm ${lr.ok ? 'ok' : 'ng'}">地雷</span>`
+      + `${umaBox(Number(number), h && h.gate, 'sm')}<span class="nm">${h ? escapeHtml(h.name) : '—'}</span>`,
+      `${lr.finish}着`, lr.ok ? '沈め成功' : '判定ミス', lr.ok, true);
   }).join('');
-  const landmineSection = landmineEntries.length
-    ? `<div class="vsub">地雷判定</div><div class="jgrid">${jgridHtml}</div>`
+  const landmineGroup = landmineEntries.length
+    ? `<div class="vgh">地雷 → 着順<span class="s">（${landmineOk}/${landmineEntries.length} 成功）</span></div><div class="g-mine">${landmineRows}</div>`
     : '';
 
   const payoutRows = Object.entries(result.payouts || {})
@@ -1238,15 +1269,11 @@ function renderVerification20(site) {
 
   return `
     <div class="secthead">答え合わせ<span class="cnt">結果確定</span></div>
-    <table class="fixed" style="font-size:12.5px">
-      <colgroup><col style="width:12%"><col style="width:44%"><col style="width:14%"><col style="width:14%"><col style="width:16%"></colgroup>
-      <thead><tr><th>着</th><th class="l">馬名</th><th>人気</th><th>オッズ</th><th class="l">印</th></tr></thead>
-      <tbody>${topRows}</tbody>
-    </table>
-    <div class="vcard">
-      ${paceRow}
-      ${markSection}
-      ${landmineSection}
+    ${tilesHtml}
+    <div class="vlist">
+      ${resultGroup}
+      ${markGroup}
+      ${landmineGroup}
     </div>
     <details class="fold"><summary><span class="tri"></span>払戻表</summary>
       <div class="fold-body"><table><tbody>${payoutRows}</tbody></table></div>
