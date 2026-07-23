@@ -747,6 +747,8 @@ details.subfold>summary .sc{margin-left:auto;color:var(--navy);
 .cstats table.st{margin-top:0}
 .cstats table.st td:first-child,.cstats table.st th:first-child{text-align:left;padding-left:7px}
 .cstats table.st tr.top td{background:#F4F8FC}
+/* 順位バッジのスロット（17px+右余白5px）。順位なしの行も同じ幅を確保し1列目の左端を揃える */
+.cstats .rkslot{display:inline-flex;width:22px;height:17px;vertical-align:1px;flex:none}
 .cstats .rk{display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;
   border-radius:50%;font-size:10.5px;font-weight:700;margin-right:5px;vertical-align:1px;flex:none;color:#fff}
 .cstats .rk.r1{background:#B8860B} .cstats .rk.r2{background:#8C8C8C} .cstats .rk.r3{background:#A9702E}
@@ -773,6 +775,7 @@ details.subfold>summary .sc{margin-left:auto;color:var(--navy);
   border-radius:6px;color:var(--text);cursor:pointer;font-weight:600}
 .cstats .enttabs button.active{background:var(--navy);border-color:var(--navy);color:#fff}
 .cstats .entnote{font-size:10.5px;color:var(--cap);margin-top:7px;line-height:1.55}
-/* 種牡馬・母父は名前が長いので1列目だけ折り返しを許す */
-.cstats table.st[data-tbl="tblEnt"] td:first-child{white-space:normal;word-break:break-word;max-width:118px;line-height:1.3;font-size:12px}
-.cstats table.st[data-tbl="tblEnt"] th:first-child{white-space:normal}
+/* 種牡馬・母父は名前が長いが、折り返すと見栄えが悪いので常に1行。
+   幅は名前に合わせて自動で伸ばし、はみ出しは .tblwrap の横スクロールで吸収する。
+   最長は「マジェスティックウォリアー」等の13文字（12px×13＝約156px）。 */
+.cstats table.st[data-tbl="tblEnt"] td:first-child{font-size:12px}

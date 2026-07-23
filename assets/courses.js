@@ -298,7 +298,8 @@ function tableHead(tblKey, sortState) {
 
 function tableRow(label, v, rank, sortIdx, lowTier) {
   const dim = lowTier || v[0] < RUNS_THIN;
-  const badge = rank ? `<span class="rk r${rank}">${rank}</span>` : '';
+  // バッジの有無でラベルの左端がずれないよう、順位なしの行も同じ幅のスロットを置く
+  const badge = `<span class="rkslot">${rank ? `<span class="rk r${rank}">${rank}</span>` : ''}</span>`;
   const cell = (i) => {
     const val = v[i];
     const isRoi = i === 4 || i === 5;
