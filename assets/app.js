@@ -72,6 +72,8 @@ function fmtDateTimeShort(iso) {
 const MARK_CLASS = { '◎': 'hon', '○': 'tai', '▲': 'tan', '△': 'oku' };
 function markNameClass(mark) { return MARK_CLASS[mark] ? 'n-' + MARK_CLASS[mark] : ''; }
 function markBadge(mark) { return MARK_CLASS[mark] ? `<span class="mkb m-${MARK_CLASS[mark]}">${mark}</span>` : ''; }
+// 馬名セル先頭の印スロット。印なしでも同じ幅を確保し、馬番・馬名の左端を全行で揃える
+function markSlot(mark) { return `<span class="mkslot">${MARK_CLASS[mark] ? mark : ''}</span>`; }
 
 // mark-2.0: 役割チップ（軸/相手/穴）・地雷チップ・市場評価チップ（14-mark-redesign-spec.md §8.3）
 const ROLE_CHIP_CLASS = { '軸': 'axis', '相手': 'aite', '穴': 'ana' };
@@ -121,7 +123,7 @@ function escapeHtml(s) {
 // 評価バッジ（総合点→ランク）。元は race.js 内定義（23-fullpython-fe-spec.md T9〜T12）。
 // 45-spec §2.8: 手動シミュレーターの馬行がこの表示に合わせるため共通層に移設。
 function gradeClass(grade) {
-  return { 'A+': 'g-ap', 'A': 'g-a', 'B+': 'g-bp', 'B': 'g-b', 'C+': 'g-cp', 'C': 'g-c', 'D': 'g-d', 'E': 'g-e' }[grade] ?? '';
+  return { 'S': 'g-s', 'A+': 'g-ap', 'A': 'g-a', 'B+': 'g-bp', 'B': 'g-b', 'C+': 'g-cp', 'C': 'g-c', 'D': 'g-d', 'E': 'g-e' }[grade] ?? '';
 }
 function gradeDisp(grade) {
   return grade ? grade.replace('+', '＋') : '';

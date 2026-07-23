@@ -135,6 +135,10 @@ tr.scratched td{color:var(--cap);opacity:.6}
 .mkb.m-hon{background:var(--mkb-hon)} .mkb.m-tai{background:var(--mkb-tai)}
 .mkb.m-tan{background:var(--mkb-tan)} .mkb.m-oku{background:var(--mkb-oku)}
 
+/* 馬名セル先頭の印スロット。印なしの行も同じ幅を確保し、馬番・馬名の左端を全行で揃える */
+.mkslot{display:inline-block;width:17px;text-align:center;font-weight:700;
+  margin-right:2px;vertical-align:middle}
+
 td.n-hon{color:var(--mk-hon);font-weight:700} td.n-tai{color:var(--mk-tai);font-weight:700}
 td.n-tan{color:var(--mk-tan);font-weight:700} td.n-oku{color:var(--mk-oku);font-weight:700}
 
@@ -388,7 +392,7 @@ details.subfold>summary .sc{margin-left:auto;color:var(--navy);
    出るためスコープなしで複製（.race20 .gradeは変更しない） */
 .sim-grade{display:inline-block;min-width:22px;text-align:center;font-weight:700;
   font-size:10.5px;border-radius:3px;padding:1px 4px;color:#fff}
-.sim-grade.g-ap{background:#0F7A3D} .sim-grade.g-a{background:#2f8f4e}
+.sim-grade.g-s{background:#0B5E2E} .sim-grade.g-ap{background:#0F7A3D} .sim-grade.g-a{background:#2f8f4e}
 .sim-grade.g-bp{background:#5a9bd4} .sim-grade.g-b{background:#8aadc9}
 .sim-grade.g-cp{background:#b0b0a8} .sim-grade.g-c{background:#c2c2ba}
 .sim-grade.g-d{background:#d8b48a} .sim-grade.g-e{background:#d89a9a}
@@ -465,7 +469,7 @@ details.subfold>summary .sc{margin-left:auto;color:var(--navy);
 
 /* 評価バッジ（h.grade専用。site.race.gradeの.gbadgeとは別物） */
 .race20 .grade{display:inline-block;min-width:26px;text-align:center;font-weight:700;font-size:12px;border-radius:3px;padding:1px 4px;color:#fff}
-.race20 .g-ap{background:#0F7A3D} .race20 .g-a{background:#2f8f4e}
+.race20 .g-s{background:#0B5E2E} .race20 .g-ap{background:#0F7A3D} .race20 .g-a{background:#2f8f4e}
 .race20 .g-bp{background:#5a9bd4} .race20 .g-b{background:#8aadc9}
 .race20 .g-cp{background:#b0b0a8} .race20 .g-c{background:#c2c2ba}
 .race20 .g-d{background:#d8b48a} .race20 .g-e{background:#d89a9a}
@@ -492,6 +496,37 @@ details.subfold>summary .sc{margin-left:auto;color:var(--navy);
 .race20 .kg td.l,.race20 .kg th.l{text-align:left}
 .race20 .jw{font-weight:700}
 .race20 .jw.good{color:var(--navy)} .race20 .jw.bad{color:#b23b3b} .race20 .jw.vbad{color:var(--live)}
+
+/* 脚質マップ（4レーン・脚質傾向の各行に出走馬を並べる） */
+.race20 .pacemap{margin-top:5px;border-top:1px solid var(--rule)}
+.race20 .pacemap .lane{display:flex;align-items:flex-start;gap:8px;padding:8px 6px;
+  border-bottom:1px solid var(--rule);border-left:3px solid transparent}
+.race20 .pacemap .lane.j-good{border-left-color:var(--hit);background:#F3F9F5}
+.race20 .pacemap .lane.j-bad{border-left-color:#d9b3b3;background:#FCF6F6}
+.race20 .pacemap .lane.j-vbad{border-left-color:var(--live);background:#FBEFEF}
+.race20 .pacemap .lb{width:118px;flex:none}
+.race20 .pacemap .lb .nm{font-size:13px;font-weight:700}
+.race20 .pacemap .lb .rt{font-size:10.5px;color:var(--cap);white-space:nowrap;
+  letter-spacing:-0.02em;font-variant-numeric:tabular-nums}
+.race20 .pacemap .lb .jw{display:inline-block;font-size:10px;font-weight:700;
+  border-radius:2px;padding:0 4px;margin-top:2px}
+.race20 .pacemap .jw.good{background:var(--chip-under-bg);color:var(--chip-under-fg)}
+.race20 .pacemap .jw.bad{background:#F3EDE9;color:#8a6a55}
+.race20 .pacemap .jw.vbad{background:#FBE9E9;color:var(--live)}
+.race20 .pacemap .horses{display:flex;flex-wrap:wrap;gap:2px 0;flex:1;min-width:0}
+.race20 .pacemap .horses .none{font-size:11px;color:var(--cap);align-self:center}
+.race20 .pacemap .num{font-size:11px;color:var(--cap);align-self:center;flex:none;width:26px;text-align:right}
+.race20 .pacemap .pz{display:inline-flex;flex-direction:column;align-items:center;width:26px;margin:0 1px}
+.race20 .pacemap .pz .mk{height:12px;line-height:12px;font-size:11px;font-weight:700}
+.race20 .pacemap .pz .mk.n-hon{color:var(--mk-hon)} .race20 .pacemap .pz .mk.n-tai{color:var(--mk-tai)}
+.race20 .pacemap .pz .mk.n-tan{color:var(--mk-tan)} .race20 .pacemap .pz .mk.n-oku{color:var(--mk-oku)}
+.race20 .pacemap .pz.jirai .hn{box-shadow:0 0 0 2px var(--live)}
+.race20 .pacemap .pz.nige .hn{box-shadow:0 0 0 2px var(--orange)}
+.race20 .pmlegend{font-size:11px;color:var(--cap);line-height:1.7;margin-top:5px}
+.race20 .pmlegend .sw{display:inline-block;width:9px;height:9px;border-radius:2px;
+  vertical-align:middle;margin:0 3px 0 2px}
+.race20 .pmlegend .sw.nige{background:var(--orange)}
+.race20 .pmlegend .sw.jirai{background:var(--live)}
 
 /* 内外バイアス */
 .race20 .biaslabel{font-size:12.5px;color:var(--sub);margin:9px 0 5px}

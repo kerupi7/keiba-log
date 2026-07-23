@@ -178,8 +178,8 @@ function renderBetsSectionV11(site) {
   const totalCost = bets.reduce((sum, b) => sum + (b.stake ?? b.tickets.length * 100), 0);
   const showResult = site.status === 'final';
   const header = showResult
-    ? '<tr><th class="l">券種</th><th>買い目</th><th>金額</th><th class="l">狙い</th><th>結果</th><th>払戻</th></tr>'
-    : '<tr><th class="l">券種</th><th>買い目</th><th>金額</th><th class="l">狙い</th></tr>';
+    ? '<tr><th class="l">券種</th><th class="l">買い目</th><th>金額</th><th class="l">狙い</th><th>結果</th><th>払戻</th></tr>'
+    : '<tr><th class="l">券種</th><th class="l">買い目</th><th>金額</th><th class="l">狙い</th></tr>';
   const rows = bets.map((b) => {
     const resultCell = showResult
       ? `<td class="${b.hit ? 'o' : 'x'}">${b.hit ? '✓' : '✕'}</td><td>${fmtYen(b.payout)}</td>`
@@ -187,7 +187,7 @@ function renderBetsSectionV11(site) {
     return `
       <tr>
         <td class="l">${escapeHtml(b.type.replace('三連', '3連'))}</td>
-        <td>${comboBoxes(b.type, b.combination, byNumberV11)}</td>
+        <td class="l">${comboBoxes(b.type, b.combination, byNumberV11)}</td>
         <td>${fmtYen(b.stake ?? b.tickets.length * 100)}</td>
         <td class="l wrap">${b.note ? escapeHtml(b.note) : '—'}</td>
         ${resultCell}
@@ -220,8 +220,8 @@ function renderBetsSection(site) {
   for (const h of site.horses) byNumberBets[h.number] = h;
   const showResult = site.status === 'final';
   const header = showResult
-    ? '<tr><th class="l">券種</th><th>買い目</th><th>ライン</th><th>結果</th><th>払戻</th></tr>'
-    : '<tr><th class="l">券種</th><th>買い目</th><th>ライン</th></tr>';
+    ? '<tr><th class="l">券種</th><th class="l">買い目</th><th>ライン</th><th>結果</th><th>払戻</th></tr>'
+    : '<tr><th class="l">券種</th><th class="l">買い目</th><th>ライン</th></tr>';
   const rows = bets.map((b) => {
     const resultCell = showResult
       ? `<td class="${b.hit ? 'o' : 'x'}">${b.hit ? '✓' : '✕'}</td><td>${fmtYen(b.payout)}</td>`
@@ -229,7 +229,7 @@ function renderBetsSection(site) {
     return `
       <tr>
         <td class="l">${escapeHtml(b.type.replace('三連', '3連'))}</td>
-        <td>${comboBoxes(b.type, b.combination, byNumberBets)}</td>
+        <td class="l">${comboBoxes(b.type, b.combination, byNumberBets)}</td>
         <td>${b.buy_line !== null ? b.buy_line.toFixed(1) + '倍〜' : '—'}</td>
         ${resultCell}
       </tr>
@@ -361,7 +361,7 @@ function renderAllHorsesTable(site) {
         <tr${rowCls}>
           <td>${h.rank ?? '—'}</td>
           <td>${umaBox(h.number, h.gate)}</td>
-          <td class="name ${markNameClass(h.ability_mark)}">${h.ability_mark || ''}${escapeHtml(h.name)}${extraChips}</td>
+          <td class="name ${markNameClass(h.ability_mark)}">${markSlot(h.ability_mark)}${escapeHtml(h.name)}${extraChips}</td>
           <td>${fmtNum(h.total, 1)}</td>
           <td>${h.odds ?? '—'}</td>
           <td>${h.popularity ?? '—'}</td>
@@ -420,7 +420,7 @@ function renderEvTable(site) {
     const evText = h.ev === null || h.ev === undefined ? '—' : fmtSignedPercent(h.ev, 0);
     return `
       <tr${h.ability_mark ? ' class="pred"' : ''}>
-        <td class="name ${markNameClass(h.ability_mark)}">${h.ability_mark || ''}${umaBox(h.number, h.gate, 'sm')} ${escapeHtml(h.name)}</td>
+        <td class="name ${markNameClass(h.ability_mark)}">${markSlot(h.ability_mark)}${umaBox(h.number, h.gate, 'sm')} ${escapeHtml(h.name)}</td>
         <td>${fmtPercent(h.estimated_prob, 0)}</td>
         <td class="sep">${h.fair_odds !== null && h.fair_odds !== undefined ? h.fair_odds.toFixed(1) : '—'}</td>
         <td class="sep">${h.odds ?? '—'}</td>
@@ -833,7 +833,7 @@ function renderEv20(site) {
     const evText = h.ev === null || h.ev === undefined ? '—' : fmtSignedPercent(h.ev, 0);
     return `
       <tr${h.ability_mark ? ' class="pred"' : ''}>
-        <td class="name ${markNameClass(h.ability_mark)}">${h.ability_mark || ''}${umaBox(h.number, h.gate, 'sm')} ${escapeHtml(h.name)}</td>
+        <td class="name ${markNameClass(h.ability_mark)}">${markSlot(h.ability_mark)}${umaBox(h.number, h.gate, 'sm')} ${escapeHtml(h.name)}</td>
         <td>${fmtPercent(h.estimated_prob, 0)}</td>
         <td class="sep">${h.fair_odds !== null && h.fair_odds !== undefined ? h.fair_odds.toFixed(1) : '—'}</td>
         <td class="sep">${h.odds ?? '—'}</td>
@@ -871,8 +871,8 @@ function renderBets20(site) {
   const totalCost = bets.reduce((sum, b) => sum + (b.stake ?? b.tickets.length * 100), 0);
   const showResult = site.status === 'final';
   const header = showResult
-    ? '<tr><th class="l">券種</th><th>買い目</th><th>金額</th><th>結果</th><th>払戻</th></tr>'
-    : '<tr><th class="l">券種</th><th>買い目</th><th>金額</th></tr>';
+    ? '<tr><th class="l">券種</th><th class="l">買い目</th><th>金額</th><th>結果</th><th>払戻</th></tr>'
+    : '<tr><th class="l">券種</th><th class="l">買い目</th><th>金額</th></tr>';
   const rows = bets.map((b) => {
     const resultCell = showResult
       ? `<td class="${b.hit ? 'o' : 'x'}">${b.hit ? '✓' : '✕'}</td><td>${fmtYen(b.payout)}</td>`
@@ -880,7 +880,7 @@ function renderBets20(site) {
     return `
       <tr>
         <td class="l">${escapeHtml(b.type.replace('三連', '3連'))}</td>
-        <td>${comboBoxes(b.type, b.combination, byNumberBets20)}</td>
+        <td class="l">${comboBoxes(b.type, b.combination, byNumberBets20)}</td>
         <td>${fmtYen(b.stake ?? b.tickets.length * 100)}</td>
         ${resultCell}
       </tr>
@@ -925,6 +925,66 @@ function buildRace20Html(site, oddsAll) {
   `;
 }
 
+// 脚質マップ: leg_bias の4行（逃げ/先行/差し/追込）に、その脚質の出走馬を馬番ボックスで並べる。
+// 行頭はコース別の実績（勝率・複勝率・走数）と有利不利の判定、行末は頭数。
+const PACE_STYLE_KEY = { '逃げ': '逃', '先行': '先', '差し': '差', '追込': '追' };
+const PACE_JUDG_CLASS = { '有利': 'good', 'やや有利': 'good', 'やや不利': 'bad', '不利': 'vbad', '強く不利': 'vbad' };
+
+function paceHorsePiece(h, isMainNige) {
+  const cls = `pz${h.bet_mark === '地雷' ? ' jirai' : ''}${isMainNige ? ' nige' : ''}`;
+  return `<span class="${cls}" title="${escapeHtml(h.name)}">${umaBox(h.number, h.gate, 'sm')}`
+    + `<span class="mk ${markNameClass(h.ability_mark)}">${h.ability_mark || ''}</span></span>`;
+}
+
+function renderPaceMap20(site) {
+  const p = site.prediction;
+  const runners = site.horses.filter((h) => !h.scratched);
+  // 主逃げは "18レーゼドラマ" のような文字列。先頭の数字を馬番として取り出す
+  const mainNige = new Set((p.front_pressure?.main_nige || [])
+    .map((s) => Number(String(s).match(/^\d+/)))
+    .filter((n) => !Number.isNaN(n)));
+
+  const used = new Set();
+  const lanes = p.leg_bias.map((lb) => {
+    const key = PACE_STYLE_KEY[lb.style];
+    const hs = runners.filter((h) => h.running_style === key);
+    hs.forEach((h) => used.add(h.number));
+    const j = PACE_JUDG_CLASS[lb.judgment] || '';
+    const body = hs.length
+      ? hs.map((h) => paceHorsePiece(h, mainNige.has(h.number))).join('')
+      : '<span class="none">該当なし</span>';
+    return `
+      <div class="lane j-${j}">
+        <div class="lb">
+          <div class="nm">${escapeHtml(lb.style)}</div>
+          <div class="rt">複勝 ${escapeHtml(lb.fukusho_rate)}</div>
+          <span class="jw ${j}">${escapeHtml(lb.judgment)}</span>
+        </div>
+        <div class="horses">${body}</div>
+        <div class="num">${hs.length}頭</div>
+      </div>
+    `;
+  }).join('');
+
+  // 脚質データのない馬（running_style が null など）は取りこぼさず最終行にまとめる
+  const rest = runners.filter((h) => !used.has(h.number));
+  const restLane = rest.length ? `
+    <div class="lane">
+      <div class="lb"><div class="nm">不明</div><div class="rt">脚質データなし</div></div>
+      <div class="horses">${rest.map((h) => paceHorsePiece(h, mainNige.has(h.number))).join('')}</div>
+      <div class="num">${rest.length}頭</div>
+    </div>
+  ` : '';
+
+  return `
+    <div class="subh">脚質マップ</div>
+    <div class="pacemap">${lanes}${restLane}</div>
+    <div class="pmlegend">複勝率はこのコースの脚質別実績（勝率・連対率は下の脚質傾向）。馬番の下は印、枠線は
+      <span class="sw nige"></span>主逃げ候補 /
+      <span class="sw jirai"></span>地雷</div>
+  `;
+}
+
 function renderOverview20(site) {
   const r = site.race;
   const p = site.prediction;
@@ -956,8 +1016,10 @@ function renderOverview20(site) {
     `);
   }
 
-  // (c) 脚質傾向
+  // (c) 脚質マップ（各脚質に出走馬を並べる）＋ 脚質傾向（コース別実績の内訳・従来どおり）
   if (p.leg_bias && p.leg_bias.length) {
+    sections.push(renderPaceMap20(site));
+
     const judgClass = { '有利': 'good', '不利': 'bad', '強く不利': 'vbad' };
     const rows = p.leg_bias.map((lb) => `
       <tr><td class="l">${escapeHtml(lb.style)}</td><td>${escapeHtml(lb.win_rate)}</td><td>${escapeHtml(lb.rentai_rate)}</td><td>${escapeHtml(lb.fukusho_rate)}</td><td>${lb.runs}走</td><td class="l sep"><span class="jw ${judgClass[lb.judgment] || ''}">${escapeHtml(lb.judgment)}</span></td></tr>
