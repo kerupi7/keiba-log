@@ -43,6 +43,11 @@ function filterAxisLabel(filterKey) {
 
 /* ---------- 画面1: コース一覧 ---------- */
 
+// 内回り・外回り・直線の表示。同じ距離でも走るコースが違うので必ず出す（無い場合は空）。
+function aroundSuffix(around) {
+  return around ? `<span class="carnd">${escapeHtml(around)}</span>` : '';
+}
+
 // 場コード（course_idの先頭2桁）→ 競馬場名。index.jsonの実データから作るので対応表を二重管理しない。
 function trackCodeMap(index) {
   const map = {};
@@ -64,7 +69,7 @@ function renderList(index, curTrack) {
     <a class="crow" href="courses.html?c=${encodeURIComponent(c.id)}">
       <div class="cl">
         <span class="sfc ${c.surface === '芝' ? 'turf' : 'dirt'}">${c.surface === '芝' ? '芝' : 'ダ'}</span>
-        <span class="cn">${c.distance}m</span>
+        <span class="cn">${c.distance}m${aroundSuffix(c.around)}</span>
         ${c.grade !== 'high' ? `<span class="ctier ${c.grade}">${c.grade === 'mid' ? '標準' : '少'}</span>` : ''}
       </div>
       <span class="cm">${c.n}R ／ 勝ち ${mmss(c.wt)}</span>
@@ -369,7 +374,7 @@ function renderDetail(data, filterKey, opts) {
   return `
     <a class="back-link" href="courses.html?t=${encodeURIComponent(data.id.slice(0, 2))}">← ${escapeHtml(data.track)}のコース一覧</a>
     <div class="chead">
-      <div class="ctitle">${escapeHtml(data.track)} ${escapeHtml(data.surface)} ${data.distance}m</div>
+      <div class="ctitle">${escapeHtml(data.track)} ${escapeHtml(data.surface)} ${data.distance}m${data.around ? `（${escapeHtml(data.around)}）` : ''}</div>
       <div class="cmeta">${escapeHtml(label)}／${f.n}レース・延べ${totalRuns}頭</div>
     </div>
     <div class="filters">
