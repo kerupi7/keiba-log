@@ -109,7 +109,38 @@ function renderMarks(marks) {
   `;
 }
 
-// 評価（A＋〜E）別の成績。印と違い全出走馬に付くので、ランクどおりに成績が並ぶかを見る表。
+// 印×オッズ帯の成績。同じ印でも人気圏によって走り方が違うので、帯ごとに分けて見る表。
+// オッズは確定オッズ（final_odds）基準。
+function renderMarkOdds(byMarkOdds) {
+  const list = (byMarkOdds || []).filter((m) => m.n > 0 && (m.bands || []).length);
+  if (!list.length) return '';
+  const rows = list.map((m) => {
+    const color = MK_COLOR[m.mark] || '--fg';
+    const label = (m.mark + ' ' + (m.name || '')).trim();
+    const head = `<tr class="mkgroup"><td class="l mkcol" colspan="5" style="color:var(${color})">${escapeHtml(label)}
+      <span class="note">${m.n.toLocaleString()}頭</span></td></tr>`;
+    const bands = m.bands.map((b) => `
+      <tr>
+        <td class="l">${escapeHtml(b.band)}</td>
+        <td>${b.n.toLocaleString()}</td>
+        <td class="sep">${fmtPercent(b.win_rate, 1)}</td>
+        <td>${fmtPercent(b.rentai_rate, 1)}</td>
+        <td>${fmtPercent(b.top3_rate, 1)}</td>
+      </tr>
+    `).join('');
+    return head + bands;
+  }).join('');
+  return `
+    <div class="eyebrow">印×オッズ帯の成績 <span class="note">確定オッズ基準</span></div>
+    <table>
+      <thead><tr><th class="l">オッズ帯</th><th>頭数</th><th class="sep">勝率</th><th>連対率</th><th>複勝率</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div class="scrollnote">複勝率＝3着内率。頭数の少ない帯は振れが大きいので参考値として見る。</div>
+  `;
+}
+
+// 評価（S〜E）別の成績。印と違い全出走馬に付くので、ランクどおりに成績が並ぶかを見る表。
 function renderGrades(grades) {
   const list = (grades || []).filter((g) => g.n > 0);
   if (!list.length) return '';
@@ -181,6 +212,7 @@ function renderStatsPage(stats) {
     ${renderByType(stats.roi.by_type)}
     ${renderKpi(stats.thresholds)}
     ${renderMarks(stats.marks)}
+    ${renderMarkOdds(stats.marks.by_mark_odds)}
     ${renderGrades(stats.grades)}
     ${renderPace(stats.pace)}
     ${renderCalibration(stats)}
