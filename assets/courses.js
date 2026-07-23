@@ -296,7 +296,7 @@ function tableHead(tblKey, sortState) {
   return `<thead><tr><th>区分</th><th>走数</th>${cols}</tr></thead>`;
 }
 
-function tableRow(label, v, rank, sortIdx, lowTier) {
+function tableRow(label, v, rank, sortIdx, lowTier, rowCls) {
   const dim = lowTier || v[0] < RUNS_THIN;
   // バッジの有無でラベルの左端がずれないよう、順位なしの行も同じ幅のスロットを置く
   const badge = `<span class="rkslot">${rank ? `<span class="rk r${rank}">${rank}</span>` : ''}</span>`;
@@ -308,24 +308,90 @@ function tableRow(label, v, rank, sortIdx, lowTier) {
     const bar = i === 3 ? `<span class="bar" style="width:${Math.min(72, v[3] * 1.15)}%"></span>` : '';
     return `<td class="${isRoi ? 'roi' : ''}${i === 3 ? ' fk' : ''}${i === sortIdx ? ' sorted' : ''}">${txt}${bar}</td>`;
   };
-  return `<tr class="${rank ? 'rank' + rank : ''}${dim ? ' dim' : ''}">
+  return `<tr class="${rank ? 'rank' + rank : ''}${dim ? ' dim' : ''}${rowCls ? ' ' + rowCls : ''}">
     <td>${badge}${label}</td>
     <td class="${v[0] < RUNS_THIN ? 'thin' : ''}">${v[0]}</td>
     ${[1, 2, 3, 4, 5].map(cell).join('')}
   </tr>`;
 }
 
-function renderTable(tblKey, entries, fmtLabel, sortState, lowTier) {
+// ①②③の順位付け（走数30以上・率3指標のみ・上位3件）。カード表示とも同じ規則を使うため関数に切り出す。
+function rankedMap(entries, sortIdx, lowTier) {
+  if (!RATE_IDX.has(sortIdx) || lowTier) return new Map();
+  const eligible = entries.filter(([, v]) => v[0] >= RUNS_THIN);
+  return new Map([...eligible].sort((a, b) => b[1][sortIdx] - a[1][sortIdx]).slice(0, 3).map(([k], n) => [k, n + 1]));
+}
+
+// opts.rowCls(key) … 行に足すクラス（人気表の層バンド用）
+// opts.skip     … 表から除く区分名のSet（人物タブでカードに出した上位3件）
+function renderTable(tblKey, entries, fmtLabel, sortState, lowTier, opts) {
+  opts = opts || {};
   const s = sortState[tblKey] || { idx: 3, on: false };
-  let ranked = new Map();
-  if (RATE_IDX.has(s.idx) && !lowTier) {
-    const eligible = entries.filter(([, v]) => v[0] >= RUNS_THIN);
-    ranked = new Map([...eligible].sort((a, b) => b[1][s.idx] - a[1][s.idx]).slice(0, 3).map(([k], n) => [k, n + 1]));
-  }
-  const shown = s.on ? [...entries].sort((a, b) => b[1][s.idx] - a[1][s.idx]) : entries;
-  const rows = shown.map(([k, v]) => tableRow(fmtLabel(k), v, ranked.get(k), s.idx, lowTier)).join('');
+  const ranked = rankedMap(entries, s.idx, lowTier);
+  const shown = (s.on ? [...entries].sort((a, b) => b[1][s.idx] - a[1][s.idx]) : entries)
+    .filter(([k]) => !(opts.skip && opts.skip.has(k)));
+  const rows = shown.map(([k, v]) =>
+    tableRow(fmtLabel(k), v, ranked.get(k), s.idx, lowTier, opts.rowCls ? opts.rowCls(k) : '')).join('');
   // 7列(区分/走数/勝率/連対率/複勝率/単回収/複回収)はモバイル幅に収まらないため横スクロール容器で包む
   return `<div class="tblwrap"><table class="st" data-tbl="${tblKey}">${tableHead(tblKey, sortState)}<tbody>${rows}</tbody></table></div>`;
+}
+
+/* ---------- 人気別: 層タイル（B-2） ---------- */
+// 層は順序尺度（本命→大穴）なので、色は navy 1色の濃→淡で示す。色相は増やさない。
+const POP_TIERS = [
+  { key: 'tier1', label: '本命サイド', range: '1〜3番人気', keys: ['1', '2', '3'] },
+  { key: 'tier2', label: '中穴', range: '4〜6番人気', keys: ['4', '5', '6'] },
+  { key: 'tier3', label: '大穴', range: '7番人気〜', keys: ['7', '8', '9', '10', '11+'] },
+];
+function popTierKey(k) {
+  const t = POP_TIERS.find((x) => x.keys.includes(k));
+  return t ? t.key : '';
+}
+// 層ごとの加重平均（率は走数で重み付け）と、3着内に来た延べ頭数のシェア
+function popTierStats(pop) {
+  const inTop3 = (v) => v[0] * v[3] / 100;
+  const total = Object.values(pop).reduce((s, v) => s + inTop3(v), 0);
+  return POP_TIERS.map((t) => {
+    const vs = t.keys.filter((k) => pop[k]).map((k) => pop[k]);
+    const n = vs.reduce((s, v) => s + v[0], 0);
+    const w = (i) => (n ? vs.reduce((s, v) => s + v[0] * v[i], 0) / n : 0);
+    return { ...t, n, fuku: w(3), win: w(1), roi: w(4), share: total ? vs.reduce((s, v) => s + inTop3(v), 0) / total * 100 : 0 };
+  }).filter((t) => t.n > 0);
+}
+function renderPopTiles(pop, lowTier) {
+  const stats = popTierStats(pop);
+  if (lowTier || stats.length < 2) return '';   // 母数が少ない条件では層のまとめを断定しない
+  const tiles = stats.map((t) => `
+    <div class="tile ${t.key}">
+      <div class="lb">${t.label}<br>${t.range}</div>
+      <div class="vv">${t.fuku.toFixed(1)}<span>%</span></div>
+      <div class="sub">3着内の${t.share.toFixed(1)}%／単回収 ${t.roi.toFixed(0)}%</div>
+      <div class="track"><i style="width:${t.share.toFixed(1)}%"></i></div>
+    </div>`).join('');
+  return `<div class="poptiles">${tiles}</div>
+    <div class="tilenote">数字は各層の複勝率（走数で重み付けした平均）。「3着内の◯%」は、3着内に来た延べ頭数のうちその層が占める割合。</div>`;
+}
+
+/* ---------- 人物・血統: 上位3件のカード（B-2） ---------- */
+// 順位の規則は表と共通（rankedMap）。並び替え中の指標をそのままカードの主数値に出す。
+function renderEntityCards(entries, ranked, sortIdx) {
+  if (!ranked.size) return '';
+  const map = new Map(entries);
+  const max = Math.max(...entries.filter(([, v]) => v[0] >= RUNS_THIN).map(([, v]) => v[sortIdx]));
+  const cards = [...ranked.entries()].sort((a, b) => a[1] - b[1]).map(([k, n]) => {
+    const v = map.get(k);
+    return `
+      <div class="entcard${n === 1 ? ' c1' : ''}">
+        <span class="rkc r${n}">${n}</span>
+        <div class="nm">${escapeHtml(k)}</div>
+        <div class="runs">${v[0]}走</div>
+        <div class="lb">${METRICS[sortIdx]}</div>
+        <div class="big">${v[sortIdx].toFixed(1)}%</div>
+        <div class="track"><i style="width:${(v[sortIdx] / max * 100).toFixed(1)}%"></i></div>
+        <div class="croi"><span>単回収 ${v[4].toFixed(0)}%</span><span>複回収 ${v[5].toFixed(0)}%</span></div>
+      </div>`;
+  }).join('');
+  return `<div class="entcards">${cards}</div>`;
 }
 
 function renderEntitySection(f, ent, sortState, lowTier) {
@@ -338,8 +404,13 @@ function renderEntitySection(f, ent, sortState, lowTier) {
     body = '';
     note = `この母数（${f.n}レース）では${entLabel}別の集計を出していません。1人あたりの走数が数走にしかならず、率が意味を持たないためです。`;
   } else {
-    body = renderTable('tblEnt', entries, (k) => escapeHtml(k), sortState, lowTier);
-    note = `${entLabel}別・走数上位${entries.length}件（4走以上）。名前は出馬表の表記のまま（例: ルメー／美浦・宮田）。`;
+    const s = sortState.tblEnt || { idx: 3, on: false };
+    const ranked = rankedMap(entries, s.idx, lowTier);
+    const cards = renderEntityCards(entries, ranked, s.idx);
+    // カードに出した3件は表からは省く（同じ行が上下に二重に出るのを避ける）
+    body = cards + renderTable('tblEnt', entries, (k) => escapeHtml(k), sortState, lowTier, { skip: new Set(ranked.keys()) });
+    note = `${entLabel}別・走数上位${entries.length}件（4走以上）。名前は出馬表の表記のまま（例: ルメー／美浦・宮田）。`
+      + (ranked.size ? `上のカードは${METRICS[s.idx]}の上位${ranked.size}件（走数30以上）で、下の表からは省いています。` : '');
   }
   return `
     <div class="eyebrow">人物・血統別成績</div>
@@ -393,7 +464,9 @@ function renderDetail(data, filterKey, opts) {
     <div class="eyebrow">枠順別成績</div>
     ${renderTable('tblGate', gateEntries, (k) => `${wakuBox(+k, 'sm')}枠`, sortState, lowTier)}
     <div class="eyebrow">人気別成績</div>
-    ${renderTable('tblPop', popEntries, (k) => k === '11+' ? '11番人気〜' : `${k}番人気`, sortState, lowTier)}
+    ${renderPopTiles(f.pop, lowTier)}
+    ${renderTable('tblPop', popEntries, (k) => k === '11+' ? '11番人気〜' : `${k}番人気`, sortState, lowTier,
+        { rowCls: popTierKey })}
     ${renderEntitySection(f, ent, sortState, lowTier)}
     <div class="notebox">
       勝率・連対率・複勝率は該当区分の全出走馬ベース。単回収・複回収は単勝／複勝100円購入時の回収率（100%＝収支トントン）。

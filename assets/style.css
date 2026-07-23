@@ -769,6 +769,39 @@ details.subfold>summary .sc{margin-left:auto;color:var(--navy);
 .cstats table.st td.fk{position:relative}
 .cstats table.st .bar{position:absolute;right:3px;bottom:4px;height:3px;background:var(--cta);border-radius:2px;opacity:.5}
 
+/* 人気別の層タイル（本命／中穴／大穴）。層は順序尺度なので navy 1色の濃→淡だけで示す */
+.cstats .tier1{--tier:#003E70} .cstats .tier2{--tier:#6E8CA6} .cstats .tier3{--tier:#B9C6D2}
+.cstats .poptiles{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:8px 0 2px}
+.cstats .poptiles .tile{border:1px solid var(--rule);border-radius:7px;padding:9px 10px 10px;
+  border-left:4px solid var(--tier)}
+.cstats .poptiles .lb{font-size:10.5px;color:var(--cap);line-height:1.35}
+.cstats .poptiles .vv{font-size:21px;font-weight:700;font-variant-numeric:tabular-nums;margin-top:3px;line-height:1.05}
+.cstats .poptiles .vv span{font-size:11px;font-weight:600;color:var(--cap);margin-left:2px}
+.cstats .poptiles .sub{font-size:10.5px;color:var(--cap);margin-top:4px;line-height:1.5}
+.cstats .poptiles .track{height:4px;background:#ECF1F6;border-radius:2px;margin-top:6px}
+.cstats .poptiles .track i{display:block;height:100%;background:var(--tier);border-radius:0 2px 2px 0}
+.cstats .tilenote{font-size:10.5px;color:var(--cap);margin-top:6px;line-height:1.55}
+/* 人気表の行頭の帯は層専用にする（金銀銅は①②③バッジが担うので、帯とは競合させない） */
+.cstats table.st[data-tbl="tblPop"] tbody td:first-child{box-shadow:inset 3px 0 0 var(--tier)}
+
+/* 人物・血統: 上位3件のカード */
+.cstats .entcards{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:9px 0 4px}
+.cstats .entcard{border:1px solid var(--rule);border-radius:7px;padding:9px;background:#fff}
+.cstats .entcard.c1{border-color:#E4CE94;background:#FDFAF2}
+.cstats .entcard .rkc{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;
+  border-radius:50%;font-size:10px;font-weight:700;color:#fff}
+.cstats .entcard .rkc.r1{background:#B8860B} .cstats .entcard .rkc.r2{background:#8C8C8C} .cstats .entcard .rkc.r3{background:#A9702E}
+/* 名前が1行の枚と2行の枚で数値の高さがずれないよう、名前欄は2行ぶんを確保する */
+.cstats .entcard .nm{font-size:12.5px;font-weight:700;margin:5px 0 1px;line-height:1.25;
+  word-break:break-word;min-height:2.5em}
+.cstats .entcard .runs,.cstats .entcard .lb{font-size:10.5px;color:var(--cap)}
+.cstats .entcard .lb{margin-top:6px}
+.cstats .entcard .big{font-size:21px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.15}
+.cstats .entcard .track{height:4px;background:#ECF1F6;border-radius:2px;margin-top:5px}
+.cstats .entcard .track i{display:block;height:100%;background:var(--cta);opacity:.5;border-radius:0 2px 2px 0}
+.cstats .entcard .croi{font-size:10.5px;color:var(--cap);margin-top:5px}
+.cstats .entcard .croi span{display:block;white-space:nowrap}
+
 /* 人物・血統タブ */
 .cstats .enttabs{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin:14px 0 9px}
 .cstats .enttabs button{padding:8px 2px;font-size:12.5px;border:1px solid var(--rule);background:#fff;
