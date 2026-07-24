@@ -1,0 +1,173 @@
+<title>展開シナリオ 新表示モック — Ans.</title>
+<style>
+  :root{
+    --text:#333;--sub:#5C5C5C;--cap:#757575;
+    --navy:#003E70;--link:#326691;--orange:#F58700;
+    --hit:#0F7A3D;--live:#EB1400;
+    --bg:#fff;--sub-bg:#FAFAFA;--sub-bg2:#F1F1F0;
+    --rule:#E3E3E3;--rule-strong:#333;
+    --font:-apple-system,"system-ui","Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#EDEDEA;color:var(--text);font-family:var(--font);
+    font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased;padding:22px 14px 60px}
+  .wrap{max-width:940px;margin:0 auto}
+  .pagehd{font-size:19px;font-weight:700;color:var(--navy);margin:0 0 4px;font-style:italic}
+  .pagesub{font-size:12.5px;color:var(--sub);margin:0 0 22px;line-height:1.7}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.cols{grid-template-columns:1fr}}
+  .card{background:var(--bg);border:1px solid var(--rule);border-radius:6px;padding:16px 16px 20px;
+    box-shadow:0 1px 2px rgba(0,0,0,.04)}
+  .cardtag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.04em;
+    padding:2px 9px;border-radius:3px;margin-bottom:12px}
+  .cardtag.old{background:#EFEFEC;color:#8a8a80}
+  .cardtag.new{background:var(--navy);color:#fff}
+
+  /* ==== 実サイト踏襲クラス ==== */
+  .secthead{font-size:15px;font-weight:700;color:var(--text);padding-bottom:6px;
+    border-bottom:2px solid var(--rule-strong);margin-bottom:4px}
+  .subh{font-size:13px;font-weight:700;margin:16px 0 4px;color:var(--navy)}
+  table.kg{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:2px}
+  table.kg th{color:var(--cap);font-weight:700;border-bottom:1px solid var(--rule-strong);
+    padding:3px 6px;text-align:center}
+  table.kg td{padding:3px 6px;text-align:center;border-bottom:1px solid var(--rule)}
+  table.kg td.l{text-align:left}
+  .statline{margin-top:8px;padding:7px 10px;background:var(--sub-bg2);border-radius:2px;
+    font-size:12.5px;color:var(--sub)}
+  .statline .big{font-size:16px;font-weight:700;color:var(--navy);margin:0 3px}
+  .statline .note{display:block;margin-top:3px;font-size:11.5px;color:var(--cap)}
+  .scn{border-left:3px solid var(--navy);padding:7px 0 7px 11px;margin:9px 0}
+  .scn.sub{border-color:#9db2c8}
+  .scn.etc{border-color:#c9c9c4}
+  .scn .hd{font-size:13.5px;font-weight:700}
+  .scn .hd .p{color:var(--navy);margin-left:5px;font-variant-numeric:tabular-nums}
+  .scn .fav{margin-top:6px;font-size:12.5px;color:var(--text)}
+  .scn .tag{display:inline-block;font-size:11px;font-weight:700;background:var(--navy);color:#fff;
+    border-radius:2px;padding:1px 6px;margin-right:7px}
+  .scn.sub .tag{background:#5C7A99}
+  .scn.etc .tag{background:#9a9a94}
+  .scn .nm{font-weight:700;white-space:nowrap}
+  .hn{display:inline-block;min-width:19px;padding:0 4px;border:1px solid #bbb;border-radius:3px;
+    background:#fff;font-size:11px;font-weight:700;text-align:center;line-height:16px;
+    font-variant-numeric:tabular-nums;vertical-align:middle}
+
+  /* ==== 新設計だけの要素 ==== */
+  .rolebadge{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.06em;
+    padding:1px 7px;border-radius:2px;margin-right:8px;vertical-align:middle}
+  .rolebadge.hon{background:var(--navy);color:#fff}
+  .rolebadge.tai{background:#fff;color:#5C7A99;border:1px solid #9db2c8}
+  .scn.etc.folded{opacity:.62}
+  .scn.etc.folded .hd{font-weight:600;color:var(--cap)}
+  .kick{display:inline-block;font-size:10px;font-weight:700;color:var(--hit);
+    border:1px solid #b6dcc4;background:#EDF6F0;border-radius:3px;padding:0 4px;margin-left:5px;
+    line-height:15px;vertical-align:middle}
+  .kicklegend{margin-top:11px;font-size:11px;color:var(--cap);line-height:1.8}
+  .kicklegend .kick{margin-left:0;margin-right:4px}
+  .foldnote{font-size:11px;color:var(--cap);margin-top:3px;padding-left:11px}
+  .reco{display:flex;flex-wrap:wrap;gap:5px 16px;font-size:12.5px;margin-top:3px}
+  .reco .nm{font-weight:700;white-space:nowrap}
+
+  .diff{margin-top:24px;background:var(--bg);border:1px solid var(--rule);border-radius:6px;padding:16px 18px}
+  .diff h3{margin:0 0 4px;font-size:14px;color:var(--navy)}
+  .diff ul{margin:0;padding-left:0;list-style:none}
+  .diff li{padding:7px 0;border-top:1px solid var(--rule);font-size:12.5px;line-height:1.7;
+    display:grid;grid-template-columns:82px 1fr;gap:10px}
+  .diff li:first-child{border-top:0}
+  .diff .k{font-weight:700;color:var(--text)}
+  .diff .v b{color:var(--navy)}
+  .racelabel{font-size:11.5px;color:var(--cap);margin:0 0 10px}
+</style>
+
+<div class="wrap">
+  <h1 class="pagehd">展開シナリオ 新表示 モック</h1>
+  <p class="pagesub">中京9R（例）／ 実データ 202610020202 の推奨馬で作成。左＝現行の見せ方、右＝新設計（本命＋対抗の2択・末脚の質で選定・確率は温度較正済み）。エンジン側（keiba_report.py）は対応済みで、この見た目に race.js を合わせるのが今回の作業です。</p>
+
+  <div class="cols">
+
+    <!-- ===== BEFORE ===== -->
+    <div class="card">
+      <span class="cardtag old">現行</span>
+      <div class="secthead">展開・レース分析</div>
+
+      <div class="subh">逃げ候補・先行圧</div>
+      <table class="kg">
+        <thead><tr><th>番</th><th class="l">馬名</th><th class="l">分類</th><th>先行率</th></tr></thead>
+        <tbody>
+          <tr><td><span class="hn">1</span></td><td class="l">ブランチアウト</td><td class="l">逃げ型</td><td>0.72</td></tr>
+          <tr><td><span class="hn">13</span></td><td class="l">オーマイラッキーン</td><td class="l">先行型</td><td>0.58</td></tr>
+          <tr><td><span class="hn">12</span></td><td class="l">アリュウ</td><td class="l">先行型</td><td>0.44</td></tr>
+        </tbody>
+      </table>
+      <div class="statline">先行圧指数 <span class="big">0.48</span> → high（主逃げ=1ブランチアウト）</div>
+
+      <div class="subh">展開シナリオ</div>
+      <div class="scn">
+        <div class="hd">平均ペース・前残り<span class="p">50%</span></div>
+        <div class="fav"><span class="tag">平均</span>
+          <span class="nm"><span class="hn">2</span> マサハヤルージュ</span>・<span class="nm"><span class="hn">5</span> モンロワイヤル</span></div>
+      </div>
+      <div class="scn sub">
+        <div class="hd">ミドル〜速め<span class="p">30%</span></div>
+        <div class="fav"><span class="tag">速め</span>
+          <span class="nm"><span class="hn">1</span> ブランチアウト</span>・<span class="nm"><span class="hn">13</span> オーマイラッキーン</span></div>
+      </div>
+      <div class="scn etc">
+        <div class="hd">スロー・上がり勝負<span class="p">20%</span></div>
+        <div class="fav"><span class="tag">スロー</span>
+          <span class="nm"><span class="hn">3</span> エリカアズーラ</span>・<span class="nm"><span class="hn">10</span> メイショウユウゲン</span></div>
+      </div>
+    </div>
+
+    <!-- ===== AFTER ===== -->
+    <div class="card">
+      <span class="cardtag new">新設計</span>
+      <div class="secthead">展開・レース分析</div>
+
+      <div class="subh">逃げ候補・先行圧</div>
+      <table class="kg">
+        <thead><tr><th>番</th><th class="l">馬名</th><th class="l">分類</th><th>先行率</th></tr></thead>
+        <tbody>
+          <tr><td><span class="hn">1</span></td><td class="l">ブランチアウト</td><td class="l">逃げ型</td><td>0.72</td></tr>
+          <tr><td><span class="hn">13</span></td><td class="l">オーマイラッキーン</td><td class="l">先行型</td><td>0.58</td></tr>
+          <tr><td><span class="hn">12</span></td><td class="l">アリュウ</td><td class="l">先行型</td><td>0.44</td></tr>
+        </tbody>
+      </table>
+      <div class="statline">先行圧指数 <span class="big">0.48</span> → やや高め
+        <span class="note">※前に行きたい馬が多め。逃げは「候補群」で見る（1頭の断定はしない）</span>
+      </div>
+
+      <div class="subh">展開シナリオ（本命＋対抗）</div>
+      <div class="scn">
+        <div class="hd"><span class="rolebadge hon">本命</span>平均ペース・前残り<span class="p">48%</span></div>
+      </div>
+      <div class="scn sub">
+        <div class="hd"><span class="rolebadge tai">対抗</span>ミドル〜速め<span class="p">31%</span></div>
+      </div>
+      <div class="scn etc folded">
+        <div class="hd">スロー・上がり勝負<span class="p">21%</span></div>
+      </div>
+      <div class="foldnote">3つ目（スロー）は薄く畳む。可能性は残すが主役にしない。</div>
+
+      <div class="subh">狙い（末脚順）</div>
+      <div class="reco">
+        <span class="nm"><span class="hn">13</span> オーマイラッキーン<span class="kick">末脚◎</span></span>
+        <span class="nm"><span class="hn">1</span> ブランチアウト<span class="kick">末脚◎</span></span>
+        <span class="nm"><span class="hn">12</span> アリュウ<span class="kick">末脚◯</span></span>
+      </div>
+      <div class="kicklegend"><span class="kick">末脚◎</span>＝ゴール前の伸び脚が特に速い ／ <span class="kick">末脚◯</span>＝速い。ペースが本命でも対抗でも、狙いは末脚の質で決める（展開で入れ替えない）。</div>
+    </div>
+
+  </div>
+
+  <div class="diff">
+    <h3>現行 → 新設計 の変更点</h3>
+    <p class="racelabel">この例（202610020202）で実際に推奨馬がどう変わるか</p>
+    <ul>
+      <li><span class="k">シナリオ表示</span><span class="v">3つ対等の並び → <b>本命＋対抗を明示</b>、3つ目は薄く畳む。確率は<b>温度較正済み</b>（本命の盛りすぎを補正）</span></li>
+      <li><span class="k">推奨馬</span><span class="v">現行は展開ごとに脚質を差し替え<b>同点団子</b>→ 新は<b>末脚順で1回だけ表示</b>（本命/対抗のペースとは分離）。前で運ぶ×末脚良好の13・1番が上位に</span></li>
+      <li><span class="k">脚質の扱い</span><span class="v">「速い展開→後方有利」の入れ替えを<b>撤廃</b>。前有利を基本に、速いほど前への肩入れを弱めるだけ</span></li>
+      <li><span class="k">先行圧</span><span class="v">high閾値を厳しく（0.45→0.55）＋<b>逃げは候補群</b>として提示（1頭断定はしない）</span></li>
+      <li><span class="k">チップ表記</span><span class="v">意味の分かりにくい「平均／速め」→ 推奨馬の行に<b>「狙い」</b>、末脚の印は<b>「末脚◎/◯」</b>で明示</span></li>
+    </ul>
+  </div>
+</div>

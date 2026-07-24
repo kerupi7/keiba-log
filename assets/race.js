@@ -1064,35 +1064,49 @@ function renderOverview20(site) {
     if (p.front_pressure) {
       const mainNige = p.front_pressure.main_nige || [];
       const nigeText = mainNige.length ? `（主逃げ=${mainNige.map((n) => escapeHtml(n)).join('・')}）` : '';
-      statHtml = `<div class="statline">先行圧指数 <span class="big">${p.front_pressure.index.toFixed(2)}</span> → ${escapeHtml(p.front_pressure.label)}${nigeText}</div>`;
+      statHtml = `<div class="statline">先行圧指数 <span class="big">${p.front_pressure.index.toFixed(2)}</span> → ${escapeHtml(p.front_pressure.label)}${nigeText}<span class="note">※前に行きたい馬が多め。逃げは「候補群」で見る（1頭の断定はしない）</span></div>`;
     }
     if (tableHtml || statHtml) {
       sections.push(`<div class="subh">逃げ候補・先行圧</div>${tableHtml}${statHtml}`);
     }
   }
 
-  // (f) 展開シナリオ
+  // (f) 展開シナリオ（本命＋対抗）。推奨馬はシナリオ各ブロックには出さず、下の「狙い」に1回だけまとめる。
   if (p.scenario) {
     const blocks = [
       { key: 'main', cls: '' },
       { key: 'sub', cls: ' sub' },
-      { key: 'other', cls: ' etc' },
+      { key: 'other', cls: ' etc folded' },
     ];
+    const roleBadgeHtml = (displayRole) => {
+      if (displayRole === '本命') return '<span class="rolebadge hon">本命</span>';
+      if (displayRole === '対抗') return '<span class="rolebadge tai">対抗</span>';
+      return '';
+    };
+    let otherTitle = '';
     const blocksHtml = blocks.map(({ key, cls }) => {
       const s = p.scenario[key];
       if (!s) return '';
-      const favs = s.favorites || [];
-      const favText = favs.length
-        ? favs.map((f) => `<span class="nm">${umaBox(Number(f.number), (byNumberOv[f.number] || {}).gate, 'sm')} ${escapeHtml(f.name)}</span>`).join('・')
-        : '該当薄';
-      return `
-        <div class="scn${cls}">
-          <div class="hd"><span class="p">${Math.round(s.prob * 100)}%</span> ${escapeHtml(s.title)}</div>
-          <div class="fav"><span class="tag">${escapeHtml(s.type_tag)}</span> ${favText}</div>
-        </div>
-      `;
+      const pctHtml = `<span class="p">${Math.round(s.prob * 100)}%</span>`;
+      if (key === 'other') otherTitle = s.title; // otherは畳む：ヘッダ（ペース名＋%）だけ表示
+      return `<div class="scn${cls}"><div class="hd">${roleBadgeHtml(s.display_role)}${escapeHtml(s.title)}${pctHtml}</div></div>`;
     }).join('');
-    sections.push(`<div class="subh">展開シナリオ</div>${blocksHtml}`);
+    const foldNoteHtml = otherTitle
+      ? `<div class="foldnote">3つ目（${escapeHtml(otherTitle)}）は薄く畳む。可能性は残すが主役にしない。</div>`
+      : '';
+
+    // 狙い（末脚順）: main/sub/otherで共通の固定3頭（scenario.main.favorites・pick_favoritesが末脚順で確定済み）を1回だけ表示
+    const recoFavs = (p.scenario.main && p.scenario.main.favorites) || [];
+    let recoHtml = '';
+    if (recoFavs.length) {
+      const recoItems = recoFavs.map((f) => {
+        const kickHtml = f.kick_tier ? `<span class="kick">末脚${escapeHtml(f.kick_tier)}</span>` : '';
+        return `<span class="nm">${umaBox(Number(f.number), (byNumberOv[f.number] || {}).gate, 'sm')} ${escapeHtml(f.name)}${kickHtml}</span>`;
+      }).join('');
+      const legendHtml = '<div class="kicklegend"><span class="kick">末脚◎</span>＝ゴール前の伸び脚が特に速い ／ <span class="kick">末脚○</span>＝速い。ペースが本命でも対抗でも、狙いは末脚の質で決める（展開で入れ替えない）。</div>';
+      recoHtml = `<div class="subh">狙い（末脚順）</div><div class="reco">${recoItems}</div>${legendHtml}`;
+    }
+    sections.push(`<div class="subh">展開シナリオ（本命＋対抗）</div>${blocksHtml}${foldNoteHtml}${recoHtml}`);
   }
 
   return `
