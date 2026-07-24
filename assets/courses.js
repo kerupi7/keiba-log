@@ -436,8 +436,9 @@ function prevLabelHtml(k, data) {
 }
 
 // 前走テーブル。tableRow/tableHeadを流用しつつ、①「その他」を常に末尾・順位対象外に固定、
-// ②前走が当該コースと一致する行を強調、の2点だけ独自に扱う。
-function renderPrevSection(f, data, sortState, lowTier) {
+// ②前走が当該コースと一致する行を強調、③「その他」をクリックで開くと走数30未満の内訳
+// （prev_more・走数上位）を薄字で展開、の3点だけ独自に扱う。
+function renderPrevSection(f, data, sortState, lowTier, prevOpen) {
   const all = Object.entries(f.prev || {});
   if (!all.length) return '';
   const s = sortState.tblPrev || { idx: 3, on: false };
@@ -454,12 +455,33 @@ function renderPrevSection(f, data, sortState, lowTier) {
     const label = p ? prevLabelHtml(k, data) : `<span class="pspecial">${escapeHtml(k)}</span>`;
     return tableRow(label, v, ranked.get(k), s.idx, lowTier, same ? 'prevsame' : '');
   };
-  const body = ordered.map(rowFor).join('')
-    + (other ? tableRow('<span class="pother">その他<i>走数30未満をまとめ</i></span>', other[1], null, s.idx, lowTier, 'prevother') : '');
+
+  const moreEntries = Object.entries(f.prev_more || {}).sort((a, b) => b[1][0] - a[1][0]);
+  const canOpen = Boolean(other) && moreEntries.length > 0;
+  let otherRow = '';
+  if (other) {
+    const caret = canOpen ? `<b class="pcaret">${prevOpen ? '▾' : '▸'}</b>` : '';
+    const tail = canOpen ? `<i>${prevOpen ? '内訳を閉じる' : `内訳を見る（${moreEntries.length}件）`}</i>`
+      : '<i>走数30未満をまとめ</i>';
+    otherRow = tableRow(`<span class="pother">その他${caret}${tail}</span>`,
+      other[1], null, s.idx, lowTier, canOpen ? 'prevother prevtoggle' : 'prevother');
+  }
+  const moreRows = (canOpen && prevOpen)
+    ? moreEntries.map(([k, v]) => {
+        const p = parsePrev(k);
+        const label = p ? prevLabelHtml(k, data) : `<span class="pspecial">${escapeHtml(k)}</span>`;
+        return tableRow(label, v, null, s.idx, lowTier, 'prevmore');
+      }).join('')
+    : '';
+
+  const body = ordered.map(rowFor).join('') + otherRow + moreRows;
+  const moreNote = canOpen
+    ? '「その他」をタップすると走数30未満の前走コースを走数の多い順に開けます（各行とも母数が少なく参考値）。'
+    : '';
   return `
     <div class="eyebrow">前走コース別成績<span class="note">前走の競馬場×馬場×距離</span></div>
     <div class="tblwrap"><table class="st" data-tbl="tblPrev">${tableHead('tblPrev', sortState)}<tbody>${body}</tbody></table></div>
-    <div class="entnote">前走が同じ組み合わせだった馬の、このコースでの成績。<b>青い行＝前走が当該コースそのもの（コース経験あり）</b>。走数30以上の前走コースだけ個別に並べ、残りは「その他」にまとめています。前走データの無い初出走は別行。</div>`;
+    <div class="entnote">前走が同じ組み合わせだった馬の、このコースでの成績。<b>青い行＝前走が当該コースそのもの（コース経験あり）</b>。走数30以上の前走コースだけ個別に並べ、残りは「その他」にまとめています。前走データの無い初出走は別行。${moreNote}</div>`;
 }
 
 // renderDetail: 純関数。data(コースJSON)とfilterKeyだけで完全なHTML文字列を返す。
@@ -469,6 +491,7 @@ function renderDetail(data, filterKey, opts) {
   const pace = opts.pace || 'all';
   const ent = opts.ent || 'jockey';
   const sortState = opts.sort || {};
+  const prevOpen = Boolean(opts.prevOpen);
 
   const f = data.filters[filterKey] || data.filters.all;
   const t = tier(f.n);
@@ -510,7 +533,7 @@ function renderDetail(data, filterKey, opts) {
     ${renderPopTiles(f.pop, lowTier)}
     ${renderTable('tblPop', popEntries, (k) => k === '11+' ? '11番人気〜' : `${k}番人気`, sortState, lowTier,
         { rowCls: popTierKey })}
-    ${renderPrevSection(f, data, sortState, lowTier)}
+    ${renderPrevSection(f, data, sortState, lowTier, prevOpen)}
     ${renderEntitySection(f, ent, sortState, lowTier)}
     <div class="notebox">
       勝率・連対率・複勝率は該当区分の全出走馬ベース。単回収・複回収は単勝／複勝100円購入時の回収率（100%＝収支トントン）。
@@ -536,10 +559,11 @@ async function initDetail(container, courseId) {
     return;
   }
 
-  const state = { filterKey: 'all', pace: 'all', ent: 'jockey', sort: {} };
+  const state = { filterKey: 'all', pace: 'all', ent: 'jockey', sort: {}, prevOpen: false };
 
   function refresh() {
-    container.innerHTML = renderDetail(data, state.filterKey, { pace: state.pace, ent: state.ent, sort: state.sort });
+    container.innerHTML = renderDetail(data, state.filterKey,
+      { pace: state.pace, ent: state.ent, sort: state.sort, prevOpen: state.prevOpen });
   }
 
   container.addEventListener('click', (e) => {
@@ -547,8 +571,16 @@ async function initDetail(container, courseId) {
     if (chip) {
       state.filterKey = chip.dataset.fkey;
       state.pace = 'all';
+      state.prevOpen = false;   // フィルタが変われば前走の内訳も別物なので畳み直す
       refresh();
       window.scrollTo(0, 0);
+      return;
+    }
+    // 「その他」行をタップ→走数30未満の内訳を開閉（スクロール位置は保つ）
+    const prevToggle = e.target.closest('tr.prevtoggle');
+    if (prevToggle) {
+      state.prevOpen = !state.prevOpen;
+      refresh();
       return;
     }
     const paceBtn = e.target.closest('.lappace button[data-pace]');
