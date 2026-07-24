@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>脚質マップ 3案 — Ans. モック</title>
+<link rel="stylesheet" href="assets/style.css?v=20260723a">
+<style>
+/* ===== モック共通（解説まわり） ===== */
+.mockhead{margin:26px 0 6px;font-size:15px;font-weight:700;color:var(--navy)}
+.mockdesc{font-size:12.5px;color:var(--sub);line-height:1.7;margin-bottom:8px}
+.mockdesc b{color:var(--text)}
+.mockrule{margin:34px 0 0;border:0;border-top:2px solid var(--rule-strong)}
+
+/* 馬コマ（3案共通）：馬番ボックスの下に印を固定幅で置く */
+.pz{display:inline-flex;flex-direction:column;align-items:center;width:26px;margin:0 1px}
+.pz .mk{height:12px;line-height:12px;font-size:11px;font-weight:700}
+.pz .mk.n-hon{color:var(--mk-hon)} .pz .mk.n-tai{color:var(--mk-tai)}
+.pz .mk.n-tan{color:var(--mk-tan)} .pz .mk.n-oku{color:var(--mk-oku)}
+.pz.jirai .hn{box-shadow:0 0 0 2px var(--live)}
+.pz.nige .hn{box-shadow:0 0 0 2px var(--orange)}
+
+.pmlegend{font-size:11px;color:var(--cap);line-height:1.7;margin-top:6px}
+.pmlegend .sw{display:inline-block;width:9px;height:9px;border-radius:2px;vertical-align:middle;margin-right:3px}
+
+/* ===== A案：4レーン ===== */
+.laneA{margin-top:8px;border-top:1px solid var(--rule)}
+.laneA .lane{display:flex;align-items:flex-start;gap:8px;padding:8px 6px;border-bottom:1px solid var(--rule);border-left:3px solid transparent}
+.laneA .lane.j-good{border-left-color:var(--hit);background:#F3F9F5}
+.laneA .lane.j-bad{border-left-color:#d9b3b3;background:#FCF6F6}
+.laneA .lane.j-vbad{border-left-color:var(--live);background:#FBEFEF}
+.laneA .lb{width:112px;flex:none}
+.laneA .lb .nm{font-size:13px;font-weight:700}
+.laneA .lb .rt{font-size:11px;color:var(--cap);font-variant-numeric:tabular-nums}
+.laneA .lb .jw{display:inline-block;font-size:10px;font-weight:700;border-radius:2px;padding:0 4px;margin-top:2px}
+.laneA .horses{display:flex;flex-wrap:wrap;gap:2px 0;flex:1}
+.laneA .cnt{font-size:11px;color:var(--cap);align-self:center;flex:none;width:26px;text-align:right}
+.jw.good{background:var(--chip-under-bg);color:var(--chip-under-fg)}
+.jw.bad{background:#F3EDE9;color:#8a6a55}
+.jw.vbad{background:#FBE9E9;color:var(--live)}
+
+/* ===== B案：前後1本の隊列バー ===== */
+.laneB{margin-top:10px}
+.laneB .axis{display:flex;justify-content:space-between;font-size:11px;color:var(--cap);margin-bottom:3px}
+.laneB .track{display:flex;border:1px solid var(--rule);border-radius:3px;overflow:hidden;min-height:96px}
+.laneB .zone{flex:1;padding:6px 4px;border-right:1px solid var(--rule)}
+.laneB .zone:last-child{border-right:0}
+.laneB .zone.j-good{background:#EDF6F0}
+.laneB .zone.j-bad{background:#F8F4F2}
+.laneB .zone.j-vbad{background:#F9EFEF}
+.laneB .zh{font-size:11px;font-weight:700;text-align:center;margin-bottom:5px}
+.laneB .zh .sub{display:block;font-weight:400;color:var(--cap);font-variant-numeric:tabular-nums}
+.laneB .zbody{display:flex;flex-wrap:wrap;justify-content:center;gap:3px 0}
+.laneB .press{margin-top:8px;font-size:12px;color:var(--sub)}
+.laneB .press .big{font-size:15px;font-weight:700;color:var(--navy);font-variant-numeric:tabular-nums}
+.laneB .meter{height:6px;background:#EDEDEA;border-radius:3px;margin-top:4px;position:relative}
+.laneB .meter i{position:absolute;top:0;left:0;height:6px;border-radius:3px;background:var(--navy)}
+
+/* ===== C案：脚質 × 枠 マトリクス ===== */
+.laneC{margin-top:8px;width:100%;border-collapse:collapse;table-layout:fixed}
+.laneC th,.laneC td{border:1px solid var(--rule);padding:5px 4px;vertical-align:top;text-align:center}
+.laneC thead th{font-size:11px;color:var(--cap);background:#FAFAF8}
+.laneC th.rh{width:74px;text-align:left;font-size:12px;font-weight:700;background:#FAFAF8}
+.laneC th.rh .rt{display:block;font-size:10px;font-weight:400;color:var(--cap);font-variant-numeric:tabular-nums}
+.laneC td.g1{background:#F1F8F4} .laneC td.g2{background:#E7F3EA}
+.laneC td.b1{background:#F9F4F2} .laneC td.b2{background:#F7EBEB}
+.laneC td .cellbody{display:flex;flex-wrap:wrap;justify-content:center;gap:2px 0;min-height:22px}
+</style>
+</head>
+<body>
+<header id="site-header"></header>
+<div class="container race20">
+
+  <div class="rhead">
+    <div class="cls">モックアップ（2026-07-19 小倉11R 小倉記念・18頭の実データ）</div>
+    <div class="ttl">出走馬の脚質マップ 3案</div>
+    <div class="cond">
+      使うデータはすべて既存のレースJSONにあるもの：各馬の <b>running_style</b>（逃/先/差/追）、
+      コース別の <b>脚質傾向</b>（複勝率・判定）、<b>逃げ候補・先行率</b>、<b>内外バイアス</b>、印。
+    </div>
+  </div>
+
+  <!-- ========== A案 ========== -->
+  <div class="mockhead">A案：4レーン一覧（脚質ごとに横一列）</div>
+  <div class="mockdesc">
+    逃げ／先行／差し／追込の4行に全馬を並べ、行頭にそのコースの複勝率と有利不利の判定を出す。<br>
+    <b>読めること</b>：どの脚質に何頭いるか（頭数の偏り）と、自分の本命がその日に有利な脚質かが同時に分かる。<br>
+    <b>強み</b>：縦に短く、スマホで折り返しても崩れない。実装も一番軽い。<br>
+    <b>弱み</b>：枠順（内外）の情報は入らない。
+  </div>
+  <div class="secthead">脚質マップ<span class="cnt">18頭</span></div>
+  <div class="laneA" id="laneA"></div>
+  <div class="pmlegend" id="legendA"></div>
+
+  <hr class="mockrule">
+
+  <!-- ========== B案 ========== -->
+  <div class="mockhead">B案：前後の隊列バー（レースの並びを俯瞰）</div>
+  <div class="mockdesc">
+    左を前（ハナ）、右を後ろ（最後方）とした1本の帯に、全馬を脚質のゾーンごとに置く。ゾーンの背景色が有利不利。<br>
+    <b>読めること</b>：隊列の厚み。前が3頭しかいないのか、後ろに10頭が溜まるのか、というレースの形が絵で入る。<br>
+    <b>強み</b>：直感的で、先行圧指数（前が競り合うか）を同じ絵の下に置ける。<br>
+    <b>弱み</b>：18頭だとゾーンが縦に伸びる。複勝率などの数字は小さくしか置けない。
+  </div>
+  <div class="secthead">脚質マップ<span class="cnt">18頭</span></div>
+  <div class="laneB" id="laneB"></div>
+  <div class="pmlegend" id="legendB"></div>
+
+  <hr class="mockrule">
+
+  <!-- ========== C案 ========== -->
+  <div class="mockhead">C案：脚質 × 枠（内・中・外）のマトリクス</div>
+  <div class="mockdesc">
+    縦に脚質4段、横に内枠（1〜3枠）・中枠（4〜6枠）・外枠（7〜8枠）。セルの背景が濃いほどそのマスは有利。<br>
+    <b>読めること</b>：脚質と枠の掛け合わせ。「外枠の逃げ＝終始外を回らされる」「内枠の差し＝詰まる」といった噛み合わせが見える。<br>
+    <b>強み</b>：情報量が3案でいちばん多い。内外バイアスと脚質傾向を1枚に統合できる。<br>
+    <b>弱み</b>：18頭でもセルは12個あり、空きマスが目立つ。掛け合わせの有利不利は推定で、実測ではない。
+  </div>
+  <div class="secthead">脚質マップ<span class="cnt">18頭</span></div>
+  <table class="laneC" id="laneC"></table>
+  <div class="pmlegend" id="legendC"></div>
+
+  <div style="height:60px"></div>
+</div>
+
+<script>
+/* ===== 実データ（202610020811 / 小倉記念） ===== */
+var HORSES = [
+  { no:1,  gate:1, name:'ゼンダンハヤブサ',  st:'差', mark:null, jirai:false },
+  { no:2,  gate:1, name:'タガノアビー',      st:'差', mark:null, jirai:true  },
+  { no:3,  gate:2, name:'ナムラエイハブ',    st:'先', mark:null, jirai:false },
+  { no:4,  gate:2, name:'コパノサントス',    st:'差', mark:null, jirai:false },
+  { no:5,  gate:3, name:'エヒト',            st:'先', mark:null, jirai:false },
+  { no:6,  gate:3, name:'ガイアメンテ',      st:'差', mark:'◎',  jirai:false },
+  { no:7,  gate:4, name:'トータルクラリティ', st:'先', mark:null, jirai:false },
+  { no:8,  gate:4, name:'サフィラ',          st:'差', mark:'△',  jirai:false },
+  { no:9,  gate:5, name:'ジーティーアダマン', st:'先', mark:null, jirai:true  },
+  { no:10, gate:5, name:'マイネルメモリー',  st:'差', mark:null, jirai:false },
+  { no:11, gate:6, name:'カネフラ',          st:'追', mark:null, jirai:false },
+  { no:12, gate:6, name:'ケイズレーヴ',      st:'差', mark:null, jirai:false },
+  { no:13, gate:7, name:'カエルム',          st:'差', mark:null, jirai:false },
+  { no:14, gate:7, name:'ウエストナウ',      st:'差', mark:'○',  jirai:false },
+  { no:15, gate:7, name:'テーオーソラネル',  st:'先', mark:null, jirai:false },
+  { no:16, gate:8, name:'ノーランサンライズ', st:'差', mark:null, jirai:false },
+  { no:17, gate:8, name:'ジョバンニ',        st:'差', mark:'▲',  jirai:false },
+  { no:18, gate:8, name:'レーゼドラマ',      st:'逃', mark:'△',  jirai:false }
+];
+// 逃げ候補（front_runners）。running_style とは別ソースなので、印としてだけ重ねる
+var FRONT = { 18:1.50, 9:1.40, 3:1.00, 15:0.75, 17:0.50, 5:0.40 };
+var MAIN_NIGE = [18];
+var PRESSURE = { index:0.406, label:'標準' };
+var BIAS = { label:'外枠有利', gates:{ 1:0.90, 2:1.22, 3:0.88 } };
+var LEG_BIAS = [
+  { key:'逃', style:'逃げ', fuku:'32%', win:'13%', runs:144, judg:'やや有利' },
+  { key:'先', style:'先行', fuku:'39%', win:'14%', runs:416, judg:'やや有利' },
+  { key:'差', style:'差し', fuku:'18%', win:'4%',  runs:585, judg:'やや不利' },
+  { key:'追', style:'追込', fuku:'4%',  win:'0%',  runs:467, judg:'不利' }
+];
+var NCLS = { '◎':'n-hon', '○':'n-tai', '▲':'n-tan', '△':'n-oku' };
+var JUDG_CLS = { '有利':'good', 'やや有利':'good', 'やや不利':'bad', '不利':'vbad', '強く不利':'vbad' };
+
+function piece(h) {
+  var cls = 'pz' + (h.jirai ? ' jirai' : '') + (MAIN_NIGE.indexOf(h.no) >= 0 ? ' nige' : '');
+  return '<span class="' + cls + '" title="' + h.name + '">'
+       + '<span class="hn wk' + h.gate + ' sm">' + h.no + '</span>'
+       + '<span class="mk ' + (NCLS[h.mark] || '') + '">' + (h.mark || '') + '</span>'
+       + '</span>';
+}
+function ofStyle(k) { return HORSES.filter(function (h) { return h.st === k; }); }
+var LEGEND = '<span><span class="sw" style="background:var(--orange)"></span>主逃げ候補'
+           + '　<span class="sw" style="background:var(--live)"></span>地雷'
+           + '　馬番の下は印（◎○▲△）。色は枠色。</span>';
+
+/* ---- A案 ---- */
+document.getElementById('laneA').innerHTML = LEG_BIAS.map(function (lb) {
+  var hs = ofStyle(lb.key);
+  var j = JUDG_CLS[lb.judg] || '';
+  return '<div class="lane j-' + j + '">'
+       + '<div class="lb"><div class="nm">' + lb.style + '</div>'
+       + '<div class="rt">複勝 ' + lb.fuku + '（' + lb.runs + '走）</div>'
+       + '<span class="jw ' + j + '">' + lb.judg + '</span></div>'
+       + '<div class="horses">' + (hs.length ? hs.map(piece).join('') : '<span class="rt" style="font-size:11px;color:var(--cap);align-self:center">該当なし</span>') + '</div>'
+       + '<div class="cnt">' + hs.length + '頭</div>'
+       + '</div>';
+}).join('');
+document.getElementById('legendA').innerHTML = LEGEND + '<br>複勝率・判定はこのコース（小倉芝2000m）の脚質別実績。';
+
+/* ---- B案 ---- */
+document.getElementById('laneB').innerHTML =
+  '<div class="axis"><span>← 前（ハナ）</span><span>後ろ（最後方）→</span></div>'
+  + '<div class="track">'
+  + LEG_BIAS.map(function (lb) {
+      var hs = ofStyle(lb.key);
+      var j = JUDG_CLS[lb.judg] || '';
+      return '<div class="zone j-' + j + '">'
+           + '<div class="zh">' + lb.style + ' ' + hs.length + '頭<span class="sub">複勝' + lb.fuku + '</span></div>'
+           + '<div class="zbody">' + hs.map(piece).join('') + '</div></div>';
+    }).join('')
+  + '</div>'
+  + '<div class="press">先行圧指数 <span class="big">' + PRESSURE.index.toFixed(2) + '</span> → ' + PRESSURE.label
+  + '（主逃げ = 18レーゼドラマ）<div class="meter"><i style="width:' + Math.round(PRESSURE.index * 100) + '%"></i></div></div>';
+document.getElementById('legendB').innerHTML = LEGEND + '<br>ゾーンの緑=有利／赤=不利。先行圧はバーが右に伸びるほど前が競り合う。';
+
+/* ---- C案 ---- */
+function gateBand(g) { return g <= 3 ? 0 : g <= 6 ? 1 : 2; }
+var BANDS = [
+  { label:'内枠', sub:'1〜3枠', tone:-1 },
+  { label:'中枠', sub:'4〜6枠', tone:0 },
+  { label:'外枠', sub:'7〜8枠', tone:1 }   // このレースは「外枠有利」
+];
+document.getElementById('laneC').innerHTML =
+  '<thead><tr><th class="rh">脚質＼枠</th>'
+  + BANDS.map(function (b) { return '<th>' + b.label + '<br>' + b.sub + '</th>'; }).join('')
+  + '</tr></thead><tbody>'
+  + LEG_BIAS.map(function (lb) {
+      var j = JUDG_CLS[lb.judg] || '';
+      var base = (j === 'good') ? 1 : (j === 'bad') ? -1 : -2;
+      return '<tr><th class="rh">' + lb.style
+           + '<span class="rt">複勝 ' + lb.fuku + ' / ' + lb.judg + '</span></th>'
+           + BANDS.map(function (b, bi) {
+               var score = base + b.tone;                       // 脚質の有利不利 ＋ 内外バイアス
+               var cls = score >= 2 ? 'g2' : score >= 1 ? 'g1' : score <= -2 ? 'b2' : score <= -1 ? 'b1' : '';
+               var hs = HORSES.filter(function (h) { return h.st === lb.key && gateBand(h.gate) === bi; });
+               return '<td class="' + cls + '"><div class="cellbody">' + hs.map(piece).join('') + '</div></td>';
+             }).join('')
+           + '</tr>';
+    }).join('')
+  + '</tbody>';
+document.getElementById('legendC').innerHTML = LEGEND
+  + '<br>セルの緑が濃いほど有利。この日は内外バイアス「' + BIAS.label + '」を加味している。';
+</script>
+</body>
+</html>

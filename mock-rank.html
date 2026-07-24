@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ans. コース別成績テーブル 順位バッジ配置 3案</title>
+<link rel="stylesheet" href="assets/style.css">
+<style>
+/* ===== style.css が読めない環境（単体プレビュー等）向けの最小フォールバック。
+       値は style.css の該当箇所と同一。 ===== */
+:root{--text:#333;--sub:#5C5C5C;--cap:#757575;--navy:#003E70;--cta:#0068BC;--live:#EB1400;
+  --bg:#fff;--sub-bg:#FAFAFA;--rule:#E3E3E3;--rule-strong:#333}
+body{color:var(--text);background:var(--bg);
+  font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;line-height:1.6}
+table{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums;margin-top:8px}
+th,td{padding:6px 5px;border-bottom:1px solid var(--rule);text-align:right;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+thead th{color:var(--cap);font-weight:700;border-bottom:1px solid var(--rule-strong)}
+.cstats .tblwrap{overflow-x:auto;margin-top:8px}
+.cstats table.st{margin-top:0}
+.cstats table.st td:first-child,.cstats table.st th:first-child{text-align:left;padding-left:7px}
+.cstats .rk{display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;
+  border-radius:50%;font-size:10.5px;font-weight:700;margin-right:5px;vertical-align:1px;flex:none;color:#fff}
+.cstats .rk.r1{background:#B8860B} .cstats .rk.r2{background:#8C8C8C} .cstats .rk.r3{background:#A9702E}
+.cstats table.st tr.rank1 td{background:#FCF7E8} .cstats table.st tr.rank2 td{background:#F6F6F5} .cstats table.st tr.rank3 td{background:#FAF4EC}
+.cstats table.st tr.rank1 td:first-child{box-shadow:inset 3px 0 0 #B8860B}
+.cstats table.st tr.rank2 td:first-child{box-shadow:inset 3px 0 0 #8C8C8C}
+.cstats table.st tr.rank3 td:first-child{box-shadow:inset 3px 0 0 #A9702E}
+.cstats table.st th.sortable{cursor:pointer}
+.cstats table.st th.sortable.on{color:var(--cta)}
+.cstats table.st th.sortable.on::after{content:"▼";font-size:7px;opacity:.9}
+.cstats table.st td.sorted{background:#F7FAFD}
+.cstats table.st tr.rank1 td.sorted{background:#FAF4E0} .cstats table.st tr.rank2 td.sorted{background:#F2F2F1} .cstats table.st tr.rank3 td.sorted{background:#F7F0E6}
+.cstats table.st td.roi{color:var(--cap)}
+.cstats table.st tr.dim td:not(:first-child):not(:nth-child(2)){color:#a9a9a9}
+.cstats table.st tr.dim .bar{opacity:.2}
+.cstats table.st td.fk{position:relative}
+.cstats table.st .bar{position:absolute;right:3px;bottom:4px;height:3px;background:var(--cta);border-radius:2px;opacity:.5}
+
+/* ===== モック専用（採用案が決まったら style.css の .cstats 節へ移す） ===== */
+body{padding:18px 14px 60px;max-width:820px;margin:0 auto}
+.mockhead{border-bottom:1px solid var(--rule-strong);padding-bottom:10px;margin-bottom:18px}
+.mockhead h1{font-size:17px;margin:0 0 4px}
+.mockhead p{font-size:12px;color:var(--cap);margin:0;line-height:1.6}
+.case{margin:30px 0 0;border:1px solid var(--rule);border-radius:8px;padding:14px 13px 16px}
+.case > h2{font-size:14px;margin:0 0 3px;color:var(--navy)}
+.case > .desc{font-size:11.5px;color:var(--cap);line-height:1.65;margin:0 0 4px}
+.case > .diff{font-size:11px;color:var(--sub);line-height:1.6;margin:6px 0 0;
+  background:var(--sub-bg);border-radius:5px;padding:7px 9px}
+.case > .diff b{color:var(--text)}
+.eyebrow{font-size:11px;font-weight:700;color:var(--cap);margin:14px 0 0}
+.guide{position:relative}
+.guide::before{content:"";position:absolute;left:7px;top:0;bottom:0;width:1px;
+  background:repeating-linear-gradient(#EB1400 0 4px,transparent 4px 8px);opacity:.55;z-index:3}
+.guidenote{font-size:10.5px;color:var(--live);margin-top:5px}
+
+/* --- A案: 順位スロットを固定幅で常時確保 --- */
+.caseA table.st td:first-child{padding-left:7px}
+.caseA .rkslot{display:inline-flex;width:17px;height:17px;margin-right:5px;vertical-align:1px;flex:none}
+.caseA .rkslot .rk{margin-right:0}
+
+/* --- B案: 順位専用列を新設 --- */
+.caseB table.st th.rkcol,.caseB table.st td.rkcol{width:26px;padding-left:7px;padding-right:0;text-align:left}
+.caseB table.st td:nth-child(2){padding-left:0}
+.caseB table.st .rk{margin-right:0}
+.caseB table.st tr.rank1 td.rkcol{box-shadow:inset 3px 0 0 #B8860B}
+.caseB table.st tr.rank2 td.rkcol{box-shadow:inset 3px 0 0 #8C8C8C}
+.caseB table.st tr.rank3 td.rkcol{box-shadow:inset 3px 0 0 #A9702E}
+.caseB table.st tr.rank1 td:nth-child(2),
+.caseB table.st tr.rank2 td:nth-child(2),
+.caseB table.st tr.rank3 td:nth-child(2){box-shadow:none}
+
+/* --- C案: バッジ廃止・左端バー＋ソート中セルに順位マーカー --- */
+.caseC table.st td:first-child{padding-left:10px}
+.caseC table.st tr.rank1 td:first-child,
+.caseC table.st tr.rank2 td:first-child,
+.caseC table.st tr.rank3 td:first-child{font-weight:700}
+.caseC table.st td.sorted{position:relative}
+.caseC .mk{display:inline-flex;align-items:center;justify-content:center;
+  width:14px;height:14px;border-radius:50%;font-size:9px;font-weight:700;color:#fff;
+  margin-left:5px;vertical-align:1px}
+.caseC .mk.r1{background:#B8860B} .caseC .mk.r2{background:#8C8C8C} .caseC .mk.r3{background:#A9702E}
+.caseC table.st td.fk .bar{right:22px}
+</style>
+</head>
+<body class="cstats">
+
+<div class="mockhead">
+  <h1>コース別成績テーブル｜順位バッジ配置 3案</h1>
+  <p>現行は ①②③ バッジを区分ラベルの直前に差し込んでいるため、バッジのない行（追・2枠 など）だけラベルが左に寄り、1列目の左端がガタつく。赤い破線が「文字の揃うべき位置」。</p>
+</div>
+
+<!-- ============ 現行 ============ -->
+<div class="case">
+  <h2>現行</h2>
+  <p class="desc">バッジは inline 要素。ある行とない行で開始位置が 22px ずれる。</p>
+  <div class="eyebrow">脚質別成績</div>
+  <div class="tblwrap guide">
+    <table class="st">
+      <thead><tr><th>区分</th><th>走数</th><th>勝率</th><th>連対率</th><th class="sortable on">複勝率</th><th>単回収</th><th>複回収</th></tr></thead>
+      <tbody>
+        <tr class="rank1"><td><span class="rk r1">1</span>逃</td><td>100</td><td>16.0%</td><td>26.0%</td><td class="fk sorted">35.0%<span class="bar" style="width:40%"></span></td><td class="roi">143%</td><td class="roi">83%</td></tr>
+        <tr class="rank2"><td><span class="rk r2">2</span>先</td><td>324</td><td>10.5%</td><td>22.8%</td><td class="fk sorted">33.3%<span class="bar" style="width:38%"></span></td><td class="roi">51%</td><td class="roi">84%</td></tr>
+        <tr class="rank3"><td><span class="rk r3">3</span>差</td><td>432</td><td>9.3%</td><td>19.4%</td><td class="fk sorted">29.4%<span class="bar" style="width:34%"></span></td><td class="roi">38%</td><td class="roi">65%</td></tr>
+        <tr><td>追</td><td>373</td><td>4.0%</td><td>7.2%</td><td class="fk sorted">12.1%<span class="bar" style="width:14%"></span></td><td class="roi">61%</td><td class="roi">42%</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="guidenote">← 「追」だけ左端に付き、①②③行と揃わない</p>
+</div>
+
+<!-- ============ A案 ============ -->
+<div class="case caseA">
+  <h2>A案：順位スロットを常時確保（最小変更）</h2>
+  <p class="desc">バッジの入る 17px の枠を全行に置き、順位のない行は空のまま。見た目は現行のまま、ラベルの左端だけが完全に揃う。</p>
+
+  <div class="eyebrow">脚質別成績</div>
+  <div class="tblwrap guide">
+    <table class="st">
+      <thead><tr><th>区分</th><th>走数</th><th>勝率</th><th>連対率</th><th class="sortable on">複勝率</th><th>単回収</th><th>複回収</th></tr></thead>
+      <tbody>
+        <tr class="rank1"><td><span class="rkslot"><span class="rk r1">1</span></span>逃</td><td>100</td><td>16.0%</td><td>26.0%</td><td class="fk sorted">35.0%<span class="bar" style="width:40%"></span></td><td class="roi">143%</td><td class="roi">83%</td></tr>
+        <tr class="rank2"><td><span class="rkslot"><span class="rk r2">2</span></span>先</td><td>324</td><td>10.5%</td><td>22.8%</td><td class="fk sorted">33.3%<span class="bar" style="width:38%"></span></td><td class="roi">51%</td><td class="roi">84%</td></tr>
+        <tr class="rank3"><td><span class="rkslot"><span class="rk r3">3</span></span>差</td><td>432</td><td>9.3%</td><td>19.4%</td><td class="fk sorted">29.4%<span class="bar" style="width:34%"></span></td><td class="roi">38%</td><td class="roi">65%</td></tr>
+        <tr class="dim"><td><span class="rkslot"></span>追</td><td>373</td><td>4.0%</td><td>7.2%</td><td class="fk sorted">12.1%<span class="bar" style="width:14%"></span></td><td class="roi">61%</td><td class="roi">42%</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="eyebrow">枠順別成績</div>
+  <div class="tblwrap guide">
+    <table class="st">
+      <thead><tr><th>区分</th><th>走数</th><th>勝率</th><th>連対率</th><th class="sortable on">複勝率</th><th>単回収</th><th>複回収</th></tr></thead>
+      <tbody>
+        <tr class="rank1"><td><span class="rkslot"><span class="rk r1">1</span></span>1枠</td><td>122</td><td>11.5%</td><td>19.7%</td><td class="fk sorted">32.0%<span class="bar" style="width:37%"></span></td><td class="roi">67%</td><td class="roi">82%</td></tr>
+        <tr><td><span class="rkslot"></span>2枠</td><td>130</td><td>5.4%</td><td>12.3%</td><td class="fk sorted">20.8%<span class="bar" style="width:24%"></span></td><td class="roi">27%</td><td class="roi">57%</td></tr>
+        <tr><td><span class="rkslot"></span>3枠</td><td>139</td><td>10.8%</td><td>19.4%</td><td class="fk sorted">26.6%<span class="bar" style="width:31%"></span></td><td class="roi">56%</td><td class="roi">88%</td></tr>
+        <tr><td><span class="rkslot"></span>4枠</td><td>147</td><td>10.2%</td><td>17.0%</td><td class="fk sorted">24.5%<span class="bar" style="width:28%"></span></td><td class="roi">84%</td><td class="roi">74%</td></tr>
+        <tr class="rank2"><td><span class="rkslot"><span class="rk r2">2</span></span>5枠</td><td>156</td><td>10.9%</td><td>19.9%</td><td class="fk sorted">29.5%<span class="bar" style="width:34%"></span></td><td class="roi">68%</td><td class="roi">62%</td></tr>
+        <tr class="rank3"><td><span class="rkslot"><span class="rk r3">3</span></span>6枠</td><td>161</td><td>9.3%</td><td>18.0%</td><td class="fk sorted">28.6%<span class="bar" style="width:33%"></span></td><td class="roi">107%</td><td class="roi">69%</td></tr>
+        <tr><td><span class="rkslot"></span>7枠</td><td>184</td><td>4.9%</td><td>16.8%</td><td class="fk sorted">23.4%<span class="bar" style="width:27%"></span></td><td class="roi">36%</td><td class="roi">59%</td></tr>
+        <tr><td><span class="rkslot"></span>8枠</td><td>190</td><td>6.8%</td><td>14.7%</td><td class="fk sorted">21.6%<span class="bar" style="width:25%"></span></td><td class="roi">21%</td><td class="roi">39%</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="diff"><b>変更量</b>：CSS 1行＋JS 1行（<code>badge</code> を必ず <code>&lt;span class="rkslot"&gt;</code> で包む）。<br>
+  <b>利点</b>：現行の見え方を一切変えずにガタつきだけ消える。<br>
+  <b>欠点</b>：バッジのない行の左に常に 22px の余白が残るので、区分列がやや間延びして見える。</p>
+</div>
+
+<!-- ============ B案 ============ -->
+<div class="case caseB">
+  <h2>B案：順位を独立した1列に切り出す</h2>
+  <p class="desc">ヘッダ無しの細い順位列を区分の左に立てる。区分ラベルは表の左端でベタ揃え、バッジも縦に一直線。行頭の色バーも順位列に移す。</p>
+
+  <div class="eyebrow">脚質別成績</div>
+  <div class="tblwrap">
+    <table class="st">
+      <thead><tr><th class="rkcol"></th><th>区分</th><th>走数</th><th>勝率</th><th>連対率</th><th class="sortable on">複勝率</th><th>単回収</th><th>複回収</th></tr></thead>
+      <tbody>
+        <tr class="rank1"><td class="rkcol"><span class="rk r1">1</span></td><td>逃</td><td>100</td><td>16.0%</td><td>26.0%</td><td class="fk sorted">35.0%<span class="bar" style="width:40%"></span></td><td class="roi">143%</td><td class="roi">83%</td></tr>
+        <tr class="rank2"><td class="rkcol"><span class="rk r2">2</span></td><td>先</td><td>324</td><td>10.5%</td><td>22.8%</td><td class="fk sorted">33.3%<span class="bar" style="width:38%"></span></td><td class="roi">51%</td><td class="roi">84%</td></tr>
+        <tr class="rank3"><td class="rkcol"><span class="rk r3">3</span></td><td>差</td><td>432</td><td>9.3%</td><td>19.4%</td><td class="fk sorted">29.4%<span class="bar" style="width:34%"></span></td><td class="roi">38%</td><td class="roi">65%</td></tr>
+        <tr class="dim"><td class="rkcol"></td><td>追</td><td>373</td><td>4.0%</td><td>7.2%</td><td class="fk sorted">12.1%<span class="bar" style="width:14%"></span></td><td class="roi">61%</td><td class="roi">42%</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="eyebrow">枠順別成績</div>
+  <div class="tblwrap">
+    <table class="st">
+      <thead><tr><th class="rkcol"></th><th>区分</th><th>走数</th><th>勝率</th><th>連対率</th><th class="sortable on">複勝率</th><th>単回収</th><th>複回収</th></tr></thead>
+      <tbody>
+        <tr class="rank1"><td class="rkcol"><span class="rk r1">1</span></td><td>1枠</td><td>122</td><td>11.5%</td><td>19.7%</td><td class="fk sorted">32.0%<span class="bar" style="width:37%"></span></td><td class="roi">67%</td><td class="roi">82%</td></tr>
+        <tr><td class="rkcol"></td><td>2枠</td><td>130</td><td>5.4%</td><td>12.3%</td><td class="fk sorted">20.8%<span class="bar" style="width:24%"></span></td><td class="roi">27%</td><td class="roi">57%</td></tr>
+        <tr><td class="rkcol"></td><td>3枠</td><td>139</td><td>10.8%</td><td>19.4%</td><td class="fk sorted">26.6%<span class="bar" style="width:31%"></span></td><td class="roi">56%</td><td class="roi">88%</td></tr>
+        <tr><td class="rkcol"></td><td>4枠</td><td>147</td><td>10.2%</td><td>17.0%</td><td class="fk sorted">24.5%<span class="bar" style="width:28%"></span></td><td class="roi">84%</td><td class="roi">74%</td></tr>
+        <tr class="rank2"><td class="rkcol"><span class="rk r2">2</span></td><td>5枠</td><td>156</td><td>10.9%</td><td>19.9%</td><td class="fk sorted">29.5%<span class="bar" style="width:34%"></span></td><td class="roi">68%</td><td class="roi">62%</td></tr>
+        <tr class="rank3"><td class="rkcol"><span class="rk r3">3</span></td><td>6枠</td><td>161</td><td>9.3%</td><td>18.0%</td><td class="fk sorted">28.6%<span class="bar" style="width:33%"></span></td><td class="roi">107%</td><td class="roi">69%</td></tr>
+        <tr><td class="rkcol"></td><td>7枠</td><td>184</td><td>4.9%</td><td>16.8%</td><td class="fk sorted">23.4%<span class="bar" style="width:27%"></span></td><td class="roi">36%</td><td class="roi">59%</td></tr>
+        <tr><td class="rkcol"></td><td>8枠</td><td>190</td><td>6.8%</td><td>14.7%</td><td class="fk sorted">21.6%<span class="bar" style="width:25%"></span></td><td class="roi">21%</td><td class="roi">39%</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="diff"><b>変更量</b>：列を1本増やすので <code>tableHead</code>／<code>tableRow</code> の両方と、色バーの CSS を書き換え。<br>
+  <b>利点</b>：ラベルもバッジも両方が一直線。表として一番整う。<br>
+  <b>欠点</b>：横 7 列がすでに幅ギリギリで、スマホでの横スクロール量が 26px 増える。</p>
+</div>
+
+<!-- ============ C案 ============ -->
+<div class="case caseC">
+  <h2>C案：区分列は文字だけにし、順位は数値側へ</h2>
+  <p class="desc">左端のバッジを廃止。順位は「いま並べ替えている指標」のセルに小さく付け、行の帯と左端の色バーだけを残す。区分列は完全に左揃え。</p>
+
+  <div class="eyebrow">脚質別成績</div>
+  <div class="tblwrap guide">
+    <table class="st">
+      <thead><tr><th>区分</th><th>走数</th><th>勝率</th><th>連対率</th><th class="sortable on">複勝率</th><th>単回収</th><th>複回収</th></tr></thead>
+      <tbody>
+        <tr class="rank1"><td>逃</td><td>100</td><td>16.0%</td><td>26.0%</td><td class="fk sorted">35.0%<span class="mk r1">1</span><span class="bar" style="width:40%"></span></td><td class="roi">143%</td><td class="roi">83%</td></tr>
+        <tr class="rank2"><td>先</td><td>324</td><td>10.5%</td><td>22.8%</td><td class="fk sorted">33.3%<span class="mk r2">2</span><span class="bar" style="width:38%"></span></td><td class="roi">51%</td><td class="roi">84%</td></tr>
+        <tr class="rank3"><td>差</td><td>432</td><td>9.3%</td><td>19.4%</td><td class="fk sorted">29.4%<span class="mk r3">3</span><span class="bar" style="width:34%"></span></td><td class="roi">38%</td><td class="roi">65%</td></tr>
+        <tr class="dim"><td>追</td><td>373</td><td>4.0%</td><td>7.2%</td><td class="fk sorted">12.1%<span class="bar" style="width:14%"></span></td><td class="roi">61%</td><td class="roi">42%</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="eyebrow">枠順別成績</div>
+  <div class="tblwrap guide">
+    <table class="st">
+      <thead><tr><th>区分</th><th>走数</th><th>勝率</th><th>連対率</th><th class="sortable on">複勝率</th><th>単回収</th><th>複回収</th></tr></thead>
+      <tbody>
+        <tr class="rank1"><td>1枠</td><td>122</td><td>11.5%</td><td>19.7%</td><td class="fk sorted">32.0%<span class="mk r1">1</span><span class="bar" style="width:37%"></span></td><td class="roi">67%</td><td class="roi">82%</td></tr>
+        <tr><td>2枠</td><td>130</td><td>5.4%</td><td>12.3%</td><td class="fk sorted">20.8%<span class="bar" style="width:24%"></span></td><td class="roi">27%</td><td class="roi">57%</td></tr>
+        <tr><td>3枠</td><td>139</td><td>10.8%</td><td>19.4%</td><td class="fk sorted">26.6%<span class="bar" style="width:31%"></span></td><td class="roi">56%</td><td class="roi">88%</td></tr>
+        <tr><td>4枠</td><td>147</td><td>10.2%</td><td>17.0%</td><td class="fk sorted">24.5%<span class="bar" style="width:28%"></span></td><td class="roi">84%</td><td class="roi">74%</td></tr>
+        <tr class="rank2"><td>5枠</td><td>156</td><td>10.9%</td><td>19.9%</td><td class="fk sorted">29.5%<span class="mk r2">2</span><span class="bar" style="width:34%"></span></td><td class="roi">68%</td><td class="roi">62%</td></tr>
+        <tr class="rank3"><td>6枠</td><td>161</td><td>9.3%</td><td>18.0%</td><td class="fk sorted">28.6%<span class="mk r3">3</span><span class="bar" style="width:33%"></span></td><td class="roi">107%</td><td class="roi">69%</td></tr>
+        <tr><td>7枠</td><td>184</td><td>4.9%</td><td>16.8%</td><td class="fk sorted">23.4%<span class="bar" style="width:27%"></span></td><td class="roi">36%</td><td class="roi">59%</td></tr>
+        <tr><td>8枠</td><td>190</td><td>6.8%</td><td>14.7%</td><td class="fk sorted">21.6%<span class="bar" style="width:25%"></span></td><td class="roi">21%</td><td class="roi">39%</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="diff"><b>変更量</b>：<code>tableRow</code> でバッジの置き場所を 1列目からソート中セルへ移すだけ。列数は増えない。<br>
+  <b>利点</b>：区分列が一番すっきりし、順位が「どの指標での順位か」も同時に伝わる。<br>
+  <b>欠点</b>：順位バッジが数値に埋もれて弱くなる。回収率で並べ替えたときは順位を付けない現行仕様と噛み合わせる必要あり。</p>
+</div>
+
+</body>
+</html>

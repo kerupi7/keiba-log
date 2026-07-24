@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>勝率・期待値表 印カラム 3案 — Ans. モック</title>
+<link rel="stylesheet" href="assets/style.css?v=20260722c">
+<style>
+/* モック専用の解説まわり（採用時に本番CSSへは持ち込まない） */
+.mockhead{margin:26px 0 6px;font-size:15px;font-weight:700;color:var(--navy)}
+.mockdesc{font-size:12.5px;color:var(--sub);line-height:1.7;margin-bottom:4px}
+.mockdesc b{color:var(--text)}
+.mockrule{margin:34px 0 0;border:0;border-top:2px solid var(--rule-strong)}
+
+/* ---- A案: 印を独立列に切り出す ---- */
+.optA td.mkcol{text-align:center;font-weight:700;padding-left:0;padding-right:0}
+.optA .mkcol.n-hon{color:var(--mk-hon)} .optA .mkcol.n-tai{color:var(--mk-tai)}
+.optA .mkcol.n-tan{color:var(--mk-tan)} .optA .mkcol.n-oku{color:var(--mk-oku)}
+
+/* ---- B案: 馬名セル内の固定幅スロット ---- */
+.optB .mkslot{display:inline-block;width:17px;text-align:center;font-weight:700;
+  margin-right:2px;vertical-align:middle}
+.optB .mkslot.n-hon{color:var(--mk-hon)} .optB .mkslot.n-tai{color:var(--mk-tai)}
+.optB .mkslot.n-tan{color:var(--mk-tan)} .optB .mkslot.n-oku{color:var(--mk-oku)}
+
+/* ---- C案: 印を馬名の後ろのバッジへ ---- */
+.optC .mkb{margin-right:0;margin-left:5px;font-size:11px;min-width:15px;padding:0 4px}
+.optC .mkb.m-hon{background:var(--mkb-hon)} .optC .mkb.m-tai{background:var(--mkb-tai)}
+.optC .mkb.m-tan{background:var(--mkb-tan)} .optC .mkb.m-oku{background:var(--mkb-oku)}
+</style>
+</head>
+<body>
+<header id="site-header"></header>
+<div class="container race20">
+
+  <div class="rhead">
+    <div class="cls">モックアップ（本番データではありません）</div>
+    <div class="ttl">勝率・期待値表 ／ 印カラムの見直し 3案</div>
+    <div class="cond">現状は印のある行だけ左に記号が突き出るため、馬番・馬名の先頭が揃わずガタつく。3案とも「左端を必ず揃える」ことが目的。</div>
+  </div>
+
+  <!-- ========== 現状 ========== -->
+  <div class="mockhead">現状</div>
+  <div class="mockdesc">印・馬番・馬名を1セルに直列。印の有無で馬番の位置が 0px / 約16px ずれる。</div>
+  <div class="secthead">勝率・期待値<span class="cnt">10頭</span></div>
+  <table class="fixed" style="font-size:12px">
+    <colgroup><col style="width:37%"><col style="width:8%"><col style="width:11%"><col style="width:11%"><col style="width:16%"><col style="width:17%"></colgroup>
+    <thead><tr><th class="l">馬名</th><th>勝率</th><th class="sep">適正</th><th class="sep">現在</th><th class="sep">期待値</th><th class="l sep">評価</th></tr></thead>
+    <tbody id="tb-now"></tbody>
+  </table>
+  <div class="conf">全10頭を掲載（勝率順）</div>
+
+  <hr class="mockrule">
+
+  <!-- ========== A案 ========== -->
+  <div class="mockhead">A案：印を独立カラムに切り出す</div>
+  <div class="mockdesc">
+    馬名列の左に固定幅の<b>印カラム</b>を新設。印は中央寄せ、馬番と馬名は全行が完全に一直線。<br>
+    <b>良い点</b>：揃いがいちばん強い。印の縦読み（◎○▲△がどこにあるか）が一目。<br>
+    <b>弱い点</b>：列が1本増えるぶん馬名の幅が約7%減り、長い馬名の省略（…）が出やすい。
+  </div>
+  <div class="secthead">勝率・期待値<span class="cnt">10頭</span></div>
+  <table class="fixed optA" style="font-size:12px">
+    <colgroup><col style="width:7%"><col style="width:30%"><col style="width:8%"><col style="width:11%"><col style="width:11%"><col style="width:16%"><col style="width:17%"></colgroup>
+    <thead><tr><th class="l">印</th><th class="l">馬名</th><th>勝率</th><th class="sep">適正</th><th class="sep">現在</th><th class="sep">期待値</th><th class="l sep">評価</th></tr></thead>
+    <tbody id="tb-a"></tbody>
+  </table>
+  <div class="conf">全10頭を掲載（勝率順）</div>
+
+  <hr class="mockrule">
+
+  <!-- ========== B案 ========== -->
+  <div class="mockhead">B案：馬名セル内に固定幅の印スロットを置く</div>
+  <div class="mockdesc">
+    列は増やさず、馬名セルの先頭に<b>幅17pxの空きスロット</b>を常に確保する。印なしの行はそこが空白になるだけ。<br>
+    <b>良い点</b>：見た目はA案とほぼ同じに揃うのに、テーブル構造・列幅は現状のまま。改修が最小。<br>
+    <b>弱い点</b>：ヘッダに「印」の見出しが出ないので、記号の意味は印セクション頼み。
+  </div>
+  <div class="secthead">勝率・期待値<span class="cnt">10頭</span></div>
+  <table class="fixed optB" style="font-size:12px">
+    <colgroup><col style="width:37%"><col style="width:8%"><col style="width:11%"><col style="width:11%"><col style="width:16%"><col style="width:17%"></colgroup>
+    <thead><tr><th class="l">馬名</th><th>勝率</th><th class="sep">適正</th><th class="sep">現在</th><th class="sep">期待値</th><th class="l sep">評価</th></tr></thead>
+    <tbody id="tb-b"></tbody>
+  </table>
+  <div class="conf">全10頭を掲載（勝率順）</div>
+
+  <hr class="mockrule">
+
+  <!-- ========== C案 ========== -->
+  <div class="mockhead">C案：左端は馬番で揃え、印は馬名の後ろのバッジにする</div>
+  <div class="mockdesc">
+    先頭を必ず<b>馬番の枠色ボックス</b>にして揃える。印は馬名の右に色付きバッジで添える（印セクションと同じ .mkb）。<br>
+    <b>良い点</b>：左端が枠色ボックスで一直線に並ぶので、視線の入り口がいちばん強い。印は色で目立つ。<br>
+    <b>弱い点</b>：印の位置が馬名の長さで左右にずれるため、印だけを縦に追う読み方はしにくい。
+  </div>
+  <div class="secthead">勝率・期待値<span class="cnt">10頭</span></div>
+  <table class="fixed optC" style="font-size:12px">
+    <colgroup><col style="width:37%"><col style="width:8%"><col style="width:11%"><col style="width:11%"><col style="width:16%"><col style="width:17%"></colgroup>
+    <thead><tr><th class="l">馬名</th><th>勝率</th><th class="sep">適正</th><th class="sep">現在</th><th class="sep">期待値</th><th class="l sep">評価</th></tr></thead>
+    <tbody id="tb-c"></tbody>
+  </table>
+  <div class="conf">全10頭を掲載（勝率順）</div>
+
+  <div style="height:60px"></div>
+</div>
+
+<script>
+// モック用データ（スクリーンショットのレースを再現）
+var HORSES = [
+  { mark:'◎', no:8,  gate:7, name:'エコロセレナ',      p:'28%', fair:'3.6',  now:'3.5',  ev:'−2%',  evc:'neg', chip:['fair','妥当'] },
+  { mark:'○', no:4,  gate:4, name:'ジャーナーリア',    p:'24%', fair:'4.1',  now:'3.4',  ev:'−17%', evc:'neg', chip:['over','過剰'] },
+  { mark:'',  no:10, gate:8, name:'トルークマクト',    p:'20%', fair:'5.0',  now:'3',    ev:'−40%', evc:'neg', chip:['over','過剰'] },
+  { mark:'',  no:5,  gate:5, name:'ミスマラッカ',      p:'7%',  fair:'15.3', now:'9.1',  ev:'−41%', evc:'neg', chip:['over','過剰'] },
+  { mark:'△', no:7,  gate:7, name:'ミスチヴマリアンヌ', p:'6%',  fair:'16.2', now:'12.3', ev:'−24%', evc:'neg', chip:['over','過剰'] },
+  { mark:'△', no:6,  gate:6, name:'ホワイトラバーズ',  p:'4%',  fair:'23.3', now:'21.5', ev:'−8%',  evc:'neg', chip:['fair','妥当'] },
+  { mark:'',  no:2,  gate:2, name:'ラブデウザ',        p:'4%',  fair:'28.3', now:'19.5', ev:'−31%', evc:'neg', chip:['over','過剰'] },
+  { mark:'▲', no:9,  gate:8, name:'アルマフレイヤ',    p:'3%',  fair:'31.3', now:'45.1', ev:'+44%', evc:'pos', chip:['under','過小'], hl:true },
+  { mark:'',  no:1,  gate:1, name:'デルマハルナ',      p:'2%',  fair:'53.6', now:'63.8', ev:'+19%', evc:'pos', chip:['under','過小'] },
+  { mark:'',  no:3,  gate:3, name:'ハネマン',          p:'2%',  fair:'54.2', now:'51.6', ev:'−5%',  evc:'neg', chip:['fair','妥当'] }
+];
+var NCLS = { '◎':'n-hon', '○':'n-tai', '▲':'n-tan', '△':'n-oku' };
+var MCLS = { '◎':'m-hon', '○':'m-tai', '▲':'m-tan', '△':'m-oku' };
+
+function hn(h) { return '<span class="hn wk' + h.gate + ' sm">' + h.no + '</span>'; }
+function tail(h) {
+  return '<td>' + h.p + '</td>'
+       + '<td class="sep">' + h.fair + '</td>'
+       + '<td class="sep">' + h.now + '</td>'
+       + '<td class="sep value-' + h.evc + (h.hl ? ' cell-hl' : '') + '">' + h.ev + '</td>'
+       + '<td class="l sep"><span class="chip ' + h.chip[0] + '">' + h.chip[1] + '</span></td>';
+}
+function tr(h, inner) { return '<tr' + (h.mark ? ' class="pred"' : '') + '>' + inner + tail(h) + '</tr>'; }
+
+document.getElementById('tb-now').innerHTML = HORSES.map(function (h) {
+  return tr(h, '<td class="name ' + (NCLS[h.mark] || '') + '">' + h.mark + hn(h) + ' ' + h.name + '</td>');
+}).join('');
+
+document.getElementById('tb-a').innerHTML = HORSES.map(function (h) {
+  return tr(h, '<td class="mkcol ' + (NCLS[h.mark] || '') + '">' + h.mark + '</td>'
+              + '<td class="name ' + (NCLS[h.mark] || '') + '">' + hn(h) + ' ' + h.name + '</td>');
+}).join('');
+
+document.getElementById('tb-b').innerHTML = HORSES.map(function (h) {
+  return tr(h, '<td class="name ' + (NCLS[h.mark] || '') + '">'
+              + '<span class="mkslot ' + (NCLS[h.mark] || '') + '">' + h.mark + '</span>'
+              + hn(h) + ' ' + h.name + '</td>');
+}).join('');
+
+document.getElementById('tb-c').innerHTML = HORSES.map(function (h) {
+  var badge = h.mark ? '<span class="mkb ' + MCLS[h.mark] + '">' + h.mark + '</span>' : '';
+  return tr(h, '<td class="name ' + (NCLS[h.mark] || '') + '">' + hn(h) + ' ' + h.name + badge + '</td>');
+}).join('');
+</script>
+</body>
+</html>

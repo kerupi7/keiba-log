@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>答え合わせ A+B 組み合わせ3案 — Ans. モック</title>
+<link rel="stylesheet" href="assets/style.css?v=20260723c">
+<style>
+.mockhead{margin:26px 0 6px;font-size:15px;font-weight:700;color:var(--navy)}
+.mockdesc{font-size:12.5px;color:var(--sub);line-height:1.7;margin-bottom:8px}
+.mockdesc b{color:var(--text)}
+.mockrule{margin:34px 0 0;border:0;border-top:2px solid var(--rule-strong)}
+
+/* ---- 共通：A案のタイル ---- */
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:9px}
+.tile{border:1px solid var(--rule);border-radius:6px;padding:8px 10px;background:#fff}
+.tile .cap{font-size:10.5px;color:var(--cap);font-weight:700}
+.tile .val{font-size:15px;font-weight:700;margin-top:1px;font-variant-numeric:tabular-nums}
+.tile .sub{font-size:11px;color:var(--cap);font-variant-numeric:tabular-nums}
+.tile.hit{border-color:#0F7A3D;background:#F1F8F3} .tile.hit .val{color:#0F6A34}
+.tile.miss{border-color:#e2c2c2;background:#FCF5F5} .tile.miss .val{color:#B4271F}
+.tile.wide{grid-column:1 / -1}
+
+/* 小型タイル（案2用・1行3枚） */
+.tiles.sm{grid-template-columns:1fr 1fr 1fr;gap:5px}
+.tiles.sm .tile{padding:6px 8px}
+.tiles.sm .tile .val{font-size:13px}
+.tiles.sm .tile .sub{font-size:10px}
+
+/* 1行サマリー帯（案3用） */
+.sumbar{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin-top:9px;
+  padding:8px 11px;border-radius:6px;border:1px solid #0F7A3D;background:#F1F8F3;font-size:12.5px}
+.sumbar.miss{border-color:#e2c2c2;background:#FCF5F5}
+.sumbar .big{font-size:15px;font-weight:700;color:#0F6A34;font-variant-numeric:tabular-nums}
+.sumbar.miss .big{color:#B4271F}
+.sumbar .it{color:var(--sub);font-variant-numeric:tabular-nums}
+.sumbar .it b{color:var(--text)}
+
+/* ---- 共通：B案の「予想 → 結果」リスト ---- */
+.cmp{margin-top:9px;border:1px solid var(--rule);border-radius:6px;overflow:hidden}
+.cmp .ghead{font-size:11px;font-weight:700;color:var(--cap);background:#FAFAF8;
+  padding:4px 10px;border-bottom:1px solid var(--rule)}
+.cmp .cr{display:flex;align-items:center;gap:7px;padding:7px 10px;
+  border-bottom:1px solid var(--rule);font-size:12.5px}
+.cmp .cr:last-child{border-bottom:0}
+.cmp .cr.in{background:#F1F8F3}
+.cmp .cr .yo{display:flex;align-items:center;gap:5px;flex:1;min-width:0}
+.cmp .cr .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cmp .cr .arw{color:var(--cap);flex:none}
+.cmp .cr .re{flex:none;font-weight:700;font-variant-numeric:tabular-nums;width:52px;
+  text-align:right;white-space:nowrap}
+.cmp .cr.in .re{color:#0F6A34}
+.cmp .cr.out .re{color:var(--cap)}
+.cmp .cr .pop{flex:none;font-size:11px;color:var(--cap);width:56px;text-align:right;
+  font-variant-numeric:tabular-nums}
+.jm{display:inline-block;font-size:11px;font-weight:700;border-radius:2px;padding:0 5px;flex:none}
+.jm.ok{background:#E7F3EA;color:#0F6A34} .jm.ng{background:#FDECEC;color:#B4271F}
+</style>
+</head>
+<body>
+<header id="site-header"></header>
+<div class="container race20">
+
+  <div class="rhead">
+    <div class="cls">モックアップ（2026-07-19 小倉11R 小倉記念の実データ）</div>
+    <div class="ttl">答え合わせ ／ A案（成績タイル）× B案（予想→結果リスト）の3通り</div>
+    <div class="cond">
+      共通の骨格は「上で結論、下で答え合わせ」。違いは <b>タイルの大きさ</b> と、
+      <b>1〜3着の表を残すか、リストに溶かすか</b> の2点。
+    </div>
+  </div>
+
+  <!-- ========== 1案 ========== -->
+  <div class="mockhead">1案：大タイル ＋ 全部リスト（表を廃止）</div>
+  <div class="mockdesc">
+    上に大きめのタイル3枚、下は結果・印・地雷をすべて「予想 → 結果」の同じ行で並べる。1〜3着の表は廃止し、リストの先頭グループとして持つ。<br>
+    <b>強み</b>：ブロックが2つだけで構造がいちばん単純。全部が同じ行の形なので視線が迷わない。<br>
+    <b>弱み</b>：着順表のオッズ列が消える（人気だけ残す）。表がなくなるぶん、上位3頭の「格」が少し弱く見える。
+  </div>
+  <div class="secthead">答え合わせ<span class="cnt">結果確定</span></div>
+  <div id="v1"></div>
+
+  <hr class="mockrule">
+
+  <!-- ========== 2案 ========== -->
+  <div class="mockhead">2案：小タイル ＋ 着順表を維持 ＋ 印・地雷だけリスト</div>
+  <div class="mockdesc">
+    タイルは1行3枚の小型。1〜3着の表は今のまま残し、その下の印チップと地雷ブロックだけを「予想 → 結果」リストに置き換える。<br>
+    <b>強み</b>：既存からの変更がいちばん小さい（表はそのまま）。オッズ列も残る。<br>
+    <b>弱み</b>：ブロックが3つのままで、縦は3案でいちばん長い。
+  </div>
+  <div class="secthead">答え合わせ<span class="cnt">結果確定</span></div>
+  <div id="v2"></div>
+
+  <hr class="mockrule">
+
+  <!-- ========== 3案 ========== -->
+  <div class="mockhead">3案：1行サマリー帯 ＋ 全部リスト</div>
+  <div class="mockdesc">
+    タイルをやめ、見出し直下に細い1行の帯で「的中 900円→3,060円 ／ 印2/5 ／ ペース✓」をまとめる。下は1案と同じ全部リスト。<br>
+    <b>強み</b>：縦がいちばん短く、帯の色（緑／赤）だけで勝敗が分かる。スクロールが少ない。<br>
+    <b>弱み</b>：数字が横に並ぶぶん一つひとつは小さい。項目が増えると帯が折り返す。
+  </div>
+  <div class="secthead">答え合わせ<span class="cnt">結果確定</span></div>
+  <div id="v3"></div>
+
+  <div style="height:60px"></div>
+</div>
+
+<script>
+/* ===== 実データ（202610020811 / 小倉記念・2026-07-19） ===== */
+var TOP3 = [
+  { finish:1, no:1,  gate:1, name:'ゼンダンハヤブサ', pop:10, odds:33.1 },
+  { finish:2, no:17, gate:8, name:'ジョバンニ',       pop:1,  odds:2.6  },
+  { finish:3, no:18, gate:8, name:'レーゼドラマ',     pop:6,  odds:12.6 }
+];
+var MARKS = [
+  { mark:'◎', no:6,  gate:3, name:'ガイアメンテ', finish:4,  pop:2 },
+  { mark:'○', no:14, gate:7, name:'ウエストナウ', finish:8,  pop:5 },
+  { mark:'▲', no:17, gate:8, name:'ジョバンニ',   finish:2,  pop:1 },
+  { mark:'△', no:8,  gate:4, name:'サフィラ',     finish:11, pop:8 },
+  { mark:'△', no:18, gate:8, name:'レーゼドラマ', finish:3,  pop:6 }
+];
+var LANDMINE = [
+  { no:2, gate:1, name:'タガノアビー',       finish:9, ok:true },
+  { no:9, gate:5, name:'ジーティーアダマン', finish:6, ok:true }
+];
+var PACE = { expected:'M', actual:'M', match:true };
+var BETS = { hit:true, cost:900, ret:3060 };
+
+var MCLS = { '◎':'m-hon', '○':'m-tai', '▲':'m-tan', '△':'m-oku' };
+function hn(no, gate) { return '<span class="hn wk' + gate + ' sm">' + no + '</span>'; }
+function mkb(m) { return '<span class="mkb ' + MCLS[m] + '">' + m + '</span>'; }
+function yen(n) { return n.toLocaleString('ja-JP') + '円'; }
+var inTop3 = MARKS.filter(function (m) { return m.finish <= 3; }).length;
+var lmOk = LANDMINE.filter(function (l) { return l.ok; }).length;
+var roi = Math.round(BETS.ret / BETS.cost * 100);
+
+/* ---- パーツ：タイル ---- */
+function tilesHtml(small) {
+  var betTile = '<div class="tile ' + (small ? '' : 'wide ') + (BETS.hit ? 'hit' : 'miss') + '">'
+    + '<div class="cap">買い目</div>'
+    + '<div class="val">' + (BETS.hit ? '的中' : '不的中') + (small ? '' : '　' + yen(BETS.cost) + ' → ' + yen(BETS.ret)) + '</div>'
+    + '<div class="sub">' + (small ? yen(BETS.ret) + '・' + roi + '%' : '回収率 ' + roi + '%') + '</div></div>';
+  return '<div class="tiles' + (small ? ' sm' : '') + '">' + betTile
+    + '<div class="tile ' + (inTop3 ? 'hit' : 'miss') + '"><div class="cap">印</div>'
+    + '<div class="val">' + inTop3 + ' / ' + MARKS.length + '</div><div class="sub">が馬券圏内</div></div>'
+    + '<div class="tile ' + (PACE.match ? 'hit' : 'miss') + '"><div class="cap">ペース</div>'
+    + '<div class="val">' + (PACE.match ? '的中' : '外れ') + '</div>'
+    + '<div class="sub">' + PACE.expected + ' → ' + PACE.actual + '</div></div>'
+    + '</div>';
+}
+
+/* ---- パーツ：1行サマリー帯 ---- */
+function sumbarHtml() {
+  return '<div class="sumbar' + (BETS.hit ? '' : ' miss') + '">'
+    + '<span class="big">' + (BETS.hit ? '的中' : '不的中') + ' ' + yen(BETS.cost) + ' → ' + yen(BETS.ret) + '</span>'
+    + '<span class="it">回収 <b>' + roi + '%</b></span>'
+    + '<span class="it">印 <b>' + inTop3 + '/' + MARKS.length + '</b> 圏内</span>'
+    + '<span class="it">ペース <b>' + PACE.expected + ' → ' + PACE.actual + (PACE.match ? ' ✓' : ' ✕') + '</b></span>'
+    + '<span class="it">地雷 <b>' + lmOk + '/' + LANDMINE.length + '</b></span></div>';
+}
+
+/* ---- パーツ：着順表（現行のまま） ---- */
+function topTableHtml() {
+  return '<table class="fixed" style="font-size:12.5px;margin-top:10px">'
+    + '<colgroup><col style="width:12%"><col style="width:46%"><col style="width:14%"><col style="width:14%"><col style="width:14%"></colgroup>'
+    + '<thead><tr><th>着</th><th class="l">馬名</th><th>人気</th><th>オッズ</th><th class="l">印</th></tr></thead><tbody>'
+    + TOP3.map(function (t) {
+        var m = MARKS.filter(function (x) { return x.no === t.no; })[0];
+        return '<tr><td>' + t.finish + '</td><td class="name">' + hn(t.no, t.gate) + ' ' + t.name + '</td>'
+             + '<td>' + t.pop + '</td><td>' + t.odds + '</td><td class="l">' + (m ? mkb(m.mark) : '—') + '</td></tr>';
+      }).join('')
+    + '</tbody></table>';
+}
+
+/* ---- パーツ：予想→結果リスト ---- */
+function cmpRow(left, right, isIn, note) {
+  return '<div class="cr ' + (isIn ? 'in' : 'out') + '"><div class="yo">' + left + '</div>'
+       + '<span class="arw">→</span><span class="re">' + right + '</span>'
+       + '<span class="pop">' + (note || '') + '</span></div>';
+}
+function marksRowsHtml() {
+  return '<div class="ghead">印 → 着順（' + inTop3 + '/' + MARKS.length + ' が馬券圏内）</div>'
+    + MARKS.map(function (m) {
+        return cmpRow(mkb(m.mark) + hn(m.no, m.gate) + '<span class="nm">' + m.name + '</span>',
+                      m.finish + '着', m.finish <= 3, m.pop + '人気');
+      }).join('');
+}
+function landmineRowsHtml() {
+  return '<div class="ghead">地雷 → 着順（' + lmOk + '/' + LANDMINE.length + ' 成功）</div>'
+    + LANDMINE.map(function (l) {
+        return cmpRow('<span class="jm ' + (l.ok ? 'ok' : 'ng') + '">地雷</span>' + hn(l.no, l.gate)
+                      + '<span class="nm">' + l.name + '</span>',
+                      l.finish + '着', l.ok, l.ok ? '沈め成功' : '判定ミス');
+      }).join('');
+}
+function resultRowsHtml() {
+  return '<div class="ghead">結果（1〜3着）</div>'
+    + TOP3.map(function (t) {
+        var m = MARKS.filter(function (x) { return x.no === t.no; })[0];
+        return '<div class="cr in"><div class="yo">' + (m ? mkb(m.mark) : '') + hn(t.no, t.gate)
+             + '<span class="nm">' + t.name + '</span></div>'
+             + '<span class="re">' + t.finish + '着</span>'
+             + '<span class="pop">' + t.pop + '人気</span></div>';
+      }).join('');
+}
+function fullListHtml() {
+  return '<div class="cmp">' + resultRowsHtml() + marksRowsHtml() + landmineRowsHtml() + '</div>';
+}
+function marksOnlyListHtml() {
+  return '<div class="cmp">' + marksRowsHtml() + landmineRowsHtml() + '</div>';
+}
+
+/* ---- 3案の組み立て ---- */
+document.getElementById('v1').innerHTML = tilesHtml(false) + fullListHtml();
+document.getElementById('v2').innerHTML = tilesHtml(true) + topTableHtml() + marksOnlyListHtml();
+document.getElementById('v3').innerHTML = sumbarHtml() + fullListHtml();
+</script>
+</body>
+</html>

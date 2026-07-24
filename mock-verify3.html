@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>答え合わせ 1案・区切り3案 — Ans. モック</title>
+<link rel="stylesheet" href="assets/style.css?v=20260723c">
+<style>
+.mockhead{margin:26px 0 6px;font-size:15px;font-weight:700;color:var(--navy)}
+.mockdesc{font-size:12.5px;color:var(--sub);line-height:1.7;margin-bottom:8px}
+.mockdesc b{color:var(--text)}
+.mockrule{margin:34px 0 0;border:0;border-top:2px solid var(--rule-strong)}
+
+/* ---- 共通：成績タイル（1案のまま） ---- */
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:9px}
+.tile{border:1px solid var(--rule);border-radius:6px;padding:8px 10px;background:#fff}
+.tile .cap{font-size:10.5px;color:var(--cap);font-weight:700}
+.tile .val{font-size:15px;font-weight:700;margin-top:1px;font-variant-numeric:tabular-nums}
+.tile .sub{font-size:11px;color:var(--cap);font-variant-numeric:tabular-nums}
+.tile.hit{border-color:#0F7A3D;background:#F1F8F3} .tile.hit .val{color:#0F6A34}
+.tile.miss{border-color:#e2c2c2;background:#FCF5F5} .tile.miss .val{color:#B4271F}
+.tile.wide{grid-column:1 / -1}
+
+/* ---- 共通：行の基本形 ---- */
+.cr{display:flex;align-items:center;gap:7px;padding:7px 10px;
+  border-bottom:1px solid var(--rule);font-size:12.5px;background:#fff}
+.cr:last-child{border-bottom:0}
+.cr .yo{display:flex;align-items:center;gap:5px;flex:1;min-width:0}
+.cr .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cr .arw{color:var(--cap);flex:none}
+.cr .re{flex:none;font-weight:700;font-variant-numeric:tabular-nums;width:52px;
+  text-align:right;white-space:nowrap}
+.cr .pop{flex:none;font-size:11px;color:var(--cap);width:56px;text-align:right;
+  font-variant-numeric:tabular-nums}
+/* 緑は「予想が当たった」意味だけに使う（結果グループには使わない） */
+.cr.in{background:#F1F8F3} .cr.in .re{color:#0F6A34}
+.cr.out .re{color:var(--cap)}
+.jm{display:inline-block;font-size:11px;font-weight:700;border-radius:2px;padding:0 5px;flex:none}
+.jm.ok{background:#E7F3EA;color:#0F6A34} .jm.ng{background:#FDECEC;color:#B4271F}
+
+/* ===== 区切り1：グループごとに独立したカード ===== */
+.sep1 .grp{margin-top:12px;border:1px solid var(--rule);border-radius:6px;overflow:hidden}
+.sep1 .grp .gh{display:flex;align-items:baseline;gap:6px;padding:6px 10px;
+  background:#FAFAF8;border-bottom:1px solid var(--rule)}
+.sep1 .grp .gh .t{font-size:12px;font-weight:700;color:var(--navy)}
+.sep1 .grp .gh .s{font-size:11px;color:var(--cap)}
+
+/* ===== 区切り2：1枚の枠のまま、濃い見出し帯＋左のアクセント線 ===== */
+.sep2 .cmp{margin-top:10px;border:1px solid var(--rule);border-radius:6px;overflow:hidden}
+.sep2 .gh{display:flex;align-items:baseline;gap:6px;padding:5px 10px;
+  background:var(--navy);color:#fff;font-size:11.5px;font-weight:700}
+.sep2 .gh .s{font-weight:400;opacity:.85}
+.sep2 .cr{border-left:3px solid transparent}
+.sep2 .g-res .cr{border-left-color:#c9d3dd}
+.sep2 .g-mark .cr{border-left-color:var(--mkb-hon)}
+.sep2 .g-mine .cr{border-left-color:var(--orange)}
+
+/* ===== 区切り3：タブで1グループずつ出す ===== */
+.sep3 .tabs{display:flex;gap:4px;margin-top:10px}
+.sep3 .tab{flex:1;text-align:center;font-size:12px;font-weight:700;padding:7px 4px;
+  border:1px solid var(--rule);border-radius:5px 5px 0 0;background:#FAFAF8;color:var(--cap);cursor:pointer}
+.sep3 .tab .s{display:block;font-size:10px;font-weight:400}
+.sep3 .tab.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+.sep3 .panel{border:1px solid var(--rule);border-top:0;border-radius:0 0 6px 6px;overflow:hidden}
+</style>
+</head>
+<body>
+<header id="site-header"></header>
+<div class="container race20">
+
+  <div class="rhead">
+    <div class="cls">モックアップ（2026-07-19 小倉11R 小倉記念の実データ）</div>
+    <div class="ttl">1案の区切りを強くする 3通り</div>
+    <div class="cond">
+      前回の1案は「結果」「印→着順」「地雷→着順」が同じ枠の中で続くため、境目が見出しの1行だけでした。
+      3案とも境目を強くしています。あわせて<b>緑は「予想が当たった」意味だけに限定</b>し、
+      結果グループ（1〜3着）は中立の白にしました（前回は結果も全部緑で、的中と見分けがつきませんでした）。
+    </div>
+  </div>
+
+  <!-- ========== 区切り1 ========== -->
+  <div class="mockhead">区切り1：グループごとに独立したカードにする</div>
+  <div class="mockdesc">
+    3つのグループを別々の枠に分け、間に余白を空ける。見出しはカードの中の帯。<br>
+    <b>強み</b>：境目がいちばん明快。グループが「別のもの」だと形で分かる。<br>
+    <b>弱み</b>：枠線と余白が増えるぶん、縦が少し伸びる。
+  </div>
+  <div class="secthead">答え合わせ<span class="cnt">結果確定</span></div>
+  <div class="sep1" id="v1"></div>
+
+  <hr class="mockrule">
+
+  <!-- ========== 区切り2 ========== -->
+  <div class="mockhead">区切り2：1枚の枠のまま、見出し帯を濃紺に＋左に色の線</div>
+  <div class="mockdesc">
+    枠は1枚のまま、グループ見出しを濃紺の帯（白文字）にして、その下の行の左端にグループ色の線を通す。<br>
+    <b>強み</b>：縦が伸びない。帯が濃いので、スクロール中でも「今どのグループか」が分かる。<br>
+    <b>弱み</b>：濃紺の帯が3本入るので、セクション見出しとの主従が少し弱まる。
+  </div>
+  <div class="secthead">答え合わせ<span class="cnt">結果確定</span></div>
+  <div class="sep2" id="v2"></div>
+
+  <hr class="mockrule">
+
+  <!-- ========== 区切り3 ========== -->
+  <div class="mockhead">区切り3：タブで1グループずつ表示する</div>
+  <div class="mockdesc">
+    「結果 / 印 / 地雷」のタブを置き、1グループだけを表示する（タップで切替。押して動きます）。<br>
+    <b>強み</b>：混ざりようがない。縦がいちばん短く、タブの見出しに件数も出せる。<br>
+    <b>弱み</b>：隠れた情報は自分で開く必要があり、印と地雷を並べて見比べられない。
+  </div>
+  <div class="secthead">答え合わせ<span class="cnt">結果確定</span></div>
+  <div class="sep3" id="v3"></div>
+
+  <div style="height:60px"></div>
+</div>
+
+<script>
+/* ===== 実データ（202610020811 / 小倉記念・2026-07-19） ===== */
+var TOP3 = [
+  { finish:1, no:1,  gate:1, name:'ゼンダンハヤブサ', pop:10 },
+  { finish:2, no:17, gate:8, name:'ジョバンニ',       pop:1  },
+  { finish:3, no:18, gate:8, name:'レーゼドラマ',     pop:6  }
+];
+var MARKS = [
+  { mark:'◎', no:6,  gate:3, name:'ガイアメンテ', finish:4,  pop:2 },
+  { mark:'○', no:14, gate:7, name:'ウエストナウ', finish:8,  pop:5 },
+  { mark:'▲', no:17, gate:8, name:'ジョバンニ',   finish:2,  pop:1 },
+  { mark:'△', no:8,  gate:4, name:'サフィラ',     finish:11, pop:8 },
+  { mark:'△', no:18, gate:8, name:'レーゼドラマ', finish:3,  pop:6 }
+];
+var LANDMINE = [
+  { no:2, gate:1, name:'タガノアビー',       finish:9, ok:true },
+  { no:9, gate:5, name:'ジーティーアダマン', finish:6, ok:true }
+];
+var PACE = { expected:'M', actual:'M', match:true };
+var BETS = { hit:true, cost:900, ret:3060 };
+
+var MCLS = { '◎':'m-hon', '○':'m-tai', '▲':'m-tan', '△':'m-oku' };
+function hn(no, gate) { return '<span class="hn wk' + gate + ' sm">' + no + '</span>'; }
+function mkb(m) { return '<span class="mkb ' + MCLS[m] + '">' + m + '</span>'; }
+function yen(n) { return n.toLocaleString('ja-JP') + '円'; }
+var inTop3 = MARKS.filter(function (m) { return m.finish <= 3; }).length;
+var lmOk = LANDMINE.filter(function (l) { return l.ok; }).length;
+var roi = Math.round(BETS.ret / BETS.cost * 100);
+
+/* ---- 成績タイル（3案共通） ---- */
+function tilesHtml() {
+  return '<div class="tiles">'
+    + '<div class="tile wide ' + (BETS.hit ? 'hit' : 'miss') + '"><div class="cap">買い目</div>'
+    + '<div class="val">' + (BETS.hit ? '的中' : '不的中') + '　' + yen(BETS.cost) + ' → ' + yen(BETS.ret) + '</div>'
+    + '<div class="sub">回収率 ' + roi + '%</div></div>'
+    + '<div class="tile ' + (inTop3 ? 'hit' : 'miss') + '"><div class="cap">印</div>'
+    + '<div class="val">' + inTop3 + ' / ' + MARKS.length + '</div><div class="sub">が馬券圏内</div></div>'
+    + '<div class="tile ' + (PACE.match ? 'hit' : 'miss') + '"><div class="cap">ペース</div>'
+    + '<div class="val">' + (PACE.match ? '的中' : '外れ') + '</div>'
+    + '<div class="sub">' + PACE.expected + ' → ' + PACE.actual + '</div></div></div>';
+}
+
+/* ---- 各グループの行 ---- */
+function resultRows() {
+  // 結果は事実の並びなので中立（白）。印を打っていた馬にはバッジだけ添える
+  return TOP3.map(function (t) {
+    var m = MARKS.filter(function (x) { return x.no === t.no; })[0];
+    return '<div class="cr"><div class="yo">' + (m ? mkb(m.mark) : '') + hn(t.no, t.gate)
+         + '<span class="nm">' + t.name + '</span></div>'
+         + '<span class="re">' + t.finish + '着</span>'
+         + '<span class="pop">' + t.pop + '人気</span></div>';
+  }).join('');
+}
+function markRows() {
+  return MARKS.map(function (m) {
+    return '<div class="cr ' + (m.finish <= 3 ? 'in' : 'out') + '">'
+         + '<div class="yo">' + mkb(m.mark) + hn(m.no, m.gate) + '<span class="nm">' + m.name + '</span></div>'
+         + '<span class="arw">→</span><span class="re">' + m.finish + '着</span>'
+         + '<span class="pop">' + m.pop + '人気</span></div>';
+  }).join('');
+}
+function mineRows() {
+  return LANDMINE.map(function (l) {
+    return '<div class="cr ' + (l.ok ? 'in' : 'out') + '">'
+         + '<div class="yo"><span class="jm ' + (l.ok ? 'ok' : 'ng') + '">地雷</span>' + hn(l.no, l.gate)
+         + '<span class="nm">' + l.name + '</span></div>'
+         + '<span class="arw">→</span><span class="re">' + l.finish + '着</span>'
+         + '<span class="pop">' + (l.ok ? '沈め成功' : '判定ミス') + '</span></div>';
+  }).join('');
+}
+var GROUPS = [
+  { key:'res',  title:'結果',        sub:'1〜3着',                                   tab:'結果', tabsub:'1〜3着',                  rows:resultRows },
+  { key:'mark', title:'印 → 着順',   sub:inTop3 + '/' + MARKS.length + ' が馬券圏内', tab:'印',   tabsub:inTop3 + '/' + MARKS.length, rows:markRows },
+  { key:'mine', title:'地雷 → 着順', sub:lmOk + '/' + LANDMINE.length + ' 成功',      tab:'地雷', tabsub:lmOk + '/' + LANDMINE.length, rows:mineRows }
+];
+
+/* ---- 区切り1：カード分割 ---- */
+document.getElementById('v1').innerHTML = tilesHtml()
+  + GROUPS.map(function (g) {
+      return '<div class="grp"><div class="gh"><span class="t">' + g.title + '</span>'
+           + '<span class="s">' + g.sub + '</span></div>' + g.rows() + '</div>';
+    }).join('');
+
+/* ---- 区切り2：濃紺の見出し帯＋左のアクセント線 ---- */
+document.getElementById('v2').innerHTML = tilesHtml()
+  + '<div class="cmp">'
+  + GROUPS.map(function (g) {
+      return '<div class="gh">' + g.title + '<span class="s">（' + g.sub + '）</span></div>'
+           + '<div class="g-' + (g.key === 'res' ? 'res' : g.key === 'mark' ? 'mark' : 'mine') + '">' + g.rows() + '</div>';
+    }).join('')
+  + '</div>';
+
+/* ---- 区切り3：タブ ---- */
+document.getElementById('v3').innerHTML = tilesHtml()
+  + '<div class="tabs">' + GROUPS.map(function (g, i) {
+      return '<div class="tab' + (i === 0 ? ' on' : '') + '" data-i="' + i + '">' + g.tab
+           + '<span class="s">' + g.tabsub + '</span></div>';
+    }).join('') + '</div>'
+  + '<div class="panel" id="v3panel">' + GROUPS[0].rows() + '</div>';
+document.querySelectorAll('.sep3 .tab').forEach(function (el) {
+  el.addEventListener('click', function () {
+    document.querySelectorAll('.sep3 .tab').forEach(function (t) { t.classList.remove('on'); });
+    el.classList.add('on');
+    document.getElementById('v3panel').innerHTML = GROUPS[Number(el.dataset.i)].rows();
+  });
+});
+</script>
+</body>
+</html>

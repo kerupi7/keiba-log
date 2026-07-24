@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ans. B案（層でまとめる）3バリエーション</title>
+<link rel="stylesheet" href="assets/style.css">
+<style>
+body{padding:18px 14px 80px;max-width:760px;margin:0 auto}
+.mockhead{border-bottom:1px solid var(--rule-strong);padding-bottom:10px;margin-bottom:6px}
+.mockhead h1{font-size:17px;margin:0 0 4px}
+.mockhead p{font-size:12px;color:var(--cap);margin:0;line-height:1.6}
+.case{margin:26px 0 0;border:1px solid var(--rule);border-radius:8px;padding:14px 13px 16px}
+.case > h2{font-size:14px;margin:0 0 3px;color:var(--navy)}
+.case > .desc{font-size:12px;color:var(--sub);line-height:1.65;margin:0 0 10px}
+.case > .diff{font-size:11px;color:var(--sub);line-height:1.65;margin:10px 0 0;
+  background:var(--sub-bg);border-radius:5px;padding:8px 10px}
+.case > .diff b{color:var(--text)}
+.eyebrow{font-size:11px;font-weight:700;color:var(--cap);margin:14px 0 0}
+
+/* 層の色は「本命→大穴」の順序尺度。navy 1色の濃→淡のみ（別の色相は使わない） */
+.tier1{--tier:#003E70} .tier2{--tier:#6E8CA6} .tier3{--tier:#B9C6D2}
+
+/* ---- 共通：層見出し行 ---- */
+.grpline td{background:#F2F5F8;font-size:11.5px;padding-top:7px;padding-bottom:7px;
+  border-bottom:1px solid #D8E0E8;box-shadow:inset 3px 0 0 var(--tier)}
+.grpline .nm{font-weight:700;color:var(--navy)}
+.grpline .sum{font-weight:600;color:var(--sub);margin-left:7px}
+.grpline .sum b{color:var(--text);font-weight:700}
+
+/* ---- B-1：見出し行だけ（表は1つのまま） ---- */
+.b1 table.st tbody tr.member td:first-child{padding-left:14px}
+
+/* ---- B-2：層タイル＋表は左の帯で層を示す ---- */
+.b2 .tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:9px 0 2px}
+.b2 .tile{border:1px solid var(--rule);border-radius:7px;padding:9px 10px 10px;border-left:4px solid var(--tier)}
+.b2 .tile .lb{font-size:10.5px;color:var(--cap);line-height:1.35}
+.b2 .tile .vv{font-size:21px;font-weight:700;font-variant-numeric:tabular-nums;margin-top:3px;line-height:1.05}
+.b2 .tile .vv span{font-size:11px;font-weight:600;color:var(--cap);margin-left:2px}
+.b2 .tile .sub{font-size:10.5px;color:var(--cap);margin-top:4px;line-height:1.5}
+.b2 .tile .track{height:4px;background:#ECF1F6;border-radius:2px;margin-top:6px}
+.b2 .tile .track i{display:block;height:100%;background:var(--tier);border-radius:0 2px 2px 0}
+.b2 table.st tbody td:first-child{box-shadow:inset 3px 0 0 var(--tier)}
+.b2 table.st tbody tr.rank1 td:first-child{box-shadow:inset 3px 0 0 var(--tier),inset 6px 0 0 -3px #B8860B}
+.b2 .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:9px 0 4px}
+.b2 .card{border:1px solid var(--rule);border-radius:7px;padding:9px;background:#fff}
+.b2 .card.c1{border-color:#E4CE94;background:#FDFAF2}
+.b2 .card .rkc{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;
+  border-radius:50%;font-size:10px;font-weight:700;color:#fff}
+.b2 .card .rkc.r1{background:#B8860B} .b2 .card .rkc.r2{background:#8C8C8C} .b2 .card .rkc.r3{background:#A9702E}
+.b2 .card .nm{font-size:12.5px;font-weight:700;margin:5px 0 1px;line-height:1.25}
+.b2 .card .runs,.b2 .card .lb{font-size:10.5px;color:var(--cap)}
+.b2 .card .lb{margin-top:6px}
+.b2 .card .big{font-size:21px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.15}
+.b2 .card .track{height:4px;background:#ECF1F6;border-radius:2px;margin-top:5px}
+.b2 .card .track i{display:block;height:100%;background:var(--cta);opacity:.5;border-radius:0 2px 2px 0}
+.b2 .card .roi{font-size:10.5px;color:var(--cap);margin-top:5px}
+.b2 .card .roi span{display:block;white-space:nowrap}
+
+/* ---- B-3：層アコーディオン＋1位ヒーロー ---- */
+.b3 .grpline td{cursor:pointer}
+.b3 .grpline .caret{float:right;font-size:9px;color:var(--cap);margin-top:2px}
+.b3 tr.member.closed{display:none}
+.b3 .hero{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;
+  border:1px solid #E4CE94;background:#FDFAF2;border-radius:8px;padding:11px 12px;margin:9px 0 6px}
+.b3 .hero .nm{font-size:15px;font-weight:700;line-height:1.2}
+.b3 .hero .meta{font-size:11px;color:var(--cap);margin-top:3px}
+.b3 .hero .big{font-size:30px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1;text-align:right}
+.b3 .hero .big span{display:block;font-size:10.5px;font-weight:600;color:var(--cap);margin-top:4px}
+.b3 .hero .rkc{display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;
+  border-radius:50%;font-size:10.5px;font-weight:700;color:#fff;background:#B8860B;margin-right:5px;vertical-align:2px}
+.b3 .runners{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:4px}
+.b3 .runner{border:1px solid var(--rule);border-radius:7px;padding:8px 10px;display:flex;
+  align-items:center;justify-content:space-between;gap:8px}
+.b3 .runner .l{font-size:12px;font-weight:700;line-height:1.25}
+.b3 .runner .l i{display:block;font-style:normal;font-size:10.5px;font-weight:400;color:var(--cap);margin-top:2px}
+.b3 .runner .r{font-size:16px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.b3 .runner .rkc{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;
+  border-radius:50%;font-size:9.5px;font-weight:700;color:#fff;margin-right:4px;vertical-align:1px}
+.b3 .runner .rkc.r2{background:#8C8C8C} .b3 .runner .rkc.r3{background:#A9702E}
+.b3 #b3-sire{display:none}   /* 全行畳んだ状態でヘッダだけ残ると空の表に見えるので、開くまで表ごと隠す */
+.b3 .more{display:block;width:100%;margin-top:6px;padding:8px;font-size:12px;font-weight:600;
+  border:1px solid var(--rule);border-radius:6px;background:#fff;color:var(--link);cursor:pointer}
+</style>
+</head>
+<body class="cstats">
+
+<div class="mockhead">
+  <h1>B案「層でまとめる」3バリエーション</h1>
+  <p>東京・芝2000m（105レース／平均11.8頭）の実データ。層は本命＝1〜3番人気／中穴＝4〜6／大穴＝7番人気〜。層の色はnavy1色の濃→淡（順序尺度なので色相は増やしません）。</p>
+</div>
+
+<div class="case b1"><h2>B-1：見出し行だけを挿す（いちばん軽い）</h2>
+  <p class="desc">表は今の1つのまま、層の切れ目に見出し行を差し込むだけ。見出しにはその層の走数・複勝率・単回収を並べ、行頭に層の濃さを示す帯を付ける。種牡馬はカードを作らず、上位3頭を表の中で強調するだけに留める。</p>
+  <div class="eyebrow">人気別成績</div><div class="tblwrap" id="b1-pop"></div>
+  <div class="eyebrow">種牡馬別成績</div><div class="tblwrap" id="b1-sire"></div>
+  <p class="diff"><b>変更量</b>：小。<code>renderTable()</code> に「区切り位置と層サマリーを渡せば見出し行を挿す」処理を足すだけ。<br>
+  <b>向く場面</b>：今の情報量・並び順を崩したくない場合。スマホでも横幅が一切増えない。<br>
+  <b>弱い点</b>：層どうしの比較は結局「3つの見出し行を目で往復」する必要がある。種牡馬側はほぼ現状のまま。</p>
+</div>
+
+<div class="case b2"><h2>B-2：層をタイルで横並びにし、表は帯で示す</h2>
+  <p class="desc">層のまとめを表から出して、上に3枚のタイルとして横に並べる。3つを同時に見比べられるので「本命で決まるコースか」が一目で出る。表の行は差し込まず、1列目の帯の濃さだけで層を示す（並び替えても帯は正しく付いてくる）。種牡馬は上位3頭をカードに。</p>
+  <div class="eyebrow">人気別成績</div>
+  <div class="tiles" id="b2-tiles"></div>
+  <div class="tblwrap" id="b2-pop"></div>
+  <div class="eyebrow">種牡馬別成績</div>
+  <div class="cards" id="b2-cards"></div>
+  <div class="tblwrap" id="b2-sire"></div>
+  <p class="diff"><b>変更量</b>：中。タイルとカードの描画を新規に書く。表側は帯のCSSだけ。<br>
+  <b>向く場面</b>：層の比較を主役にしたい場合。タイルは3着内シェアも一緒に出せる。<br>
+  <b>弱い点</b>：タイル3枚＋カード3枚で縦が伸びる。スマホでは1枚102pxなので入る情報は3つまで。
+  もう一つ、行頭の帯を層に使うため、<b>今そこにある金銀銅の順位色と場所が競合する</b>（上のモックでは1〜3番人気の行から金銀銅の帯が消えている）。順位色をバッジだけに任せるか、帯を2本にするかを決める必要がある。</p>
+</div>
+
+<div class="case b3"><h2>B-3：層で畳む＋1位はヒーロー表示</h2>
+  <p class="desc">層の見出しをそのまま開閉ボタンにして、11行を3行に畳む。初期は「本命」だけ開いた状態。種牡馬は1位を大きく1枚、2・3位を小さく2枚出し、残りは畳む。</p>
+  <div class="eyebrow">人気別成績</div><div class="tblwrap" id="b3-pop"></div>
+  <div class="eyebrow">種牡馬別成績</div>
+  <div id="b3-hero"></div>
+  <div class="runners" id="b3-runners"></div>
+  <div class="tblwrap" id="b3-sire"></div>
+  <button type="button" class="more" id="b3-more">残り7頭を表示</button>
+  <p class="diff"><b>変更量</b>：中〜大。開閉の状態管理が入る（並び替えとの兼ね合いも決める必要あり）。<br>
+  <b>向く場面</b>：スマホで縦を短くしたい場合。人気表は11行→3行、種牡馬は10行→3枚まで縮む。<br>
+  <b>弱い点</b>：畳まれた中を見るのに一手間。複勝率で並び替えたときに層の畳みをどうするか（層をまたぐ並びになる）を決めないと破綻する。</p>
+</div>
+
+<script>
+const POP = [
+  ['1番人気',104,37.5,59.6,74.0,74.9,89.2],['2番人気',105,24.8,47.6,59.0,85.2,85.2],
+  ['3番人気',105,14.3,27.6,45.7,83.9,73.7],['4番人気',105,9.5,25.7,41.9,88.1,90.8],
+  ['5番人気',105,3.8,11.4,26.7,40.5,60.6],['6番人気',102,2.9,12.7,18.6,50.7,64.1],
+  ['7番人気',101,5.0,5.9,12.9,89.7,57.8],['8番人気',96,0.0,3.1,9.4,0.0,66.1],
+  ['9番人気',85,0.0,2.4,3.5,0.0,23.3],['10番人気',77,2.6,5.2,6.5,156.5,60.0],
+  ['11番人気〜',244,0.4,1.2,2.9,19.3,50.7]];
+const SIRE = [
+  ['ゴールドシップ',80,3.8,10.0,23.8,36.6,63.2],['エピファネイア',69,11.6,23.2,36.2,90.3,67.4],
+  ['ハーツクライ',62,6.5,17.7,29.0,33.5,53.4],['キズナ',60,6.7,23.3,28.3,16.5,71.7],
+  ['ドゥラメンテ',56,12.5,21.4,25.0,52.5,69.1],['ルーラーシップ',48,4.2,12.5,18.8,199.2,98.1],
+  ['ディープインパクト',42,7.1,19.0,33.3,16.7,114.8],['モーリス',40,12.5,15.0,25.0,64.8,49.5],
+  ['ハービンジャー',38,0.0,7.9,13.2,0.0,27.1],['キタサンブラック',35,22.9,31.4,42.9,72.0,90.6]];
+// 層＝[ラベル, 対象行, 走数, 勝率, 連対率, 複勝率, 単回収, 複回収, 3着内シェア]
+const TIERS = [
+  {key:'tier1', label:'本命サイド（1〜3番人気）', from:0, to:3,  a:[314,25.5,44.9,59.5,81.4,82.7], share:59.3},
+  {key:'tier2', label:'中穴（4〜6番人気）',       from:3, to:6,  a:[312, 5.4,16.6,29.2,59.9,71.9], share:28.9},
+  {key:'tier3', label:'大穴（7番人気〜）',        from:6, to:11, a:[603, 1.3, 3.0, 6.2,42.8,51.7], share:11.8}];
+
+const rankMap = (rows) => {
+  const m = new Map();
+  [...rows].filter(r=>r[1]>=30).sort((a,b)=>b[4]-a[4]).slice(0,3).forEach((r,i)=>m.set(r[0],i+1));
+  return m;
+};
+const HEAD = '<thead><tr><th>区分</th><th>走数</th><th>勝率</th><th>連対率</th>' +
+  '<th class="sortable on">複勝率</th><th>単回収</th><th>複回収</th></tr></thead>';
+const slot = (rk) => `<span class="rkslot">${rk?`<span class="rk r${rk}">${rk}</span>`:''}</span>`;
+const pct = v => v.toFixed(1)+'%', roi = v => v.toFixed(0)+'%';
+const row = (r, rk, cls='') => `<tr class="${cls}${rk?' rank'+rk:''}"><td>${slot(rk)}${r[0]}</td><td>${r[1]}</td>
+  <td>${pct(r[2])}</td><td>${pct(r[3])}</td>
+  <td class="fk sorted">${pct(r[4])}<span class="bar" style="width:${Math.min(72,r[4]*1.15)}%"></span></td>
+  <td class="roi">${roi(r[5])}</td><td class="roi">${roi(r[6])}</td></tr>`;
+const tbl = (id, body, cls='') => document.getElementById(id).innerHTML =
+  `<table class="st ${cls}">${HEAD}<tbody>${body}</tbody></table>`;
+const grpline = (t, caret='') => `<tr class="grpline ${t.key}"><td colspan="7">
+  <span class="nm">${t.label}</span><span class="sum">走数 <b>${t.a[0]}</b>／複勝率 <b>${pct(t.a[3])}</b>／単回収 <b>${roi(t.a[4])}</b></span>${caret}</td></tr>`;
+
+/* ---- B-1 ---- */
+{ const rk = rankMap(POP);
+  let h = '';
+  TIERS.forEach(t=>{ h += grpline(t);
+    POP.slice(t.from,t.to).forEach(r=> h += row(r, rk.get(r[0]), 'member')); });
+  tbl('b1-pop', h);
+  const rs = rankMap(SIRE);
+  tbl('b1-sire', SIRE.map(r=>row(r, rs.get(r[0]))).join('')); }
+
+/* ---- B-2 ---- */
+{ document.getElementById('b2-tiles').innerHTML = TIERS.map(t=>
+    `<div class="tile ${t.key}"><div class="lb">${t.label.replace(/（.*/,'')}<br>${t.label.match(/（(.*)）/)[1]}</div>
+     <div class="vv">${t.a[3].toFixed(1)}<span>%</span></div>
+     <div class="sub">3着内の${t.share}%／単回収 ${roi(t.a[4])}</div>
+     <div class="track"><i style="width:${t.share}%"></i></div></div>`).join('');
+  const rk = rankMap(POP);
+  let h = '';
+  TIERS.forEach(t=> POP.slice(t.from,t.to).forEach(r=> h += row(r, rk.get(r[0]), t.key)));
+  tbl('b2-pop', h);
+
+  const rs = rankMap(SIRE), maxs = Math.max(...SIRE.map(r=>r[4]));
+  const top = SIRE.filter(r=>rs.has(r[0])).sort((a,b)=>rs.get(a[0])-rs.get(b[0]));
+  document.getElementById('b2-cards').innerHTML = top.map(r=>{
+    const n = rs.get(r[0]);
+    return `<div class="card ${n===1?'c1':''}"><span class="rkc r${n}">${n}</span>
+      <div class="nm">${r[0]}</div><div class="runs">${r[1]}走</div>
+      <div class="lb">複勝率</div><div class="big">${pct(r[4])}</div>
+      <div class="track"><i style="width:${(r[4]/maxs*100).toFixed(1)}%"></i></div>
+      <div class="roi"><span>単回収 ${roi(r[5])}</span><span>複回収 ${roi(r[6])}</span></div></div>`;
+  }).join('');
+  tbl('b2-sire', SIRE.filter(r=>!rs.has(r[0])).map(r=>row(r,null)).join('')); }
+
+/* ---- B-3 ---- */
+{ const rk = rankMap(POP);
+  let h = '';
+  TIERS.forEach((t,i)=>{
+    h += grpline(t, `<span class="caret" data-t="${t.key}">${i===0?'▲ 閉じる':'▼ 開く'}</span>`);
+    POP.slice(t.from,t.to).forEach(r=> h += row(r, rk.get(r[0]), `member ${t.key}${i===0?'':' closed'}`)); });
+  tbl('b3-pop', h);
+
+  const rs = rankMap(SIRE);
+  const top = SIRE.filter(r=>rs.has(r[0])).sort((a,b)=>rs.get(a[0])-rs.get(b[0]));
+  const [t1,t2,t3] = top;
+  document.getElementById('b3-hero').innerHTML =
+    `<div class="hero"><div><div class="nm"><span class="rkc">1</span>${t1[0]}</div>
+      <div class="meta">${t1[1]}走／勝率 ${pct(t1[2])}・連対率 ${pct(t1[3])}／単回収 ${roi(t1[5])}・複回収 ${roi(t1[6])}</div></div>
+      <div class="big">${pct(t1[4])}<span>複勝率</span></div></div>`;
+  document.getElementById('b3-runners').innerHTML = [t2,t3].map(r=>{
+    const n = rs.get(r[0]);
+    return `<div class="runner"><div class="l"><span class="rkc r${n}">${n}</span>${r[0]}<i>${r[1]}走／単回収 ${roi(r[5])}</i></div>
+      <div class="r">${pct(r[4])}</div></div>`;
+  }).join('');
+  tbl('b3-sire', SIRE.filter(r=>!rs.has(r[0])).map(r=>row(r,null,'member closed')).join(''));
+}
+
+/* 開閉 */
+document.querySelectorAll('.b3 .grpline').forEach(tr=>tr.addEventListener('click',()=>{
+  const key = tr.classList.contains('tier1')?'tier1':tr.classList.contains('tier2')?'tier2':'tier3';
+  const rows = tr.closest('tbody').querySelectorAll(`tr.member.${key}`);
+  const open = ![...rows].some(r=>r.classList.contains('closed'));
+  rows.forEach(r=>r.classList.toggle('closed', open));
+  tr.querySelector('.caret').textContent = open ? '▼ 開く' : '▲ 閉じる';
+}));
+document.getElementById('b3-more').addEventListener('click', e=>{
+  const t = document.getElementById('b3-sire');
+  t.style.display = 'block';
+  t.querySelectorAll('tr.closed').forEach(r=>r.classList.remove('closed'));
+  e.target.remove();
+});
+</script>
+</body>
+</html>

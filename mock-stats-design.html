@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ans. 人気別・種牡馬別テーブル デザイン3案</title>
+<link rel="stylesheet" href="assets/style.css">
+<style>
+body{padding:18px 14px 80px;max-width:760px;margin:0 auto}
+.mockhead{border-bottom:1px solid var(--rule-strong);padding-bottom:10px;margin-bottom:6px}
+.mockhead h1{font-size:17px;margin:0 0 4px}
+.mockhead p{font-size:12px;color:var(--cap);margin:0;line-height:1.6}
+.case{margin:26px 0 0;border:1px solid var(--rule);border-radius:8px;padding:14px 13px 16px}
+.case > h2{font-size:14px;margin:0 0 3px;color:var(--navy)}
+.case > .desc{font-size:12px;color:var(--sub);line-height:1.65;margin:0 0 10px}
+.case > .diff{font-size:11px;color:var(--sub);line-height:1.65;margin:10px 0 0;
+  background:var(--sub-bg);border-radius:5px;padding:8px 10px}
+.case > .diff b{color:var(--text)}
+.eyebrow{font-size:11px;font-weight:700;color:var(--cap);margin:14px 0 0}
+
+/* ============ A案：バーを主役にする ============ */
+.a .fkcell{position:relative;padding-right:6px}
+.a .fkcell .v{position:relative;z-index:1}
+/* 複勝率＝順序尺度の大小比較。単色1hueの横棒、右端だけ4px角丸、左は基線なので角なし */
+.a .fkbar{position:absolute;left:0;right:0;bottom:3px;height:13px;background:#EEF3F8;border-radius:2px}
+.a .fkbar i{position:absolute;left:0;top:0;bottom:0;background:var(--cta);opacity:.45;
+  border-radius:0 4px 4px 0}
+.a .roicell{position:relative}
+.a .meter{display:block;position:relative;height:4px;margin-top:3px;background:#ECECEA;border-radius:2px}
+.a .meter i{position:absolute;left:0;top:0;bottom:0;background:#9AA3AA;border-radius:0 2px 2px 0}
+/* 100%（＝収支トントン）の位置に基準線。色は付けない（60-spec D5の無彩色ルールを維持） */
+.a .meter u{position:absolute;top:-2px;bottom:-2px;width:1px;background:#6E6E6E;opacity:.75}
+.a table.st td{vertical-align:middle}
+.a .runs{color:#8A8A8A}
+
+/* ============ B案：層でまとめる＋トップ3カード ============ */
+.b table.st tr.grp td{background:#F2F5F8;font-weight:700;color:var(--navy);font-size:11.5px;
+  border-bottom:1px solid #D8E0E8;padding-top:7px;padding-bottom:7px}
+.b table.st tr.grp td .sum{font-weight:600;color:var(--sub);font-size:11px;margin-left:6px}
+.b .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:9px 0 4px}
+.b .card{border:1px solid var(--rule);border-radius:7px;padding:9px 9px 10px;position:relative;background:#fff}
+.b .card.c1{border-color:#E4CE94;background:#FDFAF2}
+.b .card .rkc{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;
+  border-radius:50%;font-size:10px;font-weight:700;color:#fff}
+.b .card .rkc.r1{background:#B8860B} .b .card .rkc.r2{background:#8C8C8C} .b .card .rkc.r3{background:#A9702E}
+.b .card .nm{font-size:12.5px;font-weight:700;margin:5px 0 1px;line-height:1.25}
+.b .card .runs{font-size:10.5px;color:var(--cap)}
+.b .card .lb{font-size:10.5px;color:var(--cap);margin-top:6px}
+.b .card .big{font-size:21px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.15}
+.b .card .track{height:4px;background:#ECF1F6;border-radius:2px;margin-top:5px}
+.b .card .track i{display:block;height:100%;background:var(--cta);opacity:.5;border-radius:0 2px 2px 0}
+.b .card .roi{font-size:10.5px;color:var(--cap);margin-top:5px}
+.b .card .roi span{display:block;white-space:nowrap}
+
+/* ============ C案：要約タイル＋畳む ============ */
+.c .tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:9px 0 2px}
+.c .tile{border:1px solid var(--rule);border-radius:7px;padding:9px 10px 10px}
+.c .tile .lb{font-size:10.5px;color:var(--cap);line-height:1.35}
+.c .tile .vv{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;margin-top:3px;line-height:1.05}
+.c .tile .vv span{font-size:11px;font-weight:600;color:var(--cap);margin-left:2px}
+.c .tile .sub{font-size:10.5px;color:var(--cap);margin-top:3px}
+.c .tile .track{height:4px;background:#ECF1F6;border-radius:2px;margin-top:6px}
+.c .tile .track i{display:block;height:100%;background:var(--cta);opacity:.5;border-radius:0 2px 2px 0}
+.c .lead{font-size:12px;color:var(--sub);line-height:1.6;margin:10px 0 0;
+  border-top:1px solid var(--rule);padding-top:8px}
+.c .lead b{color:var(--text)}
+.c .more{display:block;width:100%;margin-top:8px;padding:8px;font-size:12px;font-weight:600;
+  border:1px solid var(--rule);border-radius:6px;background:#fff;color:var(--link);cursor:pointer}
+.c tr.hidden{display:none}
+</style>
+</head>
+<body class="cstats">
+
+<div class="mockhead">
+  <h1>人気別・種牡馬別テーブル｜デザイン3案</h1>
+  <p>東京・芝2000m（105レース／平均11.8頭）の実データ。数値はすべて本番と同じものを使っています。</p>
+</div>
+
+<div class="case"><h2>現行</h2>
+  <p class="desc">数字が7列並ぶだけ。複勝率の下に3pxの細線が入っているが小さく、11行が同じ重さで並ぶので「どこを見ればいいか」が出ていない。</p>
+  <div class="eyebrow">人気別成績</div><div class="tblwrap" id="now-pop"></div>
+</div>
+
+<div class="case a"><h2>A案：バーを主役にして、数字を「見る」から「見える」に</h2>
+  <p class="desc">列の構成は一切変えず、セルの中身だけを強くする案。複勝率は細線をやめて13pxの実バーにし、値をその上に載せる。単回収・複回収は数字の下に「100%＝収支トントン」の目盛り付きメーターを敷き、線より右に伸びていれば買って得だったと一目で分かる。走数は灰色に落とす。</p>
+  <div class="eyebrow">人気別成績</div><div class="tblwrap" id="a-pop"></div>
+  <div class="eyebrow">種牡馬別成績</div><div class="tblwrap" id="a-sire"></div>
+  <p class="diff"><b>変更量</b>：小。<code>tableRow()</code> のセル描画とCSSのみ。列も行数も並び順も変わらない。<br>
+  <b>効く点</b>：人気1〜3番と4番以降の落差、種牡馬の優劣が長さで即分かる。<br>
+  <b>注意</b>：回収率のメーターは意図的に無彩色のまま（緑赤で塗ると少ない走数のブレを「儲かる」と誤読させるため。60-spec D5の判断を踏襲）。</p>
+</div>
+
+<div class="case b"><h2>B案：層でまとめて、上位3頭はカードで見せる</h2>
+  <p class="desc">11行ののっぺりを「本命（1〜3番人気）／中穴（4〜6）／大穴（7番人気〜）」の3つの塊に区切り、各層の見出しにその層の合計を出す。種牡馬は上位3頭をカードにして視線を集め、4位以下は今までどおりの行で続ける。</p>
+  <div class="eyebrow">人気別成績</div><div class="tblwrap" id="b-pop"></div>
+  <div class="eyebrow">種牡馬別成績</div>
+  <div id="b-cards" class="cards"></div>
+  <div class="tblwrap" id="b-sire"></div>
+  <p class="diff"><b>変更量</b>：中。人気表にグループ行を挿す処理と、カード用の描画を新規に書く。<br>
+  <b>効く点</b>：「このコースは本命で決まるのか荒れるのか」が層の1行で読める。種牡馬は上位が主役だと明示できる。<br>
+  <b>注意</b>：層の切り方（1-3／4-6／7〜）を仕様として決め打ちする必要がある。カードは横3枚なのでスマホでは1枚あたり約110px。</p>
+</div>
+
+<div class="case c"><h2>C案：先に結論、表は畳む</h2>
+  <p class="desc">表の前に要約タイルを置き、「このコースはどうなのか」を先に言い切る。表そのものは上位5行だけ出して残りは畳む。縦に長いページを短くする方向の案。</p>
+  <div class="eyebrow">人気別成績</div>
+  <div class="tiles" id="c-tiles"></div>
+  <p class="lead" id="c-lead"></p>
+  <div class="tblwrap" id="c-pop"></div>
+  <button type="button" class="more" data-t="c-pop">残り6行を表示</button>
+  <div class="eyebrow">種牡馬別成績</div>
+  <div class="tiles" id="c-tiles2"></div>
+  <div class="tblwrap" id="c-sire"></div>
+  <button type="button" class="more" data-t="c-sire">残り5頭を表示</button>
+  <p class="diff"><b>変更量</b>：大。要約文と要約値をデータ側かJS側で作る必要がある（どの層が強いか、トップは誰か、の判定ロジック）。<br>
+  <b>効く点</b>：スマホでの縦の長さが半分近くになり、結論が読まなくても入る。<br>
+  <b>注意</b>：畳むと「全部見たい人」に一手間かかる。要約の断定（「本命サイド有利」等）は走数が少ないコースだと危ういので、出す条件を決める必要がある。
+  もう一つ、上の種牡馬表を見ると分かるとおり、走数順に5行で切ると<b>複勝率1位のキタサンブラック（35走）が畳まれた側に隠れる</b>。畳む基準を走数のままにするか順位優先にするか決める必要がある。</p>
+</div>
+
+<script>
+const POP = [
+  ['1番人気',104,37.5,59.6,74.0,74.9,89.2],['2番人気',105,24.8,47.6,59.0,85.2,85.2],
+  ['3番人気',105,14.3,27.6,45.7,83.9,73.7],['4番人気',105,9.5,25.7,41.9,88.1,90.8],
+  ['5番人気',105,3.8,11.4,26.7,40.5,60.6],['6番人気',102,2.9,12.7,18.6,50.7,64.1],
+  ['7番人気',101,5.0,5.9,12.9,89.7,57.8],['8番人気',96,0.0,3.1,9.4,0.0,66.1],
+  ['9番人気',85,0.0,2.4,3.5,0.0,23.3],['10番人気',77,2.6,5.2,6.5,156.5,60.0],
+  ['11番人気〜',244,0.4,1.2,2.9,19.3,50.7]];
+const SIRE = [
+  ['ゴールドシップ',80,3.8,10.0,23.8,36.6,63.2],['エピファネイア',69,11.6,23.2,36.2,90.3,67.4],
+  ['ハーツクライ',62,6.5,17.7,29.0,33.5,53.4],['キズナ',60,6.7,23.3,28.3,16.5,71.7],
+  ['ドゥラメンテ',56,12.5,21.4,25.0,52.5,69.1],['ルーラーシップ',48,4.2,12.5,18.8,199.2,98.1],
+  ['ディープインパクト',42,7.1,19.0,33.3,16.7,114.8],['モーリス',40,12.5,15.0,25.0,64.8,49.5],
+  ['ハービンジャー',38,0.0,7.9,13.2,0.0,27.1],['キタサンブラック',35,22.9,31.4,42.9,72.0,90.6]];
+// 順位は複勝率の上位3件（走数30以上）＝本番の RATE_IDX / RUNS_THIN と同じ規則
+const rankMap = (rows) => {
+  const m = new Map();
+  [...rows].filter(r=>r[1]>=30).sort((a,b)=>b[4]-a[4]).slice(0,3).forEach((r,i)=>m.set(r[0],i+1));
+  return m;
+};
+const HEAD = '<thead><tr><th>区分</th><th>走数</th><th>勝率</th><th>連対率</th>' +
+  '<th class="sortable on">複勝率</th><th>単回収</th><th>複回収</th></tr></thead>';
+const slot = (rk) => `<span class="rkslot">${rk?`<span class="rk r${rk}">${rk}</span>`:''}</span>`;
+const pct = (v) => v.toFixed(1)+'%';
+const roi = (v) => v.toFixed(0)+'%';
+
+/* --- 現行 --- */
+function rowNow(r, rk){
+  return `<tr class="${rk?'rank'+rk:''}"><td>${slot(rk)}${r[0]}</td><td>${r[1]}</td>
+    <td>${pct(r[2])}</td><td>${pct(r[3])}</td>
+    <td class="fk sorted">${pct(r[4])}<span class="bar" style="width:${Math.min(72,r[4]*1.15)}%"></span></td>
+    <td class="roi">${roi(r[5])}</td><td class="roi">${roi(r[6])}</td></tr>`;
+}
+/* --- A案 --- */
+function rowA(r, rk, max){
+  const meter = (v) => `<span class="meter"><i style="width:${Math.min(100, v/200*100)}%"></i><u style="left:50%"></u></span>`;
+  return `<tr class="${rk?'rank'+rk:''}"><td>${slot(rk)}${r[0]}</td><td class="runs">${r[1]}</td>
+    <td>${pct(r[2])}</td><td>${pct(r[3])}</td>
+    <td class="fkcell sorted"><span class="fkbar"><i style="width:${(r[4]/max*100).toFixed(1)}%"></i></span><span class="v">${pct(r[4])}</span></td>
+    <td class="roi roicell">${roi(r[5])}${meter(r[5])}</td>
+    <td class="roi roicell">${roi(r[6])}${meter(r[6])}</td></tr>`;
+}
+/* --- B案：層見出し --- */
+function grpRow(label, agg){
+  return `<tr class="grp"><td colspan="7">${label}
+    <span class="sum">走数 ${agg[0]}／複勝率 ${agg[3]}%／単回収 ${agg[4]}%</span></td></tr>`;
+}
+const AGG = {honmei:[314,25.5,44.9,59.5,81.4,82.7], chuana:[312,5.4,16.6,29.2,59.9,71.9], ooana:[603,1.3,3.0,6.2,42.8,51.7]};
+
+const tbl = (id, html) => document.getElementById(id).innerHTML =
+  `<table class="st">${HEAD}<tbody>${html}</tbody></table>`;
+
+/* 現行 */
+{ const rk = rankMap(POP);
+  tbl('now-pop', POP.map(r=>rowNow(r, rk.get(r[0]))).join('')); }
+
+/* A案 */
+{ const rk = rankMap(POP), max = Math.max(...POP.map(r=>r[4]));
+  tbl('a-pop', POP.map(r=>rowA(r, rk.get(r[0]), max)).join(''));
+  const rs = rankMap(SIRE), maxs = Math.max(...SIRE.map(r=>r[4]));
+  tbl('a-sire', SIRE.map(r=>rowA(r, rs.get(r[0]), maxs)).join('')); }
+
+/* B案 */
+{ const rk = rankMap(POP);
+  let h = grpRow('本命サイド（1〜3番人気）', AGG.honmei);
+  POP.slice(0,3).forEach(r=>h+=rowNow(r, rk.get(r[0])));
+  h += grpRow('中穴（4〜6番人気）', AGG.chuana);
+  POP.slice(3,6).forEach(r=>h+=rowNow(r, rk.get(r[0])));
+  h += grpRow('大穴（7番人気〜）', AGG.ooana);
+  POP.slice(6).forEach(r=>h+=rowNow(r, rk.get(r[0])));
+  tbl('b-pop', h);
+
+  const rs = rankMap(SIRE), maxs = Math.max(...SIRE.map(r=>r[4]));
+  const top = [...SIRE].filter(r=>rs.has(r[0])).sort((a,b)=>rs.get(a[0])-rs.get(b[0]));
+  document.getElementById('b-cards').innerHTML = top.map(r=>{
+    const n = rs.get(r[0]);
+    return `<div class="card ${n===1?'c1':''}"><span class="rkc r${n}">${n}</span>
+      <div class="nm">${r[0]}</div><div class="runs">${r[1]}走</div>
+      <div class="lb">複勝率</div><div class="big">${pct(r[4])}</div>
+      <div class="track"><i style="width:${(r[4]/maxs*100).toFixed(1)}%"></i></div>
+      <div class="roi"><span>単回収 ${roi(r[5])}</span><span>複回収 ${roi(r[6])}</span></div></div>`;
+  }).join('');
+  tbl('b-sire', SIRE.filter(r=>!rs.has(r[0])).map(r=>rowNow(r, null)).join('')); }
+
+/* C案 */
+{ const tiles = [
+    ['1〜3番人気', 59.5, '3着内の59.3%を占める', 59.5],
+    ['4〜6番人気', 29.2, '同 28.9%', 29.2],
+    ['7番人気以下', 6.2, '同 11.8%', 6.2]];
+  document.getElementById('c-tiles').innerHTML = tiles.map(t=>
+    `<div class="tile"><div class="lb">${t[0]}の複勝率</div>
+     <div class="vv">${t[1].toFixed(1)}<span>%</span></div><div class="sub">${t[2]}</div>
+     <div class="track"><i style="width:${(t[3]/59.5*100).toFixed(0)}%"></i></div></div>`).join('');
+  document.getElementById('c-lead').innerHTML =
+    '上位人気がそのまま来やすいコース。<b>1〜3番人気だけで3着内の6割</b>を占め、7番人気以下は12%しか届かない。' +
+    'ただし1番人気の単回収は<b>75%</b>で、当たりやすさがそのまま儲けにはならない。';
+  const rk = rankMap(POP);
+  tbl('c-pop', POP.map((r,i)=>rowNow(r, rk.get(r[0])).replace('<tr', `<tr class="${i>=5?'hidden':''}"`)).join(''));
+
+  const rs = rankMap(SIRE), maxs = Math.max(...SIRE.map(r=>r[4]));
+  const t1 = SIRE.find(r=>rs.get(r[0])===1);
+  document.getElementById('c-tiles2').innerHTML =
+    `<div class="tile"><div class="lb">複勝率トップ（走数30以上）</div>
+      <div class="vv">${t1[4].toFixed(1)}<span>%</span></div><div class="sub">${t1[0]}・${t1[1]}走</div>
+      <div class="track"><i style="width:100%"></i></div></div>
+     <div class="tile"><div class="lb">このコースの平均複勝率</div>
+      <div class="vv">29.0<span>%</span></div><div class="sub">全10頭・平均11.8頭立て</div>
+      <div class="track"><i style="width:${(29.0/maxs*100).toFixed(0)}%"></i></div></div>
+     <div class="tile"><div class="lb">最も走数が多い</div>
+      <div class="vv">80<span>走</span></div><div class="sub">ゴールドシップ・複勝率23.8%</div>
+      <div class="track"><i style="width:100%"></i></div></div>`;
+  tbl('c-sire', SIRE.map((r,i)=>rowNow(r, rs.get(r[0])).replace('<tr', `<tr class="${i>=5?'hidden':''}"`)).join(''));
+}
+document.querySelectorAll('.more').forEach(b=>b.addEventListener('click',()=>{
+  document.getElementById(b.dataset.t).querySelectorAll('tr.hidden').forEach(t=>t.classList.remove('hidden'));
+  b.remove();
+}));
+</script>
+</body>
+</html>

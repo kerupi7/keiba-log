@@ -419,6 +419,49 @@ function renderEntitySection(f, ent, sortState, lowTier) {
     <div class="entnote">${note}</div>`;
 }
 
+/* ---------- 前走コース別（tblPrev・競馬場×馬場×距離） ---------- */
+// キーは '中山ダート1800' 形式。競馬場名は長さが可変（地方は3文字もある）ため、
+// 面(芝|ダート)と末尾の距離を固定パターンで切り出し、残りを競馬場名とする。
+function parsePrev(k) {
+  const m = k.match(/^(.+?)(芝|ダート)(\d+)$/);
+  return m ? { track: m[1], surface: m[2], dist: +m[3] } : null;
+}
+
+function prevLabelHtml(k, data) {
+  const p = parsePrev(k);
+  if (!p) return escapeHtml(k);
+  const same = p.track === data.track && p.surface === data.surface && p.dist === data.distance;
+  const sf = `<span class="psfc ${p.surface === '芝' ? 'turf' : 'dirt'}">${p.surface === '芝' ? '芝' : 'ダ'}</span>`;
+  return `<span class="ptrk">${escapeHtml(p.track)}</span>${sf}<span class="pdist">${p.dist}</span>${same ? '<span class="psame">同コース</span>' : ''}`;
+}
+
+// 前走テーブル。tableRow/tableHeadを流用しつつ、①「その他」を常に末尾・順位対象外に固定、
+// ②前走が当該コースと一致する行を強調、の2点だけ独自に扱う。
+function renderPrevSection(f, data, sortState, lowTier) {
+  const all = Object.entries(f.prev || {});
+  if (!all.length) return '';
+  const s = sortState.tblPrev || { idx: 3, on: false };
+  const other = all.find(([k]) => k === 'その他');
+  const main = all.filter(([k]) => k !== 'その他');
+  // 順位は実在の前走コースのみ（初出走・その他は除外）
+  const ranked = rankedMap(main.filter(([k]) => k !== '初出走'), s.idx, lowTier);
+  const ordered = s.on
+    ? [...main].sort((a, b) => b[1][s.idx] - a[1][s.idx])
+    : [...main].sort((a, b) => b[1][0] - a[1][0]);
+  const rowFor = ([k, v]) => {
+    const p = parsePrev(k);
+    const same = p && p.track === data.track && p.surface === data.surface && p.dist === data.distance;
+    const label = p ? prevLabelHtml(k, data) : `<span class="pspecial">${escapeHtml(k)}</span>`;
+    return tableRow(label, v, ranked.get(k), s.idx, lowTier, same ? 'prevsame' : '');
+  };
+  const body = ordered.map(rowFor).join('')
+    + (other ? tableRow('<span class="pother">その他<i>走数30未満をまとめ</i></span>', other[1], null, s.idx, lowTier, 'prevother') : '');
+  return `
+    <div class="eyebrow">前走コース別成績<span class="note">前走の競馬場×馬場×距離</span></div>
+    <div class="tblwrap"><table class="st" data-tbl="tblPrev">${tableHead('tblPrev', sortState)}<tbody>${body}</tbody></table></div>
+    <div class="entnote">前走が同じ組み合わせだった馬の、このコースでの成績。<b>青い行＝前走が当該コースそのもの（コース経験あり）</b>。走数30以上の前走コースだけ個別に並べ、残りは「その他」にまとめています。前走データの無い初出走は別行。</div>`;
+}
+
 // renderDetail: 純関数。data(コースJSON)とfilterKeyだけで完全なHTML文字列を返す。
 // opts省略時は pace='all' / ent='jockey' / sort={} の既定値で描画できる（QA全数走査用）。
 function renderDetail(data, filterKey, opts) {
@@ -467,6 +510,7 @@ function renderDetail(data, filterKey, opts) {
     ${renderPopTiles(f.pop, lowTier)}
     ${renderTable('tblPop', popEntries, (k) => k === '11+' ? '11番人気〜' : `${k}番人気`, sortState, lowTier,
         { rowCls: popTierKey })}
+    ${renderPrevSection(f, data, sortState, lowTier)}
     ${renderEntitySection(f, ent, sortState, lowTier)}
     <div class="notebox">
       勝率・連対率・複勝率は該当区分の全出走馬ベース。単回収・複回収は単勝／複勝100円購入時の回収率（100%＝収支トントン）。

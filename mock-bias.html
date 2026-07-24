@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>内外バイアス デザイン案（案Cベース）— モック</title>
+<link rel="stylesheet" href="assets/style.css?v=20260722b">
+<style>
+  body{padding:0}
+  .mock{max-width:720px;margin:0 auto;padding:14px 16px 40px}
+  .mock h1{font-size:15px;margin:0 0 4px}
+  .mock .lead{font-size:12px;color:var(--cap);margin:0 0 18px;line-height:1.6}
+  .case{border:1px solid var(--rule);border-radius:6px;padding:12px 12px 14px;margin-bottom:16px}
+  .caseh{font-size:12.5px;font-weight:700;margin-bottom:2px}
+  .casen{font-size:11px;color:var(--cap);margin-bottom:10px;line-height:1.55}
+  .biaslabel{font-size:12.5px;color:var(--sub);margin:0 0 6px}
+  .biaslabel b{color:var(--text)}
+  .lg{font-size:10.5px;color:var(--cap);margin-top:6px;line-height:1.5}
+
+  /* ---- 共通: ヒート背景と文字色 ---- */
+  .hb1{background:#DCEDE2} .hb2{background:#EDF5EF} .hb3{background:#F1F1EE}
+  .hb4{background:#FAEDED} .hb5{background:#F6DADA}
+  .tx-b1{color:#0F7A3D} .tx-b2{color:#3E8A5C} .tx-b3{color:var(--cap)}
+  .tx-b4{color:#B05656} .tx-b5{color:#D14545}
+
+  /* ---- C1 / C2: 横8セル ---- */
+  .cRow{display:flex;gap:3px}
+  .cRow .cell{flex:1;min-width:0;border-radius:4px;padding:6px 0 7px;
+    display:flex;flex-direction:column;align-items:center;gap:3px}
+  .cRow .cv{font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.2}
+
+  /* ---- C3: 縦ランキング ---- */
+  .cList{display:flex;flex-direction:column;gap:2px}
+  .cList .row{display:flex;align-items:center;gap:8px;border-radius:4px;padding:3px 8px 3px 5px}
+  .cList .rv{margin-left:auto;font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums}
+  .cList .rj{font-size:11px;color:var(--sub)}
+</style>
+</head>
+<body>
+<div class="mock">
+  <h1>内外バイアス — 案Cベース／枠色バッジ版</h1>
+  <p class="lead">案C（ヒート帯）に枠色バッジを乗せた3通り。データは函館芝1200m（1枠1.55／2枠0.62／3枠1.00／4枠0.84／5枠0.72／6枠1.03／7枠1.11／8枠1.13）。</p>
+
+  <div class="case">
+    <div class="caseh">C-1　枠順のまま横並び（案Cの素直な合成）</div>
+    <div class="casen">上端の細い色線をやめ、枠色バッジそのものを置く。並びは1枠→8枠のまま。</div>
+    <div class="biaslabel"><b>内外バイアス</b> フラット</div>
+    <div class="cRow" id="c1"></div>
+    <div class="lg">緑=有利 / 赤=不利、濃いほど強い（1.00=標準）</div>
+  </div>
+
+  <div class="case">
+    <div class="caseh">C-2　有利順に並べ替えて横並び</div>
+    <div class="casen">中身はC-1と同じで、左から有利な順。バッジが色で判別できるので枠順に並べる必要がない。</div>
+    <div class="biaslabel"><b>内外バイアス</b> フラット</div>
+    <div class="cRow" id="c2"></div>
+    <div class="lg">左ほど有利。緑=有利 / 赤=不利、濃いほど強い（1.00=標準）</div>
+  </div>
+
+  <div class="case">
+    <div class="caseh">C-3　有利順に縦積み（いただいた並び）</div>
+    <div class="casen">1行1枠を有利な順に。行まるごとをヒート色で塗り、判定の言葉も添える。</div>
+    <div class="biaslabel"><b>内外バイアス</b> フラット</div>
+    <div class="cList" id="c3"></div>
+    <div class="lg">上ほど有利。緑=有利 / 赤=不利、濃いほど強い（1.00=標準）</div>
+  </div>
+</div>
+
+<script>
+var DATA = [
+  {g:1, r:1.55}, {g:2, r:0.62}, {g:3, r:1.00}, {g:4, r:0.84},
+  {g:5, r:0.72}, {g:6, r:1.03}, {g:7, r:1.11}, {g:8, r:1.13}
+];
+function cls(r){
+  if (r >= 1.15) return 'b1';
+  if (r >= 1.05) return 'b2';
+  if (r > 0.95) return 'b3';
+  if (r > 0.85) return 'b4';
+  return 'b5';
+}
+function judge(r){
+  if (r >= 1.15) return '有利';
+  if (r >= 1.05) return 'やや有利';
+  if (r > 0.95) return '標準';
+  if (r > 0.85) return 'やや不利';
+  return '不利';
+}
+function box(g, sm){
+  return '<span class="hn wk' + g + (sm ? ' sm' : '') + '">' + g + '</span>';
+}
+function byRank(a, b){ return b.r - a.r; }
+
+function cellsHtml(list){
+  return list.map(function (d) {
+    var c = cls(d.r);
+    return '<div class="cell h' + c + '">' + box(d.g, true)
+      + '<span class="cv tx-' + c + '">' + d.r.toFixed(2) + '</span></div>';
+  }).join('');
+}
+document.getElementById('c1').innerHTML = cellsHtml(DATA);
+document.getElementById('c2').innerHTML = cellsHtml(DATA.slice().sort(byRank));
+
+document.getElementById('c3').innerHTML = DATA.slice().sort(byRank).map(function (d) {
+  var c = cls(d.r);
+  return '<div class="row h' + c + '">' + box(d.g)
+    + '<span class="rj">' + judge(d.r) + '</span>'
+    + '<span class="rv tx-' + c + '">' + d.r.toFixed(2) + '</span></div>';
+}).join('');
+</script>
+</body>
+</html>

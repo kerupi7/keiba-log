@@ -784,6 +784,21 @@ details.subfold>summary .sc{margin-left:auto;color:var(--navy);
 /* 人気表の行頭の帯は層専用にする（金銀銅は①②③バッジが担うので、帯とは競合させない） */
 .cstats table.st[data-tbl="tblPop"] tbody td:first-child{box-shadow:inset 3px 0 0 var(--tier)}
 
+/* 前走コース別（tblPrev）: 競馬場バッジ＋面タグ＋距離、同コース行の強調、その他行 */
+.cstats table.st .ptrk{display:inline-block;font-size:11px;font-weight:700;background:#EEF1F5;color:#41566a;
+  border-radius:4px;padding:1px 5px;margin-right:5px;vertical-align:1px}
+.cstats table.st .psfc{display:inline-flex;align-items:center;justify-content:center;width:17px;height:15px;
+  border-radius:3px;color:#fff;font-size:10px;font-weight:800;vertical-align:1px;margin-right:5px}
+.cstats table.st .psfc.turf{background:var(--turf)} .cstats table.st .psfc.dirt{background:var(--dirt)}
+.cstats table.st .pdist{font-weight:700}
+.cstats table.st .psame{margin-left:6px;font-size:10px;font-weight:700;background:var(--navy);color:#fff;
+  border-radius:4px;padding:1px 5px}
+.cstats table.st tr.prevsame td{background:#F1F6FB}
+.cstats table.st tr.prevsame td:first-child{box-shadow:inset 3px 0 0 var(--navy)}
+.cstats table.st tr.prevother td{color:var(--cap)}
+.cstats table.st .pother i{font-style:normal;font-size:10.5px;color:var(--cap);margin-left:6px}
+.cstats table.st .pspecial{color:var(--sub)}
+
 /* 人物・血統: 上位3件のカード */
 .cstats .entcards{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:9px 0 4px}
 .cstats .entcard{border:1px solid var(--rule);border-radius:7px;padding:9px;background:#fff}

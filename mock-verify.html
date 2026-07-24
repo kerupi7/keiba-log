@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>答え合わせ 3案 — Ans. モック</title>
+<link rel="stylesheet" href="assets/style.css?v=20260723c">
+<style>
+.mockhead{margin:26px 0 6px;font-size:15px;font-weight:700;color:var(--navy)}
+.mockdesc{font-size:12.5px;color:var(--sub);line-height:1.7;margin-bottom:8px}
+.mockdesc b{color:var(--text)}
+.mockrule{margin:34px 0 0;border:0;border-top:2px solid var(--rule-strong)}
+
+/* ===== A案：サマリータイル先出し ===== */
+.vA .tiles{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:9px}
+.vA .tile{border:1px solid var(--rule);border-radius:6px;padding:8px 10px;background:#fff}
+.vA .tile .cap{font-size:10.5px;color:var(--cap);font-weight:700}
+.vA .tile .val{font-size:15px;font-weight:700;margin-top:1px;font-variant-numeric:tabular-nums}
+.vA .tile .sub{font-size:11px;color:var(--cap);font-variant-numeric:tabular-nums}
+.vA .tile.hit{border-color:#0F7A3D;background:#F1F8F3} .vA .tile.hit .val{color:#0F6A34}
+.vA .tile.miss{border-color:#e2c2c2;background:#FCF5F5} .vA .tile.miss .val{color:#B4271F}
+.vA .tile.wide{grid-column:1 / -1}
+.vA .mkline{display:flex;flex-wrap:wrap;gap:5px;margin-top:9px}
+.vA .mko{display:flex;align-items:center;gap:4px;border:1px solid var(--rule);border-radius:16px;
+  padding:2px 9px 2px 3px;background:#fff;font-size:12px;opacity:.55}
+.vA .mko.in{opacity:1;border-color:#0F7A3D;background:#E7F3EA}
+.vA .mko .pos{font-weight:700;font-variant-numeric:tabular-nums}
+.vA .mko.in .pos{color:#0F6A34}
+
+/* ===== B案：予想→結果の対比リスト ===== */
+.vB .cmp{margin-top:9px;border:1px solid var(--rule);border-radius:6px;overflow:hidden}
+.vB .cr{display:flex;align-items:center;gap:7px;padding:7px 10px;border-bottom:1px solid var(--rule);font-size:12.5px}
+.vB .cr:last-child{border-bottom:0}
+.vB .cr.in{background:#F1F8F3}
+.vB .cr .yo{display:flex;align-items:center;gap:5px;flex:1;min-width:0}
+.vB .cr .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vB .cr .arw{color:var(--cap);flex:none}
+.vB .cr .re{flex:none;font-weight:700;font-variant-numeric:tabular-nums;width:62px;
+  text-align:right;white-space:nowrap}
+.vB .cr.in .re{color:#0F6A34}
+.vB .cr.out .re{color:var(--cap)}
+.vB .cr .pop{flex:none;font-size:11px;color:var(--cap);width:52px;text-align:right;font-variant-numeric:tabular-nums}
+.vB .ghead{font-size:11px;font-weight:700;color:var(--cap);background:#FAFAF8;padding:4px 10px;border-bottom:1px solid var(--rule)}
+.vB .jm{font-size:11px;font-weight:700;border-radius:2px;padding:0 5px;flex:none}
+.vB .jm.ok{background:#E7F3EA;color:#0F6A34} .vB .jm.ng{background:#FDECEC;color:#B4271F}
+
+/* ===== C案：1枚のテーブルに統合 ===== */
+.vC table{font-size:12.5px}
+.vC tr.in td{background:#F1F8F3}
+.vC .tag{display:inline-block;font-size:10.5px;font-weight:700;border-radius:2px;padding:0 5px}
+.vC .tag.ok{background:#E7F3EA;color:#0F6A34}
+.vC .tag.ng{background:#FDECEC;color:#B4271F}
+.vC .tag.non{background:#F0F0EE;color:#7a7a72}
+.vC .paceline{font-size:12.5px;color:var(--sub);margin-top:9px}
+</style>
+</head>
+<body>
+<header id="site-header"></header>
+<div class="container race20">
+
+  <div class="rhead">
+    <div class="cls">モックアップ（2026-07-19 小倉11R 小倉記念の実データ）</div>
+    <div class="ttl">答え合わせ 3案</div>
+    <div class="cond">
+      今の形の課題：①当たったのか外れたのかが一目で分からない（払戻は折りたたみの中）
+      ②印チップは緑の濃淡だけが頼りで、圏内・圏外の差が弱い
+      ③ペース・印・地雷が別々の書式で並んでいる。
+    </div>
+  </div>
+
+  <!-- ========== 現状 ========== -->
+  <div class="mockhead">現状</div>
+  <div class="secthead">答え合わせ<span class="cnt">結果確定</span></div>
+  <div id="cur"></div>
+
+  <hr class="mockrule">
+
+  <!-- ========== A案 ========== -->
+  <div class="mockhead">A案：成績タイルを先頭に出す</div>
+  <div class="mockdesc">
+    最初に「当たったか」を4つのタイルで結論から見せ、その下に着順表と印の内訳を置く。<br>
+    <b>読めること</b>：収支・印の的中数・ペース・地雷が、スクロールなしで同時に入る。<br>
+    <b>強み</b>：3案でいちばん結論が速い。数字が主役なのでスマホでも潰れない。<br>
+    <b>弱み</b>：タイルと下の詳細で同じ情報が2回出る（要約と内訳の関係になる）。
+  </div>
+  <div class="secthead">答え合わせ<span class="cnt">結果確定</span></div>
+  <div class="vA" id="vA"></div>
+
+  <hr class="mockrule">
+
+  <!-- ========== B案 ========== -->
+  <div class="mockhead">B案：すべてを「予想 → 結果」の1書式に統一する</div>
+  <div class="mockdesc">
+    印・ペース・地雷を同じ形の行（左に予想したこと・右に実際どうだったか）に揃えて、上から順に読ませる。<br>
+    <b>読めること</b>：どの予想が当たり、どれが外れたかの一覧。答え合わせという名前どおりの並び。<br>
+    <b>強み</b>：書式が1つなので視線が迷わない。行が増えても崩れない。<br>
+    <b>弱み</b>：収支のインパクトは弱め（1行に埋もれる）。行数は3案でいちばん多い。
+  </div>
+  <div class="secthead">答え合わせ<span class="cnt">結果確定</span></div>
+  <div class="vB" id="vB"></div>
+
+  <hr class="mockrule">
+
+  <!-- ========== C案 ========== -->
+  <div class="mockhead">C案：着順テーブル1枚に統合する</div>
+  <div class="mockdesc">
+    上位3頭・印を打った馬・地雷にした馬を、着順で1つの表にまとめる。予想列にバッジ、判定列に結果。<br>
+    <b>読めること</b>：「上位に来た馬に自分は何を打っていたか」が同じ行で突き合わせられる。<br>
+    <b>強み</b>：ブロックが1つに減り、いちばん静かな見た目になる。<br>
+    <b>弱み</b>：印馬が下位に沈むと表が縦に伸びる。ペースだけ表に入らず外に置く必要がある。
+  </div>
+  <div class="secthead">答え合わせ<span class="cnt">結果確定</span></div>
+  <div class="vC" id="vC"></div>
+
+  <div style="height:60px"></div>
+</div>
+
+<script>
+/* ===== 実データ（202610020811 / 小倉記念・2026-07-19） ===== */
+var TOP3 = [
+  { finish:1, no:1,  gate:1, name:'ゼンダンハヤブサ', pop:10, odds:33.1 },
+  { finish:2, no:17, gate:8, name:'ジョバンニ',       pop:1,  odds:2.6  },
+  { finish:3, no:18, gate:8, name:'レーゼドラマ',     pop:6,  odds:12.6 }
+];
+var MARKS = [
+  { mark:'◎', no:6,  gate:3, name:'ガイアメンテ', finish:4,  pop:2 },
+  { mark:'○', no:14, gate:7, name:'ウエストナウ', finish:8,  pop:5 },
+  { mark:'▲', no:17, gate:8, name:'ジョバンニ',   finish:2,  pop:1 },
+  { mark:'△', no:8,  gate:4, name:'サフィラ',     finish:11, pop:8 },
+  { mark:'△', no:18, gate:8, name:'レーゼドラマ', finish:3,  pop:6 }
+];
+var LANDMINE = [
+  { no:2, gate:1, name:'タガノアビー',       finish:9, ok:true },
+  { no:9, gate:5, name:'ジーティーアダマン', finish:6, ok:true }
+];
+var PACE = { expected:'M', actual:'M', match:true };
+var BETS = { hit:true, cost:900, ret:3060 };
+
+var MCLS = { '◎':'m-hon', '○':'m-tai', '▲':'m-tan', '△':'m-oku' };
+function hn(no, gate) { return '<span class="hn wk' + gate + ' sm">' + no + '</span>'; }
+function mkb(m) { return '<span class="mkb ' + MCLS[m] + '">' + m + '</span>'; }
+function yen(n) { return n.toLocaleString('ja-JP') + '円'; }
+var inTop3 = MARKS.filter(function (m) { return m.finish <= 3; }).length;
+var lmOk = LANDMINE.filter(function (l) { return l.ok; }).length;
+
+/* ---- 現状（今のマークアップを再現） ---- */
+document.getElementById('cur').innerHTML =
+  '<table class="fixed" style="font-size:12.5px">'
+  + '<colgroup><col style="width:12%"><col style="width:44%"><col style="width:14%"><col style="width:14%"><col style="width:16%"></colgroup>'
+  + '<thead><tr><th>着</th><th class="l">馬名</th><th>人気</th><th>オッズ</th><th class="l">印</th></tr></thead><tbody>'
+  + TOP3.map(function (t) {
+      var m = MARKS.filter(function (x) { return x.no === t.no; })[0];
+      return '<tr><td>' + t.finish + '</td><td class="name">' + hn(t.no, t.gate) + ' ' + t.name + '</td>'
+           + '<td>' + t.pop + '</td><td>' + t.odds + '</td><td class="l">' + (m ? m.mark : '—') + '</td></tr>';
+    }).join('')
+  + '</tbody></table>'
+  + '<div class="vcard">'
+  + '<div class="vrow"><span class="vlabel">ペース</span><span class="vchip ok">予想 ' + PACE.expected + ' → 実際 ' + PACE.actual + ' ✓</span></div>'
+  + '<div class="vsub">印別の着順（緑=馬券圏内）</div><div class="markgrid">'
+  + MARKS.map(function (m) {
+      return '<div class="mg' + (m.finish <= 3 ? ' hit' : '') + '">' + mkb(m.mark) + hn(m.no, m.gate)
+           + '<span class="pos">' + m.finish + '着</span></div>';
+    }).join('')
+  + '</div><div class="vsub">地雷判定</div><div class="jgrid">'
+  + LANDMINE.map(function (l) {
+      return '<span class="jchip ' + (l.ok ? 'ok' : 'ng') + '">' + (l.ok ? '✓' : '✕') + ' ' + hn(l.no, l.gate)
+           + ' ' + l.name + ' ' + l.finish + '着 — ' + (l.ok ? '圏外に沈め成功' : '3着内に好走、判定ミス') + '</span>';
+    }).join('')
+  + '</div></div>';
+
+/* ---- A案 ---- */
+document.getElementById('vA').innerHTML =
+  '<div class="tiles">'
+  + '<div class="tile wide ' + (BETS.hit ? 'hit' : 'miss') + '"><div class="cap">買い目</div>'
+  + '<div class="val">' + (BETS.hit ? '的中' : '不的中') + '　' + yen(BETS.cost) + ' → ' + yen(BETS.ret) + '</div>'
+  + '<div class="sub">回収率 ' + Math.round(BETS.ret / BETS.cost * 100) + '%</div></div>'
+  + '<div class="tile ' + (inTop3 ? 'hit' : 'miss') + '"><div class="cap">印</div>'
+  + '<div class="val">' + inTop3 + ' / ' + MARKS.length + '</div><div class="sub">が馬券圏内</div></div>'
+  + '<div class="tile ' + (PACE.match ? 'hit' : 'miss') + '"><div class="cap">ペース</div>'
+  + '<div class="val">' + (PACE.match ? '的中' : '外れ') + '</div>'
+  + '<div class="sub">予想 ' + PACE.expected + ' → 実際 ' + PACE.actual + '</div></div>'
+  + '</div>'
+  + '<table class="fixed" style="font-size:12.5px;margin-top:12px">'
+  + '<colgroup><col style="width:12%"><col style="width:48%"><col style="width:14%"><col style="width:14%"><col style="width:12%"></colgroup>'
+  + '<thead><tr><th>着</th><th class="l">馬名</th><th>人気</th><th>オッズ</th><th class="l">印</th></tr></thead><tbody>'
+  + TOP3.map(function (t) {
+      var m = MARKS.filter(function (x) { return x.no === t.no; })[0];
+      return '<tr><td>' + t.finish + '</td><td class="name">' + hn(t.no, t.gate) + ' ' + t.name + '</td>'
+           + '<td>' + t.pop + '</td><td>' + t.odds + '</td><td class="l">' + (m ? mkb(m.mark) : '—') + '</td></tr>';
+    }).join('')
+  + '</tbody></table>'
+  + '<div class="vsub">印の着順（濃い=馬券圏内）</div><div class="mkline">'
+  + MARKS.map(function (m) {
+      return '<span class="mko' + (m.finish <= 3 ? ' in' : '') + '">' + mkb(m.mark) + hn(m.no, m.gate)
+           + '<span class="pos">' + m.finish + '着</span></span>';
+    }).join('')
+  + '</div>'
+  + '<div class="vsub">地雷判定 ' + lmOk + '/' + LANDMINE.length + ' 成功</div><div class="mkline">'
+  + LANDMINE.map(function (l) {
+      return '<span class="mko' + (l.ok ? ' in' : '') + '">' + hn(l.no, l.gate) + '<span class="pos">' + l.finish + '着</span></span>';
+    }).join('')
+  + '</div>';
+
+/* ---- B案 ---- */
+function cmpRow(left, arrowRight, isIn, popText) {
+  return '<div class="cr ' + (isIn ? 'in' : 'out') + '"><div class="yo">' + left + '</div>'
+       + '<span class="arw">→</span><span class="re">' + arrowRight + '</span>'
+       + '<span class="pop">' + (popText || '') + '</span></div>';
+}
+document.getElementById('vB').innerHTML =
+  '<div class="cmp">'
+  + '<div class="ghead">結果（1〜3着）</div>'
+  + TOP3.map(function (t) {
+      return '<div class="cr in"><div class="yo">' + hn(t.no, t.gate) + '<span class="nm">' + t.name + '</span></div>'
+           + '<span class="re">' + t.finish + '着</span><span class="pop">' + t.pop + '人気</span></div>';
+    }).join('')
+  + '<div class="ghead">印 → 着順（' + inTop3 + '/' + MARKS.length + ' が馬券圏内）</div>'
+  + MARKS.map(function (m) {
+      return cmpRow(mkb(m.mark) + hn(m.no, m.gate) + '<span class="nm">' + m.name + '</span>',
+                    m.finish + '着', m.finish <= 3, m.pop + '人気');
+    }).join('')
+  + '<div class="ghead">地雷 → 着順（' + lmOk + '/' + LANDMINE.length + ' 成功）</div>'
+  + LANDMINE.map(function (l) {
+      return cmpRow('<span class="jm ' + (l.ok ? 'ok' : 'ng') + '">地雷</span>' + hn(l.no, l.gate)
+                    + '<span class="nm">' + l.name + '</span>',
+                    l.finish + '着', l.ok, l.ok ? '沈め成功' : '判定ミス');
+    }).join('')
+  + '<div class="ghead">ペース・買い目</div>'
+  + cmpRow('<span class="nm">ペース ' + PACE.expected + ' と予想</span>', '実際 ' + PACE.actual, PACE.match, PACE.match ? '的中' : '外れ')
+  + cmpRow('<span class="nm">買い目 ' + yen(BETS.cost) + '</span>', yen(BETS.ret), BETS.hit, Math.round(BETS.ret / BETS.cost * 100) + '%')
+  + '</div>';
+
+/* ---- C案 ---- */
+var rows = [];
+TOP3.forEach(function (t) {
+  var m = MARKS.filter(function (x) { return x.no === t.no; })[0];
+  rows.push({ finish:t.finish, no:t.no, gate:t.gate, name:t.name, pop:t.pop, odds:t.odds,
+              yoso: m ? mkb(m.mark) : '<span class="tag non">印なし</span>',
+              judg: m ? '<span class="tag ok">的中</span>' : '<span class="tag non">ノーマーク</span>' });
+});
+MARKS.filter(function (m) { return m.finish > 3; }).forEach(function (m) {
+  rows.push({ finish:m.finish, no:m.no, gate:m.gate, name:m.name, pop:m.pop, odds:null,
+              yoso: mkb(m.mark), judg:'<span class="tag ng">圏外</span>' });
+});
+LANDMINE.forEach(function (l) {
+  rows.push({ finish:l.finish, no:l.no, gate:l.gate, name:l.name, pop:null, odds:null,
+              yoso:'<span class="jm ng tag ng">地雷</span>',
+              judg: l.ok ? '<span class="tag ok">沈め成功</span>' : '<span class="tag ng">判定ミス</span>' });
+});
+rows.sort(function (a, b) { return a.finish - b.finish; });
+document.getElementById('vC').innerHTML =
+  '<table class="fixed" style="font-size:12.5px">'
+  + '<colgroup><col style="width:11%"><col style="width:39%"><col style="width:13%"><col style="width:15%"><col style="width:22%"></colgroup>'
+  + '<thead><tr><th>着</th><th class="l">馬名</th><th>人気</th><th class="l">予想</th><th class="l">判定</th></tr></thead><tbody>'
+  + rows.map(function (r) {
+      return '<tr class="' + (r.finish <= 3 ? 'in' : '') + '"><td>' + r.finish + '</td>'
+           + '<td class="name">' + hn(r.no, r.gate) + ' ' + r.name + '</td>'
+           + '<td>' + (r.pop ? r.pop : '—') + '</td>'
+           + '<td class="l">' + r.yoso + '</td><td class="l">' + r.judg + '</td></tr>';
+    }).join('')
+  + '</tbody></table>'
+  + '<div class="paceline">ペース 予想 ' + PACE.expected + ' → 実際 ' + PACE.actual + (PACE.match ? ' ✓' : ' ✕')
+  + '　／　買い目 ' + yen(BETS.cost) + ' → ' + yen(BETS.ret) + '（回収 ' + Math.round(BETS.ret / BETS.cost * 100) + '%）</div>';
+</script>
+</body>
+</html>
