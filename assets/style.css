@@ -28,6 +28,12 @@
   /* 印バッジの背景色（◎○▲△の塗りチップ） */
   --mkb-hon:#003E70; --mkb-tai:#5C7A99; --mkb-tan:#8a97a3; --mkb-oku:#aab2b8;
 
+  /* 荒れ度（89-spec）。同じ色相の濃淡だけ。良し悪しを含意させないため緑・赤は使わない */
+  --up-kata:#003E70;     /* 堅い   = 濃い（人気に集中） */
+  --up-naka:#6E8CA6;     /* 中荒れ = 中間 */
+  --up-dai:#B7C6D3;      /* 大荒れ = 薄い（ばらける） */
+  --up-on-bg:#E8EFF5;    /* 該当クラスのカード背景 */
+
   /* 背景・罫線 */
   --bg:#FFFFFF;
   --sub-bg:#FAFAFA;      /* 薄背景（1着行など） */
@@ -455,6 +461,55 @@ details.subfold>summary .sc{margin-left:auto;color:var(--navy);
 .race20 .rhead .ttl{font-size:17px;font-weight:700;margin:2px 0 4px}
 .race20 .rhead .cond{font-size:12.5px;color:var(--sub)}
 .race20 .rhead .pt{font-size:11px;color:var(--cap);margin-top:6px}
+
+/* 荒れ度ラベル（89-spec §3.1・案C-2）。3列カード＋高さ5pxの帯。
+   色は同じ色相の濃淡だけ＝緑(--hit)・赤(--live)は使わない。良し悪しを含意させないため
+   （見送り推奨と読まれないこと。89-spec §3.1）。濃い=人気に集中、薄い=ばらける。 */
+.race20 .upC{margin-top:11px;display:flex;gap:7px}
+/* .on=モデルの見立て（不動） / .viewing=いま表に出しているクラス（タップで動く）。
+   2つは別物なので見た目も分ける。混ざると「堅いレースなのに大荒れ」に読める */
+.race20 .upC .col{flex:1;border:1px solid var(--rule);border-radius:4px;padding:9px 8px 10px;
+  text-align:center;background:var(--bg);display:block;width:100%;
+  font:inherit;color:inherit;cursor:pointer;-webkit-appearance:none;appearance:none}
+.race20 .upC .col:focus-visible{outline:2px solid var(--cta);outline-offset:2px}
+.race20 .upC .col.on{border-color:var(--navy);border-width:2px;padding:8px 7px 9px;
+  background:var(--up-on-bg)}
+.race20 .upC .col.viewing{box-shadow:inset 0 -3px 0 var(--navy)}
+.race20 .upC .nm{display:block;font-size:12px;font-weight:700;color:var(--sub)}
+.race20 .upC .col.on .nm{color:var(--navy)}
+.race20 .upC .pv{display:block;font-size:22px;font-weight:700;
+  font-variant-numeric:tabular-nums;line-height:1.25;color:var(--cap)}
+.race20 .upC .col.on .pv{color:var(--navy)}
+.race20 .upC .pv small{font-size:12px;font-weight:700;margin-left:1px}
+.race20 .upC .dl{display:block;font-size:10.5px;color:var(--cap);line-height:1.45;margin-top:3px}
+.race20 .upC .col.on .dl{color:var(--sub)}
+.race20 .upChint{font-size:10.5px;color:var(--cap);margin-top:5px}
+.race20 .upCbar{display:flex;height:5px;border-radius:3px;overflow:hidden;
+  background:var(--sub-bg2);margin-top:8px}
+.race20 .upCbar span{display:block}
+.race20 .upCbar .s0{background:var(--up-kata)}
+.race20 .upCbar .s1{background:var(--up-naka)}
+.race20 .upCbar .s2{background:var(--up-dai)}
+.race20 .upCnote{font-size:11.5px;color:var(--sub);margin-top:7px}
+/* 傾向表: その決着になったレースの1着・2着の顔ぶれ（ラベルの的中率ではない） */
+.race20 .upCtend{display:none;width:100%;border-collapse:collapse;margin-top:7px}
+.race20 .upCtend.show{display:table}
+.race20 .upCtend caption{caption-side:top;text-align:left;font-size:10.5px;color:var(--cap);
+  padding-bottom:3px}
+.race20 .upCtend th{font-size:11.5px;font-weight:400;color:var(--sub);text-align:left;
+  padding:3px 0;border-bottom:1px solid var(--rule)}
+.race20 .upCtend td{font-size:12px;font-weight:700;color:var(--text);text-align:right;
+  font-variant-numeric:tabular-nums;padding:3px 0;border-bottom:1px solid var(--rule);
+  width:4.5em}
+.race20 .upCtend tr:last-child th,.race20 .upCtend tr:last-child td{border-bottom:none}
+.race20 .upCfoot{font-size:11px;color:var(--cap);margin-top:5px}
+@media(max-width:420px){
+  .race20 .upC{gap:5px}
+  .race20 .upC .col{padding:8px 4px 9px}
+  .race20 .upC .col.on{padding:7px 3px 8px}
+  .race20 .upC .pv{font-size:19px}
+  .race20 .upC .dl{font-size:10px}
+}
 
 /* 印リスト（.mkb本体は既存流用。穴・地雷の2色のみ新設） */
 .race20 .marks{margin-top:9px;display:flex;flex-direction:column;gap:1px}

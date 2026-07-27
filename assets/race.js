@@ -746,6 +746,66 @@ function ratioClass(ratio) {
   return 'b5';
 }
 
+// 荒れ度ラベル（89-spec §3.1・案C-2）。upset が無いレースは何も出さない（§3.3 の縮退）。
+// 文言も整数%も keiba_build_analysis.py が確定済み。ここでは組み立てるだけで計算しない。
+function renderUpset20(upset) {
+  if (!upset || !Array.isArray(upset.classes) || upset.classes.length !== 3) return '';
+  // 2つの状態を混ぜないこと:
+  //   .on      = モデルの見立て（selected）。タップしても動かない
+  //   .viewing = いま下の表に出しているクラス。初期値は見立てと同じ
+  // 色と枠だけに頼らず、表の見出しに必ずクラス名が入る（tendency_caption）。
+  const cols = upset.classes.map((c) => `
+      <button type="button" class="col${c.selected ? ' on' : ''}${c.selected ? ' viewing' : ''}"
+              data-upset="${escapeHtml(c.key)}" aria-pressed="${c.selected ? 'true' : 'false'}">
+        <span class="nm">${escapeHtml(c.name)}</span>
+        <span class="pv">${c.percent}<small>%</small></span>
+        <span class="dl">${escapeHtml(c.card)}</span>
+      </button>`).join('');
+  const bar = upset.classes.map((c, i) =>
+    `<span class="s${i}" style="width:${c.percent}%"></span>`).join('');
+  // 傾向表は「その決着になったレースの顔ぶれ」であってラベルの的中率ではない。
+  // 3クラス分を先に書き出しておき、表示の切り替えだけを setupUpset20 が行う。
+  const tables = upset.classes.map((c) => {
+    if (!Array.isArray(c.tendencies) || !c.tendencies.length) return '';
+    return `
+    <table class="upCtend${c.selected ? ' show' : ''}" data-upsettend="${escapeHtml(c.key)}">
+      <caption>${escapeHtml(c.tendency_caption || '')}</caption>
+      <tbody>${c.tendencies.map((t) =>
+      `<tr><th>${escapeHtml(t.label)}</th><td>${escapeHtml(t.value)}</td></tr>`).join('')}
+      </tbody>
+    </table>`;
+  }).join('');
+  const hint = upset.tendency_hint
+    ? `<div class="upChint">${escapeHtml(upset.tendency_hint)}</div>` : '';
+  return `
+    <div class="upC">${cols}</div>
+    <div class="upCbar">${bar}</div>
+    <div class="upCnote">${escapeHtml(upset.line)}</div>
+    ${tables}
+    ${hint}
+    <div class="upCfoot">${escapeHtml(upset.note)}</div>
+  `;
+}
+
+// 荒れ度カードのタップで傾向表を差し替える。見立て(.on)は動かさない（89-spec §3.1）。
+function setupUpset20() {
+  const root = document.querySelector('.race20');
+  if (!root) return;
+  root.addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-upset]');
+    if (!btn || !root.contains(btn)) return;
+    const key = btn.dataset.upset;
+    root.querySelectorAll('button[data-upset]').forEach((b) => {
+      const isView = b.dataset.upset === key;
+      b.classList.toggle('viewing', isView);
+      b.setAttribute('aria-pressed', isView ? 'true' : 'false');
+    });
+    root.querySelectorAll('[data-upsettend]').forEach((t) => {
+      t.classList.toggle('show', t.dataset.upsettend === key);
+    });
+  });
+}
+
 function renderHeader20(site) {
   const r = site.race;
   const p = site.prediction;
@@ -762,6 +822,7 @@ function renderHeader20(site) {
       <div class="cls">${escapeHtml(cls)}</div>
       <div class="ttl">${escapeHtml(r.race_name)}</div>
       <div class="cond">${escapeHtml(condParts.join(' ／ '))}</div>
+      ${renderUpset20(p.upset)}
       <div class="pt">予想: ${fmtDateTimeShort(p.predicted_at)}（${escapeHtml(p.odds_basis)}基準）</div>
     </div>
   `;
@@ -1412,6 +1473,7 @@ async function main() {
   document.getElementById('race-content').innerHTML = html;
   setupOddsMasterPanel(site, oddsAll);
   if (is20) setupAccordion20();
+  if (is20) setupUpset20();
 }
 
 main();
