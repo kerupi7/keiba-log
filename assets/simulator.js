@@ -61,6 +61,49 @@
     state.cols = {};
   }
 
+  // ===== 88-akinator-spec.md T9: 買い目アキネーターの推奨(本線)をstateに流し込む =====
+  // plan = { catalogId, axis:[軸馬番...], partners:[相手馬番...], swapIds?:[3頭。catalogId==='_swap'のみ] }
+  // catalogIdはAkinator側のCATALOG(assets/akinator.js)のidと1:1対応。ここではstate.betType/method/
+  // cols等への変換のみ行う（確率・オッズ計算やAkinatorのカタログ自体には一切触れない）。
+  var AKINATOR_PLAN_MAP = {
+    tan1: function (axis) { return { betType: 'tansho', tanFuku: 'tansho', method: 'normal', cols: { c0: [axis[0]] } }; },
+    fuku1: function (axis) { return { betType: 'tansho', tanFuku: 'fukusho', method: 'normal', cols: { c0: [axis[0]] } }; },
+    widenag: function (axis, p) { return { betType: 'wide', method: 'nagashi', cols: { axis: [axis[0]], partners: p.slice() } }; },
+    widef: function (axis, p) { return { betType: 'wide', method: 'normal', cols: { c0: axis.slice(), c1: axis.concat(p) } }; },
+    widebox: function (axis, p) { return { betType: 'wide', method: 'box', cols: { box: p.slice() } }; },
+    urennag: function (axis, p) { return { betType: 'umaren', method: 'nagashi', cols: { axis: [axis[0]], partners: p.slice() } }; },
+    urenf: function (axis, p) { return { betType: 'umaren', method: 'normal', cols: { c0: axis.slice(), c1: axis.concat(p) } }; },
+    urenbox: function (axis, p) { return { betType: 'umaren', method: 'box', cols: { box: p.slice() } }; },
+    utannag: function (axis, p) { return { betType: 'umatan', method: 'nagashi', cols: { axis: [axis[0]], partners: p.slice() }, multi: false }; },
+    utannag2: function (axis, p) { return { betType: 'umatan', method: 'normal', cols: { c0: p.slice(), c1: [axis[0]] } }; },
+    utanmul: function (axis, p) { return { betType: 'umatan', method: 'nagashi', cols: { axis: [axis[0]], partners: p.slice() }, multi: true }; },
+    utanbox: function (axis, p) { return { betType: 'umatan', method: 'box', cols: { box: p.slice() } }; },
+    spkax1: function (axis, p) { return { betType: 'sanrenpuku', method: 'nagashi', cols: { axis1: [axis[0]], axis2: [], partners: p.slice() } }; },
+    spkax2: function (axis, p) { return { betType: 'sanrenpuku', method: 'nagashi', cols: { axis1: [axis[0]], axis2: [axis[1]], partners: p.slice() } }; },
+    spkbox: function (axis, p) { return { betType: 'sanrenpuku', method: 'box', cols: { box: p.slice() } }; },
+    stnax1: function (axis, p) { return { betType: 'sanrentan', method: 'nagashi', axisPos: '1', cols: { p1: [axis[0]], partners: p.slice() }, multi: false }; },
+    stnax2: function (axis, p) { return { betType: 'sanrentan', method: 'nagashi', axisPos: '2', cols: { p2: [axis[0]], partners: p.slice() }, multi: false }; },
+    stnax3: function (axis, p) { return { betType: 'sanrentan', method: 'nagashi', axisPos: '3', cols: { p3: [axis[0]], partners: p.slice() }, multi: false }; },
+    stnax12: function (axis, p) { return { betType: 'sanrentan', method: 'nagashi', axisPos: '12', cols: { p1: [axis[0]], p2: [axis[1]], partners: p.slice() }, multi: false }; },
+    stnmul: function (axis, p) { return { betType: 'sanrentan', method: 'nagashi', axisPos: '1', cols: { p1: [axis[0]], partners: p.slice() }, multi: true }; },
+    stnbox: function (axis, p) { return { betType: 'sanrentan', method: 'box', cols: { box: p.slice() } }; },
+    stnf: function (axis, p) { return { betType: 'sanrentan', method: 'normal', cols: { c0: [axis[0]], c1: p.slice(), c2: p.slice() } }; },
+    _swap: function (axis, p, swapIds) { return { betType: 'sanrenpuku', method: 'box', cols: { box: swapIds.slice() } }; },
+  };
+  function applyPlan(state, plan) {
+    if (!plan || !plan.catalogId) return state;
+    var fn = AKINATOR_PLAN_MAP[plan.catalogId];
+    if (!fn) return state;
+    var out = fn(plan.axis || [], plan.partners || [], plan.swapIds || []);
+    state.betType = out.betType;
+    state.method = out.method || 'normal';
+    state.tanFuku = out.tanFuku || 'tansho';
+    state.axisPos = out.axisPos || '1';
+    state.multi = !!out.multi;
+    state.cols = out.cols || {};
+    return state;
+  }
+
   function methodsFor(t) {
     return [
       { m: 'normal', label: '通常・フォーメーション' },
@@ -683,8 +726,7 @@
   }
 
   function renderBlockB(site, probs, heads, oddsAll, state) {
-    return '<div class="om-subhead">B. 手動シミュレーター</div>'
-      + '<div class="sim-types">' + renderTypes(state, heads) + '</div>'
+    return '<div class="sim-types">' + renderTypes(state, heads) + '</div>'
       + '<div class="sim-methods">' + renderMethods(state) + '</div>'
       + renderAxisPosAndMulti(state)
       + renderBand(state)
@@ -717,6 +759,7 @@
     renderBlockB: renderBlockB,
     handleClick: handleClick,
     handleChange: handleChange,
+    applyPlan: applyPlan,
     // テスト用に内部関数も公開（Node crosscheck・単体確認向け。UIからは呼ばない）
     _internal: {
       enumerate: enumerate,

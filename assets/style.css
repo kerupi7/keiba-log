@@ -346,6 +346,13 @@ details.subfold>summary .sc{margin-left:auto;color:var(--navy);
 }
 
 /* ===== 8. 買い目シミュレーター（17-odds-master-spec.md §6。T4: B.手動 / T5: A.おすすめ） ===== */
+.om-tabs{display:grid;grid-template-columns:1fr 1fr;gap:0;margin:12px 0 0;
+  border-bottom:2px solid var(--rule)}
+.om-tab{font-size:13px;font-weight:700;padding:10px 6px;border:none;background:none;
+  color:var(--cap);cursor:pointer;font-family:inherit;border-bottom:2px solid transparent;margin-bottom:-2px}
+.om-tab.active{color:var(--cta);border-bottom-color:var(--cta)}
+.om-pane{padding-top:2px}
+.om-pane[hidden]{display:none}
 .om-subhead{font-size:13px;font-weight:700;color:var(--sub);margin:12px 0 8px}
 .om-subhead:first-child{margin-top:2px}
 .om-note{font-size:12px;color:var(--cap);margin:4px 0 6px}
@@ -930,3 +937,213 @@ details.subfold>summary .sc{margin-left:auto;color:var(--navy);
    幅は名前に合わせて自動で伸ばし、はみ出しは .tblwrap の横スクロールで吸収する。
    最長は「マジェスティックウォリアー」等の13文字（12px×13＝約156px）。 */
 .cstats table.st[data-tbl="tblEnt"] td:first-child{font-size:12px}
+
+/* ===== 9. 買い目アキネーター（88-akinator-spec.md）。.ak-wrap配下に全スコープ ===== */
+.ak-wrap{margin-top:4px}
+
+/* ===== 9.1 常設バー（消す） ===== */
+.ak-wrap .ak-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  border:1px solid var(--rule);border-radius:8px;padding:8px 10px;margin-bottom:12px;background:#fff}
+.ak-wrap .ak-bar .lbl{font-size:12px;font-weight:700;color:var(--sub)}
+.ak-wrap .ak-bar .killed{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
+.ak-wrap .ak-bar .killnm{font-size:11px;font-weight:700;margin-right:6px}
+.ak-wrap .ak-bar .hint{font-size:10.5px;color:var(--cap)}
+.ak-wrap .ak-mini{font-size:11.5px;font-weight:700;padding:5px 9px;border-radius:6px;
+  border:1px solid #C9C9C4;background:#fff;color:var(--text);cursor:pointer;font-family:inherit}
+.ak-wrap .ak-mini.on{background:var(--live);border-color:var(--live);color:#fff}
+
+/* ===== 9.2 進行 ===== */
+.ak-wrap .ak-prog{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.ak-wrap .ak-step{font-size:11px;font-weight:700;color:var(--cta);letter-spacing:.04em}
+.ak-wrap .ak-cand{font-size:11px;color:var(--cap)}
+.ak-wrap .ak-cand b{color:var(--text);font-variant-numeric:tabular-nums}
+.ak-wrap .ak-dots{display:flex;gap:4px;margin:0 0 10px}
+.ak-wrap .ak-dots i{height:3px;flex:1;background:var(--rule);border-radius:2px}
+.ak-wrap .ak-dots i.on{background:var(--cta)}
+
+/* ===== 9.3 質問カード ===== */
+.ak-wrap .ak-card{border:1px solid var(--rule);border-radius:10px;overflow:hidden}
+.ak-wrap .ak-q{padding:13px 14px 11px;border-bottom:1px solid var(--rule)}
+.ak-wrap .ak-q .q{font-size:16px;font-weight:700;line-height:1.4}
+.ak-wrap .ak-q .s{font-size:11.5px;color:var(--cap);margin-top:4px;line-height:1.55}
+
+/* 選択肢（テキスト型） */
+.ak-wrap .ak-opts{display:flex;flex-direction:column}
+.ak-wrap .ak-opt{display:flex;align-items:center;gap:10px;width:100%;text-align:left;
+  padding:12px 14px;border:none;border-bottom:1px solid var(--rule);background:#fff;cursor:pointer;font-family:inherit}
+.ak-wrap .ak-opt:last-child{border-bottom:none}
+.ak-wrap .ak-opt:hover{background:var(--pred-row)}
+.ak-wrap .ak-opt.skip{border-top:1px solid var(--rule)}
+.ak-wrap .ak-opt.skip .ol{font-weight:700;color:var(--sub)}
+.ak-wrap .ak-opt .obody{flex:1;min-width:0}
+.ak-wrap .ak-opt .ol{display:block;font-size:14px;font-weight:700;color:var(--text)}
+.ak-wrap .ak-opt .od{display:block;font-size:11px;color:var(--cap);margin-top:3px;line-height:1.5}
+.ak-wrap .ak-opt .oi{flex:none;width:20px;height:20px;border-radius:50%;border:1.5px solid var(--rule);
+  display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--cap)}
+
+/* ===== 9.4 馬選択リスト ===== */
+.ak-wrap .ak-hlist{max-height:none}
+.ak-wrap .ak-h{display:flex;align-items:center;gap:8px;width:100%;padding:8px 12px;
+  border:none;border-bottom:1px solid var(--rule);background:#fff;cursor:pointer;font-family:inherit;text-align:left}
+.ak-wrap .ak-h:last-child{border-bottom:none}
+.ak-wrap .ak-h:hover{background:var(--pred-row)}
+.ak-wrap .ak-h.sel{background:var(--green-row)}
+.ak-wrap .ak-h.killed{opacity:.38}
+.ak-wrap .ak-h.killed .nm{text-decoration:line-through}
+.ak-wrap .ak-h.axisrow{background:var(--pred-row);cursor:default}
+.ak-wrap .ak-h.landmine{box-shadow:inset 0 0 0 1.5px var(--live)}
+.ak-wrap .axischip{flex:none;font-size:10px;font-weight:700;color:#fff;background:var(--navy);
+  border-radius:4px;padding:3px 6px}
+.ak-wrap .ak-h .nmwrap{flex:1;min-width:0}
+.ak-wrap .ak-h .nm{font-size:13px;font-weight:700;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ak-wrap .ak-h .meta{font-size:10.5px;color:var(--cap);margin-top:1px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.ak-wrap .ak-h .meta .pop{font-variant-numeric:tabular-nums}
+.ak-wrap .ak-h .meta .od{color:var(--text);font-weight:700;font-variant-numeric:tabular-nums}
+.ak-wrap .ak-mk{font-weight:700;font-size:13px;width:14px;text-align:center;flex:none}
+.ak-wrap .ak-mk.hon{color:var(--mk-hon)}.ak-wrap .ak-mk.tai{color:var(--mk-tai)}
+.ak-wrap .ak-mk.tan{color:var(--mk-tan)}.ak-wrap .ak-mk.oku{color:var(--mk-oku)}
+.ak-wrap .ak-mk.none{color:#ddd}
+.ak-wrap .ak-grade{display:inline-block;min-width:21px;text-align:center;font-weight:700;font-size:9.5px;
+  border-radius:3px;padding:1px 3px;color:#fff}
+.ak-wrap .ak-grade.g-s{background:#0B5E2E} .ak-wrap .ak-grade.g-ap{background:#0F7A3D} .ak-wrap .ak-grade.g-a{background:#2f8f4e}
+.ak-wrap .ak-grade.g-bp{background:#5a9bd4} .ak-wrap .ak-grade.g-b{background:#8aadc9}
+.ak-wrap .ak-grade.g-cp{background:#b0b0a8} .ak-wrap .ak-grade.g-c{background:#c2c2ba}
+.ak-wrap .ak-grade.g-d{background:#d8b48a} .ak-wrap .ak-grade.g-e{background:#d89a9a}
+.ak-wrap .ak-h .ak-pb{flex:none;width:64px}
+.ak-wrap .ak-h .ak-pb .v{font-size:10.5px;color:var(--cap);text-align:right;font-variant-numeric:tabular-nums}
+.ak-wrap .ak-h .ak-pb .bar{height:3px;background:var(--sub-bg2);border-radius:2px;margin-top:2px;overflow:hidden}
+.ak-wrap .ak-h .ak-pb .bar i{display:block;height:100%;background:var(--cta)}
+.ak-wrap .ak-h .chk{flex:none;width:22px;height:22px;border:1.5px solid #bbb;border-radius:5px;background:#fff;
+  display:flex;align-items:center;justify-content:center;font-size:13px;color:transparent}
+.ak-wrap .ak-h.sel .chk{background:var(--cta);border-color:var(--cta);color:#fff}
+.ak-wrap .ak-h.sel .chk::after{content:"✓"}
+.ak-wrap .ak-h .chk.radio{border-radius:50%}
+.ak-wrap .ak-h.sel .chk.radio{background:var(--navy);border-color:var(--navy);color:transparent}
+.ak-wrap .ak-h.sel .chk.radio::after{content:"";width:8px;height:8px;border-radius:50%;background:#fff}
+
+/* 入力型（予算） */
+.ak-wrap .ak-input{padding:14px}
+.ak-wrap .ak-input input{width:100%;font-family:inherit;font-size:20px;font-weight:700;
+  padding:12px 13px;border:1.5px solid var(--rule);border-radius:8px;color:var(--text);
+  font-variant-numeric:tabular-nums;background:#fff}
+.ak-wrap .ak-input input:focus{outline:none;border-color:var(--cta)}
+.ak-wrap .ak-input input::placeholder{font-size:14px;font-weight:400;color:#bbb}
+.ak-wrap .ak-input .parsed{font-size:12px;color:var(--sub);margin-top:9px;line-height:1.55}
+.ak-wrap .ak-input .parsed b{font-size:15px;color:var(--cta)}
+.ak-wrap .ak-input .parsed .dim{color:var(--cap)}
+
+/* フッタ操作・ボタン */
+.ak-wrap .ak-foot{display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--sub-bg);border-top:1px solid var(--rule)}
+.ak-wrap .ak-foot .picked{font-size:11.5px;color:var(--sub);flex:1;display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.ak-wrap .ak-foot .picked b{color:var(--text)}
+.ak-wrap .ak-btn{font-size:13px;font-weight:700;padding:9px 16px;border-radius:7px;border:1px solid var(--cta);
+  background:var(--cta);color:#fff;cursor:pointer;font-family:inherit}
+.ak-wrap .ak-btn:disabled{opacity:.35;cursor:not-allowed}
+.ak-wrap .ak-btn.ghost{background:#fff;color:var(--cta)}
+.ak-wrap .ak-btn.sm{font-size:11.5px;padding:6px 11px}
+.ak-wrap .ak-btn.gray{background:#fff;color:var(--sub);border-color:#C9C9C4}
+
+/* ===== 9.5 残り候補パネル（質問中・全券種一覧共用の折りたたみ） ===== */
+.ak-wrap details.ak-alive{margin-top:10px;border:1px solid var(--rule);border-radius:8px;overflow:hidden}
+.ak-wrap details.ak-alive>summary{list-style:none;cursor:pointer;font-size:12px;font-weight:700;color:var(--sub);
+  padding:9px 12px;background:var(--sub-bg);display:flex;justify-content:space-between}
+.ak-wrap details.ak-alive>summary::-webkit-details-marker{display:none}
+.ak-wrap details.ak-alive>summary::after{content:"▾";color:var(--cap)}
+.ak-wrap details.ak-alive[open]>summary::after{content:"▴"}
+.ak-wrap .alive-body{padding:10px 12px}
+.ak-wrap .alive-grp{font-size:10.5px;font-weight:700;color:var(--cap);margin:8px 0 5px}
+.ak-wrap .alive-grp:first-child{margin-top:0}
+.ak-wrap .alive-chips{display:flex;flex-wrap:wrap;gap:5px}
+.ak-wrap .achip{font-size:10.5px;font-weight:700;padding:3px 7px;border-radius:11px;
+  border:1px solid var(--rule);background:#fff;color:var(--text)}
+.ak-wrap .achip.dead{opacity:.3;text-decoration:line-through}
+
+/* ===== 9.6 結果カード ===== */
+.ak-wrap .res-head{font-size:15px;font-weight:700;margin:14px 0 3px}
+.ak-wrap .res-sub{font-size:11.5px;color:var(--cap);margin-bottom:12px;line-height:1.6}
+.ak-wrap .ak-empty{font-size:13px;color:var(--cap);padding:14px 0}
+.ak-wrap .rc{border:1px solid var(--rule);border-radius:10px;overflow:hidden;margin-bottom:14px}
+.ak-wrap .rc .band{color:#fff;padding:8px 12px;display:flex;align-items:center;gap:8px}
+.ak-wrap .rc .band .bl{flex:1;min-width:0}
+.ak-wrap .rc .band .fam{display:inline-block;font-size:10px;font-weight:700;background:rgba(255,255,255,.24);
+  padding:1px 7px;border-radius:10px;margin-bottom:3px}
+.ak-wrap .rc .band .ttl{display:block;font-size:18px;font-weight:700;line-height:1.2}
+.ak-wrap .rc .band .way{font-size:12px;font-weight:700;opacity:.88;margin-left:7px}
+.ak-wrap .rc .band .pts{margin-left:auto;font-size:11.5px;font-weight:700;text-align:right;line-height:1.35}
+.ak-wrap .rc .band .unit{font-size:10px;font-weight:700;opacity:.85}
+.ak-wrap .rc .band.b-tansho{background:#4657b8}.ak-wrap .rc .band.b-fukusho{background:#4657b8}
+.ak-wrap .rc .band.b-wakuren{background:#009944}.ak-wrap .rc .band.b-umaren{background:#8b5fbf}
+.ak-wrap .rc .band.b-wide{background:#4bb3b3}.ak-wrap .rc .band.b-umatan{background:#e59300}
+.ak-wrap .rc .band.b-sanrenpuku{background:#4aa3d6}.ak-wrap .rc .band.b-sanrentan{background:#e57d1e}
+.ak-wrap .rc .legs{border-bottom:1px solid var(--rule)}
+.ak-wrap .leg{padding:9px 12px;border-bottom:1px dashed var(--rule)}
+.ak-wrap .leg:last-child{border-bottom:none}
+.ak-wrap .leg.main{background:var(--pred-row)}
+.ak-wrap .leg .lh{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:5px}
+.ak-wrap .leg .lname{font-size:13px;font-weight:700}
+.ak-wrap .leg .lway{font-size:11px;font-weight:700;color:var(--sub);margin-left:4px}
+.ak-wrap .leg .lamt{margin-left:auto;font-size:11px;color:var(--cap);font-variant-numeric:tabular-nums;white-space:nowrap}
+.ak-wrap .leg .lamt b{color:var(--text);font-size:12.5px}
+.ak-wrap .mainchip{display:inline-block;font-size:9.5px;font-weight:700;color:#fff;background:var(--navy);
+  border-radius:3px;padding:1px 5px;margin-right:5px;vertical-align:1px}
+.ak-wrap .leg .lcombos{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center}
+.ak-wrap .leg .lnote{display:flex;flex-wrap:wrap;align-items:center;gap:2px;padding:3px 0}
+.ak-wrap .nsep{display:inline-block;width:4px}
+.ak-wrap .boxtag{font-size:9.5px;font-weight:700;color:var(--sub);border:1px solid var(--rule);
+  border-radius:3px;padding:1px 4px;margin-left:5px;background:#fff}
+.ak-wrap .leg .lmore{font-size:10.5px;color:var(--cap)}
+.ak-wrap .leg .ltrim{font-size:10px;color:var(--cap);margin-top:4px}
+.ak-wrap .leg .lpay{font-size:11px;color:var(--cap);margin-top:5px}
+.ak-wrap .leg .lpay b{color:var(--text);font-size:12px;font-variant-numeric:tabular-nums}
+.ak-wrap .slider{padding:10px 12px;border-bottom:1px solid var(--rule);background:var(--sub-bg)}
+.ak-wrap .slider .sl-lbl{display:flex;justify-content:space-between;font-size:10px;color:var(--cap);margin-bottom:4px}
+.ak-wrap .slider .sl-val{font-weight:700;color:var(--sub)}
+.ak-wrap .slider .sl-val b{color:var(--cta);font-size:12px;font-variant-numeric:tabular-nums}
+.ak-wrap .slider input[type=range]{width:100%;accent-color:var(--cta);margin:0}
+.ak-wrap .rc .cb{display:flex;align-items:center;gap:1px;padding:3px 6px;border:1px solid var(--rule);border-radius:6px;background:#fff}
+.ak-wrap .rc .cb .oz{font-size:10px;color:var(--cap);margin-left:4px;font-variant-numeric:tabular-nums}
+.ak-wrap .rc .stats{border-bottom:1px solid var(--rule)}
+.ak-wrap .rc .stats.two{display:grid;grid-template-columns:1fr 1fr;gap:0}
+.ak-wrap .rc .stats.two .st{padding:12px;border-right:1px solid var(--rule)}
+.ak-wrap .rc .stats.two .st:last-child{border-right:none}
+.ak-wrap .rc .stats.two .st .v{font-size:24px}
+.ak-wrap .rc .st .k{font-size:10.5px;color:var(--cap)}
+.ak-wrap .rc .st .v{font-size:17px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.25;margin-top:1px}
+.ak-wrap .rc .st .d{font-size:10.5px;color:var(--cap);margin-top:1px}
+.ak-wrap .rc .say{font-size:12.5px;line-height:1.55;padding:9px 12px;border-top:1px solid var(--rule);
+  border-bottom:1px solid var(--rule)}
+.ak-wrap .rc .say.warn{background:#FFF8E8}
+.ak-wrap .rc .say.ok{background:var(--chip-under-bg);color:var(--chip-under-fg)}
+.ak-wrap .rc .say b{font-weight:700}
+.ak-wrap details.more{border-bottom:1px solid var(--rule)}
+.ak-wrap details.more>summary{list-style:none;cursor:pointer;font-size:11px;color:var(--cap);
+  padding:7px 12px;display:flex;justify-content:space-between}
+.ak-wrap details.more>summary::-webkit-details-marker{display:none}
+.ak-wrap details.more>summary::after{content:"▾"}
+.ak-wrap details.more[open]>summary::after{content:"▴"}
+.ak-wrap .mb{padding:0 12px 10px;font-size:11.5px;color:var(--sub);line-height:1.7}
+.ak-wrap .mrow{display:flex;justify-content:space-between;border-bottom:1px dotted var(--rule);padding:3px 0}
+.ak-wrap .mrow b{color:var(--text);font-variant-numeric:tabular-nums}
+.ak-wrap .mcond{margin-top:7px;font-size:11.5px;color:var(--sub);line-height:1.6}
+.ak-wrap .rc .warn{font-size:11px;color:var(--sub);background:#FFF8E8;padding:8px 12px;border-bottom:1px solid var(--rule);line-height:1.55}
+.ak-wrap .rc .warn b{color:var(--live)}
+.ak-wrap .rc .ctrl{font-size:10.5px;color:var(--cap);padding:8px 12px;border-bottom:1px solid var(--rule);line-height:1.55;background:var(--sub-bg)}
+.ak-wrap .rc .ctrl b{color:var(--text)}
+.ak-wrap .rc .act{padding:9px 12px;display:flex;gap:8px}
+.ak-wrap .rc .act .ak-btn{white-space:nowrap;font-size:12px;padding:9px 8px;flex:1;min-width:0}
+.ak-wrap .alltbl{width:100%;border-collapse:collapse;font-size:11px}
+.ak-wrap .alltbl th{background:var(--sub-bg2);color:var(--cap);font-size:9.5px;font-weight:700;
+  padding:5px 3px;text-align:right;border-bottom:1px solid var(--rule);white-space:nowrap}
+.ak-wrap .alltbl td{padding:6px 3px;text-align:right;border-bottom:1px solid var(--rule);
+  font-variant-numeric:tabular-nums;white-space:nowrap}
+.ak-wrap .alltbl td.l{white-space:normal;font-weight:700;font-size:11px}
+.ak-wrap .alltbl tr.dim td{opacity:.42;font-weight:400}
+.ak-wrap .alltbl td.rz{font-size:9.5px;color:var(--cap);font-weight:400}
+.ak-wrap .alltbl .tr{font-size:9px;color:var(--cap)}
+.ak-wrap .pick3{display:inline-block;font-size:9px;font-weight:700;background:var(--cta);color:#fff;
+  border-radius:3px;padding:1px 4px;margin-right:4px;vertical-align:1px}
+.ak-wrap .allnote{font-size:10.5px;color:var(--cap);line-height:1.6;padding:9px 12px}
+.ak-wrap .note{font-size:11px;color:var(--cap);line-height:1.7;border:1px solid var(--rule);border-radius:8px;
+  padding:11px 13px;background:var(--sub-bg);margin-top:6px}
+.ak-wrap .note b{color:var(--sub)}
+.ak-wrap .restart{margin-top:16px;text-align:center}

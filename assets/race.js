@@ -691,13 +691,24 @@ function renderOddsMasterSection(site, oddsAll) {
   const tsSource = oddsAll && (oddsAll.official_datetime || oddsAll.fetched_at);
   const tsLabel = tsSource ? `<span class="cnt">${fmtDateTimeShort(tsSource)}時点のオッズ</span>` : '';
   const openAttr = oddsAll ? ' open' : '';
+  // 88-akinator-spec.md §7: schema_version odds_all-1.x かつ単勝以外に発売中オッズがある場合のみ表示
+  const hasAki = (typeof Akinator !== 'undefined' && Akinator.eligible(oddsAll));
+  // アキネーターが出せないレースではタブを出さず、手動シミュレーターだけを従来どおり表示する
+  const panels = hasAki
+    ? `<div class="om-tabs" role="tablist">
+         <button type="button" class="om-tab active" data-om-tab="aki" role="tab" aria-selected="true">質問で決める</button>
+         <button type="button" class="om-tab" data-om-tab="sim" role="tab" aria-selected="false">自分で組む</button>
+       </div>
+       <div id="ak-panel-body" class="om-pane active" role="tabpanel"></div>
+       <div id="om-panel-body" class="om-pane" role="tabpanel" hidden></div>`
+    : '<div id="om-panel-body"></div>';
 
   return `
     <details class="fold om-fold"${openAttr}>
       <summary><span class="tri"></span>買い目シミュレーター${tsLabel}</summary>
       <div class="fold-body">
         ${omRenderBlockA(site, built.probs, built.heads, oddsAll)}
-        <div id="om-panel-body"></div>
+        ${panels}
         <div class="om-footnote">
           <div>買いライン＝期待値がトントン（1.0倍）になるオッズ。それ以上なら理論上プラス</div>
           <div>複勝・ワイドは最低オッズ側で判定。オッズは取得時点のスナップショットで、発売中は変動します</div>
@@ -710,9 +721,11 @@ function renderOddsMasterSection(site, oddsAll) {
 
 // 45-spec §2.12: 手動シミュレーター(Block B)の描画・stateは Simulator（assets/simulator.js）に一任。
 // ここではDOM書き込みとイベント委譲のみ（クリック/change委譲は #om-panel-body に集約）。
+// 戻り値は買い目アキネーター（下のsetupAkinatorPanel）から本線を流し込むための橋渡し。
+// F1相当でセクション自体が無い場合はnullを返す。
 function setupOddsMasterPanel(site, oddsAll) {
   const body = document.getElementById('om-panel-body');
-  if (!body) return; // F1でセクション自体が無い場合はDOMも存在しない
+  if (!body) return null;
 
   const built = Harville.buildProbs(site.horses);
   const probs = built.probs;
@@ -728,6 +741,101 @@ function setupOddsMasterPanel(site, oddsAll) {
   });
   body.addEventListener('change', (ev) => {
     if (Simulator.handleChange(state, ev.target)) rerender();
+  });
+
+  rerender();
+
+  return {
+    applyPlan(plan) {
+      Simulator.applyPlan(state, plan);
+      rerender();
+      body.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    },
+  };
+}
+
+// 88-akinator-spec.md T9: 買い目アキネーターのマウント・イベント委譲。描画・stateは
+// Akinator（assets/akinator.js）に一任。テキスト入力(予算)とスライダーのドラッグ中だけは
+// フォーカス/カーソル位置を保つため、全体rerenderせずピンポイントでDOMを更新する。
+// タブ切替。中身は再描画せず表示だけ入れ替える（両方のstateを保つため）
+function setupOddsMasterTabs() {
+  const bar = document.querySelector('.om-tabs');
+  if (!bar) return;
+  bar.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-om-tab]');
+    if (!btn) return;
+    const key = btn.dataset.omTab;
+    bar.querySelectorAll('.om-tab').forEach((b) => {
+      const on = b.dataset.omTab === key;
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+    const map = { aki: 'ak-panel-body', sim: 'om-panel-body' };
+    Object.keys(map).forEach((k) => {
+      const el = document.getElementById(map[k]);
+      if (!el) return;
+      el.hidden = (k !== key);
+      el.classList.toggle('active', k === key);
+    });
+  });
+}
+
+// 買い目アキネーターの「シミュレーターに入れる」から呼ぶ。手動タブへ切り替える
+function switchToSimulatorTab() {
+  const btn = document.querySelector('[data-om-tab="sim"]');
+  if (btn) btn.click();
+}
+
+function setupAkinatorPanel(site, oddsAll, simCtl) {
+  const body = document.getElementById('ak-panel-body');
+  if (!body) return; // §7の縮退条件を満たさない場合はDOM自体が無い
+
+  const ctx = Akinator.init(site, oddsAll);
+  const state = Akinator.initialState();
+
+  function rerender() {
+    body.innerHTML = Akinator.render(ctx, state);
+    const bi = document.getElementById('ak-budget-input');
+    if (bi) {
+      bi.focus();
+      bi.setSelectionRange(bi.value.length, bi.value.length);
+    }
+  }
+
+  body.addEventListener('click', (ev) => {
+    const result = Akinator.handleClick(ctx, state, ev.target);
+    if (!result) return;
+    if (result.plan && simCtl) { simCtl.applyPlan(result.plan); switchToSimulatorTab(); }
+    rerender();
+  });
+
+  body.addEventListener('input', (ev) => {
+    if (ev.target && ev.target.id === 'ak-budget-input') {
+      Akinator.setInputRaw(state, ev.target.value);
+      const parsed = document.getElementById('ak-budget-parsed');
+      if (parsed) parsed.innerHTML = Akinator.budgetPreviewHtml(ctx, state);
+      const goBtn = body.querySelector('[data-ak-go-input]');
+      if (goBtn) goBtn.disabled = !Akinator.parseYen(state.inputRaw);
+      return;
+    }
+    if (ev.target && ev.target.matches && ev.target.matches('[data-ak-w]')) {
+      const lbl = document.getElementById('ak-w-' + ev.target.dataset.akW);
+      if (lbl) lbl.textContent = ev.target.value;
+    }
+  });
+
+  body.addEventListener('change', (ev) => {
+    if (ev.target && ev.target.matches && ev.target.matches('[data-ak-w]')) {
+      Akinator.setPkgW(state, ev.target.dataset.akW, Number(ev.target.value));
+      rerender();
+    }
+  });
+
+  body.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Enter' && ev.target && ev.target.id === 'ak-budget-input') {
+      const goBtn = body.querySelector('[data-ak-go-input]');
+      if (goBtn && !goBtn.disabled) goBtn.click();
+    }
   });
 
   rerender();
@@ -1471,7 +1579,9 @@ async function main() {
     ${renderCounterFold(site)}
   `;
   document.getElementById('race-content').innerHTML = html;
-  setupOddsMasterPanel(site, oddsAll);
+  const simCtl = setupOddsMasterPanel(site, oddsAll);
+  setupAkinatorPanel(site, oddsAll, simCtl);
+  setupOddsMasterTabs();
   if (is20) setupAccordion20();
   if (is20) setupUpset20();
 }
