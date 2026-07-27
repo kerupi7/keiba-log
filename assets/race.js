@@ -1187,8 +1187,14 @@ function renderOverview20(site) {
   // ゼロになる＝競馬場ごとの現象）ことを確認済み。ただし効果は採点に足す基準の1/5で、
   // 予想の当たり具合は作り方2通り・物差し2通りとも改善しなかったため点数には入れない。
   // 人が他の材料と合わせて見るための材料として出す。
-  if (p.day_bias && p.day_bias.surfaces && Object.keys(p.day_bias.surfaces).length) {
-    const rows = Object.entries(p.day_bias.surfaces).map(([surf, s]) => {
+  // 時計の傾向（time_trend）は芝の勝ちタイムから出す別系統。内外の偏りより持続が
+  // はっきりしている（同じ開催の連続日で相関+0.406 / その日の前半→後半で+0.512）。
+  // どちらか片方しか無い日もあるので、両方を同じ節にまとめて出し入れする。
+  const hasBias = Boolean(p.day_bias && p.day_bias.surfaces
+    && Object.keys(p.day_bias.surfaces).length);
+  const tt = p.time_trend;
+  if (hasBias || tt) {
+    const rows = !hasBias ? '' : Object.entries(p.day_bias.surfaces).map(([surf, s]) => {
       const cls = s.label === '大きな偏りなし' ? 'flat' : 'lean';
       return `<tr>
         <td class="sf">${escapeHtml(surf)}</td>
@@ -1199,17 +1205,31 @@ function renderOverview20(site) {
         <td class="n">${s.n_races}R</td>
       </tr>`;
     }).join('');
-    const fw = p.day_bias.front_wins || 0;
-    const rw = p.day_bias.rear_wins || 0;
-    const paceNote = p.day_bias.pace_label
-      ? `／ ペースは${escapeHtml(p.day_bias.pace_label)}` : '';
+    const ttRow = !tt ? '' : `<tr>
+        <td class="sf">時計</td>
+        <td class="pct" colspan="2">基準比 ${tt.value >= 0 ? '+' : ''}${tt.value.toFixed(2)}秒</td>
+        <td class="diff ${tt.value <= 0 ? 'in' : 'out'}">${tt.value <= 0 ? '速い' : '遅い'}</td>
+        <td class="lab lean">${escapeHtml(tt.label)}</td>
+        <td class="n">${tt.n_races}R</td>
+      </tr>`;
+
+    const biasNote = !hasBias ? '' :
+      `数字は3着内に入った割合（内＝1〜4枠 / 外＝5〜8枠）。前が残ったレース ${p.day_bias.front_wins || 0}`
+      + ` / 差しが決まったレース ${p.day_bias.rear_wins || 0}`
+      + (p.day_bias.pace_label ? `／ ペースは${escapeHtml(p.day_bias.pace_label)}` : '') + '。';
+    const ttNote = !tt ? '' :
+      `時計は芝の勝ちタイムを、コース・クラス・馬場状態・時期で補正した残差です`
+      + `（当日${tt.today_races}R＋前日${tt.prev_races}R）。マイナスほど速い馬場。`;
+    const scope = tt
+      ? `当日＋前日の${tt.n_races}レース`
+      : `ここまで${p.day_bias.n_races}レース`;
+
     sections.push(`
       <div class="biaslabel"><b>今日の馬場</b>
-        <span class="scope">ここまで${p.day_bias.n_races}レース</span></div>
-      <table class="daybias"><tbody>${rows}</tbody></table>
-      <div class="striplegend">数字は3着内に入った割合（内＝1〜4枠 / 外＝5〜8枠）。
-        前が残ったレース ${fw} / 差しが決まったレース ${rw}${paceNote}。
-        <b>点数には入れていません</b>。偏りは実在しますが、当たり具合を良くするほどの大きさは確認できていないためです。</div>
+        <span class="scope">${escapeHtml(scope)}</span></div>
+      <table class="daybias"><tbody>${rows}${ttRow}</tbody></table>
+      <div class="striplegend">${biasNote}${ttNote}
+        <b>${hasBias && tt ? 'どちらも点数には入れていません' : '点数には入れていません'}</b>。当たり具合を良くするほどの大きさは確認できていないためです。</div>
     `);
   }
 
