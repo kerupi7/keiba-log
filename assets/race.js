@@ -19,6 +19,19 @@ function payoutTypeLabel(type) {
   return map[type] || type;
 }
 
+// 末脚ティア（狙い3頭の脇に出す語）。データ側は keiba_score_s2.py:kick_tier() が
+// 抜群/上位/並/見劣り/不明 を入れてくる。
+// 2026-07-27より前に生成した race JSON は ◎/○/空文字 の旧3段なので、ここで読み替える
+// （旧データの空文字は「遅い」と「材料なし」を区別できないため、そのまま非表示に倒す）。
+const KICK_TIER_LEGACY = { '◎': '抜群', '○': '上位' };
+const KICK_TIER_CLASS = { '抜群': 'k-top', '上位': 'k-high', '並': 'k-mid', '見劣り': 'k-low', '不明': 'k-na' };
+function kickTierLabel(tier) {
+  return KICK_TIER_LEGACY[tier] || tier || '';
+}
+function kickTierClass(tier) {
+  return KICK_TIER_CLASS[tier] || 'k-mid';
+}
+
 // 券種の表示順（単勝→複勝→ワイド→馬連→馬単→3連複→3連単）。bets[].type はデータ由来の日本語ラベル。
 const BET_JA_ORDER = { '単勝': 0, '複勝': 1, 'ワイド': 2, '枠連': 2.5, '馬連': 3, '馬単': 4, '三連複': 5, '3連複': 5, '三連単': 6, '3連単': 6 };
 function sortedBets(site) {
@@ -133,7 +146,11 @@ function renderMarksBlock(site) {
       const badge = h.ability_mark
         ? markBadge(h.ability_mark)
         : (h.role ? roleChip(h.role) : (h.bet_mark === '地雷' ? mineChip() : ''));
-      return `<div class="verdict-line">${badge}${umaBox(h.number, h.gate, 'sm')} ${escapeHtml(h.name)} — ${escapeHtml(h.verdict || '—')}</div>`;
+      // 地雷の理由文（87-spec §3.2: 「{odds}倍({pop}番人気)だが3着内を外す確率は{p_out}%
+      // （オッズ相応なら{p_market}%）」）はp_out/p_marketの両方を読める文面で保持済みなので、
+      // 一般ひとこと(verdict)より地雷理由を優先して表示する。
+      const text = h.bet_mark === '地雷' ? (h.landmine_reason || h.verdict || '—') : (h.verdict || '—');
+      return `<div class="verdict-line">${badge}${umaBox(h.number, h.gate, 'sm')} ${escapeHtml(h.name)} — ${escapeHtml(text)}</div>`;
     }).join('');
     const verdictBlock = verdictLines ? `<div class="verdicts">${verdictLines}</div>` : '';
 
@@ -1144,10 +1161,16 @@ function renderOverview20(site) {
     let recoHtml = '';
     if (recoFavs.length) {
       const recoItems = recoFavs.map((f) => {
-        const kickHtml = f.kick_tier ? `<span class="kick">末脚${escapeHtml(f.kick_tier)}</span>` : '';
+        const tier = kickTierLabel(f.kick_tier);
+        const kickHtml = tier
+          ? `<span class="kick ${kickTierClass(tier)}">末脚 ${escapeHtml(tier)}</span>` : '';
         return `<span class="nm">${umaBox(Number(f.number), (byNumberOv[f.number] || {}).gate, 'sm')} ${escapeHtml(f.name)}${kickHtml}</span>`;
       }).join('');
-      const legendHtml = '<div class="kicklegend"><span class="kick">末脚◎</span>＝ゴール前の伸び脚が特に速い ／ <span class="kick">末脚○</span>＝速い。ペースが本命でも対抗でも、狙いは末脚の質で決める（展開で入れ替えない）。</div>';
+      const legendHtml = '<div class="kicklegend">末脚＝ゴール前の伸び脚（過去5走の上がり3Fが、同じレースの出走馬の中でどのあたりだったか）。'
+        + '<span class="kick k-top">抜群</span><span class="kick k-high">上位</span>'
+        + '<span class="kick k-mid">並</span><span class="kick k-low">見劣り</span>の4段。'
+        + '<span class="kick k-na">不明</span>は判定に足る過去走が無い馬。'
+        + 'ペースが本命でも対抗でも、狙いは末脚の質で決める（展開で入れ替えない）。</div>';
       recoHtml = `<div class="subh">狙い（末脚順）</div><div class="reco">${recoItems}</div>${legendHtml}`;
     }
     sections.push(`<div class="subh">展開シナリオ（本命＋対抗）</div>${blocksHtml}${foldNoteHtml}${recoHtml}`);

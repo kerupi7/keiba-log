@@ -1,0 +1,291 @@
+<title>末脚の数字の言い方 4案 — Ans.</title>
+<style>
+  :root{
+    --text:#333;--sub:#5C5C5C;--cap:#757575;
+    --navy:#003E70;--link:#326691;--orange:#F58700;
+    --hit:#0F7A3D;--live:#EB1400;
+    --bg:#fff;--sub-bg:#FAFAFA;--sub-bg2:#F1F1F0;
+    --rule:#E3E3E3;--rule-strong:#333;
+    --font:-apple-system,"system-ui","Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#EDEDEA;color:var(--text);font-family:var(--font);
+    font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased;padding:22px 14px 60px}
+  .wrap{max-width:960px;margin:0 auto}
+  .pagehd{font-size:19px;font-weight:700;color:var(--navy);margin:0 0 4px;font-style:italic}
+  .pagesub{font-size:12.5px;color:var(--sub);margin:0 0 18px;line-height:1.8}
+  .card{background:var(--bg);border:1px solid var(--rule);border-radius:6px;padding:16px 16px 20px;
+    box-shadow:0 1px 2px rgba(0,0,0,.04);margin-bottom:18px}
+  .cardtag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.04em;
+    padding:2px 9px;border-radius:3px;margin-bottom:4px;background:var(--navy);color:#fff}
+  .cardtag.warn{background:#c47b00}
+  .cardtag.rec{background:var(--hit)}
+  .cardttl{font-size:15px;font-weight:700;margin:6px 0 2px}
+  .cardnote{font-size:12px;color:var(--sub);margin:0 0 14px;line-height:1.75}
+  .pros{font-size:11.5px;color:var(--cap);margin-top:14px;padding-top:10px;
+    border-top:1px dashed var(--rule);line-height:1.9}
+  .pros b{color:var(--sub)} .pros .ng{color:#a03535;font-weight:700}
+  .pros .ok{color:var(--hit);font-weight:700}
+
+  /* ==== 実サイト踏襲 ==== */
+  .subh{font-size:13px;font-weight:700;margin:0 0 4px;color:var(--navy)}
+  .hn{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;
+    font-size:11px;font-weight:700;border-radius:3px;vertical-align:middle}
+  .hn.wk1{background:#fff;color:#000;border:1.5px solid #333}
+  .hn.wk2{background:#000;color:#fff}
+  .hn.wk3{background:#e60012;color:#fff}
+  .hn.wk4{background:#0068c8;color:#fff}
+  .hn.wk5{background:#ffd900;color:#000}
+  .hn.wk6{background:#009944;color:#fff}
+  .hn.wk7{background:#f39800;color:#fff}
+  .hn.wk8{background:#e85298;color:#fff}
+  .reco{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12.5px;margin-top:3px}
+  .reco .nm{font-weight:700;white-space:nowrap}
+  .kicklegend{margin-top:10px;font-size:11px;color:var(--cap);line-height:1.9}
+
+  /* 言葉ピル（4案で共通・案B確定ぶん） */
+  .word{display:inline-block;font-size:11px;font-weight:700;border-radius:3px;
+    padding:0 5px;margin-left:5px;line-height:16px;vertical-align:middle}
+  .word.w1{background:#E7F3EA;color:#0F6A34;border:1px solid #b6dcc4}
+  .word.w2{background:#EDF4F9;color:#2b5f86;border:1px solid #bcd4e6}
+  .word.w3{background:#F2F2F0;color:#6b6b64;border:1px solid #dcdcd6}
+  .word.w4{background:#FAF1E6;color:#96651b;border:1px solid #e6d3b4}
+  .word.na{background:#F7F7F5;color:#9a9a94;border:1px dashed #d5d5cf}
+  /* 根拠の数字 */
+  .ev{font-size:10.5px;color:var(--cap);margin-left:4px;font-variant-numeric:tabular-nums;font-weight:400}
+  .ev b{color:var(--sub);font-size:11.5px}
+  .ev.bad b{color:#a03535}
+
+  .cases{display:grid;grid-template-columns:1fr 1fr;gap:14px 20px}
+  @media(max-width:760px){.cases{grid-template-columns:1fr}}
+  .case{border:1px solid var(--rule);border-radius:4px;padding:10px 12px 12px;background:var(--sub-bg)}
+  .case.wide{grid-column:1/-1}
+  .casehd{font-size:11px;color:var(--cap);margin-bottom:7px}
+  .casehd .tag{display:inline-block;font-weight:700;color:#fff;background:#9a9a94;
+    border-radius:2px;padding:0 6px;margin-right:6px;font-size:10px;line-height:16px}
+  .case.good .casehd .tag{background:var(--hit)}
+  .case.bad .casehd .tag{background:#c47b00}
+  .case.none .casehd .tag{background:#a03535}
+
+  /* 一覧表 */
+  table.cmp{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:4px}
+  table.cmp th{color:var(--cap);font-weight:700;border-bottom:1px solid var(--rule-strong);
+    padding:5px 8px;text-align:left;font-size:11.5px}
+  table.cmp td{padding:6px 8px;border-bottom:1px solid var(--rule);vertical-align:middle}
+  table.cmp td.k{color:var(--cap);font-size:11.5px;white-space:nowrap}
+
+  .warnbox{background:#FDF6EC;border:1px solid #e6d3b4;border-radius:4px;padding:12px 14px;
+    font-size:12.5px;color:#7a5a1a;line-height:1.85;margin:0 0 18px}
+  .warnbox .hd{font-weight:700;margin-bottom:4px}
+  .warnbox table{border-collapse:collapse;margin-top:8px;font-size:12px;background:#fff}
+  .warnbox td,.warnbox th{border:1px solid #e6d3b4;padding:4px 9px;text-align:left}
+  .warnbox th{color:#96651b;font-size:11px}
+  .warnbox .x{color:#a03535;font-weight:700}
+</style>
+
+<div class="wrap">
+  <div class="pagehd">末脚の数字の言い方 4案</div>
+  <p class="pagesub">
+    言葉のピル（<span class="word w1">かなり速い</span><span class="word w2">速い</span><span class="word w3">ふつう</span><span class="word w4">遅め</span>）は案Bで確定。<br>
+    その横に添える<b>根拠の数字を「上位◯%」以外の言い方にする</b>4案です。数字はすべて実データ。
+  </p>
+
+  <!-- 同じ馬で4案を見比べ -->
+  <div class="card">
+    <span class="cardtag">見比べ</span>
+    <div class="cardttl">同じ1頭（4 ベイラム）を4案で書くと</div>
+    <table class="cmp">
+      <tr><th style="width:170px">案</th><th>表示</th></tr>
+      <tr><td class="k">現状（分かりにくい）</td>
+          <td><span class="hn wk2">4</span> ベイラム<span class="word w1">かなり速い</span><span class="ev">上位16%</span></td></tr>
+      <tr><td class="k">案1 言葉だけ</td>
+          <td><span class="hn wk2">4</span> ベイラム<span class="word w1">かなり速い</span></td></tr>
+      <tr><td class="k">案2 平均順位</td>
+          <td><span class="hn wk2">4</span> ベイラム<span class="word w1">かなり速い</span><span class="ev">上がり平均<b>3.4</b>位／12頭立て</span></td></tr>
+      <tr><td class="k">案3 このレースなら</td>
+          <td><span class="hn wk2">4</span> ベイラム<span class="word w1">かなり速い</span><span class="ev">この16頭なら上から<b>3</b>番手</span></td></tr>
+      <tr><td class="k">案4 何回速かったか</td>
+          <td><span class="hn wk2">4</span> ベイラム<span class="word w1">かなり速い</span><span class="ev">5走中<b>3</b>走で上がり3位以内</span></td></tr>
+    </table>
+  </div>
+
+  <!-- 落とし穴 -->
+  <div class="warnbox">
+    <div class="hd">⚠ 先に注意点（案2は実データで順番が逆に見えます）</div>
+    「平均◯位」は、出走頭数の大小を打ち消せません。<b>少ない頭数のレースを走った馬ほど、実力より良い順位に見えます。</b>
+    実際に「全部遅い」例でこうなりました。
+    <table>
+      <tr><th>並び順</th><th>馬</th><th>案2の表示</th><th>読み手の印象</th></tr>
+      <tr><td>1番目</td><td>12 ラッキーダンス</td><td>上がり平均 9.0位／16頭立て</td><td rowspan="2" class="x">下の馬のほうが速そうに見える</td></tr>
+      <tr><td>2番目</td><td>13 ジェロニモス</td><td>上がり平均 7.0位／11頭立て</td></tr>
+    </table>
+    16頭の中の9位と、11頭の中の7位。実力はラッキーダンスが上ですが、数字だけ見ると逆に見えます。
+    案3・案4はこの逆転が起きません。
+  </div>
+
+  <!-- ===== 案1 ===== -->
+  <div class="card">
+    <span class="cardtag">案1</span>
+    <div class="cardttl">言葉だけ ——「かなり速い」</div>
+    <p class="cardnote">数字をやめる。いちばん短くて、迷う余地がありません。</p>
+    <div class="cases">
+      <div class="case good">
+        <div class="casehd"><span class="tag">よく出る例</span>小倉 芝2600m 16頭／スロー「上がり勝負」</div>
+        <div class="subh">狙い（末脚順）</div>
+        <div class="reco">
+          <span class="nm"><span class="hn wk2">4</span> ベイラム<span class="word w1">かなり速い</span></span>
+          <span class="nm"><span class="hn wk7">14</span> クルミナーレ<span class="word w2">速い</span></span>
+          <span class="nm"><span class="hn wk5">9</span> エコロレイズ<span class="word w2">速い</span></span>
+        </div>
+      </div>
+      <div class="case bad">
+        <div class="casehd"><span class="tag">全部遅い</span>小倉 芝2000m 14頭／平均「一定ペース」</div>
+        <div class="subh">狙い（末脚順）</div>
+        <div class="reco">
+          <span class="nm"><span class="hn wk7">12</span> ラッキーダンス<span class="word w3">ふつう</span></span>
+          <span class="nm"><span class="hn wk8">13</span> ジェロニモス<span class="word w4">遅め</span></span>
+          <span class="nm"><span class="hn wk3">3</span> メリザンド<span class="word w4">遅め</span></span>
+        </div>
+      </div>
+      <div class="case none wide">
+        <div class="casehd"><span class="tag">材料なし</span>小倉 ダ1700m／過去走が足りない馬ばかりのレース</div>
+        <div class="reco">
+          <span class="nm"><span class="hn wk1">1</span> ホノボノ<span class="word na">データ不足</span></span>
+          <span class="nm"><span class="hn wk2">2</span> ボールドタワー<span class="word na">データ不足</span></span>
+          <span class="nm"><span class="hn wk3">3</span> エルアン<span class="word na">データ不足</span></span>
+        </div>
+      </div>
+    </div>
+    <div class="kicklegend">ゴール前の脚の速さ。過去5走の上がり3F（最後の600m）が、同じレースの出走馬の中でどのあたりだったかで4段に分けています。</div>
+    <div class="pros">
+      <b class="ok">良い点</b> ／ 短い。3頭が横に並んでも窮屈にならない。逆転して見える心配もゼロ。<br>
+      <b>弱い点</b> ／ 根拠が見えないので、納得できないとき確かめようがない。「速い」が2頭並ぶと差が分からない。
+    </div>
+  </div>
+
+  <!-- ===== 案3（推し） ===== -->
+  <div class="card">
+    <span class="cardtag rec">案3 ・ おすすめ</span>
+    <div class="cardttl">このレースなら ——「この16頭なら上から3番手」</div>
+    <p class="cardnote">
+      いま見ているレースの頭数に置き換えて言う。%も出てこないし、「上から3番手の脚」は
+      そのまま意味が分かります。3頭とも同じ頭数で揃うので、<b>並び順と数字が必ず一致します。</b>
+    </p>
+    <div class="cases">
+      <div class="case good">
+        <div class="casehd"><span class="tag">よく出る例</span>小倉 芝2600m 16頭／スロー「上がり勝負」</div>
+        <div class="subh">狙い（末脚順）</div>
+        <div class="reco">
+          <span class="nm"><span class="hn wk2">4</span> ベイラム<span class="word w1">かなり速い</span><span class="ev">この16頭なら上から<b>3</b>番手</span></span>
+          <span class="nm"><span class="hn wk7">14</span> クルミナーレ<span class="word w2">速い</span><span class="ev">上から<b>5</b>番手</span></span>
+          <span class="nm"><span class="hn wk5">9</span> エコロレイズ<span class="word w2">速い</span><span class="ev">上から<b>7</b>番手</span></span>
+        </div>
+      </div>
+      <div class="case bad">
+        <div class="casehd"><span class="tag">全部遅い</span>小倉 芝2000m 14頭／平均「一定ペース」</div>
+        <div class="subh">狙い（末脚順）</div>
+        <div class="reco">
+          <span class="nm"><span class="hn wk7">12</span> ラッキーダンス<span class="word w3">ふつう</span><span class="ev">この14頭なら上から<b>8</b>番手</span></span>
+          <span class="nm"><span class="hn wk8">13</span> ジェロニモス<span class="word w4">遅め</span><span class="ev">上から<b>9</b>番手</span></span>
+          <span class="nm"><span class="hn wk3">3</span> メリザンド<span class="word w4">遅め</span><span class="ev">上から<b>9</b>番手</span></span>
+        </div>
+      </div>
+      <div class="case none wide">
+        <div class="casehd"><span class="tag">材料なし</span>小倉 ダ1700m／過去走が足りない馬ばかりのレース</div>
+        <div class="reco">
+          <span class="nm"><span class="hn wk1">1</span> ホノボノ<span class="word na">データ不足</span><span class="ev">過去走が2走に届かず</span></span>
+          <span class="nm"><span class="hn wk2">2</span> ボールドタワー<span class="word na">データ不足</span></span>
+          <span class="nm"><span class="hn wk3">3</span> エルアン<span class="word na">データ不足</span></span>
+        </div>
+      </div>
+    </div>
+    <div class="kicklegend">
+      過去5走のゴール前の脚を、このレースの頭数に置き換えるとだいたい何番手か。小さいほど速い。
+      「上から8番手」は、14頭のちょうど真ん中より下＝末脚勝負にはなりにくい、という読み方になります。
+    </div>
+    <div class="pros">
+      <b class="ok">良い点</b> ／ %が出てこない。順番と数字が必ず揃う（逆転しない）。
+      「16頭で3番手」と「14頭で8番手」の重みの違いが、そのまま伝わる。<br>
+      <b>弱い点</b> ／ 「なら」が仮の話なので、実際の出走馬の順位と混同されうる。1頭目だけ頭数を書いて2頭目以降は省く形にしています。
+    </div>
+  </div>
+
+  <!-- ===== 案4 ===== -->
+  <div class="card">
+    <span class="cardtag">案4</span>
+    <div class="cardttl">何回速かったか ——「5走中3走で上がり3位以内」</div>
+    <p class="cardnote">
+      平均をやめて、回数で言う。「5回走って3回は上がり3位以内だった」。
+      いちばん具体的で、話し言葉に近い言い方です。
+    </p>
+    <div class="cases">
+      <div class="case good">
+        <div class="casehd"><span class="tag">よく出る例</span>小倉 芝2600m 16頭／スロー「上がり勝負」</div>
+        <div class="subh">狙い（末脚順）</div>
+        <div class="reco">
+          <span class="nm"><span class="hn wk2">4</span> ベイラム<span class="word w1">かなり速い</span><span class="ev">5走中<b>3</b>走で上がり3位以内</span></span>
+          <span class="nm"><span class="hn wk7">14</span> クルミナーレ<span class="word w2">速い</span><span class="ev">5走中<b>3</b>走</span></span>
+          <span class="nm"><span class="hn wk5">9</span> エコロレイズ<span class="word w2">速い</span><span class="ev">5走中<b>2</b>走</span></span>
+        </div>
+      </div>
+      <div class="case bad">
+        <div class="casehd"><span class="tag">全部遅い</span>小倉 芝2000m 14頭／平均「一定ペース」</div>
+        <div class="subh">狙い（末脚順）</div>
+        <div class="reco">
+          <span class="nm"><span class="hn wk7">12</span> ラッキーダンス<span class="word w3">ふつう</span><span class="ev">5走中<b>1</b>走で上がり3位以内</span></span>
+          <span class="nm"><span class="hn wk8">13</span> ジェロニモス<span class="word w4">遅め</span><span class="ev">5走中<b>1</b>走</span></span>
+          <span class="nm"><span class="hn wk3">3</span> メリザンド<span class="word w4">遅め</span><span class="ev bad">5走中<b>0</b>走</span></span>
+        </div>
+      </div>
+      <div class="case none wide">
+        <div class="casehd"><span class="tag">材料なし</span>小倉 ダ1700m／過去走が足りない馬ばかりのレース</div>
+        <div class="reco">
+          <span class="nm"><span class="hn wk1">1</span> ホノボノ<span class="word na">データ不足</span><span class="ev">上がりの記録がある過去走が2走未満</span></span>
+          <span class="nm"><span class="hn wk2">2</span> ボールドタワー<span class="word na">データ不足</span></span>
+          <span class="nm"><span class="hn wk3">3</span> エルアン<span class="word na">データ不足</span></span>
+        </div>
+      </div>
+    </div>
+    <div class="kicklegend">過去5走のうち、ゴール前の脚（上がり3F）が出走馬の中で3位以内だった回数。</div>
+    <div class="pros">
+      <b class="ok">良い点</b> ／ いちばん具体的で腑に落ちる。「0走」が強い警告になる。<br>
+      <b class="ng">弱い点</b> ／ 言葉のピルとは<b>別の計算</b>になるので、たまに噛み合わない（「速い」なのに1走だけ、等）。
+      上の例でも1番目と2番目が同じ「1走」で差が出ていません。数字が2つの意味を持つのは危ない。
+    </div>
+  </div>
+
+  <!-- ===== 案2 ===== -->
+  <div class="card">
+    <span class="cardtag warn">案2 ・ 非推奨</span>
+    <div class="cardttl">平均順位 ——「上がり平均 3.4位／12頭立て」</div>
+    <p class="cardnote">
+      競馬でいちばん自然な言い方（「上がり3位」）ですが、上の注意点のとおり
+      <b>頭数の違いで順番が逆に見える</b>ため、そのままは勧めません。参考として並べます。
+    </p>
+    <div class="cases">
+      <div class="case good">
+        <div class="casehd"><span class="tag">よく出る例</span>小倉 芝2600m 16頭／スロー「上がり勝負」</div>
+        <div class="subh">狙い（末脚順）</div>
+        <div class="reco">
+          <span class="nm"><span class="hn wk2">4</span> ベイラム<span class="word w1">かなり速い</span><span class="ev">上がり平均<b>3.4</b>位／12頭立て</span></span>
+          <span class="nm"><span class="hn wk7">14</span> クルミナーレ<span class="word w2">速い</span><span class="ev">上がり平均<b>3.8</b>位／9頭立て</span></span>
+          <span class="nm"><span class="hn wk5">9</span> エコロレイズ<span class="word w2">速い</span><span class="ev">上がり平均<b>4.8</b>位／11頭立て</span></span>
+        </div>
+      </div>
+      <div class="case bad">
+        <div class="casehd"><span class="tag">全部遅い</span>小倉 芝2000m 14頭／← ここで逆転して見える</div>
+        <div class="subh">狙い（末脚順）</div>
+        <div class="reco">
+          <span class="nm"><span class="hn wk7">12</span> ラッキーダンス<span class="word w3">ふつう</span><span class="ev bad">上がり平均<b>9.0</b>位／16頭立て</span></span>
+          <span class="nm"><span class="hn wk8">13</span> ジェロニモス<span class="word w4">遅め</span><span class="ev bad">上がり平均<b>7.0</b>位／11頭立て</span></span>
+          <span class="nm"><span class="hn wk3">3</span> メリザンド<span class="word w4">遅め</span><span class="ev">上がり平均<b>10.2</b>位／16頭立て</span></span>
+        </div>
+      </div>
+    </div>
+    <div class="pros">
+      <b class="ng">問題</b> ／ 1番目（9.0位）より2番目（7.0位）のほうが速そうに見える。頭数を併記しても、
+      とっさには読み替えられません。
+    </div>
+  </div>
+
+</div>
