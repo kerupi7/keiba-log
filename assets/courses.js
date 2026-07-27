@@ -38,6 +38,10 @@ function filterAxisLabel(filterKey) {
   if (filterKey.startsWith('cls:')) return `${filterKey.slice(4)}クラス`;
   if (filterKey.startsWith('year:')) return `${filterKey.slice(5)}年`;
   if (filterKey.startsWith('going:')) return `馬場:${filterKey.slice(6)}`;
+  if (filterKey.startsWith('rail:')) {
+    const v = filterKey.slice(5);
+    return v === '不明' ? '仮柵:記録なし' : `仮柵:${v}コース`;
+  }
   return '全クラス・全期間・全馬場';
 }
 
@@ -500,6 +504,14 @@ function renderDetail(data, filterKey, opts) {
     .filter((k) => k.startsWith('year:')).map((k) => k.slice(5)).sort();
   const yearOptions = [['all', '全期間'], ...years.map((y) => [y, `${y.slice(2)}年`])];
 
+  // 仮柵（移動柵）。芝だけの概念なのでダートには行ごと出さない。選択肢はデータに
+  // 実在するものだけを並べる（Dコースを使わないコースにDの空チップを出さない）。
+  const railOrder = ['A', 'B', 'C', 'D', '不明'];
+  const rails = railOrder.filter((v) => (data.filters[`rail:${v}`] || {}).n > 0);
+  const railOptions = rails.length
+    ? [['all', '全体'], ...rails.map((v) => [v, v === '不明' ? '記録なし' : `${v}コース`])]
+    : [];
+
   const label = filterAxisLabel(data.filters[filterKey] ? filterKey : 'all');
   const totalRuns = Object.values(f.gate).reduce((s, v) => s + v[0], 0);
   const warnHtml = t.msg ? `<div class="warn ${t.k}">${escapeHtml(t.msg)}</div>` : '';
@@ -519,6 +531,7 @@ function renderDetail(data, filterKey, opts) {
       ${renderFilterRow('クラス', 'cls', CLASSES, data, filterKey)}
       ${renderFilterRow('年代', 'year', yearOptions, data, filterKey)}
       ${renderFilterRow('馬場', 'going', GOINGS, data, filterKey)}
+      ${railOptions.length ? renderFilterRow('仮柵', 'rail', railOptions, data, filterKey) : ''}
     </div>
     ${warnHtml}
     <div class="eyebrow">サマリー</div>
@@ -545,6 +558,10 @@ function renderDetail(data, filterKey, opts) {
       <b>指標名をタップすると、その数字の良い順に並べ替わります</b>（もう一度タップで元の並びに戻る）。
       順位付けは走数30以上の行のみが対象です。<b>単回収・複回収は参考情報として無着色で表示</b>しています。
       サンプル量では最大配当1〜2本で結果が反転しうるため、買い判断には使わず勝率・複勝率を見てください。
+      <b>仮柵</b>は芝の内ラチの位置（Aが最も内・B以降は外へ動かす）で、芝のコースにのみ表示します。
+      「記録なし」は柵の位置を採れていないレースです。<b>仮柵で絞ると1区分あたり数十レースまで減ります</b>。
+      手元データで検定した範囲では、仮柵ごとの枠順の差は同じ数のレースをでたらめに分けた場合と区別がつきませんでした
+      （全コースをまとめた傾きは仮柵1段あたり+0.63ポイント、対照の95%範囲±2.3ポイント）。傾向として読まず、内訳の確認に使ってください。
     </div>
     <div class="foot">Ans.収録レース（2023年〜・JRA平地）の自社集計です。netkeiba等の公表値とは集計範囲・期間が異なります。率がグレーの行は走数30未満で参考値です。</div>`;
 }
