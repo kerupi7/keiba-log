@@ -1170,10 +1170,46 @@ function renderOverview20(site) {
       return `<div class="cell h${c}">${wakuBox(g.gate, 'sm')}<span class="v ${c}">${g.ratio.toFixed(2)}</span></div>`;
     }).join('');
     const hasNd = p.inner_outer_bias.gates.some((g) => g.ratio == null);
+    // 内回り／外回りが混在するコース（京都芝1600/1400・新潟芝2000）では、どちらの
+    // 数字を見ているのかを出す。混在しないコースでは scope が無く、何も足さない。
+    const scopeHtml = p.inner_outer_bias.scope
+      ? `<span class="scope">${escapeHtml(p.inner_outer_bias.scope)}の成績</span>` : '';
     sections.push(`
-      <div class="biaslabel"><b>内外バイアス</b> ${escapeHtml(p.inner_outer_bias.label)}</div>
+      <div class="biaslabel"><b>このコースの枠順成績</b> ${escapeHtml(p.inner_outer_bias.label)}${scopeHtml}</div>
       <div class="strip">${cellsHtml}</div>
-      <div class="striplegend">緑=有利 / 赤=不利、濃いほど強い（1.00=標準）${hasNd ? ' / —=走数不足で判定なし' : ''}</div>
+      <div class="striplegend">過去数年の平均で、今日の馬場の傾向ではありません。緑=有利 / 赤=不利、濃いほど強い（1.00=標準）${hasNd ? ' / —=走数不足で判定なし' : ''}</div>
+    `);
+  }
+
+  // (d-2) 今日の馬場（当日バイアス）
+  // 上の帯がコースの過去平均なのに対し、こちらは「今日ここまでに終わったレース」だけを見る。
+  // 2026-07-27の検証で、内外の偏りは実在する（同じ日の別の競馬場を予測子にすると
+  // ゼロになる＝競馬場ごとの現象）ことを確認済み。ただし効果は採点に足す基準の1/5で、
+  // 予想の当たり具合は作り方2通り・物差し2通りとも改善しなかったため点数には入れない。
+  // 人が他の材料と合わせて見るための材料として出す。
+  if (p.day_bias && p.day_bias.surfaces && Object.keys(p.day_bias.surfaces).length) {
+    const rows = Object.entries(p.day_bias.surfaces).map(([surf, s]) => {
+      const cls = s.label === '大きな偏りなし' ? 'flat' : 'lean';
+      return `<tr>
+        <td class="sf">${escapeHtml(surf)}</td>
+        <td class="pct">内 ${s.inner_pct.toFixed(1)}%</td>
+        <td class="pct">外 ${s.outer_pct.toFixed(1)}%</td>
+        <td class="diff ${s.diff >= 0 ? 'in' : 'out'}">${s.diff >= 0 ? '+' : ''}${s.diff.toFixed(1)}pt</td>
+        <td class="lab ${cls}">${escapeHtml(s.label)}</td>
+        <td class="n">${s.n_races}R</td>
+      </tr>`;
+    }).join('');
+    const fw = p.day_bias.front_wins || 0;
+    const rw = p.day_bias.rear_wins || 0;
+    const paceNote = p.day_bias.pace_label
+      ? `／ ペースは${escapeHtml(p.day_bias.pace_label)}` : '';
+    sections.push(`
+      <div class="biaslabel"><b>今日の馬場</b>
+        <span class="scope">ここまで${p.day_bias.n_races}レース</span></div>
+      <table class="daybias"><tbody>${rows}</tbody></table>
+      <div class="striplegend">数字は3着内に入った割合（内＝1〜4枠 / 外＝5〜8枠）。
+        前が残ったレース ${fw} / 差しが決まったレース ${rw}${paceNote}。
+        <b>点数には入れていません</b>。偏りは実在しますが、当たり具合を良くするほどの大きさは確認できていないためです。</div>
     `);
   }
 
@@ -1214,15 +1250,27 @@ function renderOverview20(site) {
       return '';
     };
     let otherTitle = '';
+    // 90-spec: pass_time（通過タイム秒）は本命/対抗の行にだけ併記する。otherには出さない。
+    // 文言はバックエンド生成のlabelをそのまま使い、JS側で文字列を組み立てない。
+    let hasPassTime = false;
     const blocksHtml = blocks.map(({ key, cls }) => {
       const s = p.scenario[key];
       if (!s) return '';
       const pctHtml = `<span class="p">${Math.round(s.prob * 100)}%</span>`;
       if (key === 'other') otherTitle = s.title; // otherは畳む：ヘッダ（ペース名＋%）だけ表示
-      return `<div class="scn${cls}"><div class="hd">${roleBadgeHtml(s.display_role)}${escapeHtml(s.title)}${pctHtml}</div></div>`;
+      let passTimeHtml = '';
+      if (key !== 'other' && s.pass_time && s.pass_time.label) {
+        hasPassTime = true;
+        passTimeHtml = `<span class="passtime">${escapeHtml(s.pass_time.label)}</span>`;
+      }
+      return `<div class="scn${cls}"><div class="hd">${roleBadgeHtml(s.display_role)}${escapeHtml(s.title)}${pctHtml}${passTimeHtml}</div></div>`;
     }).join('');
     const foldNoteHtml = otherTitle
       ? `<div class="foldnote">3つ目（${escapeHtml(otherTitle)}）は薄く畳む。可能性は残すが主役にしない。</div>`
+      : '';
+    // 本命/対抗のどちらかにpass_timeがある時だけ、誤差幅の注記を出す（断定に見せないため必須）
+    const passTimeNoteHtml = hasPassTime
+      ? '<div class="foldnote">過去の同コースの実績から出した目安。誤差はおおむね±1秒（実測で76%が±1秒以内）。</div>'
       : '';
 
     // 狙い（末脚順）: main/sub/otherで共通の固定3頭（scenario.main.favorites・pick_favoritesが末脚順で確定済み）を1回だけ表示
@@ -1242,7 +1290,7 @@ function renderOverview20(site) {
         + 'ペースが本命でも対抗でも、狙いは末脚の質で決める（展開で入れ替えない）。</div>';
       recoHtml = `<div class="subh">狙い（末脚順）</div><div class="reco">${recoItems}</div>${legendHtml}`;
     }
-    sections.push(`<div class="subh">展開シナリオ（本命＋対抗）</div>${blocksHtml}${foldNoteHtml}${recoHtml}`);
+    sections.push(`<div class="subh">展開シナリオ（本命＋対抗）</div>${blocksHtml}${foldNoteHtml}${passTimeNoteHtml}${recoHtml}`);
   }
 
   return `

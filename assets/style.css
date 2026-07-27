@@ -606,9 +606,26 @@ details.subfold>summary .sc{margin-left:auto;color:var(--navy);
 .race20 .pmlegend .sw.nige{background:var(--orange)}
 .race20 .pmlegend .sw.jirai{background:var(--live)}
 
-/* 内外バイアス */
+/* このコースの枠順成績（旧「内外バイアス」。当日の馬場ではなく過去平均） */
 .race20 .biaslabel{font-size:12.5px;color:var(--sub);margin:9px 0 5px}
 .race20 .biaslabel b{color:var(--text)}
+/* 内外が混在するコースで、どちらの数字を見ているかを示すチップ */
+.race20 .biaslabel .scope{display:inline-block;margin-left:6px;padding:1px 6px;
+  border-radius:3px;background:rgba(127,127,127,.14);font-size:11.5px}
+
+/* 今日の馬場（当日バイアス）。上の帯と違い、その日の先行レースだけを見た数字 */
+.race20 table.daybias{border-collapse:collapse;width:100%;font-size:12.5px;margin:2px 0 4px}
+.race20 table.daybias td{padding:5px 8px;border-bottom:1px solid var(--line);
+  font-variant-numeric:tabular-nums;white-space:nowrap}
+.race20 table.daybias tr:last-child td{border-bottom:0}
+.race20 table.daybias .sf{font-weight:700;width:3.5em}
+.race20 table.daybias .pct{color:var(--sub)}
+.race20 table.daybias .diff{font-weight:700;text-align:right}
+.race20 table.daybias .diff.in{color:#0F7A3D}
+.race20 table.daybias .diff.out{color:#B3352F}
+.race20 table.daybias .lab.flat{color:var(--sub)}
+.race20 table.daybias .lab.lean{font-weight:700}
+.race20 table.daybias .n{color:var(--sub);text-align:right}
 /* 枠の識別＝馬番と同じJRA枠色バッジ / 有利不利＝セル背景の濃淡（緑=有利・赤=不利）。並びは枠順のまま */
 .race20 .strip{display:flex;gap:3px;padding:2px 0}
 .race20 .strip .cell{flex:1;min-width:0;border-radius:4px;padding:6px 0 7px;
@@ -636,6 +653,9 @@ details.subfold>summary .sc{margin-left:auto;color:var(--navy);
 .race20 .scn.sub{border-color:#9db2c8} .race20 .scn.etc{border-color:#c9c9c4}
 .race20 .scn .hd{font-size:13.5px;font-weight:700}
 .race20 .scn .hd .p{color:var(--navy);margin-left:4px}
+/* 90-pass-time-display-spec: 通過タイム秒。確率より弱いウェイト（グレー・小さいフォント・非太字） */
+.race20 .scn .hd .passtime{display:inline-block;margin-left:8px;font-size:11px;
+  font-weight:400;color:var(--cap);white-space:nowrap;vertical-align:middle}
 .race20 .scn .fav{margin-top:5px;font-size:12.5px;color:var(--text)}
 .race20 .scn .tag{display:inline-block;font-size:11px;font-weight:700;background:var(--navy);color:#fff;border-radius:2px;padding:1px 6px;margin-right:6px}
 .race20 .scn.sub .tag{background:#5C7A99} .race20 .scn.etc .tag{background:#9a9a94}
