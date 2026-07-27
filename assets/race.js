@@ -1024,7 +1024,7 @@ function renderPaceMap20(site) {
   return `
     <div class="subh">脚質マップ</div>
     <div class="pacemap">${lanes}${restLane}</div>
-    <div class="pmlegend">複勝率はこのコースの脚質別実績（勝率・連対率は下の脚質傾向）。馬番の下は印、枠線は
+    <div class="pmlegend">複勝率はこのコースの脚質別実績（勝率・連対率は上の脚質傾向）。馬番の下は印、枠線は
       <span class="sw nige"></span>主逃げ候補 /
       <span class="sw jirai"></span>地雷</div>
   `;
@@ -1061,10 +1061,10 @@ function renderOverview20(site) {
     `);
   }
 
-  // (c) 脚質マップ（各脚質に出走馬を並べる）＋ 脚質傾向（コース別実績の内訳・従来どおり）
+  // (c) 脚質傾向（コース別実績の内訳）＋ 脚質マップ（各脚質に出走馬を並べる）
+  // 2026-07-27: マップ→傾向 だった並びを逆にした。先にこのコースの傾向を見て、
+  // そのあと出走馬がどの脚質に入っているかを見る流れにする。
   if (p.leg_bias && p.leg_bias.length) {
-    sections.push(renderPaceMap20(site));
-
     // 数値セルは列ごとに濃淡を付ける（同じ列の脚質どうしの比較。列をまたぐ比較ではない）。
     // 判定ピルは5段階の発散スケールで、マップ側と同じ色。
     const cols = { win_rate: [], rentai_rate: [], fukusho_rate: [] };
@@ -1085,6 +1085,8 @@ function renderOverview20(site) {
       <div class="pmlegend">数字のマスの濃さは、その列の中での順位（緑＝その列で強い / 赤＝弱い）。
         判定は複勝率と勝率から決めるので、マスの色とは一致しないことがあります</div>
     `);
+
+    sections.push(renderPaceMap20(site));
   }
 
   // (d) 内外バイアス
