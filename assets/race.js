@@ -572,117 +572,16 @@ function renderCounterFold(site) {
   `;
 }
 
-// ===== ⑥ 買い目シミュレーター（17-odds-master-spec.md §6。T4: B.手動シミュレーターのみ。
-//         A.印馬のおすすめ はT5で追加）=====
+// ===== ⑥ 買い目シミュレーター（17-odds-master-spec.md §6）=====
 // 計算はすべて Harville（assets/harville.js・T1）を呼ぶ。ここでは数式を書かない。
-
-const OM_TICKET_TYPES = [
-  { type: 'tansho', label: '単勝' },
-  { type: 'fukusho', label: '複勝' },
-  { type: 'wide', label: 'ワイド' },
-  { type: 'umaren', label: '馬連' },
-  { type: 'umatan', label: '馬単' },
-  { type: 'sanrenpuku', label: '3連複' },
-  { type: 'sanrentan', label: '3連単' },
-];
-// 表A（印馬のおすすめ）の表示順に使う券種インデックス（OM_TICKET_TYPESの並び＝単勝→…→3連単）
-const OM_TYPE_ORDER = Object.fromEntries(OM_TICKET_TYPES.map((t, i) => [t.type, i]));
-// 45-spec §2: 手動シミュレーター(Block B)のstate/列挙/描画は assets/simulator.js（window.Simulator）に移設。
-// Block A（印馬のおすすめ・以下）はそのまま。OM_TICKET_TYPES/OM_TYPE_ORDERはBlock Aの表示順に使うため残す。
-
-// omFmtBuyLine/Odds/Ev/Combo は Block A（印馬のおすすめ）で使用。omFmtProb/omJudgeCell/
-// omFmtComboWithMarks は Block B 撤去に伴い未使用となったため削除（45-spec レビュー指摘③）。
-function omFmtBuyLine(buyLine) {
-  return buyLine === null || buyLine === undefined ? '—' : `${buyLine.toFixed(1)}倍`;
-}
-
-// 複勝・ワイドはmin側（最低オッズ）を表示。「〜」は付けない（最低倍率だけ載せる方針）
-function omFmtOdds(type, odds) {
-  if (odds === null || odds === undefined) return '—';
-  return `${odds}`;
-}
-
-function omFmtEv(ev) {
-  if (ev === null || ev === undefined) return '—';
-  const txt = ev.toFixed(2);
-  // 判定列の代替: 期待値プラス（>1.0）は緑で強調する
-  return ev > 1.0 ? `<span class="om-ev-plus">${txt}</span>` : txt;
-}
-
-// 買い目表示: normKeyで並びを正規化し、馬番を枠色ボックスで表示する（買い目・払戻表と同じ見た目）。
-// byNumber は 馬番→horse の辞書（gate参照用）。返り値はHTML。呼び出し側は escapeHtml しないこと。
-function omFmtCombo(type, ids, byNumber) {
-  const nums = Harville.normKey(type, ids).split('-').map(Number);
-  return comboBoxes(type, nums, byNumber || {});
-}
-
-// ===== §6.2 A. 印馬のおすすめ（自動・T5） =====
-// ability_mark ∈ {◎,○,▲,△} かつ非取消かつ estimated_prob 有効な馬のみを候補にする（§6.5）。
-// アルゴリズムは Harville.recommend()（T1・軸固定しない完全総当たり）に一任し、ここでは計算しない。
-
-const OM_CANDIDATE_MARKS = new Set(['◎', '○', '▲', '△']);
-const OM_RECOMMEND_LIMIT = 20;
-
-function omMarkedNumbers(site, probs) {
-  return site.horses
-    .filter((h) => OM_CANDIDATE_MARKS.has(h.ability_mark) && !h.scratched && (h.number in probs))
-    .map((h) => h.number);
-}
-
-function omRenderRecommendRow(entry, byNumber) {
-  return `
-    <tr>
-      <td class="l">${escapeHtml(payoutTypeLabel(entry.type))}</td>
-      <td class="l om-combo">${omFmtCombo(entry.type, entry.ids, byNumber)}</td>
-      <td>${omFmtBuyLine(entry.buyLine)}</td>
-      <td class="sep">${omFmtOdds(entry.type, entry.odds)}</td>
-      <td class="sep">${omFmtEv(entry.ev)}</td>
-    </tr>
-  `;
-}
-
-function omRenderBlockA(site, probs, heads, oddsAll) {
-  const heading = `<div class="om-subhead">A. 印馬のおすすめ（自動）</div>`;
-
-  if (!oddsAll) {
-    return `${heading}<div class="om-empty">オッズ未取得のため、おすすめは発売中のみ表示されます</div>`;
-  }
-
-  const markedNums = omMarkedNumbers(site, probs);
-  if (markedNums.length === 0) {
-    return `${heading}<div class="om-empty">印馬がありません</div>`;
-  }
-
-  const intro = `<div class="om-note">◎○▲△の全組み合わせ×全券種を試し、期待値が1.0倍を超えるものだけを券種順に表示（各券種内はEV順）</div>`;
-  const entries = Harville.recommend(markedNums, probs, heads, oddsAll);
-  if (entries.length === 0) {
-    return `${heading}${intro}<div class="om-empty">現在のオッズでは、期待値が1.0倍を超える印馬の組み合わせはありません</div>`;
-  }
-
-  // 馬番→horse（枠色ボックスの gate 参照用）
-  const byNumber = {};
-  for (const h of site.horses) byNumber[h.number] = h;
-
-  // 上位20点（EV順）を選んだうえで、表示は券種順（各券種内はEV降順）に並べ替える
-  const shown = entries.slice(0, OM_RECOMMEND_LIMIT).sort((a, b) => {
-    const ta = OM_TYPE_ORDER[a.type] ?? 99, tb = OM_TYPE_ORDER[b.type] ?? 99;
-    if (ta !== tb) return ta - tb;
-    return (b.ev ?? -Infinity) - (a.ev ?? -Infinity);
-  });
-  const restCount = entries.length - shown.length;
-  const headerRow = `<tr><th class="l">券種</th><th class="l">買い目</th><th>買いライン</th><th class="sep">現在</th><th class="sep">EV</th></tr>`;
-  const bodyRows = shown.map((r) => omRenderRecommendRow(r, byNumber)).join('');
-  const moreLine = restCount > 0 ? `<div class="om-more">…他${restCount}点</div>` : '';
-  const colgroupA = '<colgroup><col style="width:15%"><col style="width:37%"><col style="width:18%">' +
-    '<col style="width:15%"><col style="width:15%"></colgroup>';
-
-  return `
-    ${heading}
-    ${intro}
-    <table class="fixed om-table">${colgroupA}<thead>${headerRow}</thead><tbody>${bodyRows}</tbody></table>
-    ${moreLine}
-  `;
-}
+//
+// 「A. 印馬のおすすめ（自動）」は撤去した（2026-07-27）。EV = 自前の確率 × オッズ だが、
+// 自前の確率は市場オッズより当たらないと実測済み（期間外logloss 1.9928 vs 市場1.9594）。
+// つまり「EV>1.0」は「自前の確率がオッズと食い違った」＝こちらの読み違いが大きい買い目を
+// 選び出す逆選択になっており、単勝EV買いの実測ROIは0.653（全馬ベタ買いより悪い）。
+// 加えて、下のアキネーターはEVを出さず当たる確率・払戻のはばで語る設計のため、同一画面で
+// 矛盾していた。Harville.recommend() はこのブロック専用だったが harville.js は不変更契約の
+// ため残置（未使用）。
 
 function renderOddsMasterSection(site, oddsAll) {
   const built = Harville.buildProbs(site.horses);
@@ -707,7 +606,6 @@ function renderOddsMasterSection(site, oddsAll) {
     <details class="fold om-fold"${openAttr}>
       <summary><span class="tri"></span>買い目シミュレーター${tsLabel}</summary>
       <div class="fold-body">
-        ${omRenderBlockA(site, built.probs, built.heads, oddsAll)}
         ${panels}
         <div class="om-footnote">
           <div>買いライン＝期待値がトントン（1.0倍）になるオッズ。それ以上なら理論上プラス</div>
