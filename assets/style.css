@@ -499,22 +499,36 @@ details.subfold>summary .sc{margin-left:auto;color:var(--navy);
 .race20 .jw{font-weight:700}
 .race20 .jw.good{color:var(--navy)} .race20 .jw.bad{color:#b23b3b} .race20 .jw.vbad{color:var(--live)}
 
+/* 脚質の判定5段階（内外バイアスの帯と同じ発散スケール）。
+   --jbg=面 / --jfg=文字 / --jbar=罫。マップのレーンと脚質傾向の判定ピルで共有する */
+.race20 .j-p2{--jbg:#CBE5D6; --jfg:#0C5C2D; --jbar:#2E7D4F}
+.race20 .j-p1{--jbg:#E7F3EA; --jfg:#276B43; --jbar:#5FA07A}
+.race20 .j-z0{--jbg:#F1F1EE; --jfg:#6E6E68; --jbar:#B4B4AC}
+.race20 .j-m1{--jbg:#FBE9E9; --jfg:#A83232; --jbar:#D08A8A}
+.race20 .j-m2{--jbg:#F6D5D5; --jfg:#A32B1F; --jbar:#C05B4B}
+/* 脚質傾向の数値セル（列内の順位で塗る）。判定ピルとは別スケールなので凡例で断る */
+.race20 .kg.heat td.hv{border-radius:0}
+.race20 .kg.heat td.hv.h2{background:#CBE5D6;color:#0C5C2D;font-weight:700}
+.race20 .kg.heat td.hv.h1{background:#E7F3EA;color:#276B43}
+.race20 .kg.heat td.hv.h0{background:#F7F7F5}
+.race20 .kg.heat td.hv.hm1{background:#FBE9E9;color:#A83232}
+.race20 .kg.heat td.hv.hm2{background:#F6D5D5;color:#A32B1F;font-weight:700}
+.race20 .kg.heat .jpill{display:inline-block;font-size:11.5px;font-weight:700;border-radius:3px;
+  padding:1px 7px;background:var(--jbg);color:var(--jfg)}
+
 /* 脚質マップ（4レーン・脚質傾向の各行に出走馬を並べる） */
 .race20 .pacemap{margin-top:5px;border-top:1px solid var(--rule)}
 .race20 .pacemap .lane{display:flex;align-items:flex-start;gap:8px;padding:8px 6px;
-  border-bottom:1px solid var(--rule);border-left:3px solid transparent}
-.race20 .pacemap .lane.j-good{border-left-color:var(--hit);background:#F3F9F5}
-.race20 .pacemap .lane.j-bad{border-left-color:#d9b3b3;background:#FCF6F6}
-.race20 .pacemap .lane.j-vbad{border-left-color:var(--live);background:#FBEFEF}
+  border-bottom:1px solid var(--rule);
+  border-left:3px solid var(--jbar,transparent);background:var(--jbg,transparent)}
 .race20 .pacemap .lb{width:118px;flex:none}
 .race20 .pacemap .lb .nm{font-size:13px;font-weight:700}
 .race20 .pacemap .lb .rt{font-size:10.5px;color:var(--cap);white-space:nowrap;
   letter-spacing:-0.02em;font-variant-numeric:tabular-nums}
+/* レーンの面が判定色なので、バッジは白地＋判定色の枠線で抜く */
 .race20 .pacemap .lb .jw{display:inline-block;font-size:10px;font-weight:700;
-  border-radius:2px;padding:0 4px;margin-top:2px}
-.race20 .pacemap .jw.good{background:var(--chip-under-bg);color:var(--chip-under-fg)}
-.race20 .pacemap .jw.bad{background:#F3EDE9;color:#8a6a55}
-.race20 .pacemap .jw.vbad{background:#FBE9E9;color:var(--live)}
+  border-radius:2px;padding:0 5px;margin-top:3px;
+  background:#fff;color:var(--jfg,var(--cap));box-shadow:inset 0 0 0 1px var(--jbar,var(--rule))}
 .race20 .pacemap .horses{display:flex;flex-wrap:wrap;gap:2px 0;flex:1;min-width:0}
 .race20 .pacemap .horses .none{font-size:11px;color:var(--cap);align-self:center}
 .race20 .pacemap .num{font-size:11px;color:var(--cap);align-self:center;flex:none;width:26px;text-align:right}

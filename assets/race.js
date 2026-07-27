@@ -928,7 +928,35 @@ function buildRace20Html(site, oddsAll) {
 // 脚質マップ: leg_bias の4行（逃げ/先行/差し/追込）に、その脚質の出走馬を馬番ボックスで並べる。
 // 行頭はコース別の実績（勝率・複勝率・走数）と有利不利の判定、行末は頭数。
 const PACE_STYLE_KEY = { '逃げ': '逃', '先行': '先', '差し': '差', '追込': '追' };
-const PACE_JUDG_CLASS = { '有利': 'good', 'やや有利': 'good', 'やや不利': 'bad', '不利': 'vbad', '強く不利': 'vbad' };
+// 判定は5段階。内外バイアスの帯と同じ発散スケール（緑=有利 / 灰=標準 / 赤=不利）を共有する。
+// 色だけに意味を持たせないよう、判定の文字ラベルは必ず併記する。
+const PACE_JUDG_CLASS = {
+  '有利': 'j-p2', 'やや有利': 'j-p1', 'フラット': 'j-z0', '標準': 'j-z0', 'データ少': 'j-z0',
+  'やや不利': 'j-m1', '不利': 'j-m2', '強く不利': 'j-m2',
+};
+
+// 脚質傾向の表で数値セルを塗る濃淡（C案）。同じ列の4脚質を比べた順位で決める。
+// 行数が4とは限らない（データのある脚質だけ並ぶ）ので、行数に応じて段階を割り当てる。
+function heatScale(n) {
+  if (n <= 1) return ['h0'];
+  if (n === 2) return ['h2', 'hm2'];
+  if (n === 3) return ['h2', 'h0', 'hm2'];
+  if (n === 4) return ['h2', 'h1', 'hm1', 'hm2'];
+  return ['h2', 'h1', ...Array(n - 4).fill('h0'), 'hm1', 'hm2'];
+}
+
+// 同値は同じ濃さになる（indexOf が先頭の順位を返すため）
+function heatClass(values, v) {
+  if (v == null || !values.length) return 'h0';
+  const scale = heatScale(values.length);
+  const desc = [...values].sort((a, b) => b - a);
+  return scale[desc.indexOf(v)] || 'h0';
+}
+
+function paceRate(s) {
+  const n = parseFloat(String(s).replace('%', ''));
+  return Number.isNaN(n) ? null : n;
+}
 
 function paceHorsePiece(h, isMainNige) {
   const cls = `pz${h.bet_mark === '地雷' ? ' jirai' : ''}${isMainNige ? ' nige' : ''}`;
@@ -954,11 +982,11 @@ function renderPaceMap20(site) {
       ? hs.map((h) => paceHorsePiece(h, mainNige.has(h.number))).join('')
       : '<span class="none">該当なし</span>';
     return `
-      <div class="lane j-${j}">
+      <div class="lane ${j}">
         <div class="lb">
           <div class="nm">${escapeHtml(lb.style)}</div>
           <div class="rt">複勝 ${escapeHtml(lb.fukusho_rate)}</div>
-          <span class="jw ${j}">${escapeHtml(lb.judgment)}</span>
+          <span class="jw">${escapeHtml(lb.judgment)}</span>
         </div>
         <div class="horses">${body}</div>
         <div class="num">${hs.length}頭</div>
@@ -1020,17 +1048,25 @@ function renderOverview20(site) {
   if (p.leg_bias && p.leg_bias.length) {
     sections.push(renderPaceMap20(site));
 
-    // 「やや有利」「やや不利」も interpret_style が返すので色を割り当てる（未割当だと無色になる）
-    const judgClass = { '有利': 'good', 'やや有利': 'good', 'やや不利': 'bad', '不利': 'bad', '強く不利': 'vbad' };
+    // 数値セルは列ごとに濃淡を付ける（同じ列の脚質どうしの比較。列をまたぐ比較ではない）。
+    // 判定ピルは5段階の発散スケールで、マップ側と同じ色。
+    const cols = { win_rate: [], rentai_rate: [], fukusho_rate: [] };
+    for (const k of Object.keys(cols)) {
+      cols[k] = p.leg_bias.map((lb) => paceRate(lb[k])).filter((v) => v !== null);
+    }
+    const cell = (lb, k) =>
+      `<td class="hv ${heatClass(cols[k], paceRate(lb[k]))}">${escapeHtml(lb[k])}</td>`;
     const rows = p.leg_bias.map((lb) => `
-      <tr><td class="l">${escapeHtml(lb.style)}</td><td>${escapeHtml(lb.win_rate)}</td><td>${escapeHtml(lb.rentai_rate)}</td><td>${escapeHtml(lb.fukusho_rate)}</td><td>${lb.runs}走</td><td class="l sep"><span class="jw ${judgClass[lb.judgment] || ''}">${escapeHtml(lb.judgment)}</span></td></tr>
+      <tr class="${PACE_JUDG_CLASS[lb.judgment] || 'j-z0'}"><td class="l">${escapeHtml(lb.style)}</td>${cell(lb, 'win_rate')}${cell(lb, 'rentai_rate')}${cell(lb, 'fukusho_rate')}<td>${lb.runs}走</td><td class="l sep"><span class="jpill">${escapeHtml(lb.judgment)}</span></td></tr>
     `).join('');
     sections.push(`
       <div class="subh">脚質傾向</div>
-      <table class="kg">
+      <table class="kg heat">
         <thead><tr><th class="l">脚質</th><th>勝率</th><th>連対</th><th>複勝</th><th>走数</th><th class="l sep">判定</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
+      <div class="pmlegend">数字のマスの濃さは、その列の中での順位（緑＝その列で強い / 赤＝弱い）。
+        判定は複勝率と勝率から決めるので、マスの色とは一致しないことがあります</div>
     `);
   }
 

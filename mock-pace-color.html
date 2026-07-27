@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>脚質マップ・脚質傾向の配色 3案 — Ans. モック</title>
+<link rel="stylesheet" href="assets/style.css?v=20260727a">
+<style>
+/* ===== モック共通 ===== */
+body{padding:0 14px 60px}
+.mockwrap{max-width:760px;margin:0 auto}
+.mocktitle{font-size:17px;font-weight:700;color:var(--navy);margin:20px 0 4px}
+.mocklead{font-size:12.5px;color:var(--sub);line-height:1.8}
+.mockhead{margin:30px 0 4px;font-size:15px;font-weight:700;color:var(--navy)}
+.mockhead .tag{display:inline-block;font-size:10.5px;font-weight:700;border-radius:3px;
+  padding:1px 6px;margin-left:6px;background:var(--sub-bg2);color:var(--cap);vertical-align:middle}
+.mockdesc{font-size:12.5px;color:var(--sub);line-height:1.8;margin:4px 0 10px}
+.mockdesc b{color:var(--text)}
+.mockdesc .pro::before{content:'できること　';color:var(--hit);font-weight:700}
+.mockdesc .con::before{content:'引き換えに　';color:#b23b3b;font-weight:700}
+.mockrule{margin:36px 0 0;border:0;border-top:2px solid var(--rule-strong)}
+
+/* ===== 判定5段階の共通スケール（3案が共有） =====
+   内外バイアスの帯と同じ「緑＝有利 / 灰＝標準 / 赤＝不利」の発散スケール。
+   文字ラベルを必ず併記するので、色が見分けにくい環境でも意味は落ちない。 */
+.j5-p2{--jbg:#CBE5D6; --jfg:#0C5C2D; --jbar:#2E7D4F}
+.j5-p1{--jbg:#E7F3EA; --jfg:#276B43; --jbar:#5FA07A}
+.j5-z0{--jbg:#F1F1EE; --jfg:#6E6E68; --jbar:#B4B4AC}
+.j5-m1{--jbg:#FBE9E9; --jfg:#A83232; --jbar:#D08A8A}
+.j5-m2{--jbg:#F6D5D5; --jfg:#A32B1F; --jbar:#C05B4B}
+
+/* レーン（3案共通の骨格） */
+.pm{margin-top:6px;border-top:1px solid var(--rule)}
+.pm .lane{display:flex;align-items:flex-start;gap:8px;padding:8px 6px;
+  border-bottom:1px solid var(--rule);border-left:4px solid var(--jbar);background:var(--jbg)}
+.pm .lb{width:130px;flex:none}
+.pm .lb .nm{font-size:13px;font-weight:700}
+.pm .lb .rt{font-size:10.5px;color:var(--cap);white-space:nowrap;font-variant-numeric:tabular-nums}
+.pm .lb .jw{display:inline-block;font-size:10px;font-weight:700;border-radius:2px;
+  padding:0 5px;margin-top:3px;background:#fff;color:var(--jfg);box-shadow:inset 0 0 0 1px var(--jbar)}
+.pm .horses{display:flex;flex-wrap:wrap;gap:2px 0;flex:1;min-width:0}
+.pm .horses .none{font-size:11px;color:var(--cap);align-self:center}
+.pm .num{font-size:11px;color:var(--cap);align-self:center;flex:none;width:26px;text-align:right}
+.pz{display:inline-flex;flex-direction:column;align-items:center;width:26px;margin:0 1px}
+.pz .mk{height:12px;line-height:12px;font-size:11px;font-weight:700}
+.pz .mk.n-hon{color:var(--mk-hon)} .pz .mk.n-tai{color:var(--mk-tai)}
+.pz .mk.n-tan{color:var(--mk-tan)} .pz .mk.n-oku{color:var(--mk-oku)}
+
+/* レーン内の複勝率バー（B案・C案） */
+.pm .lb .lbar{height:5px;border-radius:3px;background:#fff;margin-top:4px;overflow:hidden;
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.06)}
+.pm .lb .lbar i{display:block;height:100%;border-radius:3px;background:var(--jbar)}
+
+/* 表（3案共通の骨格） */
+table.kg2{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:6px}
+table.kg2 th{font-size:11px;color:var(--cap);font-weight:400;text-align:right;
+  padding:4px 6px;border-bottom:1.5px solid var(--rule-strong)}
+table.kg2 th.l{text-align:left}
+table.kg2 td{text-align:right;padding:7px 6px;border-bottom:1px solid var(--rule);
+  font-variant-numeric:tabular-nums}
+table.kg2 td.l{text-align:left;font-weight:700}
+table.kg2 .sep{border-left:1px solid var(--sep)}
+table.kg2 .pill{display:inline-block;font-weight:700;font-size:11.5px;border-radius:3px;
+  padding:1px 7px;background:var(--jbg);color:var(--jfg)}
+
+/* B案: 数値セルにバーを敷く */
+.kg2.bars td.v{position:relative}
+.kg2.bars td.v .bg{position:absolute;left:6px;right:6px;bottom:4px;height:4px;
+  border-radius:2px;background:var(--sub-bg2)}
+.kg2.bars td.v .bg i{display:block;height:100%;border-radius:2px;background:var(--jbar)}
+.kg2.bars td.v span.n{position:relative;display:inline-block;padding-bottom:6px}
+
+/* C案: 数値セルを塗る（列ごとの相対で濃淡） */
+.kg2.heat td.v{border-radius:0}
+.kg2.heat td.v.h2{background:#CBE5D6;color:#0C5C2D;font-weight:700}
+.kg2.heat td.v.h1{background:#E7F3EA;color:#276B43}
+.kg2.heat td.v.h0{background:#F7F7F5;color:var(--text)}
+.kg2.heat td.v.hm1{background:#FBE9E9;color:#A83232}
+.kg2.heat td.v.hm2{background:#F6D5D5;color:#A32B1F;font-weight:700}
+
+.lg{font-size:11px;color:var(--cap);line-height:1.8;margin-top:6px}
+.lg .sw{display:inline-block;width:22px;height:10px;border-radius:2px;vertical-align:-1px;margin:0 3px}
+.lg .sw.p2{background:#CBE5D6} .lg .sw.p1{background:#E7F3EA} .lg .sw.z0{background:#F1F1EE}
+.lg .sw.m1{background:#FBE9E9} .lg .sw.m2{background:#F6D5D5}
+
+/* 現状の再現用（今のサイトのクラスをそのまま使う） */
+.nowbox .pacemap{margin-top:6px}
+</style>
+</head>
+<body>
+<div class="mockwrap race20">
+
+  <div class="mocktitle">脚質マップ・脚質傾向の配色 3案</div>
+  <div class="mocklead">
+    2026-07-26 札幌11R 札幌日経賞（芝2600m・13頭）の実データで比較しています。<br>
+    共通の考え方：判定を <b>有利 / やや有利 / 標準 / やや不利 / 不利</b> の5段階にして、
+    内外バイアスの帯と<b>同じ色スケール</b>（緑＝有利・灰＝標準・赤＝不利）を使います。
+    色だけに頼らないよう、文字ラベルは必ず残します。
+  </div>
+
+  <hr class="mockrule">
+
+  <!-- ============ 現状 ============ -->
+  <div class="mockhead">現状<span class="tag">いま公開中</span></div>
+  <div class="mockdesc">
+    色は3段階しかなく、「有利」と「やや有利」が同じ色。表は判定の文字色だけが色付きで、
+    勝率・連対・複勝の数字はすべて黒。<b>どの脚質がどれくらい強いのかが数字を読まないと分からない</b>状態です。
+  </div>
+  <div class="nowbox" id="now"></div>
+
+  <hr class="mockrule">
+
+  <!-- ============ A案 ============ -->
+  <div class="mockhead">A案　判定を5段階に<span class="tag">いちばん控えめ</span></div>
+  <div class="mockdesc">
+    塗るのは判定だけ。レーンの背景・左の帯・判定バッジ・表の判定列を、5段階の同じスケールに揃えます。<br>
+    <span class="pro">「やや有利」と「有利」がひと目で区別できる。サイト全体で色の意味が1つに揃う。</span><br>
+    <span class="con">数字そのものの大小は、やはり読まないと分からない。</span>
+  </div>
+  <div id="a"></div>
+
+  <hr class="mockrule">
+
+  <!-- ============ B案 ============ -->
+  <div class="mockhead">B案　数字にバーを添える<span class="tag">量が見える</span></div>
+  <div class="mockdesc">
+    A案に加えて、勝率・連対・複勝の数字の下に横棒を敷きます。棒の長さは<b>その列の中での相対値</b>
+    （4つの脚質を比べた長さ。列をまたいで比べる棒ではありません）。レーンにも複勝率の棒を置きます。<br>
+    <span class="pro">「先行と差しは複勝率がほぼ同じだが、勝率は先行が倍」といった差が、読まずに分かる。</span><br>
+    <span class="con">表の情報量が増えるぶん、少しにぎやかになる。</span>
+  </div>
+  <div id="b"></div>
+
+  <hr class="mockrule">
+
+  <!-- ============ C案 ============ -->
+  <div class="mockhead">C案　表そのものを塗る<span class="tag">いちばん濃い</span></div>
+  <div class="mockdesc">
+    数字のセルを直接塗ります。濃さは<b>その列の中での順位</b>で決めます（緑＝その列で強い、赤＝弱い）。<br>
+    <span class="pro">表を面として見た瞬間に、強い脚質と弱い脚質のかたまりが分かる。</span><br>
+    <span class="con">セルの色は「その列で何位か」であって判定そのものではないので、
+    逃げの勝率のように<b>緑なのに判定は「やや不利」</b>という行が出る。色数も多く、印や枠色とぶつかりやすい。</span>
+  </div>
+  <div id="c"></div>
+
+  <hr class="mockrule">
+  <div class="mockdesc" style="margin-top:16px">
+    共通の色の意味：
+    <span class="lg" style="display:block">
+      <span class="sw p2"></span>有利
+      <span class="sw p1"></span>やや有利
+      <span class="sw z0"></span>標準
+      <span class="sw m1"></span>やや不利
+      <span class="sw m2"></span>不利
+    </span>
+  </div>
+</div>
+
+<script>
+// 2026-07-26 札幌11R 札幌日経賞の実データ（data/races/202601010211.json）
+const LANES = [
+  {style:'逃げ', win:7.4,  ren:14.8, fuku:22.2, runs:27,  j:'やや不利',
+   horses:[{n:8,g:6,mk:'▲'}]},
+  {style:'先行', win:13.3, ren:21.0, fuku:26.7, runs:105, j:'やや有利',
+   horses:[{n:3,g:3,mk:'◎'},{n:7,g:5},{n:11,g:7}]},
+  {style:'差し', win:6.2,  ren:13.8, fuku:26.9, runs:130, j:'やや有利',
+   horses:[{n:1,g:1},{n:2,g:2,mk:'○'},{n:4,g:4},{n:5,g:4,mk:'△'},
+           {n:6,g:5},{n:9,g:6},{n:10,g:7},{n:13,g:8,mk:'△'}]},
+  {style:'追込', win:3.7,  ren:12.2, fuku:14.6, runs:82,  j:'やや不利',
+   horses:[{n:12,g:8}]},
+];
+
+const J5 = {'有利':'j5-p2','やや有利':'j5-p1','フラット':'j5-z0','標準':'j5-z0',
+            'データ少':'j5-z0','やや不利':'j5-m1','不利':'j5-m2','強く不利':'j5-m2'};
+const MK = {'◎':'n-hon','○':'n-tai','▲':'n-tan','△':'n-oku'};
+
+const uma = (n,g) => `<span class="hn wk${g} sm">${n}</span>`;
+const piece = (h) =>
+  `<span class="pz">${uma(h.n,h.g)}<span class="mk ${MK[h.mk]||''}">${h.mk||''}</span></span>`;
+
+// 列ごとの相対（最大値=1）。列をまたいで長さを比べる棒ではない
+const colMax = (key) => Math.max(...LANES.map(l => l[key]));
+// 列の中の順位を5段階に割る（上位=緑・下位=赤）
+function heatClass(v, key) {
+  const sorted = [...LANES].map(l => l[key]).sort((a,b) => b-a);
+  const i = sorted.indexOf(v);
+  return ['h2','h1','hm1','hm2'][i] || 'h0';
+}
+
+function laneHtml(l, {bar=false} = {}) {
+  const body = l.horses.length
+    ? l.horses.map(piece).join('')
+    : '<span class="none">該当なし</span>';
+  const lbar = bar
+    ? `<div class="lbar"><i style="width:${(l.fuku/colMax('fuku')*100).toFixed(0)}%"></i></div>` : '';
+  return `
+    <div class="lane ${J5[l.j]}">
+      <div class="lb">
+        <div class="nm">${l.style}</div>
+        <div class="rt">複勝 ${l.fuku}%</div>
+        ${lbar}
+        <span class="jw">${l.j}</span>
+      </div>
+      <div class="horses">${body}</div>
+      <div class="num">${l.horses.length}頭</div>
+    </div>`;
+}
+
+function tableHtml(mode) {
+  const cell = (l, key) => {
+    const v = l[key].toFixed(1) + '%';
+    if (mode === 'bars') {
+      const w = (l[key] / colMax(key) * 100).toFixed(0);
+      return `<td class="v"><span class="n">${v}</span>`
+        + `<span class="bg"><i style="width:${w}%"></i></span></td>`;
+    }
+    if (mode === 'heat') return `<td class="v ${heatClass(l[key], key)}">${v}</td>`;
+    return `<td class="v">${v}</td>`;
+  };
+  const rows = LANES.map((l) => `
+    <tr class="${J5[l.j]}">
+      <td class="l">${l.style}</td>
+      ${cell(l,'win')}${cell(l,'ren')}${cell(l,'fuku')}
+      <td>${l.runs}走</td>
+      <td class="l sep"><span class="pill">${l.j}</span></td>
+    </tr>`).join('');
+  return `
+    <div class="subh">脚質傾向</div>
+    <table class="kg2 ${mode}">
+      <thead><tr><th class="l">脚質</th><th>勝率</th><th>連対</th><th>複勝</th><th>走数</th>
+        <th class="l sep">判定</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+function block(id, {bar=false, mode=''} = {}) {
+  document.getElementById(id).innerHTML = `
+    <div class="subh">脚質マップ</div>
+    <div class="pm">${LANES.map((l) => laneHtml(l, {bar})).join('')}</div>
+    ${tableHtml(mode)}`;
+}
+
+// 現状の再現（いまのサイトのクラス名・3段階のまま）
+(function renderNow() {
+  const NOW = {'有利':'good','やや有利':'good','やや不利':'bad','不利':'vbad','強く不利':'vbad'};
+  const lanes = LANES.map((l) => `
+    <div class="lane j-${NOW[l.j]}">
+      <div class="lb">
+        <div class="nm">${l.style}</div>
+        <div class="rt">複勝 ${l.fuku}%</div>
+        <span class="jw ${NOW[l.j]}">${l.j}</span>
+      </div>
+      <div class="horses">${l.horses.map(piece).join('')}</div>
+      <div class="num">${l.horses.length}頭</div>
+    </div>`).join('');
+  const rows = LANES.map((l) => `
+    <tr><td class="l">${l.style}</td><td>${l.win.toFixed(1)}%</td><td>${l.ren.toFixed(1)}%</td>
+    <td>${l.fuku.toFixed(1)}%</td><td>${l.runs}走</td>
+    <td class="l sep"><span class="jw ${NOW[l.j]}">${l.j}</span></td></tr>`).join('');
+  document.getElementById('now').innerHTML = `
+    <div class="subh">脚質マップ</div>
+    <div class="pacemap">${lanes}</div>
+    <div class="subh">脚質傾向</div>
+    <table class="kg2">
+      <thead><tr><th class="l">脚質</th><th>勝率</th><th>連対</th><th>複勝</th><th>走数</th>
+        <th class="l sep">判定</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+})();
+
+block('a');
+block('b', {bar:true, mode:'bars'});
+block('c', {bar:true, mode:'heat'});
+</script>
+</body>
+</html>
