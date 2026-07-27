@@ -1197,10 +1197,14 @@ function renderHorsesAccordion20(site) {
     }
     const factorsRows = (h.factors || []).map((f) => {
       const items = f.items || [];
+      // sign: '+' 加点 / '-' 減点 / '0' 点数に入らない参考情報（グレー）。
+      // '0' は 2026-07-27 追加。旧データ（'+'/'-' のみ）はそのまま従来どおり描かれる。
       const itemsHtml = items.length
-        ? items.map((it) => it.sign === '+'
-            ? `<div class="fac p">＋ ${escapeHtml(it.label)}</div>`
-            : `<div class="fac m">− ${escapeHtml(it.label)}</div>`).join('')
+        ? items.map((it) => {
+            if (it.sign === '+') return `<div class="fac p">＋ ${escapeHtml(it.label)}</div>`;
+            if (it.sign === '-') return `<div class="fac m">− ${escapeHtml(it.label)}</div>`;
+            return `<div class="fac z">・ ${escapeHtml(it.label)}</div>`;
+          }).join('')
         : `<div class="fac z">・ 標準</div>`;
       return `<tr><td class="item">${escapeHtml(f.label)}</td><td class="pt">${f.score}</td><td>${itemsHtml}</td></tr>`;
     }).join('');
