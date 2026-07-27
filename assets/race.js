@@ -1037,14 +1037,21 @@ function renderOverview20(site) {
   // (d) 内外バイアス
   if (p.inner_outer_bias) {
     // 枠の識別は馬番と同じJRA枠色バッジ、有利不利はセルの背景色の濃淡で表す（C-1案）
+    // ratio が null の枠＝コースの走数不足で比率を出せない枠。セルごと消すと
+    // 「枠順が全部出ていない」ように見えるので、'—' のまま並べる
     const cellsHtml = p.inner_outer_bias.gates.map((g) => {
+      if (g.ratio == null) {
+        return `<div class="cell hnd" title="このコースの走数が足りず判定できません">`
+          + `${wakuBox(g.gate, 'sm')}<span class="v nd">—</span></div>`;
+      }
       const c = ratioClass(g.ratio);
       return `<div class="cell h${c}">${wakuBox(g.gate, 'sm')}<span class="v ${c}">${g.ratio.toFixed(2)}</span></div>`;
     }).join('');
+    const hasNd = p.inner_outer_bias.gates.some((g) => g.ratio == null);
     sections.push(`
       <div class="biaslabel"><b>内外バイアス</b> ${escapeHtml(p.inner_outer_bias.label)}</div>
       <div class="strip">${cellsHtml}</div>
-      <div class="striplegend">緑=有利 / 赤=不利、濃いほど強い（1.00=標準）</div>
+      <div class="striplegend">緑=有利 / 赤=不利、濃いほど強い（1.00=標準）${hasNd ? ' / —=走数不足で判定なし' : ''}</div>
     `);
   }
 
