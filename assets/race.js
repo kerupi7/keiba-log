@@ -1020,7 +1020,8 @@ function renderOverview20(site) {
   if (p.leg_bias && p.leg_bias.length) {
     sections.push(renderPaceMap20(site));
 
-    const judgClass = { '有利': 'good', '不利': 'bad', '強く不利': 'vbad' };
+    // 「やや有利」「やや不利」も interpret_style が返すので色を割り当てる（未割当だと無色になる）
+    const judgClass = { '有利': 'good', 'やや有利': 'good', 'やや不利': 'bad', '不利': 'bad', '強く不利': 'vbad' };
     const rows = p.leg_bias.map((lb) => `
       <tr><td class="l">${escapeHtml(lb.style)}</td><td>${escapeHtml(lb.win_rate)}</td><td>${escapeHtml(lb.rentai_rate)}</td><td>${escapeHtml(lb.fukusho_rate)}</td><td>${lb.runs}走</td><td class="l sep"><span class="jw ${judgClass[lb.judgment] || ''}">${escapeHtml(lb.judgment)}</span></td></tr>
     `).join('');
