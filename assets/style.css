@@ -1508,3 +1508,10 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
 .race20 table.unified td.nm .prof .pw{font-variant-numeric:tabular-nums}
 .race20 table.unified td.nm .legbar{transform:scale(.88);transform-origin:left center;margin:0 -2px}
 .race20 table.unified td{vertical-align:middle}
+
+/* パネルのセルが中身の最小幅でページを押し広げないようにする。
+   table-layout:fixed の td に max-width:0 を入れると、子の overflow-x が効く。 */
+.race20 tr.prow > td{max-width:0}
+/* 過去5走の表：狭い画面では横スクロールになるので、その旨を出す */
+.race20 .pthint{font-size:10px;color:var(--cap);margin:2px 0 0}
+@media(min-width:620px){.race20 .pthint{display:none}}

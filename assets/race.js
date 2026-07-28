@@ -1254,9 +1254,10 @@ function courseRecordTable(h) {
   `;
 }
 
-// 過去5走。横スクロールで右が切れていたので、1走を2段に折って**全部見える**形にする
-// （2026-07-28 ユーザー指示）。上段＝いつ・どこで・何を走って何着、下段＝時計の中身。
-function pastRunItem(p) {
+// 過去5走は表で出す（2026-07-28 ユーザー確認）。列は
+// 日付／場・条件／レース／クラス／着／タイム／上り／頭数・人気／差／通過／騎手・斤量。
+// 幅の狭い画面では横スクロールになるので、その旨を下に出す。
+function pastRunRow(p) {
   const rankCls = { 1: 'f1', 2: 'f2', 3: 'f3' }[p.last3f_rank] || '';
   const agTitle = p.last3f_rank ? `このレースの上がり${p.last3f_rank}位` : '';
   const timeTitle = p.time_grade
@@ -1267,29 +1268,35 @@ function pastRunItem(p) {
     : (timeTitle ? `<span title="${escapeHtml(timeTitle)}">${escapeHtml(p.time ?? '—')}</span>`
       : escapeHtml(p.time ?? '—'));
   const margin = (p.margin === null || p.margin === undefined || p.margin === '')
-    ? '' : `<span class="pv">差${escapeHtml(p.margin)}</span>`;
-  const corners = p.corners ? `<span class="pv">通${escapeHtml(p.corners)}</span>` : '';
-  return `<div class="prun">
-    <div class="p1">
-      <span class="pd">${shutubaMd(p.date)}</span>
-      <span class="pt">${escapeHtml(p.track ?? '')} ${escapeHtml(p.surface ?? '')}${escapeHtml(p.distance ?? '')}${escapeHtml(p.condition ?? '')}</span>
-      ${classBadge(p.grade, p.race_name)}
-      <span class="pn">${escapeHtml(stripClassSuffix(p.race_name))}</span>
-      <span class="pf">${shutubaFinBox(p.finish)}<i>/${escapeHtml(p.runners ?? '—')}頭 ${escapeHtml(p.popularity ?? '—')}人</i></span>
-    </div>
-    <div class="p2">
-      <span class="pv">${timeCell}</span>${margin}
-      <span class="pv">上${medalSpan(p.last_3f ?? '—', p.last_3f ? rankCls : '', agTitle)}</span>
-      ${corners}
-      <span class="pv">${escapeHtml(p.jockey ?? '')} ${escapeHtml(p.weight ?? '')}</span>
-    </div>
-  </div>`;
+    ? '—' : escapeHtml(p.margin);
+  return `<tr>
+    <td class="l">${shutubaMd(p.date)}</td>
+    <td class="l">${escapeHtml(p.track ?? '')}<span class="mut"> ${escapeHtml(p.surface ?? '')}${escapeHtml(p.distance ?? '')}${escapeHtml(p.condition ?? '')}</span></td>
+    <td class="l pname">${escapeHtml(stripClassSuffix(p.race_name))}</td>
+    <td>${classBadge(p.grade, p.race_name)}</td>
+    <td>${shutubaFinBox(p.finish)}</td>
+    <td>${timeCell}</td>
+    <td>${medalSpan(p.last_3f ?? '—', p.last_3f ? rankCls : '', agTitle)}</td>
+    <td>${escapeHtml(p.runners ?? '—')}頭${escapeHtml(p.popularity ?? '—')}人</td>
+    <td>${margin}</td>
+    <td class="l">${escapeHtml(p.corners ?? '')}</td>
+    <td class="l">${escapeHtml(p.jockey ?? '')} ${escapeHtml(p.weight ?? '')}</td>
+  </tr>`;
 }
 
 function pastRunsTable(h) {
   const runs = h.past_runs;
   if (!runs || !runs.length) return '';
-  return `<div class="prh">過去5走</div><div class="pruns">${runs.map(pastRunItem).join('')}</div>`;
+  return `<div class="prh">過去5走</div>
+    <div class="ptwrap">
+      <table class="pastt">
+        <thead><tr><th class="l">日付</th><th class="l">場・条件</th><th class="l">レース</th>
+          <th>クラス</th><th>着</th><th>タイム</th><th>上り</th><th>頭数・人気</th><th>差</th>
+          <th class="l">通過</th><th class="l">騎手・斤量</th></tr></thead>
+        <tbody>${runs.map(pastRunRow).join('')}</tbody>
+      </table>
+    </div>
+    <div class="pthint">← 横にスクロールできます</div>`;
 }
 
 // 実績の全部表示。今回の条件に関係なく、走ったサーフェス・距離・場・馬場をすべて出す。
