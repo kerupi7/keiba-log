@@ -1250,7 +1250,6 @@ function courseRecordTable(h) {
       <thead><tr><th class="l">条件</th><th>1着</th><th>2着</th><th>3着</th><th>着外</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>
-    ${allRecordsBlock(cr)}
   `;
 }
 
@@ -1299,31 +1298,21 @@ function pastRunsTable(h) {
     <div class="pthint">← 横にスクロールできます</div>`;
 }
 
-// 実績の全部表示。今回の条件に関係なく、走ったサーフェス・距離・場・馬場をすべて出す。
-function allRecordTable(title, rows) {
-  if (!rows || !rows.length) return '';
-  const body = rows.map((r) => {
-    const tds = r.counts.map((v) => `<td class="${v === 0 ? 'c0' : ''}">${v}</td>`).join('');
-    return `<tr><td class="l">${escapeHtml(r.label)}</td>${tds}</tr>`;
-  }).join('');
-  return `<div class="arh">${escapeHtml(title)}</div>
-    <table class="crt">
-      <thead><tr><th class="l">条件</th><th>1着</th><th>2着</th><th>3着</th><th>着外</th></tr></thead>
-      <tbody>${body}</tbody>
-    </table>`;
-}
-
-function allRecordsBlock(cr) {
-  const a = cr.all;
-  if (!a) return '';
-  const blocks = [
-    allRecordTable('馬場（芝・ダート）', a.surface),
-    allRecordTable('距離別', a.distance),
-    allRecordTable('競馬場別', a.track),
-    allRecordTable('馬場状態別', a.going),
-  ].join('');
-  if (!blocks) return '';
-  return `<details class="arfold"><summary>条件別の成績をもっと見る</summary>${blocks}</details>`;
+// レース戦績を全部見る。直近5走より前の走を、同じ表の形でそのまま続ける。
+function careerRunsBlock(h) {
+  const rest = h.career_runs;
+  if (!rest || !rest.length) return '';
+  return `<details class="arfold"><summary>レース戦績を全部見る（あと${rest.length}走）</summary>
+    <div class="ptwrap">
+      <table class="pastt">
+        <thead><tr><th class="l">日付</th><th class="l">場・条件</th><th class="l">レース</th>
+          <th>クラス</th><th>着</th><th>タイム</th><th>上り</th><th>頭数・人気</th><th>差</th>
+          <th class="l">通過</th><th class="l">騎手・斤量</th></tr></thead>
+        <tbody>${rest.map(pastRunRow).join('')}</tbody>
+      </table>
+    </div>
+    <div class="pthint">← 横にスクロールできます</div>
+  </details>`;
 }
 
 // 前走メモ（91-spec T7）。回顧で拾った馬だけ。予想の点数には反映していない。
@@ -1427,6 +1416,7 @@ function shutubaPanel(h, dm) {
       ${diagnosisBlock(h)}
       ${noteHistoryBlock(h)}
       ${pastRunsTable(h)}
+      ${careerRunsBlock(h)}
       ${courseRecordTable(h)}
     </div>
   `;
