@@ -1127,125 +1127,402 @@ function renderHeader20(site) {
   `;
 }
 
-function renderMarks20(site) {
-  const horses = site.horses;
-  const markCls = { '◎': 'm-hon', '○': 'm-tai', '▲': 'm-tan', '△': 'm-oku' };
-  const rows = [];
-  for (const mark of ['◎', '○', '▲', '△']) {
-    horses.filter((h) => h.ability_mark === mark).sort((a, b) => a.number - b.number)
-      .forEach((h) => rows.push({ cls: markCls[mark], label: mark, number: h.number, gate: h.gate, name: h.name }));
+// ===== 97-spec: 出馬表（馬柱）=====
+// 印・全頭評価・勝率期待値・個別評価の4セクションを、馬番順の1表＋行タップのパネルに統合する。
+// 過去5走／コース適性は publish が site JSON に載せる（keiba_shutuba_columns.py）。
+// 無いレース（旧データ）でも壊れないよう、各ブロックは存在チェックしてから描く（97-spec §7）。
+
+const SHUTUBA_DIMS = [
+  { key: 's1', sym: '①', label: '近走' },
+  { key: 's2', sym: '②', label: '展開' },
+  { key: 's34', sym: '③', label: '適性' },
+  { key: 's5', sym: '⑤', label: '調教' },
+  { key: 's6', sym: '⑥', label: '枠斤騎' },
+  { key: 's7', sym: '⑦', label: '血統' },
+  { key: 's8', sym: '⑧', label: 'ローテ' },
+];
+const SHUTUBA_TIERS = ['◎', '○', '○', '▲', '▲', '△', '△', '△'];
+const LEG_ORDER = ['逃', '先', '差', '追'];
+const CLASS_CSS = {
+  '新馬': 'c-shin', '未勝利': 'c-mi', '1勝': 'c-w1', '2勝': 'c-w2', '3勝': 'c-w3',
+  'OP': 'c-op', 'L': 'c-l', 'G3': 'c-g3', 'G2': 'c-g2', 'G1': 'c-g1',
+  'Jpn1': 'c-jpn1', 'Jpn2': 'c-jpn2', 'Jpn3': 'c-jpn3', '重賞': 'c-jusho',
+};
+
+// 項目別の印。その項目の中央値より上の馬だけを対象に、点数の高い順（同点は総合順）で
+// ◎/○○/▲▲/△△△ を配る。全馬同点の項目は印が1つも付かない（差がついていないため）。
+function shutubaDimMarks(horses) {
+  const live = horses.filter((h) => !h.scratched && h.scores);
+  const out = {};
+  horses.forEach((h) => { out[h.number] = {}; });
+  SHUTUBA_DIMS.forEach(({ key }) => {
+    const vals = live.map((h) => h.scores[key] ?? 0).sort((a, b) => a - b);
+    if (!vals.length) return;
+    const mid = vals.length % 2
+      ? vals[(vals.length - 1) / 2]
+      : (vals[vals.length / 2 - 1] + vals[vals.length / 2]) / 2;
+    live.filter((h) => (h.scores[key] ?? 0) > mid)
+      .sort((a, b) => ((b.scores[key] ?? 0) - (a.scores[key] ?? 0)) || (b.total - a.total))
+      .forEach((h, i) => { out[h.number][key] = SHUTUBA_TIERS[i] || ''; });
+  });
+  return out;
+}
+
+function shutubaRaceClass(grade, name) {
+  const g = (grade || '').trim();
+  const n = name || '';
+  if (g === 'JpnI') return 'Jpn1';
+  if (g === 'JpnII') return 'Jpn2';
+  if (g === 'JpnIII') return 'Jpn3';
+  if (g === '重賞') return '重賞';
+  if (g === 'GI' || g === 'G1' || n.includes('(GI)')) return 'G1';
+  if (g === 'GII' || g === 'G2' || n.includes('(GII)')) return 'G2';
+  if (g === 'GIII' || g === 'G3' || n.includes('(GIII)')) return 'G3';
+  if (g === 'L' || n.includes('(L)')) return 'L';
+  if (g === 'OP' || n.includes('(OP)') || n.includes('オープン')) return 'OP';
+  for (const k of ['3勝', '2勝', '1勝']) {
+    if (g === k || n.includes(`${k}クラス`)) return k;
   }
-  horses.filter((h) => h.role === '穴').sort((a, b) => a.number - b.number)
-    .forEach((h) => rows.push({ cls: 'm-ana', label: '穴', number: h.number, gate: h.gate, name: h.name }));
-  horses.filter((h) => h.bet_mark === '地雷').sort((a, b) => a.number - b.number)
-    .forEach((h) => rows.push({ cls: 'm-jir', label: '地雷', number: h.number, gate: h.gate, name: h.name }));
-  if (!rows.length) return '';
-  const rowsHtml = rows.map((r) => `<div class="mrow"><span class="mkb ${r.cls}">${escapeHtml(r.label)}</span>${umaBox(r.number, r.gate)}<span class="nm">${escapeHtml(r.name)}</span></div>`).join('');
+  if (n.includes('未勝利')) return '未勝利';
+  if (n.includes('新馬')) return '新馬';
+  return g || '';
+}
+
+function classBadge(grade, name) {
+  const c = shutubaRaceClass(grade, name);
+  if (!c) return '';
+  return `<span class="cb ${CLASS_CSS[c] || ''}">${escapeHtml(c)}</span>`;
+}
+
+function stripClassSuffix(name) {
+  return String(name || '').replace(/\((?:GI|GII|GIII|JpnI|JpnII|JpnIII|L|OP|[123]勝クラス|重賞)\)\s*$/, '').trim();
+}
+
+// 脚質バー。4マスの該当位置に ◀ を置き、右に文字を出す（netkeiba と同じ形）。
+function legBar(style) {
+  const s = String(style || '').trim().slice(0, 1);
+  const idx = LEG_ORDER.indexOf(s);
+  const cells = [0, 1, 2, 3]
+    .map((i) => `<i class="${idx === i ? 'on' : ''}">${idx === i ? '◀' : ''}</i>`).join('');
+  const label = idx >= 0
+    ? `<span class="lbl">${escapeHtml(s)}</span>`
+    : '<span class="lbl mut">—</span>';
+  return `<span class="legbar"><span class="lb">${cells}</span>${label}</span>`;
+}
+
+function medalSpan(text, cls, title) {
+  if (!cls) return escapeHtml(text);
+  const t = title ? ` title="${escapeHtml(title)}"` : '';
+  return `<span class="ag ${cls}"${t}>${escapeHtml(text)}</span>`;
+}
+
+function shutubaFinBox(fin) {
+  const n = parseInt(fin, 10);
+  if (Number.isNaN(n)) return `<span class="fb x">${escapeHtml(fin ?? '—')}</span>`;
+  const cls = { 1: 'f1', 2: 'f2', 3: 'f3' }[n] || 'fx';
+  return `<span class="fb ${cls}">${n}</span>`;
+}
+
+function shutubaMd(dateText) {
+  const d = String(dateText || '').split('/');
+  return d.length === 3 ? `${d[1]}/${d[2]}` : escapeHtml(dateText);
+}
+
+// 過去5走の1行。上がりが1〜3位／タイムが基準より速い走を金・銀・銅にする（97-spec §3）。
+function courseRecordTable(h) {
+  const cr = h.course_record;
+  if (!cr || !cr.rows || !cr.rows.length) return '';
+  const rows = cr.rows.map((r) => {
+    const zero = r.counts.reduce((a, b) => a + b, 0) === 0 ? ' class="zero"' : '';
+    const tds = r.counts.map((v) => `<td class="${v === 0 ? 'c0' : ''}">${v}</td>`).join('');
+    return `<tr${zero}><td class="l">${escapeHtml(r.label)}</td>${tds}</tr>`;
+  }).join('');
+  let note = '';
+  if (!cr.central_starts) {
+    note = `<div class="crn">中央での出走なし（地方 ${cr.local_starts}走）</div>`;
+  } else if (!cr.rows.some((r) => r.counts.reduce((a, b) => a + b, 0))) {
+    note = `<div class="crn">この条件での出走なし（中央 ${cr.central_starts}走・地方 ${cr.local_starts}走）</div>`;
+  }
   return `
-    <div class="secthead">印</div>
-    <div class="marks">${rowsHtml}</div>
+    <div class="crh">コース適性（中央のみ・全走）</div>
+    ${note}
+    <table class="crt">
+      <thead><tr><th class="l">条件</th><th>1着</th><th>2着</th><th>3着</th><th>着外</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    ${allRecordsBlock(cr)}
   `;
 }
 
-// 前走メモ（91-race-review-spec.md T7）。回顧で拾った馬だけ、直近1走ぶんを出す。
-// 予想の点数には反映していない。読む人の判断材料として置くだけ。
-function renderPrevNoteRow(h) {
+// 過去5走。横スクロールで右が切れていたので、1走を2段に折って**全部見える**形にする
+// （2026-07-28 ユーザー指示）。上段＝いつ・どこで・何を走って何着、下段＝時計の中身。
+function pastRunItem(p) {
+  const rankCls = { 1: 'f1', 2: 'f2', 3: 'f3' }[p.last3f_rank] || '';
+  const agTitle = p.last3f_rank ? `このレースの上がり${p.last3f_rank}位` : '';
+  const timeTitle = p.time_grade
+    ? `基準比 ${p.time_resid > 0 ? '+' : ''}${p.time_resid}秒（当日の馬場差を補正後）・着差${p.margin}秒`
+    : (p.time_note || '');
+  const timeCell = p.time_grade
+    ? medalSpan(p.time, p.time_grade, timeTitle)
+    : (timeTitle ? `<span title="${escapeHtml(timeTitle)}">${escapeHtml(p.time ?? '—')}</span>`
+      : escapeHtml(p.time ?? '—'));
+  const margin = (p.margin === null || p.margin === undefined || p.margin === '')
+    ? '' : `<span class="pv">差${escapeHtml(p.margin)}</span>`;
+  const corners = p.corners ? `<span class="pv">通${escapeHtml(p.corners)}</span>` : '';
+  return `<div class="prun">
+    <div class="p1">
+      <span class="pd">${shutubaMd(p.date)}</span>
+      <span class="pt">${escapeHtml(p.track ?? '')} ${escapeHtml(p.surface ?? '')}${escapeHtml(p.distance ?? '')}${escapeHtml(p.condition ?? '')}</span>
+      ${classBadge(p.grade, p.race_name)}
+      <span class="pn">${escapeHtml(stripClassSuffix(p.race_name))}</span>
+      <span class="pf">${shutubaFinBox(p.finish)}<i>/${escapeHtml(p.runners ?? '—')}頭 ${escapeHtml(p.popularity ?? '—')}人</i></span>
+    </div>
+    <div class="p2">
+      <span class="pv">${timeCell}</span>${margin}
+      <span class="pv">上${medalSpan(p.last_3f ?? '—', p.last_3f ? rankCls : '', agTitle)}</span>
+      ${corners}
+      <span class="pv">${escapeHtml(p.jockey ?? '')} ${escapeHtml(p.weight ?? '')}</span>
+    </div>
+  </div>`;
+}
+
+function pastRunsTable(h) {
+  const runs = h.past_runs;
+  if (!runs || !runs.length) return '';
+  return `<div class="prh">過去5走</div><div class="pruns">${runs.map(pastRunItem).join('')}</div>`;
+}
+
+// 実績の全部表示。今回の条件に関係なく、走ったサーフェス・距離・場・馬場をすべて出す。
+function allRecordTable(title, rows) {
+  if (!rows || !rows.length) return '';
+  const body = rows.map((r) => {
+    const tds = r.counts.map((v) => `<td class="${v === 0 ? 'c0' : ''}">${v}</td>`).join('');
+    return `<tr><td class="l">${escapeHtml(r.label)}</td>${tds}</tr>`;
+  }).join('');
+  return `<div class="arh">${escapeHtml(title)}</div>
+    <table class="crt">
+      <thead><tr><th class="l">条件</th><th>1着</th><th>2着</th><th>3着</th><th>着外</th></tr></thead>
+      <tbody>${body}</tbody>
+    </table>`;
+}
+
+function allRecordsBlock(cr) {
+  const a = cr.all;
+  if (!a) return '';
+  const blocks = [
+    allRecordTable('馬場（芝・ダート）', a.surface),
+    allRecordTable('距離別', a.distance),
+    allRecordTable('競馬場別', a.track),
+    allRecordTable('馬場状態別', a.going),
+  ].join('');
+  if (!blocks) return '';
+  return `<details class="arfold"><summary>条件別の成績をもっと見る</summary>${blocks}</details>`;
+}
+
+// 前走メモ（91-spec T7）。回顧で拾った馬だけ。予想の点数には反映していない。
+function prevNoteBlock(h) {
   const p = h.prev_note;
   if (!p) return '';
   const chips = (p.labels || []).map((l) => `<span class="rv-chip">${escapeHtml(l)}</span>`).join('');
   const so = (p.notes || []).filter(Boolean).map((x) => `<div class="rv-so">${escapeHtml(x)}</div>`).join('');
   const src = `（${escapeHtml(p.date ?? '')} ${escapeHtml(p.track ?? '')}${p.race_no ?? ''}R ${escapeHtml(p.race_name ?? '')}）`;
-  return `<tr class="rv-prev"><td></td><td colspan="7" class="l">
-    <span class="rv-ptag">前走メモ</span>${chips}<span class="rv-ptx">${escapeHtml(p.text ?? '')}</span>
-    <span class="rv-psrc">${src}</span>${so}</td></tr>`;
+  return `<div class="pnote"><span class="rv-ptag">前走メモ</span>${chips}
+    <span class="rv-ptx">${escapeHtml(p.text ?? '')}</span>
+    <span class="rv-psrc">${src}</span>${so}</div>`;
 }
 
-function renderAllHorses20(site) {
-  const markCellCls = { '◎': 'mk-hon', '○': 'mk-tai', '▲': 'mk-tan', '△': 'mk-oku' };
-  const horses = [...site.horses].sort((a, b) => {
-    if (a.rank === null && b.rank === null) return a.number - b.number;
-    if (a.rank === null) return 1;
-    if (b.rank === null) return -1;
-    return a.rank - b.rank;
-  });
-  const rows = horses.map((h) => {
+function factorsTable(h) {
+  const factors = h.factors || [];
+  if (!factors.length) return '';
+  const rows = factors.map((f) => {
+    const items = (f.items || []).length
+      ? f.items.map((it) => {
+          if (it.sign === '+') return `<div class="fac p">＋ ${escapeHtml(it.label)}</div>`;
+          if (it.sign === '-') return `<div class="fac m">− ${escapeHtml(it.label)}</div>`;
+          return `<div class="fac z">・ ${escapeHtml(it.label)}</div>`;
+        }).join('')
+      : '<div class="fac z">・ 標準</div>';
+    return `<tr><td class="item">${escapeHtml(f.label)}</td><td class="pt">${f.score}</td><td>${items}</td></tr>`;
+  }).join('');
+  return `<table class="dim">${rows}
+    <tr class="tot"><td class="item">総合</td><td class="pt">${fmtNum(h.total, 1)}</td>
+      <td><span class="grade ${gradeClass(h.grade)}">${gradeDisp(h.grade)}</span></td></tr>
+  </table>`;
+}
+
+// 97-spec §9（案A-1）: 診断欄。買える理由／消せる理由を2列に分け、見出しを塗る。
+// 旧データ（diagnosis を持たないレース）では、従来の factors 表に落とす。
+function diagRow(r) {
+  const sub = r.sub ? `<span class="dsub">${escapeHtml(r.sub)}</span>` : '';
+  return `<li><span class="dtag">${escapeHtml(r.dim)}</span>${escapeHtml(r.head)}${sub}</li>`;
+}
+
+function diagCol(rows, cls, title, mark) {
+  const items = (rows && rows.length) ? rows.map(diagRow).join('') : '<li class="none">なし</li>';
+  return `<div class="dcol ${cls}">
+    <div class="dch"><span class="dchm">${mark}</span>${title}<span class="dcnum">${(rows || []).length}</span></div>
+    <ul>${items}</ul></div>`;
+}
+
+function diagnosisBlock(h) {
+  const d = h.diagnosis;
+  if (!d) return factorsTable(h);   // 旧データはそのまま従来表示
+  return `<div class="dcols">
+    ${diagCol(d.plus, 'p', '買える理由', '＋')}
+    ${diagCol(d.minus, 'm', '消せる理由', '−')}
+  </div>`;
+}
+
+// 回顧メモ。タグの回数（クセ）を先に、次に直近の本文。点数には入っていない。
+function noteTag(label, count) {
+  const bad = /^(出遅れ|不利|ハイペース)/.test(label);
+  const good = /^(上がり最速|着順以上)/.test(label);
+  const cls = bad ? 'nt-bad' : good ? 'nt-good' : 'nt-mid';
+  const c = count ? `<b>${count}</b>` : '';
+  return `<span class="nt ${cls}">${escapeHtml(label)}${c}</span>`;
+}
+
+function noteRow(n) {
+  const labels = (n.labels || []).map((l) => noteTag(l)).join('');
+  const extra = (n.notes || []).filter(Boolean)
+    .map((x) => `<div class="nb">${escapeHtml(x)}</div>`).join('');
+  return `<div class="nrow">
+    <div class="nmeta">${escapeHtml(n.date ?? '')} ${escapeHtml(n.track ?? '')}${n.race_no ?? ''}R ${escapeHtml(n.race_name ?? '')}
+      <span class="nfin">${n.popularity ?? '—'}人気${n.finish ?? '—'}着</span></div>
+    <div class="ntx">${labels}${escapeHtml(n.text ?? '')}</div>${extra}</div>`;
+}
+
+function noteHistoryBlock(h) {
+  const nh = h.note_history;
+  if (!nh) return prevNoteBlock(h);   // 旧データは前走メモだけ
+  const tags = (nh.tags || []).map(([t, c]) => noteTag(t, c)).join('');
+  const rows = (nh.recent || []).map(noteRow).join('');
+  const shown = nh.shown != null ? nh.shown : (nh.recent || []).length;
+  const cnt = shown === nh.count
+    ? `${nh.count}件`
+    : `直近5走で${shown}件<span class="nall">／保存は全${nh.count}件（${escapeHtml(nh.first_date ?? '')}〜）</span>`;
+  const empty = shown ? '' : '<div class="nempty">直近5走ではメモなし</div>';
+  return `<div class="nblock">
+    <div class="nh">回顧メモ<span class="ncnt">${cnt}</span></div>${empty}
+    <div class="ntags">${tags}</div>${rows}
+    <div class="nfoot">メモは点数に入れていません</div></div>`;
+}
+
+function shutubaPanel(h, dm) {
+  const chips = SHUTUBA_DIMS.map(({ key, sym, label }) => {
+    const mark = (dm[h.number] || {})[key] || '';
+    const cls = { '◎': 'mk-hon', '○': 'mk-tai', '▲': 'mk-tan', '△': 'mk-oku' }[mark] || 'off';
+    return `<span class="dchip ${cls}"><i>${sym}${label}</i>${mark || '・'}</span>`;
+  }).join('');
+  return `
+    <div class="pnl">
+      <div class="dims">${chips}</div>
+      ${diagnosisBlock(h)}
+      ${noteHistoryBlock(h)}
+      ${pastRunsTable(h)}
+      ${courseRecordTable(h)}
+    </div>
+  `;
+}
+
+function renderShutuba20(site) {
+  const all = site.horses;
+  const live = all.filter((h) => !h.scratched);
+  const dm = shutubaDimMarks(all);
+  // 勝率の上位3頭に金・銀・銅（同率は馬番の若い方が上）
+  const wr = {};
+  [...live].sort((a, b) => ((b.estimated_prob ?? 0) - (a.estimated_prob ?? 0)) || (a.number - b.number))
+    .forEach((h, i) => { wr[h.number] = { 0: 'f1', 1: 'f2', 2: 'f3' }[i] || ''; });
+
+  const rows = [...all].sort((a, b) => a.number - b.number).map((h) => {
     if (h.scratched) {
-      return `<tr class="scratched"><td>—</td><td class="mkc"></td><td>${umaBox(h.number, h.gate)}</td><td class="name">${escapeHtml(h.name)}（取消）</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>`;
+      return `<tr class="hrow scratched" data-h="${h.number}">
+        <td></td><td>${umaBox(h.number, h.gate, 'sm')}</td>
+        <td class="l nm">${escapeHtml(h.name)}（取消）</td>
+        <td>—</td><td>—</td><td>—</td></tr>
+        <tr class="prow" data-p="${h.number}"><td colspan="6">${shutubaPanel(h, dm)}</td></tr>`;
     }
-    const markLabel = h.ability_mark ?? (h.bet_mark === '地雷' ? '地雷' : '');
-    const markCellClass = h.ability_mark ? (markCellCls[h.ability_mark] || '') : '';
-    const gradeHtml = h.grade ? `<span class="grade ${gradeClass(h.grade)}">${gradeDisp(h.grade)}</span>` : '—';
+    const winTxt = fmtPercent(h.estimated_prob, 0);
     return `
-      <tr${h.ability_mark ? ' class="pred"' : ''}>
-        <td>${h.rank}</td>
-        <td class="mkc ${markCellClass}">${escapeHtml(markLabel)}</td>
-        <td>${umaBox(h.number, h.gate)}</td>
-        <td class="name">${escapeHtml(h.name)}</td>
-        <td>${fmtNum(h.total, 1)}</td>
-        <td>${h.odds !== null && h.odds !== undefined ? h.odds.toFixed(1) : '—'}</td>
-        <td>${h.popularity ?? '—'}</td>
-        <td>${gradeHtml}</td>
+      <tr class="hrow${h.ability_mark ? ' pred' : ''}" data-h="${h.number}">
+        <td>${markBadge20(h)}</td>
+        <td>${umaBox(h.number, h.gate, 'sm')}</td>
+        <td class="l nm">${escapeHtml(h.name)}<span class="tri">▸</span>
+          <div class="u prof"><span class="pw">${escapeHtml(h.sex_age ?? '')} ${h.weight_carried != null ? h.weight_carried.toFixed(1) : '—'} ${escapeHtml(h.jockey && h.jockey !== 'N/A' ? h.jockey : '—')}</span>
+            ${legBar(h.running_style)}<span class="rot">${escapeHtml(h.rotation || '')}</span></div></td>
+        <td>${fmtNum(h.total, 1)}<div class="u"><span class="grade ${gradeClass(h.grade)}">${gradeDisp(h.grade)}</span></div></td>
+        <td>${medalSpan(winTxt, wr[h.number])}</td>
+        <td>${h.odds != null ? h.odds.toFixed(1) : '—'}<div class="u pp">${h.popularity ?? '—'}人</div></td>
       </tr>
-      ${renderPrevNoteRow(h)}
-    `;
-  }).join('');
-  return `
-    <div class="secthead">全頭評価<span class="cnt">全${site.race.field_size}頭</span></div>
-    <table class="fixed">
-      <colgroup><col style="width:7%"><col style="width:8%"><col style="width:8%"><col style="width:35%">
-        <col style="width:13%"><col style="width:12%"><col style="width:8%"><col style="width:9%"></colgroup>
-      <thead><tr><th>順</th><th>印</th><th>番</th><th class="l">馬名</th><th>総合</th><th>オッズ</th><th>人気</th><th>評価</th></tr></thead>
-      <tbody>${rows}</tbody>
-    </table>
-  `;
-}
-
-// renderEvTable（既存・:386-436）の本体を丸ごとコピーし、secthead常時表示＋末尾注記のみ差し替え（23-spec §3-6）
-function renderEv20(site) {
-  if (site.prediction.odds_basis === 'オッズ未取得') {
-    return `
-      <div class="secthead">勝率・期待値</div>
-      <div>オッズ未取得のため期待値なし</div>
-    `;
-  }
-  const horses = [...site.horses]
-    .filter((h) => !h.scratched)
-    .sort((a, b) => {
-      if (b.estimated_prob === a.estimated_prob) return (a.rank ?? 999) - (b.rank ?? 999);
-      if (a.estimated_prob === null || a.estimated_prob === undefined) return 1;
-      if (b.estimated_prob === null || b.estimated_prob === undefined) return -1;
-      return b.estimated_prob - a.estimated_prob;
-    });
-  const maxEv = horses.reduce((max, h) => (h.ev !== null && h.ev !== undefined && (max === null || h.ev > max) ? h.ev : max), null);
-
-  const rows = horses.map((h) => {
-    const evCls = h.ev === null || h.ev === undefined ? '' : h.ev >= 0 ? 'value-pos' : 'value-neg';
-    const hlCls = maxEv !== null && h.ev === maxEv ? ' cell-hl' : '';
-    const evText = h.ev === null || h.ev === undefined ? '—' : fmtSignedPercent(h.ev, 0);
-    return `
-      <tr${h.ability_mark ? ' class="pred"' : ''}>
-        <td class="name ${markNameClass(h.ability_mark)}">${markSlot(h.ability_mark)}${umaBox(h.number, h.gate, 'sm')} ${escapeHtml(h.name)}</td>
-        <td>${fmtPercent(h.estimated_prob, 0)}</td>
-        <td class="sep">${h.fair_odds !== null && h.fair_odds !== undefined ? h.fair_odds.toFixed(1) : '—'}</td>
-        <td class="sep">${h.odds ?? '—'}</td>
-        <td class="sep ${evCls}${hlCls}">${evText}</td>
-        <td class="l sep">${evChip(h.ev)}</td>
-      </tr>
+      <tr class="prow" data-p="${h.number}"><td colspan="6">${shutubaPanel(h, dm)}</td></tr>
     `;
   }).join('');
 
+  // 脚質ごとの頭数。出走馬の running_style を数えるだけ（取消は除く）
+  const styleCount = { '逃': 0, '先': 0, '差': 0, '追': 0 };
+  live.forEach((h) => {
+    const k = String(h.running_style || '').trim().slice(0, 1);
+    if (k in styleCount) styleCount[k] += 1;
+  });
+  const unknown = live.length - Object.values(styleCount).reduce((a, b) => a + b, 0);
+  const styleBand = ['逃', '先', '差', '追']
+    .map((k) => `<span class="sc"><i>${k}</i>${styleCount[k]}</span>`).join('')
+    + (unknown ? `<span class="sc none"><i>不明</i>${unknown}</span>` : '');
+
   return `
-    <div class="secthead">勝率・期待値<span class="cnt">${horses.length}頭</span></div>
-    <table class="fixed" style="font-size:12px">
-      <colgroup><col style="width:37%"><col style="width:8%"><col style="width:11%">
-        <col style="width:11%"><col style="width:16%"><col style="width:17%"></colgroup>
-      <thead><tr><th class="l">馬名</th><th>勝率</th><th class="sep">適正</th><th class="sep">現在</th>
-        <th class="sep">期待値</th><th class="l sep">評価</th></tr></thead>
+    <div class="secthead">出馬表<span class="cnt">全${site.race.field_size}頭・馬番順・タップで馬柱</span></div>
+    <div class="shctl">
+      <div class="stylecount">脚質${styleBand}</div>
+      <div class="allbtn"><button type="button" data-shall="open">全部開く</button><button type="button" data-shall="close">全部閉じる</button></div>
+    </div>
+    <table class="unified">
+      <colgroup><col style="width:9%"><col style="width:7%"><col style="width:46%">
+        <col style="width:11%"><col style="width:10%"><col style="width:17%"></colgroup>
+      <thead><tr>
+        <th>印</th><th>番</th><th class="l">馬名・騎手</th>
+        <th>総合</th><th>勝率</th><th>オッズ</th>
+      </tr></thead>
       <tbody>${rows}</tbody>
     </table>
-    <div class="conf">全${horses.length}頭を掲載（勝率順）</div>
+    <div class="conf">行をタップすると、項目別の評価・過去5走・コース適性が開きます</div>
   `;
 }
+
+// 印は 能力印 → 地雷 → 穴 の順で1つだけ（mark-2.4 の排他ルールと同じ）
+function markBadge20(h) {
+  const markCls = { '◎': 'm-hon', '○': 'm-tai', '▲': 'm-tan', '△': 'm-oku' };
+  if (h.ability_mark) return `<span class="mkb ${markCls[h.ability_mark]}">${h.ability_mark}</span>`;
+  if (h.bet_mark === '地雷') return '<span class="mkb m-jir">地雷</span>';
+  if (h.role === '穴') return '<span class="mkb m-ana">穴</span>';
+  return '';
+}
+
+function setupShutuba20() {
+  const root = document.querySelector('.race20');
+  if (!root) return;
+  root.addEventListener('click', (e) => {
+    const allBtn = e.target.closest('[data-shall]');
+    if (allBtn) {
+      const open = allBtn.dataset.shall === 'open';
+      root.querySelectorAll('tr.prow').forEach((p) => p.classList.toggle('open', open));
+      root.querySelectorAll('tr.hrow').forEach((r) => {
+        r.classList.toggle('open', open);
+        const t = r.querySelector('.tri');
+        if (t) t.textContent = open ? '▾' : '▸';
+      });
+      return;
+    }
+    const row = e.target.closest('tr.hrow');
+    if (!row) return;
+    const panel = root.querySelector(`tr.prow[data-p="${row.dataset.h}"]`);
+    if (!panel) return;
+    const open = panel.classList.toggle('open');
+    row.classList.toggle('open', open);
+    const tri = row.querySelector('.tri');
+    if (tri) tri.textContent = open ? '▾' : '▸';
+  });
+}
+
 
 // 買い目セルの組番整形・合計式は既存renderBetsSectionV11（:164-201）と同一ロジックをコピー（23-spec §3-9）
 function renderBets20(site) {
@@ -1304,11 +1581,8 @@ function buildRace20Html(site, oddsAll) {
     <div class="race20">
       ${renderHeader20(site)}
       ${banner}
-      ${renderMarks20(site)}
-      ${renderAllHorses20(site)}
-      ${renderEv20(site)}
+      ${renderShutuba20(site)}
       ${renderOverview20(site)}
-      ${renderHorsesAccordion20(site)}
       ${renderBets20(site)}
       ${renderOddsMasterSection(site, oddsAll)}
       ${renderVerification20(site)}
@@ -1739,74 +2013,6 @@ function renderOverview20(site) {
   `;
 }
 
-function renderHorsesAccordion20(site) {
-  const horses = [...site.horses].sort((a, b) => {
-    if (a.scratched && b.scratched) return a.number - b.number;
-    if (a.scratched) return 1;
-    if (b.scratched) return -1;
-    return b.total - a.total;
-  });
-  const itemsHtml = horses.map((h) => {
-    if (h.scratched) {
-      return `<div class="acchead">${umaBox(h.number, h.gate)} ${escapeHtml(h.name)}<span class="sc">取消</span></div>`;
-    }
-    const factorsRows = (h.factors || []).map((f) => {
-      const items = f.items || [];
-      // sign: '+' 加点 / '-' 減点 / '0' 点数に入らない参考情報（グレー）。
-      // '0' は 2026-07-27 追加。旧データ（'+'/'-' のみ）はそのまま従来どおり描かれる。
-      const itemsHtml = items.length
-        ? items.map((it) => {
-            if (it.sign === '+') return `<div class="fac p">＋ ${escapeHtml(it.label)}</div>`;
-            if (it.sign === '-') return `<div class="fac m">− ${escapeHtml(it.label)}</div>`;
-            return `<div class="fac z">・ ${escapeHtml(it.label)}</div>`;
-          }).join('')
-        : `<div class="fac z">・ 標準</div>`;
-      return `<tr><td class="item">${escapeHtml(f.label)}</td><td class="pt">${f.score}</td><td>${itemsHtml}</td></tr>`;
-    }).join('');
-    return `
-      <div class="acchead" data-acc="${h.number}">
-        ${umaBox(h.number, h.gate)} ${escapeHtml(h.name)}
-        <span class="gr grade ${gradeClass(h.grade)}">${gradeDisp(h.grade)}</span>
-        <span class="sc">${fmtNum(h.total, 1)}</span><span class="tri">▸</span>
-      </div>
-      <div class="accbody">
-        <table class="dim">
-          ${factorsRows}
-          <tr class="tot"><td class="item">総合</td><td class="pt">${fmtNum(h.total, 1)}</td><td><span class="grade ${gradeClass(h.grade)}">${gradeDisp(h.grade)}</span></td></tr>
-        </table>
-      </div>
-    `;
-  }).join('');
-  return `
-    <div class="secthead">個別評価<span class="cnt">全${site.race.field_size}頭・タップで開閉</span></div>
-    <div class="accctl"><button type="button" data-accall="open">全部開く</button><button type="button" data-accall="close">全部閉じる</button></div>
-    <div class="acc">${itemsHtml}</div>
-  `;
-}
-
-function setupAccordion20() {
-  const root = document.querySelector('.race20');
-  if (!root) return; // 1.xページでは対象DOM不在のため何もしない
-  root.addEventListener('click', (e) => {
-    const allBtn = e.target.closest('[data-accall]');
-    if (allBtn) {
-      const openAll = allBtn.dataset.accall === 'open';
-      root.querySelectorAll('.accbody').forEach((body) => {
-        body.classList.toggle('open', openAll);
-        const tri = body.previousElementSibling && body.previousElementSibling.querySelector('.tri');
-        if (tri) tri.textContent = openAll ? '▾' : '▸';
-      });
-      return;
-    }
-    const head = e.target.closest('.acchead[data-acc]');
-    if (!head) return;
-    const body = head.nextElementSibling;
-    if (!body || !body.classList.contains('accbody')) return;
-    body.classList.toggle('open');
-    head.querySelector('.tri').textContent = body.classList.contains('open') ? '▾' : '▸';
-  });
-}
-
 // result/verificationの契約は1.1と共通（22-spec T4）。着順表・払戻表ロジックは
 // 既存renderVerificationSection（:245-333）をコピー元として参照（23-spec §3-10）
 function renderVerification20(site) {
@@ -1973,7 +2179,7 @@ async function main() {
   const simCtl = setupOddsMasterPanel(site, oddsAll);
   setupAkinatorPanel(site, oddsAll, simCtl);
   setupOddsMasterTabs();
-  if (is20) setupAccordion20();
+  if (is20) setupShutuba20();
   if (is20) setupUpset20();
   setupFinishOrder();
 }

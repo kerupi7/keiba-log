@@ -1313,3 +1313,198 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
   border-radius:2px;padding:1px 7px;margin-right:4px;}
 .rv-ptx{color:var(--sub);}
 .rv-psrc{color:var(--cap);font-size:11px;margin-left:4px;}
+
+/* ============================================================
+   97-spec: 出馬表（馬柱）— 印/全頭評価/勝率期待値/個別評価の統合表
+   ============================================================ */
+.race20 table.unified{width:100%;border-collapse:collapse;font-size:12.5px;table-layout:fixed;margin-top:8px}
+.race20 table.unified th{background:var(--navy);color:#fff;font-size:11px;font-weight:700;padding:6px 3px}
+.race20 table.unified td{border-bottom:1px solid var(--rule);padding:5px 2px;text-align:center;
+  font-variant-numeric:tabular-nums}
+.race20 table.unified th.l,.race20 table.unified td.l{text-align:left}
+.race20 table.unified td.nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  letter-spacing:-.02em;font-weight:700}
+.race20 table.unified .u{font-size:10px;line-height:1.3;margin-top:1px;color:var(--cap);font-weight:400}
+.race20 table.unified td.rot{font-size:11.5px;color:var(--sub);white-space:nowrap}
+/* 印セルは狭いので、地雷バッジが馬番へかぶらないよう詰める */
+.race20 table.unified td .mkb{min-width:20px;height:20px;font-size:12px}
+.race20 table.unified td .mkb.m-jir{font-size:9px;min-width:0;padding:0 2px;letter-spacing:-.02em}
+.race20 tr.hrow{cursor:pointer}
+.race20 tr.hrow.pred td{background:#F4F8FC}
+.race20 tr.hrow.scratched td{color:var(--cap)}
+.race20 tr.hrow .tri{color:var(--cta);font-size:10px;margin-left:4px}
+.race20 tr.prow{display:none}
+.race20 tr.prow.open{display:table-row}
+.race20 tr.prow td{padding:0;border-bottom:2px solid var(--navy)}
+.race20 .pnl{background:#FAFAF7;padding:9px 10px 11px;text-align:left}
+/* 素の th,td は white-space:nowrap（style.css:100）。パネルの中は文章が入るので折り返す。
+   過去5走の表だけは別途 nowrap を当てているのでそちらが勝つ。 */
+.race20 tr.prow td,.race20 .pnl,.race20 .pnl div,.race20 .pnl li,.race20 .pnl span{white-space:normal}
+.race20 .mut{color:var(--cap)}
+
+/* 項目別の印チップ */
+.race20 .dims{display:flex;gap:3px;flex-wrap:wrap;margin:0 0 6px}
+.race20 .dchip{display:inline-flex;flex-direction:column;align-items:center;min-width:38px;
+  border-radius:3px;padding:2px 3px;font-size:12px;font-weight:800;color:#fff;line-height:1.15}
+.race20 .dchip i{font-style:normal;font-size:8.5px;font-weight:700;opacity:.85}
+.race20 .dchip.off{background:#F0F0EC;color:#b5b5ad}
+.race20 .dchip.off i{color:var(--cap);opacity:1}
+.race20 .dchip.mk-hon{background:var(--mkb-hon)}.race20 .dchip.mk-tai{background:var(--mkb-tai)}
+.race20 .dchip.mk-tan{background:var(--mkb-tan)}.race20 .dchip.mk-oku{background:var(--mkb-oku)}
+
+/* クラスラベル（新馬〜G1／地方は別系統の色） */
+.race20 .cb{display:inline-block;min-width:26px;text-align:center;font-size:9.5px;font-weight:800;
+  color:#fff;border-radius:3px;padding:0 3px;letter-spacing:.02em}
+.race20 .cb.c-g1{background:#B3121E}.race20 .cb.c-g2{background:#1D5FA8}
+.race20 .cb.c-g3{background:#2E7D46}.race20 .cb.c-l{background:#6D4C9F}
+.race20 .cb.c-op{background:#C77A0A}.race20 .cb.c-w3{background:#4A6B8A}
+.race20 .cb.c-w2{background:#6E8CA6}.race20 .cb.c-w1{background:#93A9BC}
+.race20 .cb.c-mi{background:#9A9A92}.race20 .cb.c-shin{background:#BDBDB5}
+.race20 .cb.c-jpn1{background:#A3474F}.race20 .cb.c-jpn2{background:#46628A}
+.race20 .cb.c-jpn3{background:#4B7A5C}.race20 .cb.c-jusho{background:#7A6A55}
+
+/* 脚質バー */
+.race20 .legbar{display:inline-flex;align-items:center;gap:3px;padding-right:3px}
+.race20 .lb{display:inline-flex;border:1px solid #9AA0A6;background:#fff;border-radius:2px;overflow:hidden}
+.race20 .lb i{width:7px;height:15px;line-height:15px;font-style:normal;font-size:8px;
+  text-align:center;border-right:1px solid #DDE0E3;color:#B3121E}
+.race20 .lb i:last-child{border-right:0}
+.race20 .lb i.on{background:#FDE9EA;font-weight:800}
+.race20 .legbar .lbl{font-size:11px;font-weight:800;line-height:1}
+
+/* 金・銀・銅（勝率・タイム・上がり）。着順ボックスと同じ配色 */
+.race20 .ag{display:inline-block;min-width:34px;border-radius:3px;padding:0 3px;
+  font-weight:800;color:#fff}
+.race20 .ag.f1{background:#C8A200}.race20 .ag.f2{background:#9AA3AA}.race20 .ag.f3{background:#B0763A}
+.race20 .fb{display:inline-flex;align-items:center;justify-content:center;min-width:17px;height:16px;
+  border-radius:3px;font-size:10.5px;font-weight:800;padding:0 3px}
+.race20 .fb.f1{background:#C8A200;color:#fff}.race20 .fb.f2{background:#9AA3AA;color:#fff}
+.race20 .fb.f3{background:#B0763A;color:#fff}
+.race20 .fb.fx,.race20 .fb.x{background:#EDEDE8;color:#4a4a44}
+
+/* 過去5走 */
+.race20 .ptwrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-top:4px}
+.race20 table.pastt{width:100%;min-width:560px;border-collapse:collapse;font-size:11px;
+  background:#fff;border:1px solid var(--rule)}
+.race20 table.pastt th{background:#EFF2F5;color:var(--navy);font-weight:700;padding:3px 4px;
+  border-bottom:1px solid var(--rule);white-space:nowrap}
+.race20 table.pastt td{padding:3px 4px;border-bottom:1px solid #F0F0EC;text-align:center;
+  font-variant-numeric:tabular-nums;white-space:nowrap}
+.race20 table.pastt th.l,.race20 table.pastt td.l{text-align:left}
+.race20 table.pastt td.pname{max-width:7.5em;overflow:hidden;text-overflow:ellipsis}
+/* パネル内は折り返す指定にしているが、馬柱の表だけは1行に保つ（横スクロールで見る） */
+.race20 table.pastt td,.race20 table.pastt th,.race20 table.pastt span{white-space:nowrap}
+
+/* コース適性（実績） */
+.race20 .crh{font-size:11px;font-weight:700;color:var(--navy);margin:9px 0 3px}
+.race20 .crn{font-size:10.5px;color:var(--live);margin:0 0 3px}
+.race20 table.crt{width:100%;max-width:420px;border-collapse:collapse;font-size:11px;
+  background:#fff;border:1px solid var(--rule)}
+.race20 table.crt th{background:#EFF2F5;color:var(--navy);font-weight:700;padding:3px 4px;
+  border-bottom:1px solid var(--rule)}
+.race20 table.crt td{padding:3px 4px;border-bottom:1px solid #F0F0EC;text-align:center;
+  font-variant-numeric:tabular-nums;font-weight:700}
+.race20 table.crt th.l,.race20 table.crt td.l{text-align:left;font-weight:400}
+.race20 table.crt td.c0{color:#C4C4BC;font-weight:400}
+.race20 table.crt tr.zero td{background:#FAFAF7;color:#B5B5AD}
+
+/* 前走メモ（91-spec T7・全頭評価の行から移設） */
+.race20 .pnote{margin:6px 0 2px;font-size:11.5px;line-height:1.7}
+
+/* 97-spec §9（案A-1）: 診断欄 — 見出しを塗って、間に仕切り線 */
+.race20 .dcols{display:grid;grid-template-columns:1fr 1fr;gap:0;background:#fff;
+  border:1px solid var(--rule);border-radius:6px;overflow:hidden;margin:0 0 8px}
+.race20 .dcol{padding:0 0 6px}
+.race20 .dcol.p{border-right:2px solid var(--rule)}
+.race20 .dch{font-size:12px;font-weight:800;color:#fff;padding:5px 9px;margin:0 0 4px;
+  display:flex;align-items:center;gap:5px}
+.race20 .dcol.p .dch{background:var(--hit)}
+.race20 .dcol.m .dch{background:#C22C2C}
+.race20 .dchm{font-weight:900}
+.race20 .dcnum{margin-left:auto;font-size:10.5px;font-weight:700;color:#fff;
+  background:rgba(255,255,255,.25);border-radius:8px;padding:0 6px}
+.race20 .dcol ul{margin:0;padding:0 9px;list-style:none}
+.race20 .dcol li{font-size:11.5px;line-height:1.65;padding:3px 0;
+  border-bottom:1px dotted var(--rule)}
+.race20 .dcol li:last-child{border-bottom:0}
+.race20 .dcol li.none{color:var(--cap)}
+.race20 .dtag{display:inline-block;font-size:9.5px;font-weight:700;color:var(--navy);
+  background:#E8EFF5;border-radius:2px;padding:0 4px;margin-right:5px;vertical-align:1px}
+.race20 .dsub{font-size:10.5px;color:var(--cap);margin-left:5px}
+@media(max-width:560px){
+  .race20 .dcols{grid-template-columns:1fr}
+  .race20 .dcol.p{border-right:0;border-bottom:2px solid var(--rule)}
+}
+
+/* 回顧メモ（この馬の蓄積） */
+.race20 .nblock{background:#fff;border-radius:6px;padding:8px 10px;margin:0 0 8px;
+  border-left:3px solid var(--orange)}
+.race20 .nblock .nh{font-size:12px;font-weight:800;color:#8a5a00;display:flex;
+  align-items:baseline;gap:8px}
+.race20 .nblock .ncnt{font-size:10.5px;color:var(--cap);font-weight:600}
+.race20 .nblock .nall{font-size:10px;color:var(--cap);font-weight:400}
+.race20 .nempty{font-size:11px;color:var(--cap);margin-top:4px}
+.race20 .ntags{display:flex;flex-wrap:wrap;gap:4px;margin:5px 0 6px}
+.race20 .nt{display:inline-block;font-size:10.5px;font-weight:700;border-radius:3px;padding:1px 6px}
+.race20 .nt b{margin-left:4px;font-size:10px}
+.race20 .nt.nt-bad{background:#FBEAEA;color:#A31217}
+.race20 .nt.nt-good{background:#E7F3EA;color:#0B5E2E}
+.race20 .nt.nt-mid{background:#EFEFEA;color:#5C5C5C}
+.race20 .nrow{border-top:1px dotted var(--rule);padding:5px 0 3px}
+.race20 .nrow:first-of-type{border-top:0}
+.race20 .nmeta{font-size:10px;color:var(--cap)}
+.race20 .nmeta .nfin{margin-left:6px;font-weight:700;color:var(--sub)}
+.race20 .ntx{font-size:11.5px;line-height:1.65;overflow-wrap:anywhere;word-break:break-word}
+.race20 .nb{font-size:11px;color:var(--sub);padding-left:10px;
+  border-left:2px solid var(--rule);margin:3px 0 0;overflow-wrap:anywhere}
+.race20 .nfoot{font-size:10px;color:var(--cap);margin-top:5px}
+.race20 details.nfold{margin-top:6px}
+.race20 details.nfold>summary{font-size:11.5px;color:var(--cta);cursor:pointer;
+  font-weight:700;list-style:none;padding:4px 0}
+.race20 details.nfold>summary::-webkit-details-marker{display:none}
+.race20 details.nfold>summary::before{content:"▸ "}
+.race20 details.nfold[open]>summary::before{content:"▾ "}
+
+/* 97-spec §9.6: 脚質の頭数・全開閉ボタン・実績の全部表示 */
+.race20 .shctl{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:8px 0 0}
+.race20 .stylecount{font-size:11.5px;font-weight:700;color:var(--sub);display:flex;
+  align-items:center;gap:5px}
+.race20 .stylecount .sc{display:inline-flex;align-items:baseline;gap:3px;background:#EFF2F5;
+  border-radius:3px;padding:1px 6px;font-variant-numeric:tabular-nums;color:var(--navy)}
+.race20 .stylecount .sc i{font-style:normal;font-size:10px;font-weight:700;opacity:.8}
+.race20 .stylecount .sc.none{background:#F0F0EC;color:var(--cap)}
+.race20 .allbtn{margin-left:auto;display:flex;gap:6px}
+.race20 .allbtn button{font-size:11px;font-weight:700;color:var(--cta);background:#fff;
+  border:1px solid var(--rule);border-radius:4px;padding:3px 9px;cursor:pointer}
+.race20 .allbtn button:active{background:#F0F4F8}
+.race20 .arh{font-size:11px;font-weight:700;color:var(--navy);margin:8px 0 3px}
+.race20 details.arfold{margin-top:8px}
+.race20 details.arfold>summary{font-size:11.5px;color:var(--cta);cursor:pointer;
+  font-weight:700;list-style:none;padding:4px 0}
+.race20 details.arfold>summary::-webkit-details-marker{display:none}
+.race20 details.arfold>summary::before{content:"▸ "}
+.race20 details.arfold[open]>summary::before{content:"▾ "}
+
+/* 97-spec §9.7: 過去5走を2段に折って全部見せる（横スクロールをやめる） */
+.race20 .prh{font-size:11px;font-weight:700;color:var(--navy);margin:8px 0 3px}
+.race20 .pruns{background:#fff;border:1px solid var(--rule);border-radius:6px;overflow:hidden}
+.race20 .prun{padding:5px 8px;border-bottom:1px solid var(--rule)}
+.race20 .prun:last-child{border-bottom:0}
+.race20 .prun .p1{display:flex;align-items:center;gap:5px;flex-wrap:wrap;font-size:11.5px}
+.race20 .prun .p1 .pd{font-weight:700;font-variant-numeric:tabular-nums}
+.race20 .prun .p1 .pt{color:var(--sub);font-size:11px}
+.race20 .prun .p1 .pn{font-weight:700;flex:1;min-width:5em}
+.race20 .prun .p1 .pf{display:inline-flex;align-items:center;gap:3px;margin-left:auto}
+.race20 .prun .p1 .pf i{font-style:normal;font-size:10px;color:var(--cap)}
+.race20 .prun .p2{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:2px;
+  font-size:10.5px;color:var(--sub);font-variant-numeric:tabular-nums}
+.race20 .prun .p2 .pv{white-space:nowrap}
+
+/* 出馬表の行: 馬名は省略せず、性齢・斤量・騎手・脚質・間隔を2行目にまとめる */
+.race20 table.unified td.nm{white-space:normal;overflow:visible;text-overflow:clip}
+.race20 table.unified td.nm .prof{display:flex;align-items:center;gap:4px;flex-wrap:wrap;
+  white-space:nowrap;font-size:9.5px;line-height:1.5}
+.race20 table.unified td.nm .prof .rot{font-size:9.5px;color:var(--cap)}
+.race20 table.unified td.nm .prof .pw{font-variant-numeric:tabular-nums}
+.race20 table.unified td.nm .legbar{transform:scale(.88);transform-origin:left center;margin:0 -2px}
+.race20 table.unified td{vertical-align:middle}
