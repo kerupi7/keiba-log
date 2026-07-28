@@ -455,6 +455,107 @@ function renderReviewLap(lap, splits) {
   <div class="rv-note">上にあるほど速いハロン。前後半の差 ${lap.diff > 0 ? '+' : ''}${lap.diff.toFixed(1)}秒。</div>`;
 }
 
+// ===== 4.4a 着順表（95-finish-order-spec.md）=====
+// netkeiba の結果表と同じ列・同じ順で並べる。1〜5着は常時、6着以下は折りたたみ。
+// 値が1頭も無い列は列ごと落とす（"—"だけの列を作らない）。過去レースでは
+// 厩舎（原簿に無い）や通過順（settle時にnetkeiba側が未記入）が落ちることがある。
+const FO_TOP_N = 5;
+
+function foMark(h) {
+  if (h.ability_mark) {
+    const cls = { '◎': 'm-hon', '○': 'm-tai', '▲': 'm-tan', '△': 'm-oku' }[h.ability_mark] || '';
+    return `<span class="mkb ${cls}">${escapeHtml(h.ability_mark)}</span>`;
+  }
+  if (h.bet_mark === '地雷') return '<span class="mkb m-jir">地雷</span>';
+  return '';
+}
+
+// 各列 = { label, cls, has(h), cell(h, ctx) }。has を持たない列は常に出す。
+const FO_COLS = [
+  { label: '着', cls: 'fo-c1 num', cell: (h) => (h.finish != null ? h.finish : escapeHtml(h.finish_text || '—')) },
+  { label: '枠', cls: 'fo-c2', cell: (h) => (h.gate ? wakuBox(h.gate, 'sm') : '—') },
+  { label: '馬番', cls: 'fo-c3 num', cell: (h) => h.number },
+  { label: '印', cls: 'fo-mk', has: (h) => !!h.ability_mark || h.bet_mark === '地雷', cell: foMark },
+  { label: '馬名', cls: 'fo-nm', cell: (h) => escapeHtml(h.name) },
+  { label: '性齢', cls: 'num sub', has: (h) => !!h.sex_age, cell: (h) => escapeHtml(h.sex_age || '—') },
+  { label: '斤量', cls: 'num sub', has: (h) => h.weight_carried != null,
+    cell: (h) => (h.weight_carried != null ? h.weight_carried.toFixed(1) : '—') },
+  { label: '騎手', cls: 'sub', has: (h) => !!h.jockey, cell: (h) => escapeHtml(h.jockey || '—') },
+  { label: 'タイム', cls: 'num fo-tm', has: (h) => !!h.finish_time,
+    cell: (h) => escapeHtml(h.finish_time || '—') },
+  { label: '着差', cls: 'num sub', has: (h) => !!h.margin,
+    cell: (h) => (h.finish === 1 ? '' : escapeHtml(h.margin || '—')) },
+  { label: '人気', cls: 'num', has: (h) => h.popularity != null,
+    cellCls: (h) => (h.popularity === 1 ? ' fo-p1' : (h.popularity === 2 || h.popularity === 3) ? ' fo-p23' : ''),
+    cell: (h) => (h.popularity != null ? h.popularity : '—') },
+  { label: '単勝', cls: 'num', has: (h) => h.final_odds != null,
+    cell: (h) => (h.final_odds != null ? h.final_odds.toFixed(1) : '—') },
+  { label: '上り3F', cls: 'num', has: (h) => h.last_3f != null,
+    cellCls: (h, ctx) => (h.last_3f != null && h.last_3f === ctx.bestL3f ? ' fo-l3' : ''),
+    cell: (h, ctx) => (h.last_3f == null ? '—'
+      : h.last_3f.toFixed(1) + (h.last_3f === ctx.bestL3f ? '<span class="fo-fast">最速</span>' : '')) },
+  { label: '通過', cls: 'num sub', has: (h) => !!h.passing, cell: (h) => escapeHtml(h.passing || '—') },
+  { label: '厩舎', cls: 'sub', has: (h) => !!h.trainer, cell: (h) => escapeHtml(h.trainer || '—') },
+  { label: '馬体重', cls: 'num sub', has: (h) => !!h.body_weight, cell: (h) => escapeHtml(h.body_weight || '—') },
+];
+
+function renderFinishOrder(site) {
+  const runners = (site.horses || []).filter((h) => !h.scratched && (h.finish != null || h.finish_text));
+  if (!runners.length) return '';
+  runners.sort((a, b) => (a.finish ?? 999) - (b.finish ?? 999) || a.number - b.number);
+
+  const l3 = runners.map((h) => h.last_3f).filter((v) => typeof v === 'number');
+  const ctx = { bestL3f: l3.length ? Math.min(...l3) : null };
+  const cols = FO_COLS.filter((c) => !c.has || runners.some((h) => c.has(h)));
+
+  const tr = (h) => {
+    const cells = cols.map((c) => {
+      const cls = `${c.cls || ''}${c.cellCls ? c.cellCls(h, ctx) : ''}`.trim();
+      return `<td${cls ? ` class="${cls}"` : ''}>${c.cell(h, ctx)}</td>`;
+    }).join('');
+    return `<tr${h.finish === 1 ? ' class="fo-win"' : ''}>${cells}</tr>`;
+  };
+  const head = cols.map((c) => `<th>${c.label}</th>`).join('');
+  const top = runners.slice(0, FO_TOP_N).map(tr).join('');
+  const rest = runners.slice(FO_TOP_N);
+
+  return `
+    <div class="eyebrow">着順<span class="note">${site.race.field_size}頭立て</span></div>
+    <div class="fo-scroll"><table class="fo">
+      <thead><tr>${head}</tr></thead><tbody>${top}</tbody>
+    </table></div>
+    ${rest.length ? `<details class="fold fo-more"><summary><span class="tri"></span>${FO_TOP_N + 1}着以下も見る（${rest.length}頭）</summary>
+      <div class="fold-body"><div class="fo-scroll"><table class="fo">
+        <thead><tr>${head}</tr></thead><tbody>${rest.map(tr).join('')}</tbody></table></div></div>
+    </details>` : ''}
+  `;
+}
+
+// 固定3列の left を実測で当てる。列幅は馬名や騎手名の長さで毎回変わるので、
+// CSS に数値を書くと横スクロール時に隙間や重なりが出る（2026-07-28に実機で確認）。
+// 折りたたみの中の表は開くまで幅0なので、開いたときにも呼ぶ。
+function setupFinishOrder() {
+  for (const table of document.querySelectorAll('table.fo')) {
+    const row = table.querySelector('tbody tr');
+    if (!row || row.cells.length < 3) continue;
+    const w1 = row.cells[0].getBoundingClientRect().width;
+    const w2 = row.cells[1].getBoundingClientRect().width;
+    if (!w1 || !w2) continue;
+    table.style.setProperty('--fo-l2', `${w1}px`);
+    table.style.setProperty('--fo-l3', `${w1 + w2}px`);
+  }
+  for (const d of document.querySelectorAll('details.fo-more')) {
+    d.addEventListener('toggle', () => { if (d.open) setupFinishOrder(); }, { once: true });
+  }
+}
+
+// 画面幅が変わると列幅も変わるので測り直す（縦横の切り替え・ウィンドウ幅の変更）
+let foResizeTimer = null;
+window.addEventListener('resize', () => {
+  clearTimeout(foResizeTimer);
+  foResizeTimer = setTimeout(setupFinishOrder, 150);
+});
+
 function renderReviewSection(site) {
   const review = site.review;
   const race = review.race || {};
@@ -528,6 +629,8 @@ function renderReviewSection(site) {
   }).join('');
 
   return `
+    ${renderFinishOrder(site)}
+
     <div class="eyebrow">どんなレースだったか</div>
     ${race.lead ? `<div class="rv-lead">${escapeHtml(race.lead)}</div>` : ''}
     <div class="rv-facts">${facts}</div>
@@ -1872,6 +1975,7 @@ async function main() {
   setupOddsMasterTabs();
   if (is20) setupAccordion20();
   if (is20) setupUpset20();
+  setupFinishOrder();
 }
 
 main();

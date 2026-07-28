@@ -1207,6 +1207,40 @@ details.subfold>summary .sc{margin-left:auto;color:var(--navy);
 .ak-wrap .note b{color:var(--sub)}
 .ak-wrap .restart{margin-top:16px;text-align:center}
 
+/* ===== 着順表（95-finish-order-spec.md・netkeiba互換）===== */
+.fo-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--rule);}
+.fo{border-collapse:separate;border-spacing:0;font-size:12.5px;white-space:nowrap;
+  min-width:100%;table-layout:auto;}
+.fo th,.fo td{padding:6px 8px;border-bottom:1px solid var(--rule);text-align:left;
+  background:var(--bg);}
+.fo thead th{font-size:11px;color:var(--cap);background:var(--sub-bg);font-weight:400;
+  text-align:center;border-bottom:1px solid var(--rule-strong);}
+.fo td.num,.fo th.num{text-align:center;font-variant-numeric:tabular-nums;}
+.fo td.sub{color:var(--sub);}
+.fo td.fo-nm{font-weight:700;}
+.fo td.fo-tm{font-weight:700;font-variant-numeric:tabular-nums;}
+.fo td.fo-mk{text-align:center;padding:5px 5px;}
+.fo tr.fo-win td{background:var(--sub-bg2);}
+.fo td.fo-p1{background:#E4EEF7;font-weight:700;}
+.fo td.fo-p23{background:#FBECD9;}
+.fo tr.fo-win td.fo-p1{background:#DCE9F4;}
+.fo td.fo-l3{background:#FFF6D0;}
+.fo-fast{display:inline-block;margin-left:3px;font-size:9.5px;font-weight:700;color:#7A5A00;
+  background:#FFE9A3;padding:0 3px;vertical-align:1px;}
+/* 着・枠・馬番は左に固定（横に振っても行を見失わないようにする）。
+   left に入れる値は左隣までの列幅の合計なので、描画後に setupFinishOrder() が実測して
+   --fo-l2 / --fo-l3 に入れる。下の既定値はスクリプトが走る前の一瞬だけ使われる。 */
+.fo td.fo-c1,.fo th:nth-child(1){position:sticky;left:0;z-index:2;font-weight:700;}
+.fo td.fo-c2,.fo th:nth-child(2){position:sticky;left:var(--fo-l2,32px);z-index:2;}
+.fo td.fo-c3,.fo th:nth-child(3){position:sticky;left:var(--fo-l3,66px);z-index:2;font-weight:700;
+  box-shadow:1px 0 0 var(--rule);}
+.fo thead th:nth-child(-n+3){z-index:3;background:var(--sub-bg);}
+.fo tr.fo-win td.fo-c1,.fo tr.fo-win td.fo-c2,.fo tr.fo-win td.fo-c3{background:var(--sub-bg2);}
+details.fo-more{border-top:none;}
+details.fo-more>summary{font-size:13px;padding:10px 2px;}
+details.fo-more[open]>summary{font-size:13px;border-bottom:1px solid var(--rule);}
+details.fo-more .fold-body{padding-bottom:10px;}
+
 /* ===== レース回顧（91-race-review-spec.md）===== */
 .rv-lead{font-size:19px;font-weight:700;line-height:1.5;margin:0 0 10px;}
 .rv-facts{display:flex;gap:8px;flex-wrap:wrap;}
