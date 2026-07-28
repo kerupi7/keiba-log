@@ -1268,7 +1268,8 @@ function pastRunRow(p) {
       : escapeHtml(p.time ?? '—'));
   const margin = (p.margin === null || p.margin === undefined || p.margin === '')
     ? '—' : escapeHtml(p.margin);
-  return `<tr>
+  const band = p.margin_band ? ` class="pb-${p.margin_band}"` : '';
+  return `<tr${band}>
     <td class="l">${shutubaMd(p.date)}</td>
     <td class="l">${escapeHtml(p.track ?? '')}<span class="mut"> ${escapeHtml(p.surface ?? '')}${escapeHtml(p.distance ?? '')}${escapeHtml(p.condition ?? '')}</span></td>
     <td class="l pname">${escapeHtml(stripClassSuffix(p.race_name))}</td>
