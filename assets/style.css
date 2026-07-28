@@ -684,6 +684,45 @@ details.subfold>summary .sc{margin-left:auto;color:var(--navy);
 .race20 .reco{display:flex;flex-wrap:wrap;gap:5px 16px;font-size:12.5px;margin-top:3px}
 .race20 .reco .nm{font-weight:700;white-space:nowrap}
 
+/* 93-pace-scenario-6cell-spec.md §6-0-1: 展開シナリオ6マス化（案22・主役カード）。
+   旧.scn/.rolebadge（3ブロック）はscenario_gridの無い過去公開分にそのまま残す（§7）。 */
+.race20 .bdg{display:inline-block;font-size:9.5px;font-weight:800;letter-spacing:.06em;
+  padding:1px 6px;border-radius:3px;line-height:1.6;vertical-align:middle}
+.race20 .bdg.b1{background:var(--navy);color:#fff}
+.race20 .bdg.b2{background:#fff;color:#5C7A99;box-shadow:inset 0 0 0 1px #9db2c8}
+.race20 .bdg.b3{background:#EDEDE8;color:#84847c}
+
+/* 本命マス（主役カード）。色は既存の.rolebadge.honと同じnavyグラデーション */
+.race20 .c22{border-radius:8px;background:linear-gradient(180deg,#00365F 0%,#003E70 100%);
+  color:#fff;padding:14px 14px 12px;margin-top:8px}
+.race20 .c22 .top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.race20 .c22 .ttl{font-size:15px;font-weight:800;letter-spacing:.01em}
+.race20 .c22 .v{margin-left:auto;font-size:24px;font-weight:800;letter-spacing:-.02em;line-height:1}
+.race20 .c22 .v small{font-size:11px;margin-left:1px;opacity:.8}
+.race20 .c22 .sub{font-size:11px;color:rgba(255,255,255,.72);margin-top:4px}
+.race20 .c22 .hl{font-size:10.5px;font-weight:800;letter-spacing:.06em;color:rgba(255,255,255,.72);
+  margin:12px 0 5px}
+.race20 .c22 .list{display:flex;flex-direction:column;gap:5px}
+.race20 .c22 .it{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.09);
+  border-radius:6px;padding:5px 8px}
+.race20 .c22 .it .nm{font-size:12.5px;font-weight:700;flex:1;min-width:0;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap;color:#fff}
+.race20 .c22 .it .st{font-size:10.5px;color:rgba(255,255,255,.66);flex:none}
+.race20 .c22 .it .mk{font-size:12px;font-weight:800;flex:none;width:14px;text-align:center;color:#fff}
+
+/* 残り5マス（1行ずつ）。強弱は行の背景色と文字色だけで付け、opacityで行ごと薄くしない（§6-1） */
+.race20 .o22{margin-top:10px}
+.race20 .o22 .r{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:7px;
+  background:var(--sub-bg2);margin-bottom:5px}
+.race20 .o22 .r.on{background:#E8EFF6}
+.race20 .o22 .r .lb{font-size:12px;font-weight:700;flex:none;width:112px}
+.race20 .o22 .r .hs{display:flex;flex-wrap:wrap;align-items:center;gap:1px 0;flex:1;min-width:0}
+.race20 .o22 .r .more{font-size:10px;color:var(--cap);margin-left:3px}
+.race20 .o22 .r .vv{font-size:14px;font-weight:800;flex:none;font-variant-numeric:tabular-nums}
+.race20 .o22 .r.dim{background:#FAFAF8}
+.race20 .o22 .r.dim .lb{color:#8b8b84;font-weight:600}
+.race20 .o22 .r.dim .vv{color:#8b8b84;font-weight:600}
+
 /* アコーディオン（開閉はカスタムJS＋.openクラス。mockupのhidden属性方式は不使用） */
 .race20 .acc{margin-top:9px}
 .race20 .acchead{display:flex;align-items:center;gap:8px;padding:10px 8px;border:1px solid var(--rule);border-radius:4px;margin-top:6px;
@@ -1167,3 +1206,76 @@ details.subfold>summary .sc{margin-left:auto;color:var(--navy);
   padding:11px 13px;background:var(--sub-bg);margin-top:6px}
 .ak-wrap .note b{color:var(--sub)}
 .ak-wrap .restart{margin-top:16px;text-align:center}
+
+/* ===== レース回顧（91-race-review-spec.md）===== */
+.rv-lead{font-size:19px;font-weight:700;line-height:1.5;margin:0 0 10px;}
+.rv-facts{display:flex;gap:8px;flex-wrap:wrap;}
+.rv-fact{flex:1 1 128px;border:1px solid var(--rule);border-top:3px solid var(--navy);
+  padding:8px 10px;background:var(--sub-bg);}
+.rv-fact.bad{border-top-color:var(--live);}
+.rv-fl{font-size:11px;color:var(--cap);}
+.rv-fv{font-size:16px;font-weight:700;line-height:1.4;}
+.rv-fs{font-size:11px;color:var(--cap);}
+.rv-lap{margin-top:16px;}
+.rv-lapsvg{width:100%;height:auto;display:block;overflow:visible;}
+.rv-bandf{fill:#EDF1F5;} .rv-bandb{fill:#F8F9FA;}
+.rv-lapline{fill:none;stroke:var(--navy);stroke-width:2;stroke-linejoin:round;}
+circle.rv-pf{fill:var(--navy);} circle.rv-pb{fill:#fff;stroke:var(--navy);stroke-width:2;}
+.rv-vt{font-size:10.5px;fill:var(--text);text-anchor:middle;}
+.rv-ht{font-size:11px;fill:var(--cap);text-anchor:middle;}
+.rv-note{font-size:11.5px;color:var(--cap);margin-top:5px;}
+.rv-corner{margin-top:18px;border:1px solid var(--rule);padding:10px 12px;background:var(--sub-bg);}
+.rv-cap{font-size:11px;color:var(--cap);margin-bottom:4px;}
+.rv-ctbl{width:100%;border-collapse:collapse;}
+.rv-ctbl th{width:82px;font-size:11.5px;color:var(--cap);font-weight:400;border:none;
+  padding:3px 6px 3px 0;text-align:left;vertical-align:middle;}
+.rv-ctbl td{border:none;padding:4px 0;}
+.rv-seq{line-height:2.4;}
+.rv-grp{display:inline-block;white-space:nowrap;vertical-align:middle;}
+.rv-grp.multi{background:#E7ECF1;border-radius:11px;padding:2px 5px;}
+.rv-um{display:inline-block;}
+.rv-um.rv-top .uma{outline:2px solid var(--navy);outline-offset:1px;}
+.rv-gap{display:inline-block;height:1px;vertical-align:middle;}
+.rv-far{display:inline-block;width:1px;height:16px;background:#B9C4CD;
+  vertical-align:middle;margin-right:6px;}
+.rv-lead-mark,.rv-lead i{font-style:normal;}
+.rv-summ{font-size:13px;margin:14px 0 8px;} .rv-summ b{font-size:15px;}
+.rv-mcs{display:flex;flex-wrap:wrap;gap:8px;}
+.rv-mc{flex:1 1 200px;display:flex;align-items:center;gap:9px;border:1px solid var(--rule);
+  border-left:3px solid var(--cap);padding:8px 11px;background:var(--sub-bg);}
+.rv-mc.hit{border-left-color:var(--hit);background:#F2F9F4;}
+.rv-mc.lm{border-left-color:var(--live);}
+.rv-mc.lm.hit{border-left-color:var(--hit);}
+.rv-mk{font-size:20px;font-weight:700;color:var(--navy);width:24px;text-align:center;}
+.rv-mk.sm{font-size:11px;color:var(--live);width:30px;}
+.rv-mb{flex:1;font-size:13px;line-height:1.45;}
+.rv-s{font-size:11px;color:var(--cap);}
+.rv-mf{font-size:20px;font-weight:700;}
+.rv-u{font-size:11px;font-weight:400;color:var(--cap);}
+.rv-betline{font-size:13px;margin-top:14px;padding:9px 11px;background:var(--sub-bg2);}
+.rv-ok{color:var(--hit);} .rv-ng{color:var(--live);}
+.rv-pay{width:100%;border-collapse:collapse;margin-top:14px;font-size:12.5px;}
+.rv-pay th{width:64px;color:var(--cap);font-weight:400;font-size:12px;
+  border-bottom:1px solid var(--rule);padding:5px 6px 5px 0;text-align:left;}
+.rv-pay td{border-bottom:1px solid var(--rule);padding:5px 0;line-height:2;}
+.rv-blk{margin-top:12px;border-left:3px solid var(--cap);padding:2px 0 2px 11px;}
+.rv-blk.up{border-left-color:var(--hit);} .rv-blk.down{border-left-color:var(--live);}
+.rv-bh{font-size:12px;font-weight:700;}
+.rv-blk ul{margin:2px 0 0;padding-left:0;list-style:none;font-size:13px;}
+.rv-blk li{margin:2px 0;}
+.rv-ls{color:var(--cap);font-size:11.5px;margin-left:8px;}
+.rv-nc{border-left:3px solid var(--navy);padding:8px 12px;margin-bottom:9px;background:var(--sub-bg);}
+.rv-nh{font-size:14px;} .rv-nh b{margin-right:6px;}
+.rv-nf{font-weight:700;margin-right:8px;} .rv-np{color:var(--cap);font-size:12px;}
+.rv-nb{font-size:13px;}
+.rv-so{font-size:12px;color:var(--sub);margin-top:5px;padding-left:13px;position:relative;}
+.rv-so::before{content:"→";position:absolute;left:0;color:var(--navy);}
+/* 前走メモ（出馬表の下段・91-race-review-spec.md T7）*/
+tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
+  font-size:12px;padding:7px 10px;}
+.rv-ptag{display:inline-block;background:var(--navy);color:#fff;font-size:10px;
+  padding:1px 6px;border-radius:2px;margin-right:6px;}
+.rv-chip{display:inline-block;background:#F0F0EE;color:#7a6a6a;font-size:11px;
+  border-radius:2px;padding:1px 7px;margin-right:4px;}
+.rv-ptx{color:var(--sub);}
+.rv-psrc{color:var(--cap);font-size:11px;margin-left:4px;}

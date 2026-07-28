@@ -274,6 +274,9 @@ function renderVerificationSection(site) {
   if (site.status !== 'final') {
     return `<div class="eyebrow">答え合わせ</div><div class="kv">結果はレース後に反映されます</div>`;
   }
+  // 91-race-review-spec.md: 回顧が入っているレースは新しい3ブロックで描く。
+  // 未処理の過去レースは従来の答え合わせにそのまま落ちる（バックフィルまでの互換）。
+  if (site.review) return renderReviewSection(site);
   const result = site.result;
   const verification = site.verification;
   if (!result || !verification) return '';
@@ -359,6 +362,193 @@ function renderVerificationSection(site) {
     </details>
     ${summaryLines.join('')}
   `;
+}
+
+// ===== 4.4b レース回顧（91-race-review-spec.md）=====
+// 画面に出す数字は、それだけで意味が通じるものに限る（着順・人気・通過順・時計・払戻）。
+// 判定の根拠（件数・有意差・該当率）は仕様書に置き、ここには出さない。
+
+const REVIEW_CORNER_GAP = { '': 5, ',': 17, '-': 34, '=': 58 };
+
+// netkeibaのコーナー表記を [{sep, nums, lead}] に分解する。
+// 記号はすべて「前の馬との間隔」を表すので、記号のままではなく横のすき間で描く。
+function reviewParseCorner(txt) {
+  const out = [];
+  let sep = '';
+  let i = 0;
+  while (i < txt.length) {
+    const ch = txt[i];
+    if (ch === ',' || ch === '-' || ch === '=') { sep = ch; i += 1; continue; }
+    if (ch === '(') {
+      const j = txt.indexOf(')', i);
+      if (j < 0) break;
+      let lead = null;
+      const nums = [];
+      for (let tok of txt.slice(i + 1, j).split(',')) {
+        tok = tok.trim();
+        if (tok.startsWith('*')) { tok = tok.slice(1); lead = tok; }
+        if (/^\d+$/.test(tok)) nums.push(tok);
+      }
+      out.push({ sep, nums, lead });
+      sep = ''; i = j + 1; continue;
+    }
+    const m = /^\*?(\d+)/.exec(txt.slice(i));
+    if (m) { out.push({ sep, nums: [m[1]], lead: null }); sep = ''; i += m[0].length; continue; }
+    i += 1;
+  }
+  return out;
+}
+
+function renderReviewCorners(review, byNumber, top3) {
+  const raw = (review.race && review.race.corners) || {};
+  const keys = Object.keys(raw).sort();
+  if (!keys.length) return '';
+  const rows = keys.map((k) => {
+    const parts = reviewParseCorner(raw[k]).map((el, idx) => {
+      const boxes = el.nums.map((t) => {
+        const n = Number(t);
+        const h = byNumber[n] || {};
+        const cls = top3[n] ? ' rv-top' : '';
+        return `${el.lead === t ? '<i class="rv-lead">▸</i>' : ''}<span class="rv-um${cls}">${umaBox(n, h.gate, 'sm')}</span>`;
+      }).join('');
+      const grp = `<span class="rv-grp${el.nums.length > 1 ? ' multi' : ''}">${boxes}</span>`;
+      if (idx === 0) return grp;
+      const w = REVIEW_CORNER_GAP[el.sep] ?? 5;
+      return `<span class="rv-gap" style="width:${w}px"></span>${el.sep === '=' ? '<span class="rv-far"></span>' : ''}${grp}`;
+    }).join('');
+    return `<tr><th class="l">${escapeHtml(k[0])}コーナー</th><td class="l rv-seq">${parts}</td></tr>`;
+  }).join('');
+  return `<div class="rv-corner"><div class="rv-cap">コーナー通過順位</div>
+    <table class="rv-ctbl"><tbody>${rows}</tbody></table>
+    <details class="fold"><summary><span class="tri"></span>記号の見方</summary>
+      <div class="fold-body"><table><tbody>
+        <tr><th class="l">かたまり</th><td class="l">1馬身未満で並んでいる馬群。内側の馬番から並べる</td></tr>
+        <tr><th class="l">▸</th><td class="l">その馬群の中でいちばん前にいる馬</td></tr>
+        <tr><th class="l">すき間</th><td class="l">広いほど前の馬から離れている</td></tr>
+        <tr><th class="l">太い枠</th><td class="l">1〜3着の馬</td></tr>
+      </tbody></table></div>
+    </details></div>`;
+}
+
+// ラップ推移。縦軸は速いほど上（秒をそのまま上向きにすると直感と逆になる）
+function renderReviewLap(lap, splits) {
+  if (!lap || !splits || splits.length < 4) return '';
+  const n = splits.length;
+  const half = Math.floor(n / 2);
+  const mn = Math.min(...splits);
+  const rng = (Math.max(...splits) - mn) || 1;
+  const x0 = 34; const x1 = 612; const yTop = 20; const yBot = 96;
+  const px = (i) => (n > 1 ? x0 + (x1 - x0) * (i / (n - 1)) : (x0 + x1) / 2);
+  const py = (s) => yTop + ((s - mn) / rng) * (yBot - yTop);
+  const pts = splits.map((s, i) => [px(i), py(s)]);
+  const xmid = (px(half - 1) + px(half)) / 2;
+  const line = pts.map((p) => `${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' ');
+  const dots = pts.map((p, i) => `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="3.2" class="${i < half ? 'rv-pf' : 'rv-pb'}"/>`).join('');
+  const vals = pts.map((p, i) => `<text x="${p[0].toFixed(1)}" y="${(p[1] - 9).toFixed(1)}" class="rv-vt">${splits[i].toFixed(1)}</text>`).join('');
+  return `<div class="rv-lap"><svg viewBox="0 0 640 130" class="rv-lapsvg">
+    <rect x="${x0 - 12}" y="${yTop - 12}" width="${xmid - x0 + 12}" height="${yBot - yTop + 22}" class="rv-bandf"/>
+    <rect x="${xmid}" y="${yTop - 12}" width="${x1 - xmid + 12}" height="${yBot - yTop + 22}" class="rv-bandb"/>
+    <polyline points="${line}" class="rv-lapline"/>${dots}${vals}
+    <text x="${((x0 + xmid) / 2).toFixed(0)}" y="${yBot + 26}" class="rv-ht">前半 ${lap.front.toFixed(1)}秒</text>
+    <text x="${((xmid + x1) / 2).toFixed(0)}" y="${yBot + 26}" class="rv-ht">後半 ${lap.back.toFixed(1)}秒</text>
+  </svg></div>
+  <div class="rv-note">上にあるほど速いハロン。前後半の差 ${lap.diff > 0 ? '+' : ''}${lap.diff.toFixed(1)}秒。</div>`;
+}
+
+function renderReviewSection(site) {
+  const review = site.review;
+  const race = review.race || {};
+  const result = site.result || {};
+  const byNumber = {};
+  for (const h of site.horses) byNumber[h.number] = h;
+  const top3 = {};
+  for (const t of (result.top3 || [])) top3[t.number] = t.finish;
+
+  // ── 1. どんなレースだったか ──
+  const facts = [
+    ['ペース', race.pace && race.pace.act ? paceWord(race.pace.act) : '—',
+      race.pace && race.pace.hit === false ? `${paceWord(race.pace.pred)}と読んでいた` : (race.pace && race.pace.hit ? '読みと一致' : ''),
+      race.pace ? race.pace.hit : null],
+    ['決着', race.bias && race.bias.act ? race.bias.act : '—',
+      race.bias && race.bias.pred ? `${race.bias.pred}と読んでいた` : '',
+      race.bias ? race.bias.hit : null],
+    ['ラップ', race.lap ? race.lap.label : '—', '', null],
+    ['勝ち時計', race.winning_time || '—', '', null],
+  ].map(([lbl, val, sub, ok]) => `<div class="rv-fact${ok === false ? ' bad' : ''}">
+      <div class="rv-fl">${escapeHtml(lbl)}</div><div class="rv-fv">${escapeHtml(String(val))}</div>
+      <div class="rv-fs">${escapeHtml(sub)}</div></div>`).join('');
+
+  // ── 2. 印と買い目 ──
+  const miss = review.miss || {};
+  const markCards = ['◎', '○', '▲', '△'].flatMap((mk) =>
+    site.horses.filter((h) => h.ability_mark === mk && !h.scratched).map((h) => {
+      const good = h.finish && h.finish <= 3;
+      return `<div class="rv-mc${good ? ' hit' : ''}"><div class="rv-mk">${mk}</div>
+        <div class="rv-mb">${umaBox(h.number, h.gate, 'sm')}${escapeHtml(h.name)}<br>
+        <span class="rv-s">${h.popularity ?? '—'}人気</span></div>
+        <div class="rv-mf">${h.finish ?? '—'}<span class="rv-u">着</span></div></div>`;
+    })).join('');
+  const land = (site.verification || {}).landmine_result || {};
+  const landCards = Object.keys(land).sort((a, b) => Number(a) - Number(b)).map((num) => {
+    const lr = land[num]; const h = byNumber[num] || {};
+    return `<div class="rv-mc lm${lr.ok ? ' hit' : ' ng'}"><div class="rv-mk sm">地雷</div>
+      <div class="rv-mb">${umaBox(Number(num), h.gate, 'sm')}${escapeHtml(h.name ?? '')}<br>
+      <span class="rv-s">${h.popularity ?? '—'}人気　${lr.ok ? '読みどおり飛んだ' : '飛ばずに好走'}</span></div>
+      <div class="rv-mf">${lr.finish}<span class="rv-u">着</span></div></div>`;
+  }).join('');
+  const bets = (site.bets || []).map((b) => {
+    const combo = (b.combination || []).join('-');
+    return `${escapeHtml(b.type)} ${combo}　${fmtYen(b.stake)} → ` +
+      (b.hit ? `<b class="rv-ok">的中 ${fmtYen(b.payout)}</b>` : '<b class="rv-ng">外れ</b>');
+  }).join('<br>');
+  const payoutRows = Object.entries(result.payouts || {}).map(([type, val]) => {
+    const list = Array.isArray(val) ? val : [val];
+    const label = payoutTypeLabel(type);
+    const line = list.map((p) => `${comboBoxes(label, p.combination, byNumber)} ${fmtYen(p.payout)}${p.popularity ? `（${p.popularity}人気）` : ''}`).join(' ／ ');
+    return `<tr><th class="l">${escapeHtml(label)}</th><td class="l">${line}</td></tr>`;
+  }).join('');
+  const live = site.horses.filter((h) => !h.scratched && h.rank && h.finish);
+  const under = live.filter((h) => h.rank >= 7 && h.finish <= 3).sort((a, b) => (b.rank - b.finish) - (a.rank - a.finish)).slice(0, 2);
+  const over = live.filter((h) => h.rank <= 3 && h.finish >= 8).sort((a, b) => (b.finish - b.rank) - (a.finish - a.rank)).slice(0, 2);
+  const gapList = (rs, word, cls) => (rs.length ? `<div class="rv-blk ${cls}"><div class="rv-bh">${word}</div><ul>${
+    rs.map((h) => `<li>${umaBox(h.number, h.gate, 'sm')}${escapeHtml(h.name)}<span class="rv-ls">評価${h.rank}番手 → ${h.finish}着</span></li>`).join('')}</ul></div>` : '');
+
+  // ── 3. 気になった馬 ──
+  const notes = (review.horses || []).map((c) => {
+    const detail = [];
+    if (c.passing) detail.push(`通過 ${escapeHtml(c.passing)}`);
+    if (c.last_3f_rank === 1) detail.push('上がりは最も速い');
+    else if (c.last_3f_rank && c.last_3f_rank <= 5) detail.push(`上がりは${c.last_3f_rank}番目に速い`);
+    const so = (c.notes || []).filter(Boolean).map((x) => `<div class="rv-so">${escapeHtml(x)}</div>`).join('');
+    return `<div class="rv-nc"><div class="rv-nh">${umaBox(c.number, c.gate, 'sm')}<b>${escapeHtml(c.name)}</b>
+      <span class="rv-nf">${escapeHtml(c.finish_text || `${c.finish}着`)}</span>
+      <span class="rv-np">${c.popularity ?? '—'}人気</span></div>
+      <div class="rv-nb">${escapeHtml((c.labels || []).join(' ／ '))}</div>
+      ${detail.length ? `<div class="rv-note">${detail.join('　')}</div>` : ''}${so}</div>`;
+  }).join('');
+
+  return `
+    <div class="eyebrow">どんなレースだったか</div>
+    ${race.lead ? `<div class="rv-lead">${escapeHtml(race.lead)}</div>` : ''}
+    <div class="rv-facts">${facts}</div>
+    ${renderReviewLap(race.lap, ((result.lap || {}).splits || (site.result && site.result.lap ? site.result.lap.splits : []) || []).map(Number).filter((x) => !Number.isNaN(x)))}
+    ${renderReviewCorners(review, byNumber, top3)}
+
+    <div class="eyebrow">印と買い目</div>
+    ${miss.marks_total ? `<div class="rv-summ">印をつけた${miss.marks_total}頭のうち、<b>3着以内は${miss.marks_in_top3}頭</b></div>` : ''}
+    <div class="rv-mcs">${markCards}</div>
+    ${landCards ? `<div class="rv-summ">危ないと見た馬</div><div class="rv-mcs">${landCards}</div>` : ''}
+    ${bets ? `<div class="rv-betline">${bets}</div>` : '<div class="rv-betline">買い目なし（見送り）</div>'}
+    ${payoutRows ? `<table class="rv-pay"><tbody>${payoutRows}</tbody></table>` : ''}
+    ${gapList(under, '低く見ていたのに上位に来た馬', 'up')}
+    ${gapList(over, '高く買っていたのに負けた馬', 'down')}
+
+    ${notes ? `<div class="eyebrow">気になった馬</div>${notes}` : ''}
+  `;
+}
+
+function paceWord(c) {
+  return { H: 'ハイ', M: '平均', S: 'スロー' }[c] || (c ?? '—');
 }
 
 // ===== ①全頭評価表 =====
@@ -854,6 +1044,19 @@ function renderMarks20(site) {
   `;
 }
 
+// 前走メモ（91-race-review-spec.md T7）。回顧で拾った馬だけ、直近1走ぶんを出す。
+// 予想の点数には反映していない。読む人の判断材料として置くだけ。
+function renderPrevNoteRow(h) {
+  const p = h.prev_note;
+  if (!p) return '';
+  const chips = (p.labels || []).map((l) => `<span class="rv-chip">${escapeHtml(l)}</span>`).join('');
+  const so = (p.notes || []).filter(Boolean).map((x) => `<div class="rv-so">${escapeHtml(x)}</div>`).join('');
+  const src = `（${escapeHtml(p.date ?? '')} ${escapeHtml(p.track ?? '')}${p.race_no ?? ''}R ${escapeHtml(p.race_name ?? '')}）`;
+  return `<tr class="rv-prev"><td></td><td colspan="7" class="l">
+    <span class="rv-ptag">前走メモ</span>${chips}<span class="rv-ptx">${escapeHtml(p.text ?? '')}</span>
+    <span class="rv-psrc">${src}</span>${so}</td></tr>`;
+}
+
 function renderAllHorses20(site) {
   const markCellCls = { '◎': 'mk-hon', '○': 'mk-tai', '▲': 'mk-tan', '△': 'mk-oku' };
   const horses = [...site.horses].sort((a, b) => {
@@ -880,6 +1083,7 @@ function renderAllHorses20(site) {
         <td>${h.popularity ?? '—'}</td>
         <td>${gradeHtml}</td>
       </tr>
+      ${renderPrevNoteRow(h)}
     `;
   }).join('');
   return `
@@ -1097,6 +1301,167 @@ function renderPaceMap20(site) {
   `;
 }
 
+// ── 展開シナリオ6マス化（93-pace-scenario-6cell-spec.md §6-0-1・案22採用） ──
+//
+// 【実装上の注意（仕様どおりに厳密再現できていない点）】93-spec §6-0は「並び順=本番の
+// scenario_fit_score（末脚+ペース微傾斜）をそのまま呼ぶ」としているが、その計算に要る
+// pace_role・kick_score は s2.json 止まりで analysis.json / 公開JSONまで運ばれておらず
+// （§7の触るファイル一覧に keiba_publish.py が無いため本タスクでは配線していない）、
+// フロント側では参照できない。そのため「脚質（running_style）でマスに振り分け、
+// マス内は 印(◎○▲△) → 推定勝率 → 馬番 の順で並べる」で代替している。
+// site.horses[].running_style は単一文字コード（逃/先/差/追。keiba_publish.py の
+// normalize_running_style 出力・既存の PACE_STYLE_KEY と同じ表記）。フルラベルではない。
+const SCENARIO_STYLE_FULL = { '逃': '逃げ', '先': '先行', '差': '差し', '追': '追込' };
+const SCENARIO_BADGE_LABEL = { main: '本命', sub: '対抗', other: '3番手' };
+
+// 93-spec §6-0-1: マスに入る馬と並び順は**バックエンドが決める**（cells[].horses）。
+// keiba_score_s2.cell_horses() が pace_role で振り分け、本番の scenario_fit_score
+// （末脚基礎点＋ペース微傾斜）降順・同点は馬番昇順で並べたものをそのまま出す。
+// JS側で並べ替えない（採点式と表示がズレるため）。
+// cells[].horses が無い過去公開分は空配列に縮退する（旧表示は renderScenarioLegacy20 が担当）。
+function scenarioHorsesForCell(cell, byNumber) {
+  return (cell.horses || [])
+    .map((x) => byNumber[x.number])
+    .filter((h) => h && !h.scratched);
+}
+
+function scenarioMainNigeSet(p) {
+  return new Set((p.front_pressure?.main_nige || [])
+    .map((s) => Number(String(s).match(/^\d+/)))
+    .filter((n) => !Number.isNaN(n)));
+}
+
+function scenarioCellBadgeKey(cell, p) {
+  for (const key of ['main', 'sub', 'other']) {
+    const s = p.scenario && p.scenario[key];
+    if (s && s.code === cell.code && s.side === cell.side) return key;
+  }
+  return null;
+}
+
+// 狙い（末脚順）: 6マス案でも旧3ブロック案でも共通（scenario.main.favoritesは93-spec §5で維持）
+function renderScenarioFavorites20(p, byNumberOv) {
+  const recoFavs = (p.scenario && p.scenario.main && p.scenario.main.favorites) || [];
+  if (!recoFavs.length) return '';
+  const recoItems = recoFavs.map((f) => {
+    const tier = kickTierLabel(f.kick_tier);
+    const kickHtml = tier
+      ? `<span class="kick ${kickTierClass(tier)}">末脚 ${escapeHtml(tier)}</span>` : '';
+    return `<span class="nm">${umaBox(Number(f.number), (byNumberOv[f.number] || {}).gate, 'sm')} ${escapeHtml(f.name)}${kickHtml}</span>`;
+  }).join('');
+  const legendHtml = '<div class="kicklegend">末脚＝ゴール前の伸び脚（過去5走の上がり3Fが、同じレースの出走馬の中でどのあたりだったか）。'
+    + '<span class="kick k-top">抜群</span><span class="kick k-high">上位</span>'
+    + '<span class="kick k-mid">並</span><span class="kick k-low">見劣り</span>の4段。'
+    + '<span class="kick k-na">不明</span>は判定に足る過去走が無い馬。'
+    + 'ペースが本命でも対抗でも、狙いは末脚の質で決める（展開で入れ替えない）。</div>';
+  return `<div class="subh">狙い（末脚順）</div><div class="reco">${recoItems}</div>${legendHtml}`;
+}
+
+// 93-spec §6-0-1 案22: 本命マスを大きなカードにして馬名まで出し、残り5通りは1行ずつ。
+// §6-1必須条件: 6マス全部に馬番／確率は断定にしない／basisがcourse以外なら注記／
+// opacityで行ごと薄くしない（強弱は背景色と文字色だけで付ける）。
+function renderScenarioGrid20(site) {
+  const p = site.prediction;
+  const grid = p.scenario_grid;
+  const mainNige = scenarioMainNigeSet(p);
+  const byNumberOv = {};
+  for (const h of site.horses) byNumberOv[h.number] = h;
+
+  const cells = [...grid.cells].sort((a, b) => a.rank - b.rank);
+  const top = cells[0];
+  const topHorses = scenarioHorsesForCell(top, byNumberOv).slice(0, 4);
+
+  const passTimePart = (p.scenario?.main?.pass_time?.label)
+    ? `${escapeHtml(p.scenario.main.pass_time.label)} ／ ` : '';
+  const sidePct = Math.round((top.side_prob || 0) * 100);
+  const subLine = `${passTimePart}このペースなら ${escapeHtml(top.side_label)} ${sidePct}%`;
+
+  const bigItemsHtml = topHorses.map((h) => `
+    <div class="it">${umaBox(h.number, h.gate)}<span class="mk">${escapeHtml(h.ability_mark || '')}</span>` +
+    `<span class="nm">${escapeHtml(h.name)}</span><span class="st">${escapeHtml(SCENARIO_STYLE_FULL[h.running_style] || '')}</span></div>
+  `).join('');
+
+  const bigHtml = `
+    <div class="c22">
+      <div class="top">
+        <span class="bdg b1" style="background:#fff;color:${'var(--navy)'}">本命</span>
+        <span class="ttl">${escapeHtml(top.title)} × ${escapeHtml(top.side_label)}</span>
+        <span class="v">${Math.round(top.prob * 100)}<small>%</small></span>
+      </div>
+      <div class="sub">${subLine}</div>
+      <div class="hl">この展開で伸びる馬</div>
+      <div class="list">${bigItemsHtml}</div>
+    </div>
+  `;
+
+  const rowsHtml = cells.slice(1).map((c) => {
+    const badgeKey = scenarioCellBadgeKey(c, p);
+    const hs = scenarioHorsesForCell(c, byNumberOv);
+    const shown = hs.slice(0, 6);
+    const more = hs.length > 6 ? `<span class="more">＋${hs.length - 6}</span>` : '';
+    const chipsHtml = shown.map((h) => paceHorsePiece(h, mainNige.has(h.number))).join('');
+    const rowCls = `r${badgeKey ? ' on' : ' dim'}`;
+    const badgeNum = badgeKey === 'main' ? 1 : badgeKey === 'sub' ? 2 : 3;
+    const badgeHtml = badgeKey
+      ? `<span class="bdg b${badgeNum}">${SCENARIO_BADGE_LABEL[badgeKey]}</span>` : '';
+    return `
+      <div class="${rowCls}"><span class="lb">${escapeHtml(c.title)} × ${escapeHtml(c.side_label)}</span>
+        <div class="hs">${chipsHtml}${more}</div>${badgeHtml}
+        <span class="vv">${Math.round(c.prob * 100)}%</span></div>
+    `;
+  }).join('');
+
+  const basisNote = grid.basis && grid.basis !== 'course'
+    ? '<div class="foldnote">このコースは実績が薄いため、同じ馬場・距離帯の平均で代用しています。</div>'
+    : '';
+
+  return `<div class="subh">展開シナリオ</div>${bigHtml}<div class="o22">${rowsHtml}</div>
+    <div class="pmlegend">オレンジ枠<span class="sw nige"></span>＝主逃げ候補／馬番の下は印／
+    確率は目安で「この展開になります」の断定ではありません</div>${basisNote}
+    ${renderScenarioFavorites20(p, byNumberOv)}`;
+}
+
+// 旧3ブロック表示（本命＋対抗＋畳んだ3番手）。scenario_grid の無い過去公開分はこちらのまま
+// 併存させる（93-spec §7「過去に公開済みのレースは再生成しない」・14-spec踏襲）。
+function renderScenarioLegacy20(site) {
+  const p = site.prediction;
+  const byNumberOv = {};
+  for (const h of site.horses) byNumberOv[h.number] = h;
+
+  const blocks = [
+    { key: 'main', cls: '' },
+    { key: 'sub', cls: ' sub' },
+    { key: 'other', cls: ' etc folded' },
+  ];
+  const roleBadgeHtml = (displayRole) => {
+    if (displayRole === '本命') return '<span class="rolebadge hon">本命</span>';
+    if (displayRole === '対抗') return '<span class="rolebadge tai">対抗</span>';
+    return '';
+  };
+  let otherTitle = '';
+  let hasPassTime = false;
+  const blocksHtml = blocks.map(({ key, cls }) => {
+    const s = p.scenario[key];
+    if (!s) return '';
+    const pctHtml = `<span class="p">${Math.round(s.prob * 100)}%</span>`;
+    if (key === 'other') otherTitle = s.title;
+    let passTimeHtml = '';
+    if (key !== 'other' && s.pass_time && s.pass_time.label) {
+      hasPassTime = true;
+      passTimeHtml = `<span class="passtime">${escapeHtml(s.pass_time.label)}</span>`;
+    }
+    return `<div class="scn${cls}"><div class="hd">${roleBadgeHtml(s.display_role)}${escapeHtml(s.title)}${pctHtml}${passTimeHtml}</div></div>`;
+  }).join('');
+  const foldNoteHtml = otherTitle
+    ? `<div class="foldnote">3つ目（${escapeHtml(otherTitle)}）は薄く畳む。可能性は残すが主役にしない。</div>`
+    : '';
+  const passTimeNoteHtml = hasPassTime
+    ? '<div class="foldnote">過去の同コースの実績から出した目安。誤差はおおむね±1秒（実測で76%が±1秒以内）。</div>'
+    : '';
+
+  return `<div class="subh">展開シナリオ（本命＋対抗）</div>${blocksHtml}${foldNoteHtml}${passTimeNoteHtml}${renderScenarioFavorites20(p, byNumberOv)}`;
+}
+
 function renderOverview20(site) {
   const r = site.race;
   const p = site.prediction;
@@ -1257,60 +1622,12 @@ function renderOverview20(site) {
     }
   }
 
-  // (f) 展開シナリオ（本命＋対抗）。推奨馬はシナリオ各ブロックには出さず、下の「狙い」に1回だけまとめる。
-  if (p.scenario) {
-    const blocks = [
-      { key: 'main', cls: '' },
-      { key: 'sub', cls: ' sub' },
-      { key: 'other', cls: ' etc folded' },
-    ];
-    const roleBadgeHtml = (displayRole) => {
-      if (displayRole === '本命') return '<span class="rolebadge hon">本命</span>';
-      if (displayRole === '対抗') return '<span class="rolebadge tai">対抗</span>';
-      return '';
-    };
-    let otherTitle = '';
-    // 90-spec: pass_time（通過タイム秒）は本命/対抗の行にだけ併記する。otherには出さない。
-    // 文言はバックエンド生成のlabelをそのまま使い、JS側で文字列を組み立てない。
-    let hasPassTime = false;
-    const blocksHtml = blocks.map(({ key, cls }) => {
-      const s = p.scenario[key];
-      if (!s) return '';
-      const pctHtml = `<span class="p">${Math.round(s.prob * 100)}%</span>`;
-      if (key === 'other') otherTitle = s.title; // otherは畳む：ヘッダ（ペース名＋%）だけ表示
-      let passTimeHtml = '';
-      if (key !== 'other' && s.pass_time && s.pass_time.label) {
-        hasPassTime = true;
-        passTimeHtml = `<span class="passtime">${escapeHtml(s.pass_time.label)}</span>`;
-      }
-      return `<div class="scn${cls}"><div class="hd">${roleBadgeHtml(s.display_role)}${escapeHtml(s.title)}${pctHtml}${passTimeHtml}</div></div>`;
-    }).join('');
-    const foldNoteHtml = otherTitle
-      ? `<div class="foldnote">3つ目（${escapeHtml(otherTitle)}）は薄く畳む。可能性は残すが主役にしない。</div>`
-      : '';
-    // 本命/対抗のどちらかにpass_timeがある時だけ、誤差幅の注記を出す（断定に見せないため必須）
-    const passTimeNoteHtml = hasPassTime
-      ? '<div class="foldnote">過去の同コースの実績から出した目安。誤差はおおむね±1秒（実測で76%が±1秒以内）。</div>'
-      : '';
-
-    // 狙い（末脚順）: main/sub/otherで共通の固定3頭（scenario.main.favorites・pick_favoritesが末脚順で確定済み）を1回だけ表示
-    const recoFavs = (p.scenario.main && p.scenario.main.favorites) || [];
-    let recoHtml = '';
-    if (recoFavs.length) {
-      const recoItems = recoFavs.map((f) => {
-        const tier = kickTierLabel(f.kick_tier);
-        const kickHtml = tier
-          ? `<span class="kick ${kickTierClass(tier)}">末脚 ${escapeHtml(tier)}</span>` : '';
-        return `<span class="nm">${umaBox(Number(f.number), (byNumberOv[f.number] || {}).gate, 'sm')} ${escapeHtml(f.name)}${kickHtml}</span>`;
-      }).join('');
-      const legendHtml = '<div class="kicklegend">末脚＝ゴール前の伸び脚（過去5走の上がり3Fが、同じレースの出走馬の中でどのあたりだったか）。'
-        + '<span class="kick k-top">抜群</span><span class="kick k-high">上位</span>'
-        + '<span class="kick k-mid">並</span><span class="kick k-low">見劣り</span>の4段。'
-        + '<span class="kick k-na">不明</span>は判定に足る過去走が無い馬。'
-        + 'ペースが本命でも対抗でも、狙いは末脚の質で決める（展開で入れ替えない）。</div>';
-      recoHtml = `<div class="subh">狙い（末脚順）</div><div class="reco">${recoItems}</div>${legendHtml}`;
-    }
-    sections.push(`<div class="subh">展開シナリオ（本命＋対抗）</div>${blocksHtml}${foldNoteHtml}${passTimeNoteHtml}${recoHtml}`);
+  // (f) 展開シナリオ。93-pace-scenario-6cell-spec.md §6-0-1: 案22（6マス・主役カード）。
+  // scenario_grid が無い過去公開分（§7「再生成しない」）は旧3ブロック表示のまま併存させる。
+  if (p.scenario_grid && p.scenario_grid.cells && p.scenario_grid.cells.length === 6) {
+    sections.push(renderScenarioGrid20(site));
+  } else if (p.scenario) {
+    sections.push(renderScenarioLegacy20(site));
   }
 
   return `
@@ -1392,6 +1709,11 @@ function setupAccordion20() {
 function renderVerification20(site) {
   if (site.status !== 'final') {
     return `<div class="secthead">答え合わせ</div><div class="kv">結果はレース後に反映されます</div>`;
+  }
+  // 91-race-review-spec.md: 回顧が入っているレースは新しい3ブロックで描く。
+  // 未処理の過去レースは従来の答え合わせに落ちる（バックフィルまでの互換）。
+  if (site.review) {
+    return `<div class="secthead">レース回顧</div>${renderReviewSection(site)}`;
   }
   const result = site.result;
   const verification = site.verification;
