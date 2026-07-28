@@ -1502,8 +1502,8 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
 
 /* 出馬表の行: 馬名は省略せず、性齢・斤量・騎手・脚質・間隔を2行目にまとめる */
 .race20 table.unified td.nm{white-space:normal;overflow:visible;text-overflow:clip}
-.race20 table.unified td.nm .prof{display:flex;align-items:center;gap:4px;flex-wrap:wrap;
-  white-space:nowrap;font-size:9.5px;line-height:1.5}
+.race20 table.unified td.nm .prof{display:flex;align-items:center;gap:3px;flex-wrap:nowrap;
+  white-space:nowrap;font-size:9.5px;line-height:1.5;overflow:hidden}
 .race20 table.unified td.nm .prof .rot{font-size:9.5px;color:var(--cap)}
 .race20 table.unified td.nm .prof .pw{font-variant-numeric:tabular-nums}
 .race20 table.unified td.nm .legbar{transform:scale(.88);transform-origin:left center;margin:0 -2px}
@@ -1515,3 +1515,15 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
 /* 過去5走の表：狭い画面では横スクロールになるので、その旨を出す */
 .race20 .pthint{font-size:10px;color:var(--cap);margin:2px 0 0}
 @media(min-width:620px){.race20 .pthint{display:none}}
+
+/* 2行目は列を固定幅にして、脚質バーと間隔が全馬で縦に揃うようにする */
+.race20 table.unified td.nm .prof .pa{display:inline-block;width:2.3em;flex:none}
+.race20 table.unified td.nm .prof .pk{display:inline-block;width:2.4em;flex:none;
+  text-align:right;font-variant-numeric:tabular-nums}
+.race20 table.unified td.nm .prof .pj{display:inline-block;width:4em;flex:none;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.race20 table.unified td.nm .prof .rot{flex:none;width:3.4em;text-align:right}
+
+/* コーナー通過順位が枠からはみ出ないよう折り返す（馬群のかたまりは割らない） */
+.race20 .rv-ctbl td.rv-seq{white-space:normal}
+.race20 .rv-corner{overflow:hidden}

@@ -1445,8 +1445,7 @@ function renderShutuba20(site) {
         <td>${markBadge20(h)}</td>
         <td>${umaBox(h.number, h.gate, 'sm')}</td>
         <td class="l nm">${escapeHtml(h.name)}<span class="tri">▸</span>
-          <div class="u prof"><span class="pw">${escapeHtml(h.sex_age ?? '')} ${h.weight_carried != null ? h.weight_carried.toFixed(1) : '—'} ${escapeHtml(h.jockey && h.jockey !== 'N/A' ? h.jockey : '—')}</span>
-            ${legBar(h.running_style)}<span class="rot">${escapeHtml(h.rotation || '')}</span></div></td>
+          <div class="u prof"><span class="pa">${escapeHtml(h.sex_age ?? '')}</span><span class="pk">${h.weight_carried != null ? String(h.weight_carried).replace(/\.0$/, '') : '—'}</span><span class="pj">${escapeHtml(h.jockey && h.jockey !== 'N/A' ? h.jockey : '—')}</span>${legBar(h.running_style)}<span class="rot">${escapeHtml(h.rotation || '')}</span></div></td>
         <td>${fmtNum(h.total, 1)}<div class="u"><span class="grade ${gradeClass(h.grade)}">${gradeDisp(h.grade)}</span></div></td>
         <td>${medalSpan(winTxt, wr[h.number])}</td>
         <td>${h.odds != null ? h.odds.toFixed(1) : '—'}<div class="u pp">${h.popularity ?? '—'}人</div></td>
@@ -1473,8 +1472,8 @@ function renderShutuba20(site) {
       <div class="allbtn"><button type="button" data-shall="open">全部開く</button><button type="button" data-shall="close">全部閉じる</button></div>
     </div>
     <table class="unified">
-      <colgroup><col style="width:9%"><col style="width:7%"><col style="width:46%">
-        <col style="width:11%"><col style="width:10%"><col style="width:17%"></colgroup>
+      <colgroup><col style="width:9%"><col style="width:7%"><col style="width:50%">
+        <col style="width:10%"><col style="width:9%"><col style="width:15%"></colgroup>
       <thead><tr>
         <th>印</th><th>番</th><th class="l">馬名・騎手</th>
         <th>総合</th><th>勝率</th><th>オッズ</th>
