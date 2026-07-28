@@ -1207,7 +1207,7 @@ function legBar(style) {
   const label = idx >= 0
     ? `<span class="lbl">${escapeHtml(s)}</span>`
     : '<span class="lbl mut">—</span>';
-  return `<span class="legbar"><span class="lb">${cells}</span>${label}</span>`;
+  return `<span class="legbar"><span class="legcells">${cells}</span>${label}</span>`;
 }
 
 function medalSpan(text, cls, title) {
