@@ -1578,8 +1578,8 @@ function buildRace20Html(site, oddsAll) {
     <div class="race20">
       ${renderHeader20(site)}
       ${banner}
-      ${renderShutuba20(site)}
       ${renderOverview20(site)}
+      ${renderShutuba20(site)}
       ${renderBets20(site)}
       ${renderOddsMasterSection(site, oddsAll)}
       ${renderVerification20(site)}
