@@ -470,11 +470,14 @@ function foMark(h) {
   return '';
 }
 
+// 1位=金 / 2位=銀 / 3位=銅。着順ボックス・勝率の配色（.ag.f1〜f3）と共通。
+const MEDAL_CLS = { 1: 'f1', 2: 'f2', 3: 'f3' };
+
 // 各列 = { label, cls, has(h), cell(h, ctx) }。has を持たない列は常に出す。
 const FO_COLS = [
   { label: '着', cls: 'fo-c1 num', cell: (h) => (h.finish != null ? h.finish : escapeHtml(h.finish_text || '—')) },
-  { label: '枠', cls: 'fo-c2', cell: (h) => (h.gate ? wakuBox(h.gate, 'sm') : '—') },
-  { label: '馬番', cls: 'fo-c3 num', cell: (h) => h.number },
+  // 枠番の列は持たない。枠の情報は馬番ボックスの色（frameClass）で示す。
+  { label: '馬番', cls: 'fo-c2 num', cell: (h) => umaBox(h.number, h.gate, 'sm') },
   { label: '印', cls: 'fo-mk', has: (h) => !!h.ability_mark || h.bet_mark === '地雷', cell: foMark },
   { label: '馬名', cls: 'fo-nm', cell: (h) => escapeHtml(h.name) },
   { label: '性齢', cls: 'num sub', has: (h) => !!h.sex_age, cell: (h) => escapeHtml(h.sex_age || '—') },
@@ -485,15 +488,19 @@ const FO_COLS = [
     cell: (h) => escapeHtml(h.finish_time || '—') },
   { label: '着差', cls: 'num sub', has: (h) => !!h.margin,
     cell: (h) => (h.finish === 1 ? '' : escapeHtml(h.margin || '—')) },
+  // 人気は1・2・3番人気を金・銀・銅で塗る（セルの背景ではなく数字のボックス）
   { label: '人気', cls: 'num', has: (h) => h.popularity != null,
-    cellCls: (h) => (h.popularity === 1 ? ' fo-p1' : (h.popularity === 2 || h.popularity === 3) ? ' fo-p23' : ''),
-    cell: (h) => (h.popularity != null ? h.popularity : '—') },
+    cell: (h) => (h.popularity == null ? '—'
+      : medalSpan(h.popularity, MEDAL_CLS[h.popularity] || '', `${h.popularity}番人気`)) },
   { label: '単勝', cls: 'num', has: (h) => h.final_odds != null,
     cell: (h) => (h.final_odds != null ? h.final_odds.toFixed(1) : '—') },
+  // 上り3Fは速い順に金・銀・銅。同タイムは同じ色（重複を除いた値で順位を決める）
   { label: '上り3F', cls: 'num', has: (h) => h.last_3f != null,
-    cellCls: (h, ctx) => (h.last_3f != null && h.last_3f === ctx.bestL3f ? ' fo-l3' : ''),
-    cell: (h, ctx) => (h.last_3f == null ? '—'
-      : h.last_3f.toFixed(1) + (h.last_3f === ctx.bestL3f ? '<span class="fo-fast">最速</span>' : '')) },
+    cell: (h, ctx) => {
+      if (h.last_3f == null) return '—';
+      const i = ctx.l3Top.indexOf(h.last_3f);
+      return medalSpan(h.last_3f.toFixed(1), MEDAL_CLS[i + 1] || '', i >= 0 ? `上り3F ${i + 1}位` : '');
+    } },
   { label: '通過', cls: 'num sub', has: (h) => !!h.passing, cell: (h) => escapeHtml(h.passing || '—') },
   { label: '厩舎', cls: 'sub', has: (h) => !!h.trainer, cell: (h) => escapeHtml(h.trainer || '—') },
   { label: '馬体重', cls: 'num sub', has: (h) => !!h.body_weight, cell: (h) => escapeHtml(h.body_weight || '—') },
@@ -505,7 +512,8 @@ function renderFinishOrder(site) {
   runners.sort((a, b) => (a.finish ?? 999) - (b.finish ?? 999) || a.number - b.number);
 
   const l3 = runners.map((h) => h.last_3f).filter((v) => typeof v === 'number');
-  const ctx = { bestL3f: l3.length ? Math.min(...l3) : null };
+  // 速い3タイム。同タイムが並んだ場合は1つの順位を分け合う（例: 37.7が2頭なら金2つ・次は銀）
+  const ctx = { l3Top: [...new Set(l3)].sort((a, b) => a - b).slice(0, 3) };
   const cols = FO_COLS.filter((c) => !c.has || runners.some((h) => c.has(h)));
 
   const tr = (h) => {
@@ -531,18 +539,16 @@ function renderFinishOrder(site) {
   `;
 }
 
-// 固定3列の left を実測で当てる。列幅は馬名や騎手名の長さで毎回変わるので、
+// 固定2列（着・馬番）の left を実測で当てる。列幅は馬名や騎手名の長さで毎回変わるので、
 // CSS に数値を書くと横スクロール時に隙間や重なりが出る（2026-07-28に実機で確認）。
 // 折りたたみの中の表は開くまで幅0なので、開いたときにも呼ぶ。
 function setupFinishOrder() {
   for (const table of document.querySelectorAll('table.fo')) {
     const row = table.querySelector('tbody tr');
-    if (!row || row.cells.length < 3) continue;
+    if (!row || row.cells.length < 2) continue;
     const w1 = row.cells[0].getBoundingClientRect().width;
-    const w2 = row.cells[1].getBoundingClientRect().width;
-    if (!w1 || !w2) continue;
+    if (!w1) continue;
     table.style.setProperty('--fo-l2', `${w1}px`);
-    table.style.setProperty('--fo-l3', `${w1 + w2}px`);
   }
   for (const d of document.querySelectorAll('details.fo-more')) {
     d.addEventListener('toggle', () => { if (d.open) setupFinishOrder(); }, { once: true });
