@@ -167,7 +167,9 @@
     {
       key: 'axis', kind: 'horse', max: 2, always: true,
       q: '軸にする馬は？',
-      s: '「この馬から買う」と決めている馬を選んでください。2頭まで選べます。決めきれないなら下のボタンへ。',
+      // 上限は説明文で書かず、見出し脇の残り枠カウンター（0/2頭）で示す。
+      // 文章に混ぜると読み飛ばされ、2頭選べることに気づかれなかった
+      counter: true,
       extra: [{ label: '決めきれない（何頭かに絞るだけ）', desc: '', value: 'none' }],
       apply: function (S, v) {
         if (v === 'none') { S.axisMode = 'none'; S.axis = []; } else { S.axisMode = 'pick'; S.axis = v; }
@@ -1077,10 +1079,22 @@
 
     var qText = Q.qf ? Q.qf(S) : Q.q;
     var sText = Q.sf ? Q.sf(S) : (Q.s || '');
+    // 残り枠カウンター: 1頭でも選べば on（枠線が青）、上限に達したら max（塗りつぶし）。
+    // 「あと何頭選べるか」を選んでいる最中も見えるようにする
+    var countHtml = '';
+    if (Q.counter) {
+      var cCls = S.pick.length >= Q.max ? ' max' : (S.pick.length ? ' on' : '');
+      countHtml = '<span class="qcount' + cCls + '"><span class="cn">' + S.pick.length
+        + '</span><span class="cs">/' + Q.max + '頭</span></span>';
+    }
+    var headHtml = countHtml
+      ? '<div class="qhead"><div class="q">' + escapeHtml(qText) + '</div>' + countHtml + '</div>'
+      : '<div class="q">' + escapeHtml(qText) + '</div>';
     return '<div class="ak-prog"><span class="ak-step">質問 ' + (S.asked.length + 1) + '</span>'
       + '<span class="ak-cand">残っている買い方 <b>' + n + '</b> / ' + CATALOG.length + ' 通り</span></div>'
       + '<div class="ak-dots">' + dots + '</div>'
-      + '<div class="ak-card"><div class="ak-q"><div class="q">' + escapeHtml(qText) + '</div><div class="s">' + escapeHtml(sText) + '</div></div>' + body + '</div>'
+      + '<div class="ak-card"><div class="ak-q">' + headHtml
+      + (sText ? '<div class="s">' + escapeHtml(sText) + '</div>' : '') + '</div>' + body + '</div>'
       + (S.asked.length ? '<div class="restart"><button type="button" class="ak-btn gray sm" data-ak-back>ひとつ戻る</button></div>' : '')
       + renderAlive(ctx, S);
   }

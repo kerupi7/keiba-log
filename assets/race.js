@@ -694,15 +694,25 @@ function renderReviewSection(site) {
       <div class="rv-fs">${sub && sub.html ? sub.html : escapeHtml(sub || '')}</div></div>`).join('');
 
   // ── 2. 印と買い目 ──
-  const miss = review.miss || {};
-  const markCards = ['◎', '○', '▲', '△'].flatMap((mk) =>
-    site.horses.filter((h) => h.ability_mark === mk && !h.scratched).map((h) => {
-      const good = h.finish && h.finish <= 3;
-      return `<div class="rv-mc${good ? ' hit' : ''}"><div class="rv-mk">${mk}</div>
-        <div class="rv-mb">${umaBox(h.number, h.gate, 'sm')}${escapeHtml(h.name)}<br>
-        <span class="rv-s">${h.popularity ?? '—'}人気</span></div>
-        <div class="rv-mf">${h.finish ?? '—'}<span class="rv-u">着</span></div></div>`;
-    })).join('');
+  // 印をつけた馬を ◎○▲△ の順に1本の配列にする。サマリーのバッジ列と下のカードで
+  // 同じ順序・同じ母数を使い、表示と件数がずれないようにする
+  const marked = ['◎', '○', '▲', '△'].flatMap((mk) =>
+    site.horses.filter((h) => h.ability_mark === mk && !h.scratched).map((h) => ({ mk, h })));
+  const markInTop3 = marked.filter(({ h }) => h.finish && h.finish <= 3).length;
+  const markCards = marked.map(({ mk, h }) => {
+    const good = h.finish && h.finish <= 3;
+    return `<div class="rv-mc${good ? ' hit' : ''}"><div class="rv-mk">${mk}</div>
+      <div class="rv-mb">${umaBox(h.number, h.gate, 'sm')}${escapeHtml(h.name)}<br>
+      <span class="rv-s">${h.popularity ?? '—'}人気</span></div>
+      <div class="rv-mf">${h.finish ?? '—'}<span class="rv-u">着</span></div></div>`;
+  }).join('');
+  // 印の的中サマリー。件数だけの1行だと「どの印が来たか」はカードを1枚ずつ読む
+  // 必要があったので、印を横に並べて3着以内を緑で塗る
+  const markBand = marked.map(({ mk, h }) => {
+    const good = h.finish && h.finish <= 3;
+    return `<div class="rv-sb${good ? ' ok' : ''}"><span class="m">${mk}</span>`
+      + `<span class="f">${h.finish ? `${h.finish}着` : '—'}</span></div>`;
+  }).join('');
   const land = (site.verification || {}).landmine_result || {};
   const landCards = Object.keys(land).sort((a, b) => Number(a) - Number(b)).map((num) => {
     const lr = land[num]; const h = byNumber[num] || {};
@@ -752,7 +762,8 @@ function renderReviewSection(site) {
     ${renderReviewCorners(review, byNumber, top3)}
 
     <div class="eyebrow">印と買い目</div>
-    ${miss.marks_total ? `<div class="rv-summ">印をつけた${miss.marks_total}頭のうち、<b>3着以内は${miss.marks_in_top3}頭</b></div>` : ''}
+    ${marked.length ? `<div class="rv-msum"><div class="rv-sbs">${markBand}</div>
+      <div class="rv-sres">3着以内 <b>${markInTop3}</b>/${marked.length}頭</div></div>` : ''}
     <div class="rv-mcs">${markCards}</div>
     ${landCards ? `<div class="rv-summ">危ないと見た馬</div><div class="rv-mcs">${landCards}</div>` : ''}
     ${bets ? `<div class="rv-betline">${bets}</div>` : '<div class="rv-betline">買い目なし（見送り）</div>'}
