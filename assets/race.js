@@ -1581,8 +1581,8 @@ function renderShutuba20(site) {
       <div class="allbtn"><button type="button" data-shall="open">全部開く</button><button type="button" data-shall="close">全部閉じる</button></div>
     </div>
     <table class="unified">
-      <colgroup><col style="width:9%"><col style="width:7%"><col style="width:50%">
-        <col style="width:10%"><col style="width:9%"><col style="width:15%"></colgroup>
+      <colgroup><col class="c-mk"><col class="c-no"><col class="c-nm">
+        <col class="c-tot"><col class="c-wr"><col class="c-od"></colgroup>
       <thead><tr>
         <th>印</th><th>番</th><th class="l">馬名・騎手</th>
         <th>総合</th><th>勝率</th><th>オッズ</th>

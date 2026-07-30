@@ -1383,7 +1383,27 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
    97-spec: 出馬表（馬柱）— 印/全頭評価/勝率期待値/個別評価の統合表
    ============================================================ */
 .race20 table.unified{width:100%;border-collapse:collapse;font-size:12.5px;table-layout:fixed;margin-top:8px}
-.race20 table.unified th{background:var(--navy);color:#fff;font-size:11px;font-weight:700;padding:6px 3px}
+/* ヘッダの揃えは中身と同じ中央に。tdはcenterなのにthが右寄せ（base: th{text-align:right}）
+   だったため、印・番・総合・勝率・オッズで見出しと値が16〜33pxずれていた。馬名だけth.lで左。 */
+.race20 table.unified th{background:var(--navy);color:#fff;font-size:11px;font-weight:700;
+  padding:6px 3px;text-align:center}
+
+/* 列幅。スマホは馬名列に50%必要（2行目の性齢・斤量・騎手・脚質・間隔で約170px使う）。
+   画面が広いと馬名列だけが伸びて中身の右に空白がたまるので、620px以上では馬名を34%に絞り、
+   余りを数値3列へ回す（馬名列の余白175px→65px）。 */
+.race20 table.unified col.c-mk{width:9%}
+.race20 table.unified col.c-no{width:7%}
+.race20 table.unified col.c-nm{width:50%}
+.race20 table.unified col.c-tot{width:10%}
+.race20 table.unified col.c-wr{width:9%}
+.race20 table.unified col.c-od{width:15%}
+@media(min-width:620px){
+  .race20 table.unified col.c-mk{width:8%}
+  .race20 table.unified col.c-nm{width:34%}
+  .race20 table.unified col.c-tot{width:16%}
+  .race20 table.unified col.c-wr{width:14%}
+  .race20 table.unified col.c-od{width:21%}
+}
 .race20 table.unified td{border-bottom:1px solid var(--rule);padding:5px 2px;text-align:center;
   font-variant-numeric:tabular-nums}
 .race20 table.unified th.l,.race20 table.unified td.l{text-align:left}
