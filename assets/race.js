@@ -979,11 +979,6 @@ function renderOddsMasterSection(site, oddsAll) {
       <summary><span class="tri"></span>買い目シミュレーター${tsLabel}</summary>
       <div class="fold-body">
         ${panels}
-        <div class="om-footnote">
-          <div>買いライン＝期待値がトントン（1.0倍）になるオッズ。それ以上なら理論上プラス</div>
-          <div>複勝・ワイドは最低オッズ側で判定。オッズは取得時点のスナップショットで、発売中は変動します</div>
-          <div>このシミュレーターは参考計算です。下の「買い目」セクション（当サイトの提供買い目）とは独立しています</div>
-        </div>
       </div>
     </details>
   `;
@@ -1560,7 +1555,6 @@ function renderShutuba20(site) {
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>
-    <div class="conf">行をタップすると、項目別の評価・過去5走・コース適性が開きます</div>
   `;
 }
 
@@ -1748,7 +1742,7 @@ function renderPaceMap20(site) {
   return `
     <div class="subh">脚質マップ</div>
     <div class="pacemap">${lanes}${restLane}</div>
-    <div class="pmlegend">複勝率はこのコースの脚質別実績（勝率・連対率は上の脚質傾向）。馬番の下は印、枠線は
+    <div class="pmlegend">枠線は
       <span class="sw nige"></span>主逃げ候補 /
       <span class="sw jirai"></span>地雷</div>
   `;
@@ -1891,13 +1885,11 @@ function renderScenarioLegacy20(site) {
     if (displayRole === '対抗') return '<span class="rolebadge tai">対抗</span>';
     return '';
   };
-  let otherTitle = '';
   let hasPassTime = false;
   const blocksHtml = blocks.map(({ key, cls }) => {
     const s = p.scenario[key];
     if (!s) return '';
     const pctHtml = `<span class="p">${Math.round(s.prob * 100)}%</span>`;
-    if (key === 'other') otherTitle = s.title;
     let passTimeHtml = '';
     if (key !== 'other' && s.pass_time && s.pass_time.label) {
       hasPassTime = true;
@@ -1905,14 +1897,11 @@ function renderScenarioLegacy20(site) {
     }
     return `<div class="scn${cls}"><div class="hd">${roleBadgeHtml(s.display_role)}${escapeHtml(s.title)}${pctHtml}${passTimeHtml}</div></div>`;
   }).join('');
-  const foldNoteHtml = otherTitle
-    ? `<div class="foldnote">3つ目（${escapeHtml(otherTitle)}）は薄く畳む。可能性は残すが主役にしない。</div>`
-    : '';
   const passTimeNoteHtml = hasPassTime
     ? '<div class="foldnote">過去の同コースの実績から出した目安。誤差はおおむね±1秒（実測で76%が±1秒以内）。</div>'
     : '';
 
-  return `<div class="subh">展開シナリオ（本命＋対抗）</div>${blocksHtml}${foldNoteHtml}${passTimeNoteHtml}${renderScenarioFavorites20(p, byNumberOv)}`;
+  return `<div class="subh">展開シナリオ（本命＋対抗）</div>${blocksHtml}${passTimeNoteHtml}${renderScenarioFavorites20(p, byNumberOv)}`;
 }
 
 function renderOverview20(site) {
@@ -1967,8 +1956,6 @@ function renderOverview20(site) {
         <thead><tr><th class="l">脚質</th><th>勝率</th><th>連対</th><th>複勝</th><th>走数</th><th class="l sep">判定</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
-      <div class="pmlegend">数字のマスの濃さは、その列の中での順位（緑＝その列で強い / 赤＝弱い）。
-        判定は複勝率と勝率から決めるので、マスの色とは一致しないことがあります</div>
     `);
 
     sections.push(renderPaceMap20(site));
@@ -1995,7 +1982,7 @@ function renderOverview20(site) {
     sections.push(`
       <div class="biaslabel"><b>このコースの枠順成績</b> ${escapeHtml(p.inner_outer_bias.label)}${scopeHtml}</div>
       <div class="strip">${cellsHtml}</div>
-      <div class="striplegend">過去数年の平均で、今日の馬場の傾向ではありません。緑=有利 / 赤=不利、濃いほど強い（1.00=標準）${hasNd ? ' / —=走数不足で判定なし' : ''}</div>
+      <div class="striplegend">緑=有利 / 赤=不利、濃いほど強い（1.00=標準）${hasNd ? ' / —=走数不足で判定なし' : ''}</div>
     `);
   }
 
@@ -2068,7 +2055,7 @@ function renderOverview20(site) {
     if (p.front_pressure) {
       const mainNige = p.front_pressure.main_nige || [];
       const nigeText = mainNige.length ? `（主逃げ=${mainNige.map((n) => escapeHtml(n)).join('・')}）` : '';
-      statHtml = `<div class="statline">先行圧指数 <span class="big">${p.front_pressure.index.toFixed(2)}</span> → ${escapeHtml(p.front_pressure.label)}${nigeText}<span class="note">※前に行きたい馬が多め。逃げは「候補群」で見る（1頭の断定はしない）</span></div>`;
+      statHtml = `<div class="statline">先行圧指数 <span class="big">${p.front_pressure.index.toFixed(2)}</span> → ${escapeHtml(p.front_pressure.label)}${nigeText}</div>`;
     }
     if (tableHtml || statHtml) {
       sections.push(`<div class="subh">逃げ候補・先行圧</div>${tableHtml}${statHtml}`);

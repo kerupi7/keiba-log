@@ -1014,7 +1014,7 @@
         var h = ctx.BY[n];
         return h ? (umaBox(n, h.gate, 'sm') + '<span class="killnm">' + escapeHtml(h.name) + '</span>') : '';
       }).join('')
-      : '<span class="hint">いつでも押せます（質問の途中でも結果を見たあとでも）</span>';
+      : '';
     var bar = '<div class="ak-bar"><span class="lbl">気に入らない馬を消す</span>'
       + '<span class="killed">' + listHtml + '</span>'
       + '<button type="button" class="ak-mini' + (S.killOpen ? ' on' : '') + '" data-ak-kill-toggle style="margin-left:auto">'
@@ -1088,10 +1088,8 @@
   function render(ctx, S) {
     computeDone(ctx, S);
     // 見出しはタブ側が担うので出さない
-    var head = '<div class="om-note">質問に答えていくと、券種と買い方が自動で絞られます。'
-      + '設問数は固定ではなく、答えによって変わります。数字はすべて実データ（確率＋オッズ）で計算しています。</div>';
     var body = S.done ? (renderResults(ctx, S) + renderAlive(ctx, S)) : renderQuestion(ctx, S);
-    return '<div class="ak-wrap">' + head + renderKillBar(ctx, S) + '<div class="ak-root">' + body + '</div></div>';
+    return '<div class="ak-wrap">' + renderKillBar(ctx, S) + '<div class="ak-root">' + body + '</div></div>';
   }
 
   // ===== T9: イベント処理（race.js側のイベント委譲から呼ばれる） =====
