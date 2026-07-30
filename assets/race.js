@@ -657,6 +657,19 @@ window.addEventListener('resize', () => {
   foResizeTimer = setTimeout(setupFinishOrder, 150);
 });
 
+// 勝ち時計カードの2行目（91-race-review-spec.md §7-3）。
+// 「この条件」＝ 競馬場・馬場・距離・クラス・馬場状態・季節に加えて、その日その場の
+// 馬場の速さまで引いた後という意味。根拠の数字（基準タイム・馬場差）は画面に出さない。
+function winningTimeNote(ev) {
+  if (!ev || !ev.label) return '';
+  // 評価語は1行目に独立させる。同じ行に続けると幅128pxのカードで数字の途中で折れる
+  const d = Math.abs(ev.faster_by_sec);
+  const word = `<b>${escapeHtml(ev.label)}</b><br>`;
+  if (d < 0.05) return { html: `${word}この条件の平均どおり` };
+  const dir = ev.faster_by_sec > 0 ? '速い' : '遅い';
+  return { html: `${word}この条件の平均より<span class="rv-nw">${d.toFixed(1)}秒${dir}</span>` };
+}
+
 function renderReviewSection(site) {
   const review = site.review;
   const race = review.race || {};
@@ -675,10 +688,10 @@ function renderReviewSection(site) {
       race.bias && race.bias.pred ? `${race.bias.pred}と読んでいた` : '',
       race.bias ? race.bias.hit : null],
     ['ラップ', race.lap ? race.lap.label : '—', '', null],
-    ['勝ち時計', race.winning_time || '—', '', null],
+    ['勝ち時計', race.winning_time || '—', winningTimeNote(race.winning_time_eval), null],
   ].map(([lbl, val, sub, ok]) => `<div class="rv-fact${ok === false ? ' bad' : ''}">
       <div class="rv-fl">${escapeHtml(lbl)}</div><div class="rv-fv">${escapeHtml(String(val))}</div>
-      <div class="rv-fs">${escapeHtml(sub)}</div></div>`).join('');
+      <div class="rv-fs">${sub && sub.html ? sub.html : escapeHtml(sub || '')}</div></div>`).join('');
 
   // ── 2. 印と買い目 ──
   const miss = review.miss || {};
@@ -1551,21 +1564,9 @@ function renderShutuba20(site) {
     `;
   }).join('');
 
-  // 脚質ごとの頭数。出走馬の running_style を数えるだけ（取消は除く）
-  const styleCount = { '逃': 0, '先': 0, '差': 0, '追': 0 };
-  live.forEach((h) => {
-    const k = String(h.running_style || '').trim().slice(0, 1);
-    if (k in styleCount) styleCount[k] += 1;
-  });
-  const unknown = live.length - Object.values(styleCount).reduce((a, b) => a + b, 0);
-  const styleBand = ['逃', '先', '差', '追']
-    .map((k) => `<span class="sc"><i>${k}</i>${styleCount[k]}</span>`).join('')
-    + (unknown ? `<span class="sc none"><i>不明</i>${unknown}</span>` : '');
-
   return `
     <div class="secthead">出馬表<span class="cnt">全${site.race.field_size}頭・馬番順・タップで馬柱</span></div>
     <div class="shctl">
-      <div class="stylecount">脚質${styleBand}</div>
       <div class="allbtn"><button type="button" data-shall="open">全部開く</button><button type="button" data-shall="close">全部閉じる</button></div>
     </div>
     <table class="unified">
@@ -2014,7 +2015,8 @@ function renderOverview20(site) {
   // ゼロになる＝競馬場ごとの現象）ことを確認済み。ただし効果は採点に足す基準の1/5で、
   // 予想の当たり具合は作り方2通り・物差し2通りとも改善しなかったため点数には入れない。
   // 人が他の材料と合わせて見るための材料として出す。
-  // 時計の傾向（time_trend）は芝の勝ちタイムから出す別系統。内外の偏りより持続が
+  // 時計の傾向（time_trend）は勝ちタイムから出す別系統（2026-07-30までは芝だけ、
+  // 以降はそのレースと同じ馬場種別）。内外の偏りより持続が
   // はっきりしている（同じ開催の連続日で相関+0.406 / その日の前半→後半で+0.512）。
   // どちらか片方しか無い日もあるので、両方を同じ節にまとめて出し入れする。
   const hasBias = Boolean(p.day_bias && p.day_bias.surfaces
@@ -2045,7 +2047,7 @@ function renderOverview20(site) {
       + ` / 差しが決まったレース ${p.day_bias.rear_wins || 0}`
       + (p.day_bias.pace_label ? `／ ペースは${escapeHtml(p.day_bias.pace_label)}` : '') + '。';
     const ttNote = !tt ? '' :
-      `時計は芝の勝ちタイムを、コース・クラス・馬場状態・時期で補正した残差です`
+      `時計はこのレースと同じ馬場（芝／ダート）の勝ちタイムを、コース・クラス・馬場状態・時期で補正した残差です`
       + `（当日${tt.today_races}R＋前日${tt.prev_races}R）。マイナスほど速い馬場。`;
     const scope = tt
       ? `当日＋前日の${tt.n_races}レース`

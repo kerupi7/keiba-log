@@ -1246,6 +1246,9 @@ details.fo-more .fold-body{padding-bottom:10px;}
 .rv-fl{font-size:11px;color:var(--cap);}
 .rv-fv{font-size:16px;font-weight:700;line-height:1.4;}
 .rv-fs{font-size:11px;color:var(--cap);}
+/* 勝ち時計の評価語（優秀／遅い等）。緑は的中専用なので色は使わず、太字だけで示す */
+.rv-fs b{color:var(--text);}
+.rv-nw{white-space:nowrap;}   /* 「1.3秒速い」を数字の途中で折らない */
 /* ラップの折れ線2本を1つのグラフに重ねる（紺＝今回／灰の破線＝コース平均）。
    上にあるほど速いハロン。線だけSVG・文字は全部HTML。SVGに文字を置くと viewBox の幅が
    画面幅に圧縮される分だけ文字も縮み、375pxで数値が実効5.2pxになって読めなかった
@@ -1489,14 +1492,8 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
 .race20 details.nfold>summary::before{content:"▸ "}
 .race20 details.nfold[open]>summary::before{content:"▾ "}
 
-/* 97-spec §9.6: 脚質の頭数・全開閉ボタン・実績の全部表示 */
+/* 97-spec §9.6: 全開閉ボタン・実績の全部表示（脚質の頭数バンドは撤去） */
 .race20 .shctl{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:8px 0 0}
-.race20 .stylecount{font-size:11.5px;font-weight:700;color:var(--sub);display:flex;
-  align-items:center;gap:5px}
-.race20 .stylecount .sc{display:inline-flex;align-items:baseline;gap:3px;background:#EFF2F5;
-  border-radius:3px;padding:1px 6px;font-variant-numeric:tabular-nums;color:var(--navy)}
-.race20 .stylecount .sc i{font-style:normal;font-size:10px;font-weight:700;opacity:.8}
-.race20 .stylecount .sc.none{background:#F0F0EC;color:var(--cap)}
 .race20 .allbtn{margin-left:auto;display:flex;gap:6px}
 .race20 .allbtn button{font-size:11px;font-weight:700;color:var(--cta);background:#fff;
   border:1px solid var(--rule);border-radius:4px;padding:3px 9px;cursor:pointer}
