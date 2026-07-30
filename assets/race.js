@@ -546,6 +546,15 @@ function foMark(h) {
 // 1位=金 / 2位=銀 / 3位=銅。着順ボックス・勝率の配色（.ag.f1〜f3）と共通。
 const MEDAL_CLS = { 1: 'f1', 2: 'f2', 3: 'f3' };
 
+// "1:46.0" → 106.0 秒。"46.0"（1分未満・障害の "3:20.5" も同形）にも対応する。
+// 数字以外が混じる値（中止・除外の行）は null を返して列から外す。
+function timeToSec(text) {
+  if (!text) return null;
+  const m = /^(?:(\d+):)?(\d+(?:\.\d+)?)$/.exec(String(text).trim());
+  if (!m) return null;
+  return (m[1] ? Number(m[1]) * 60 : 0) + Number(m[2]);
+}
+
 // 各列 = { label, cls, has(h), cell(h, ctx) }。has を持たない列は常に出す。
 const FO_COLS = [
   { label: '着', cls: 'fo-c1 num', cell: (h) => (h.finish != null ? h.finish : escapeHtml(h.finish_text || '—')) },
@@ -561,6 +570,16 @@ const FO_COLS = [
     cell: (h) => escapeHtml(h.finish_time || '—') },
   { label: '着差', cls: 'num sub', has: (h) => !!h.margin,
     cell: (h) => (h.finish === 1 ? '' : escapeHtml(h.margin || '—')) },
+  // 着差（netkeiba）は「1頭前との差」で単位も馬身。勝ち馬から何秒離れたかは自分で足し算
+  // しないと分からないので、勝ち時計との差を秒で別列に出す（1着は空欄）。
+  { label: '勝ち馬差', cls: 'num sub', has: (h, ctx) => ctx.winSec != null && !!h.finish_time,
+    cell: (h, ctx) => {
+      if (h.finish === 1) return '';
+      const s = timeToSec(h.finish_time);
+      if (s == null || ctx.winSec == null) return '—';
+      const d = Math.round((s - ctx.winSec) * 10) / 10;
+      return `<span title="勝ち馬とのタイム差">${d > 0 ? '+' : ''}${d.toFixed(1)}</span>`;
+    } },
   // 人気は1・2・3番人気を金・銀・銅で塗る（セルの背景ではなく数字のボックス）
   { label: '人気', cls: 'num', has: (h) => h.popularity != null,
     cell: (h) => (h.popularity == null ? '—'
@@ -587,7 +606,10 @@ function renderFinishOrder(site) {
   const l3 = runners.map((h) => h.last_3f).filter((v) => typeof v === 'number');
   // 速い3タイム。同タイムが並んだ場合は1つの順位を分け合う（例: 37.7が2頭なら金2つ・次は銀）
   const ctx = { l3Top: [...new Set(l3)].sort((a, b) => a - b).slice(0, 3) };
-  const cols = FO_COLS.filter((c) => !c.has || runners.some((h) => c.has(h)));
+  // 基準は勝ち時計だけ。1着のタイムが無いレースは他馬の時計を基準にせず、列ごと落とす
+  const winner = runners.find((h) => h.finish === 1);
+  ctx.winSec = winner ? timeToSec(winner.finish_time) : null;
+  const cols = FO_COLS.filter((c) => !c.has || runners.some((h) => c.has(h, ctx)));
 
   const tr = (h) => {
     const cells = cols.map((c) => {
