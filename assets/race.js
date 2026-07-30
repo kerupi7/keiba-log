@@ -1659,23 +1659,30 @@ function renderBets20(site) {
     `;
   }).join('');
 
-  let totalLine;
+  // 合計は表の最下段（tfoot）に置く。金額・払戻が上の行と同じ列に縦に並ぶので目で足し算を追える。
+  // 表の外に浮いた1行（旧.betsum）だと、上下の1px罫線に挟まれて表とシミュレーターのどちらに
+  // 属するのか読めなかった（mockup-28 案1）。セル数はheaderと必ず一致させる。
+  let footCells;
   if (showResult && site.verification) {
     const v = site.verification;
     const icon = v.bets_hit ? '✓' : '✕';
-    const clsAttr = v.bets_hit ? ' class="hit"' : ' class="miss"';
-    totalLine = `<div class="betsum">合計 ${totalPoints}点 ${fmtYen(totalCost)} → 払戻 <span${clsAttr}>${fmtYen(v.bets_return)} ${icon}</span></div>`;
+    const cls = v.bets_hit ? 'o' : 'x';
+    footCells = `<td>${fmtYen(totalCost)}</td><td class="${cls}">${icon}</td><td>${fmtYen(v.bets_return)}</td>`;
+  } else if (showResult) {
+    // 確定済みだが verification が無い（想定外）→ 結果・払戻は空にして列数だけ合わせる
+    footCells = `<td>${fmtYen(totalCost)}</td><td>—</td><td>—</td>`;
   } else {
-    totalLine = `<div class="betsum">合計 ${totalPoints}点 ${fmtYen(totalCost)}</div>`;
+    footCells = `<td>${fmtYen(totalCost)}</td>`;
   }
+  const footRow = `<tr><td class="l">合計</td><td class="l">${totalPoints}点</td>${footCells}</tr>`;
 
   return `
     <div class="secthead">買い目</div>
-    <table class="fixed">
+    <table class="fixed betstbl">
       <thead>${header}</thead>
       <tbody>${rows}</tbody>
+      <tfoot>${footRow}</tfoot>
     </table>
-    ${totalLine}
   `;
 }
 

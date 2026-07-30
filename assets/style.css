@@ -346,6 +346,17 @@ details.subfold>summary .sc{margin-left:auto;color:var(--navy);
 }
 
 /* ===== 8. 買い目シミュレーター（17-odds-master-spec.md §6。T4: B.手動 / T5: A.おすすめ） ===== */
+
+/* 見出しを navy バーにして「買い目」と対等な別ブロックに見せる（mockup-28 案3）。
+   細い1px罫線どうしでは買い目の表との境目が読めなかったため、区切りを線の太さでなく
+   帯の有無で伝える。borderは帯が担うので消す。折りたたみの開閉挙動は変えない。 */
+details.fold.om-fold{border-top:none;border-bottom:none}
+details.fold.om-fold>summary{margin-top:16px;padding:8px 11px;border-radius:3px;
+  background:var(--navy);color:#fff;font-size:15px}
+details.fold.om-fold[open]>summary{font-size:15px;border-bottom:none;padding-bottom:8px}
+details.fold.om-fold>summary .tri::before{color:#fff}
+details.fold.om-fold>summary .cnt{color:#fff;opacity:.85;font-size:11px}
+
 .om-tabs{display:grid;grid-template-columns:1fr 1fr;gap:0;margin:12px 0 0;
   border-bottom:2px solid var(--rule)}
 .om-tab{font-size:13px;font-weight:700;padding:10px 6px;border:none;background:none;
@@ -751,9 +762,9 @@ details.subfold>summary .sc{margin-left:auto;color:var(--navy);
 .race20 .dim tr.tot td{border-bottom:none;font-weight:700;padding-top:6px}
 .race20 .dim tr.tot .pt{color:var(--navy)}
 
-/* 買い目合計 */
-.race20 .betsum{margin-top:9px;font-size:13px;font-weight:700}
-.race20 .betsum .hit{color:var(--hit)} .race20 .betsum .miss{color:var(--live)}
+/* 買い目合計（tfoot。太線1本で表を閉じる。mockup-28 案1） */
+.race20 .betstbl tfoot td{border-top:2px solid var(--rule-strong);border-bottom:none;
+  background:var(--sub-bg);font-weight:700;padding-top:8px;padding-bottom:8px}
 
 /* 答え合わせ: 成績タイル ＋「予想 → 結果」リスト（グループは濃紺の帯と左の色線で区切る） */
 .race20 .vtiles{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:9px}
