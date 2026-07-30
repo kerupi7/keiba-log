@@ -431,28 +431,101 @@ function renderReviewCorners(review, byNumber, top3) {
 }
 
 // ラップ推移。縦軸は速いほど上（秒をそのまま上向きにすると直感と逆になる）
-function renderReviewLap(lap, splits) {
-  if (!lap || !splits || splits.length < 4) return '';
+// ラップの折れ線グラフ（100-lap-compare-spec.md）。
+// 1つのグラフに2本重ねる。紺＝今回、灰の破線＝同じコース・同じペースの平均。
+// 目盛りは当然に共通で、**上にあるほど速いハロン**（91-specからの既定の向き）。
+//
+// 線だけをSVGで描き、文字（数値・軸・凡例）は全部HTMLに出す。SVGに文字を入れると
+// viewBox の幅が画面幅に圧縮される分だけ文字も縮み、375pxの端末で実効5.2pxになって
+// 読めなかった（2026-07-30に実測）。線は preserveAspectRatio="none" で伸ばし、
+// vector-effect="non-scaling-stroke" で太さだけ一定に保つ。
+const LAP_LINE_H = 104;   // 折れ線の描画高さ（px）
+const LAP_Y0 = 13;        // 縦の使用範囲（％）。上下に数値ラベルの逃げを作る
+const LAP_Y1 = 87;
+const LAP_DENSE_N = 12;   // これ以上のハロン数は数値を小さめに詰める
+
+// 距離が200の倍数でないコースは最初の区間だけ短い（例 1700m → 100m）。
+// その1点を線に入れると縦の目盛りが引き伸ばされて残りの形が潰れるので、線からは外して
+// 数値だけ注記に出す。コース別データページ（courses.js）と同じ扱い。
+function lapLineChart(splits, avg, lapFirstM) {
   const n = splits.length;
-  const half = Math.floor(n / 2);
-  const mn = Math.min(...splits);
-  const rng = (Math.max(...splits) - mn) || 1;
-  const x0 = 34; const x1 = 612; const yTop = 20; const yBot = 96;
-  const px = (i) => (n > 1 ? x0 + (x1 - x0) * (i / (n - 1)) : (x0 + x1) / 2);
-  const py = (s) => yTop + ((s - mn) / rng) * (yBot - yTop);
-  const pts = splits.map((s, i) => [px(i), py(s)]);
-  const xmid = (px(half - 1) + px(half)) / 2;
-  const line = pts.map((p) => `${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' ');
-  const dots = pts.map((p, i) => `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="3.2" class="${i < half ? 'rv-pf' : 'rv-pb'}"/>`).join('');
-  const vals = pts.map((p, i) => `<text x="${p[0].toFixed(1)}" y="${(p[1] - 9).toFixed(1)}" class="rv-vt">${splits[i].toFixed(1)}</text>`).join('');
-  return `<div class="rv-lap"><svg viewBox="0 0 640 130" class="rv-lapsvg">
-    <rect x="${x0 - 12}" y="${yTop - 12}" width="${xmid - x0 + 12}" height="${yBot - yTop + 22}" class="rv-bandf"/>
-    <rect x="${xmid}" y="${yTop - 12}" width="${x1 - xmid + 12}" height="${yBot - yTop + 22}" class="rv-bandb"/>
-    <polyline points="${line}" class="rv-lapline"/>${dots}${vals}
-    <text x="${((x0 + xmid) / 2).toFixed(0)}" y="${yBot + 26}" class="rv-ht">前半 ${lap.front.toFixed(1)}秒</text>
-    <text x="${((xmid + x1) / 2).toFixed(0)}" y="${yBot + 26}" class="rv-ht">後半 ${lap.back.toFixed(1)}秒</text>
-  </svg></div>
-  <div class="rv-note">上にあるほど速いハロン。前後半の差 ${lap.diff > 0 ? '+' : ''}${lap.diff.toFixed(1)}秒。</div>`;
+  const skip = lapFirstM && lapFirstM !== 200 ? 1 : 0;
+  const scaled = splits.slice(skip).concat(avg ? avg.slice(skip) : []);
+  const lo = Math.min(...scaled) - 0.15;
+  const hi = Math.max(...scaled) + 0.15;
+  const span = (hi - lo) || 1;
+  // 各ハロンは区間なので、点は区間の中央に置く（軸ラベル・差の行と桁がそろう）
+  const xf = (i) => ((i + 0.5) / n) * 100;
+  const yf = (v) => LAP_Y0 + ((v - lo) / span) * (LAP_Y1 - LAP_Y0);
+  const pts = (vals) => vals.slice(skip)
+    .map((v, k) => `${xf(k + skip).toFixed(2)},${yf(v).toFixed(2)}`).join(' ');
+
+  const grid = splits.map((v, i) =>
+    `<line x1="${xf(i).toFixed(2)}" y1="0" x2="${xf(i).toFixed(2)}" y2="100" class="rv-lgr"/>`).join('');
+  const lines = (avg ? `<polyline points="${pts(avg)}" class="rv-lln avg"/>` : '')
+    + `<polyline points="${pts(splits)}" class="rv-lln now"/>`;
+  const dots = (vals, cls) => vals.slice(skip).map((v, k) =>
+    `<i class="rv-ldt ${cls}" style="left:${xf(k + skip).toFixed(2)}%;top:${yf(v).toFixed(2)}%"></i>`).join('');
+  // 数値は今回の線にだけ付ける。平均より速い（＝点が上）なら上に、遅いなら下に逃がす
+  const vals = splits.slice(skip).map((v, k) => {
+    const i = k + skip;
+    const up = avg ? v <= avg[i] : true;
+    return `<span class="rv-lvl ${up ? 'up' : 'dn'}" `
+      + `style="left:${xf(i).toFixed(2)}%;top:${yf(v).toFixed(2)}%">${v.toFixed(1)}</span>`;
+  }).join('');
+  return `<div class="rv-lcw" style="height:${LAP_LINE_H}px">
+      <svg class="rv-lcs" viewBox="0 0 100 100" preserveAspectRatio="none">${grid}${lines}</svg>
+      ${avg ? dots(avg, 'avg') : ''}${dots(splits, 'now')}${vals}
+    </div>
+    <div class="rv-lbax">${splits.map((v, i) =>
+    `<span${i < skip ? ' class="off"' : ''}>${i === 0 && skip ? `${lapFirstM}m` : i + 1}</span>`).join('')}</div>`;
+}
+
+function renderReviewLap(lap) {
+  const splits = (lap && Array.isArray(lap.splits) ? lap.splits : [])
+    .map(Number).filter((x) => !Number.isNaN(x));
+  if (!lap || splits.length < 4) return '';
+  const course = lap.course && Array.isArray(lap.course.lap)
+    && lap.course.lap.length === splits.length ? lap.course : null;
+  const avg = course ? course.lap.map(Number) : null;
+  const dense = splits.length >= LAP_DENSE_N ? ' dense' : '';
+
+  let legend = '<span class="rv-lgi now">今回</span>';
+  if (avg) {
+    const paceWord = { S: 'スロー', M: '平均', H: 'ハイ' }[course.pace] || null;
+    const cname = `${escapeHtml(course.track)}${escapeHtml(course.surface)}${course.distance}m`;
+    legend += `<span class="rv-lgi avg">コースの平均（${cname}・`
+      + `${paceWord ? `${paceWord}ペースの` : ''}${course.races}レース）</span>`;
+  }
+
+  // 今回−平均。プラスは今回のほうが時間がかかった（遅い）ハロン
+  const diffRow = avg ? `<div class="rv-ldf${dense}">${splits.map((v, i) => {
+    const d = v - avg[i];
+    return `<span>${d > 0 ? '+' : d < 0 ? '−' : '±'}${Math.abs(d).toFixed(1)}</span>`;
+  }).join('')}</div>
+    <div class="rv-note">↑ 今回−平均（秒）。＋は平均より時間がかかったハロン</div>` : '';
+
+  const firstM = course ? course.lap_first_m : null;
+  const notes = ['上にあるほど速いハロン。縦軸は0秒から始めていません（差を見るため）'];
+  if (firstM && firstM !== 200) {
+    notes.push(`最初の${firstM}mは今回 ${splits[0].toFixed(1)}秒`
+      + `${avg ? ` / 平均 ${avg[0].toFixed(1)}秒` : ''}。`
+      + '区間の長さが他と違うので、線と縦の目盛りからは外しています');
+  }
+  notes.push(`前後半の差 ${lap.diff > 0 ? '+' : ''}${lap.diff.toFixed(1)}秒`
+    + `（前半 ${lap.front.toFixed(1)}秒 / 後半 ${lap.back.toFixed(1)}秒）`);
+  if (avg && course.races === 1) {
+    notes.push('このコースのこのペースは今回の1レースだけなので、平均は今回とまったく同じ線になります');
+  }
+  if (!avg) {
+    notes.push('コースの平均ラップは今回のコースを特定できないため出していません');
+  }
+  return `<div class="rv-lap${dense}">
+    <div class="rv-lgd">${legend}</div>
+    ${lapLineChart(splits, avg, course ? course.lap_first_m : null)}
+    ${diffRow}
+  </div>
+  ${notes.map((t) => `<div class="rv-note">${t}</div>`).join('')}`;
 }
 
 // ===== 4.4a 着順表（95-finish-order-spec.md）=====
@@ -640,7 +713,7 @@ function renderReviewSection(site) {
     <div class="eyebrow">どんなレースだったか</div>
     ${race.lead ? `<div class="rv-lead">${escapeHtml(race.lead)}</div>` : ''}
     <div class="rv-facts">${facts}</div>
-    ${renderReviewLap(race.lap, ((result.lap || {}).splits || (site.result && site.result.lap ? site.result.lap.splits : []) || []).map(Number).filter((x) => !Number.isNaN(x)))}
+    ${renderReviewLap(race.lap)}
     ${renderReviewCorners(review, byNumber, top3)}
 
     <div class="eyebrow">印と買い目</div>

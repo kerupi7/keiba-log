@@ -159,7 +159,9 @@ function renderKpis(f) {
 // 区間は原則200mだが、先頭区間だけ lap_first_m（100/150m等）になりうる（60-spec §3-3-6）。
 function renderLapSection(f, dist, lapFirstM, curPaceIn) {
   const PACES = [['all', '全体'], ['S', 'スロー'], ['M', '平均'], ['H', 'ハイ']];
-  // 8R未満のペースはボタンごと消さず disabled で存在を示す（省略すると「データが無い」に見えて誤解を招くため）
+  // 該当0レースのペースはボタンごと消さず disabled で存在を示す（省略すると「データが無い」に
+  // 見えて誤解を招くため）。2026-07-30までここは「8R未満」だった。母数で伏せる方針をやめ、
+  // 件数を併記して出すことにしたため（100-lap-compare-spec.md §4）。薄い母数の注記は LAP_PACE_LOW。
   const hasP = (p) => p === 'all' || Boolean((f.lapP || {})[p]);
   const curPace = hasP(curPaceIn) ? curPaceIn : 'all';
 
