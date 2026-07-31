@@ -1491,9 +1491,16 @@ function diagnosisBlock(h) {
 }
 
 // 回顧メモ。タグの回数（クセ）を先に、次に直近の本文。点数には入っていない。
+// 色は「この馬にとってプラスかマイナスか」で分ける（2026-07-31）。
+//   赤 … その馬自身の失点。出遅れは癖として繰り返す
+//   緑 … 着順に出ていない中身の良さ
+//   灰 … レースの流れ・不利。着順の言い訳にはなるが、馬の評価を上げも下げもしない
+const NOTE_TAG_BAD = /^(出遅れ)/;
+const NOTE_TAG_GOOD = /^(上がり最速|着順以上|負けたが時計は速い)/;
+
 function noteTag(label, count) {
-  const bad = /^(出遅れ|不利|ハイペース)/.test(label);
-  const good = /^(上がり最速|着順以上)/.test(label);
+  const bad = NOTE_TAG_BAD.test(label);
+  const good = NOTE_TAG_GOOD.test(label);
   const cls = bad ? 'nt-bad' : good ? 'nt-good' : 'nt-mid';
   const c = count ? `<b>${count}</b>` : '';
   return `<span class="nt ${cls}">${escapeHtml(label)}${c}</span>`;
@@ -1579,7 +1586,7 @@ function renderShutuba20(site) {
   return `
     <div class="secthead">出馬表<span class="cnt">全${site.race.field_size}頭・馬番順・タップで馬柱</span></div>
     <div class="shctl">
-      <div class="allbtn"><button type="button" data-shall="open">全部開く</button><button type="button" data-shall="close">全部閉じる</button></div>
+      <div class="allbtn"><button type="button" data-shall="toggle">全部開く</button></div>
     </div>
     <table class="unified">
       <colgroup><col class="c-mk"><col class="c-no"><col class="c-nm">
@@ -1605,16 +1612,27 @@ function markBadge20(h) {
 function setupShutuba20() {
   const root = document.querySelector('.race20');
   if (!root) return;
+  // 開く／閉じるは1つのボタンで往復する。ラベルは今の状態から決める
+  // （1行でも閉じていれば「全部開く」、全部開いていれば「全部閉じる」）
+  const syncAllBtn = () => {
+    const btn = root.querySelector('[data-shall]');
+    if (!btn) return;
+    const rows = [...root.querySelectorAll('tr.prow')];
+    const allOpen = rows.length > 0 && rows.every((p) => p.classList.contains('open'));
+    btn.textContent = allOpen ? '全部閉じる' : '全部開く';
+  };
   root.addEventListener('click', (e) => {
     const allBtn = e.target.closest('[data-shall]');
     if (allBtn) {
-      const open = allBtn.dataset.shall === 'open';
-      root.querySelectorAll('tr.prow').forEach((p) => p.classList.toggle('open', open));
+      const rows = [...root.querySelectorAll('tr.prow')];
+      const open = !(rows.length > 0 && rows.every((p) => p.classList.contains('open')));
+      rows.forEach((p) => p.classList.toggle('open', open));
       root.querySelectorAll('tr.hrow').forEach((r) => {
         r.classList.toggle('open', open);
         const t = r.querySelector('.tri');
         if (t) t.textContent = open ? '▾' : '▸';
       });
+      syncAllBtn();
       return;
     }
     const row = e.target.closest('tr.hrow');
@@ -1625,7 +1643,9 @@ function setupShutuba20() {
     row.classList.toggle('open', open);
     const tri = row.querySelector('.tri');
     if (tri) tri.textContent = open ? '▾' : '▸';
+    syncAllBtn();
   });
+  syncAllBtn();
 }
 
 
@@ -2300,7 +2320,8 @@ main();
    既存38関数は1文字も変更しない。ここから下は追加のみ。
    データは horses[].topping（keiba_topping_apply.py が公開時に埋める）。
    ============================================================ */
-const TP = { sel: new Set(), cross: true, open: false, doc: null, site: null };
+// cross（掛け合わせ条件）は既定で外す。開いた直後は「なにも乗せていない」＝今までの出馬表と同じ
+const TP = { sel: new Set(), cross: false, open: false, site: null };
 
 function tpOn(site) {
   return !!(site && site.topping_meta && (site.horses || []).some((h) => h.topping));
@@ -2370,8 +2391,11 @@ function tpCtl(site) {
     const gi = n === g.axes.length ? '全部選択中・押すと外す'
       : n ? `${n}/${g.axes.length}選択中・押すと全部選ぶ` : '押すとまとめて選ぶ';
     return `<button type="button" class="tpgl" data-tpgrp="${escapeHtml(g.name)}">${escapeHtml(g.name)}<span class="gi">${gi}</span></button>`
-      + g.axes.map((a) => `<button type="button" class="tpchip${TP.sel.has(a) ? ' on' : ''}" data-tpax="${a}">${escapeHtml(tpJp(a))}<span class="q" data-tpdoc="${a}">?</span></button>`).join('');
+      + g.axes.map((a) => `<button type="button" class="tpchip${TP.sel.has(a) ? ' on' : ''}" data-tpax="${a}">${escapeHtml(tpJp(a))}</button>`).join('');
   }).join('');
+  // 選ぶ／外すは1つのボタンで往復する
+  const allAxes = (meta.groups || []).reduce((s, g) => s.concat(g.axes), []);
+  const allSel = allAxes.length > 0 && allAxes.every((a) => TP.sel.has(a));
   return `<div class="tpctl" id="tpctl">
     <div class="tpmain">
       <button type="button" class="tpbig${TP.cross ? ' on' : ''}" id="tpx"${zero ? ' disabled' : ''}>掛け合わせ条件</button>
@@ -2382,37 +2406,11 @@ function tpCtl(site) {
       ${TP.sel.size ? `<span style="color:var(--cta)">・${TP.sel.size}個</span>` : ''}
       <span class="ar">${TP.open ? '▾' : '▸'}</span></button>
     <div class="tpbody${TP.open ? ' open' : ''}">
-      <div class="tpall"><button type="button" data-tpall="on">全部選ぶ</button>
-        <button type="button" data-tpall="off">全部外す</button></div>
+      <div class="tpall"><button type="button" data-tpall="${allSel ? 'off' : 'on'}">${allSel ? '全部外す' : '全部選ぶ'}</button></div>
       <div class="tpgrid">${grid}</div>
-      ${TP.doc ? tpDoc(site, TP.doc) : ''}
     </div>
     <p class="tpstate">${on.length ? `乗せているもの：${on.join('　＋　')}`
       : 'なにも乗せていない（＝いまの出馬表と同じ）'}</p>
-  </div>`;
-}
-
-// チップの ? で開く材料の説明。そのコースの実測を出す
-function tpDoc(site, key) {
-  const seen = new Map();
-  (site.horses || []).forEach((h) => {
-    const lv = h.topping && (h.topping.levels || {})[key];
-    if (lv && lv.level && lv.n != null && !seen.has(lv.level)) seen.set(lv.level, lv);
-  });
-  const rows = [...seen.values()].sort((a, b) => (b.lift || 0) - (a.lift || 0))
-    .map((x) => `<tr><td class="l">${escapeHtml(x.level)}</td><td>${x.n.toLocaleString()}</td>
-      <td><b>${tpPct(x.rate)}</b></td><td>${tpPct(x.exp)}</td><td>${tpVerdict(x.lift)}</td></tr>`).join('');
-  const course = ((site.horses || []).find((h) => h.topping) || {}).topping.course;
-  return `<div class="tpdoc">
-    <div class="dh"><b>${escapeHtml(tpJp(key))}</b>
-      <button type="button" class="x" data-tpdocclose>閉じる ✕</button></div>
-    <div class="how">このレースに出ている馬の区分だけを出しています。</div>
-    <table class="tpt"><thead><tr><th class="l">区分</th><th>頭数</th><th>実際に3着内</th>
-      <th>人気どおりなら</th><th>判定</th></tr></thead><tbody>${rows
-      || '<tr><td class="l" colspan="5">このコースでは母数が足りず、色を付けられません</td></tr>'}</tbody></table>
-    <div class="note" style="font-size:9.5px;color:var(--cap);margin-top:4px;line-height:1.7">
-      「人気どおりなら」＝同じくらいの人気の馬が、ふつう3着内に入る割合。
-      実際がそれを上回れば「よく来る」、下回れば「来ない」。数字は ${escapeHtml(course || '')} の実測。</div>
   </div>`;
 }
 
@@ -2474,9 +2472,6 @@ function setupTopping(site) {
   const shctl = root.querySelector('.shctl');
   if (shctl) shctl.insertAdjacentHTML('afterbegin', tpCtl(site));
   root.addEventListener('click', (e) => {
-    const q = e.target.closest('[data-tpdoc]');
-    if (q) { e.stopPropagation(); TP.doc = TP.doc === q.dataset.tpdoc ? null : q.dataset.tpdoc; TP.open = true; tpRefresh(); return; }
-    if (e.target.closest('[data-tpdocclose]')) { TP.doc = null; tpRefresh(); return; }
     if (e.target.closest('#tpx')) { TP.cross = !TP.cross; tpRefresh(); return; }
     if (e.target.closest('#tpsum')) { TP.open = !TP.open; tpRefresh(); return; }
     const all = e.target.closest('[data-tpall]');
