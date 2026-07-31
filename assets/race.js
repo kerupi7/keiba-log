@@ -1196,13 +1196,53 @@ function renderUpset20(upset) {
   }).join('');
   const hint = upset.tendency_hint
     ? `<div class="upChint">${escapeHtml(upset.tendency_hint)}</div>` : '';
+  // upCfoot（注記文）は103-spec §3.4（ユーザー指示・2026-07-31）で削除した。
+  // upset.note 自体は analysis.json に残るが（89-spec の契約は無改修）、ここでは描画しない。
   return `
     <div class="upC">${cols}</div>
     <div class="upCbar">${bar}</div>
     <div class="upCnote">${escapeHtml(upset.line)}</div>
     ${tables}
     ${hint}
-    <div class="upCfoot">${escapeHtml(upset.note)}</div>
+  `;
+}
+
+// 3連単100万超えの射程（103-sanrentan-1m-spec.md §3・案A）。bigpay が無ければ何も出さない
+// （§3.5 の縮退）。文言(percent/ratio_line)は keiba_build_analysis.py が確定済み。
+// 帯(band_lo〜band_hi)・頭数(field_size)もそのまま転記されたものをここでは組み立てるだけ。
+// 凡例・注記は一切出さない（§3.4・ユーザー指示）。帯に人気番号が入るので番号列が説明を兼ねる。
+function renderBigPay(bigpay, horses) {
+  if (!bigpay || !bigpay.field_size) return '';
+  const fs = bigpay.field_size;
+  // §3.5: 頭数7以下は帯を出さず1行のみ（人気4位以上が3頭に満たず帯の意味がないため）
+  let map = '';
+  if (fs >= 8) {
+    const finishByPop = {};
+    (horses || []).forEach((h) => {
+      if (h.finish != null && h.finish <= 3 && h.popularity != null) {
+        finishByPop[h.popularity] = true;
+      }
+    });
+    const cells = [];
+    for (let i = 1; i <= fs; i += 1) {
+      // came（確定後に実際に3着以内へ来た人気）は band より優先。§4.2: build_bigpay は
+      // レース確定前にしか呼ばれないためサイト側で site.horses[].finish/popularity から出す
+      const came = !!finishByPop[i];
+      const inBand = i >= bigpay.band_lo && i <= bigpay.band_hi;
+      const cls = came ? ' class="came"' : (inBand ? ' class="band"' : '');
+      cells.push(`<i${cls}>${i}</i>`);
+    }
+    map = `<div class="bpMap">${cells.join('')}</div>`;
+  }
+  return `
+    <div class="bpC${bigpay.highlight ? ' on' : ''}">
+      <div class="r1">
+        <span class="lb">3連単100万超え</span>
+        <span class="pv">${escapeHtml(bigpay.percent)}<small>%</small></span>
+        <span class="rt">${escapeHtml(bigpay.ratio_line)}</span>
+      </div>
+      ${map}
+    </div>
   `;
 }
 
@@ -1242,6 +1282,7 @@ function renderHeader20(site) {
       <div class="ttl">${escapeHtml(r.race_name)}</div>
       <div class="cond">${escapeHtml(condParts.join(' ／ '))}</div>
       ${renderUpset20(p.upset)}
+      ${renderBigPay(p.bigpay, site.horses)}
       <div class="pt">予想: ${fmtDateTimeShort(p.predicted_at)}（${escapeHtml(p.odds_basis)}基準）</div>
     </div>
   `;

@@ -34,6 +34,11 @@
   --up-dai:#B7C6D3;      /* 大荒れ = 薄い（ばらける） */
   --up-on-bg:#E8EFF5;    /* 該当クラスのカード背景 */
 
+  /* 3連単100万超え（103-spec）。荒れ度と同じく色相の濃淡だけ。緑・赤は使わない */
+  --bp-on:#003E70;       /* 実際に3着以内に来た人気（確定後のみ） */
+  --bp-band:#D3DEE8;     /* 射程の帯（人気4位〜min(14,頭数)位） */
+  --bp-off:#EDEDEA;      /* 帯の外 */
+
   /* 背景・罫線 */
   --bg:#FFFFFF;
   --sub-bg:#FAFAFA;      /* 薄背景（1着行など） */
@@ -527,6 +532,30 @@ details.fold.om-fold>summary .cnt{color:#fff;opacity:.85;font-size:11px}
   .race20 .upC .col.on{padding:7px 3px 8px}
   .race20 .upC .pv{font-size:19px}
   .race20 .upC .dl{font-size:10px}
+}
+
+/* 3連単100万超え（103-sanrentan-1m-spec.md §3.3・案A）。荒れ度パネルの直下に1行＋帯。
+   .on は表示確率が highlight_threshold(4.0%) 以上のときだけ（keiba_build_analysis.pyが判定）。
+   凡例・注記は出さない（§3.4）。帯に人気番号が入るので番号列そのものが軸の説明を兼ねる。 */
+.race20 .bpC{margin-top:9px;border:1px solid var(--rule);border-radius:4px;padding:7px 9px 8px}
+.race20 .bpC.on{border-color:var(--bp-on);background:var(--up-on-bg)}
+.race20 .bpC .r1{display:flex;align-items:center;gap:8px}
+.race20 .bpC .lb{font-size:11.5px;font-weight:700;color:var(--sub);white-space:nowrap}
+.race20 .bpC.on .lb{color:var(--navy)}
+.race20 .bpC .pv{font-size:17px;font-weight:700;font-variant-numeric:tabular-nums;
+  color:var(--text);white-space:nowrap}
+.race20 .bpC.on .pv{color:var(--navy)}
+.race20 .bpC .pv small{font-size:11px;margin-left:1px}
+.race20 .bpC .rt{font-size:11px;color:var(--cap);white-space:nowrap;margin-left:auto}
+.race20 .bpMap{display:flex;gap:1px;margin-top:6px}
+.race20 .bpMap i{flex:1;height:16px;background:var(--bp-off);border-radius:1px;font-style:normal;
+  font-size:9px;line-height:16px;text-align:center;color:var(--cap);font-variant-numeric:tabular-nums}
+.race20 .bpMap i.band{background:var(--bp-band);color:var(--navy);font-weight:700}
+.race20 .bpMap i.came{background:var(--bp-on);color:#fff;font-weight:700}
+@media(max-width:420px){
+  .race20 .bpC .lb{font-size:11px}
+  .race20 .bpC .pv{font-size:16px}
+  .race20 .bpC .rt{font-size:10px}
 }
 
 /* 印リスト（.mkb本体は既存流用。穴・地雷の2色のみ新設） */
