@@ -540,6 +540,7 @@ function foMark(h) {
     return `<span class="mkb ${cls}">${escapeHtml(h.ability_mark)}</span>`;
   }
   if (h.bet_mark === '地雷') return '<span class="mkb m-jir">地雷</span>';
+  if (isAna(h)) return '<span class="mkb m-ana">穴</span>';
   return '';
 }
 
@@ -560,7 +561,7 @@ const FO_COLS = [
   { label: '着', cls: 'fo-c1 num', cell: (h) => (h.finish != null ? h.finish : escapeHtml(h.finish_text || '—')) },
   // 枠番の列は持たない。枠の情報は馬番ボックスの色（frameClass）で示す。
   { label: '馬番', cls: 'fo-c2 num', cell: (h) => umaBox(h.number, h.gate, 'sm') },
-  { label: '印', cls: 'fo-mk', has: (h) => !!h.ability_mark || h.bet_mark === '地雷', cell: foMark },
+  { label: '印', cls: 'fo-mk', has: (h) => !!h.ability_mark || h.bet_mark === '地雷' || isAna(h), cell: foMark },
   { label: '馬名', cls: 'fo-nm', cell: (h) => escapeHtml(h.name) },
   { label: '性齢', cls: 'num sub', has: (h) => !!h.sex_age, cell: (h) => escapeHtml(h.sex_age || '—') },
   { label: '斤量', cls: 'num sub', has: (h) => h.weight_carried != null,
@@ -721,6 +722,15 @@ function renderReviewSection(site) {
       <span class="rv-s">${h.popularity ?? '—'}人気　${lr.ok ? '読みどおり飛んだ' : '飛ばずに好走'}</span></div>
       <div class="rv-mf">${lr.finish}<span class="rv-u">着</span></div></div>`;
   }).join('');
+  // 穴は地雷の裏返しで、3着以内に来たら成功。「危ないと見た馬」と対になる枠として並べる
+  const ana = (site.verification || {}).ana_result || {};
+  const anaCards = Object.keys(ana).sort((a, b) => Number(a) - Number(b)).map((num) => {
+    const ar = ana[num]; const h = byNumber[num] || {};
+    return `<div class="rv-mc ana${ar.ok ? ' hit' : ' ng'}"><div class="rv-mk sm ana">穴</div>
+      <div class="rv-mb">${umaBox(Number(num), h.gate, 'sm')}${escapeHtml(h.name ?? '')}<br>
+      <span class="rv-s">${h.popularity ?? '—'}人気　${ar.ok ? '読みどおり走った' : '走らなかった'}</span></div>
+      <div class="rv-mf">${ar.finish != null ? ar.finish : '—'}<span class="rv-u">着</span></div></div>`;
+  }).join('');
   const bets = (site.bets || []).map((b) => {
     const combo = (b.combination || []).join('-');
     return `${escapeHtml(b.type)} ${combo}　${fmtYen(b.stake)} → ` +
@@ -766,6 +776,7 @@ function renderReviewSection(site) {
       <div class="rv-sres">3着以内 <b>${markInTop3}</b>/${marked.length}頭</div></div>` : ''}
     <div class="rv-mcs">${markCards}</div>
     ${landCards ? `<div class="rv-summ">危ないと見た馬</div><div class="rv-mcs">${landCards}</div>` : ''}
+    ${anaCards ? `<div class="rv-summ">走ると見た人気薄</div><div class="rv-mcs">${anaCards}</div>` : ''}
     ${bets ? `<div class="rv-betline">${bets}</div>` : '<div class="rv-betline">買い目なし（見送り）</div>'}
     ${payoutRows ? `<table class="rv-pay"><tbody>${payoutRows}</tbody></table>` : ''}
     ${gapList(under, '低く見ていたのに上位に来た馬', 'up')}
@@ -1573,6 +1584,21 @@ function noteHistoryBlock(h) {
     <div class="nfoot">メモは点数に入れていません</div></div>`;
 }
 
+// 地雷・穴の理由文。どちらも「{odds}倍({pop}番人気)だが3着内を{外す/入る}確率は{p}%
+// （オッズ相応なら{p_market}%）」の形で、オッズとのズレを言い切る（87-spec §3.2 / 94-spec §3.3）。
+// 印列のバッジは記号だけなので、根拠の数字はここでしか読めない。
+// 穴は能力印と同居しうるため、バッジが能力印に取られていてもこのブロックは必ず出す。
+function markWhyBlock(h) {
+  const rows = [];
+  if (h.bet_mark === '地雷' && h.landmine_reason) {
+    rows.push(`<div class="mkw jir"><span class="mkb m-jir">地雷</span>${escapeHtml(h.landmine_reason)}</div>`);
+  }
+  if (isAna(h) && h.ana_reason) {
+    rows.push(`<div class="mkw ana"><span class="mkb m-ana">穴</span>${escapeHtml(h.ana_reason)}</div>`);
+  }
+  return rows.join('');
+}
+
 function shutubaPanel(h, dm) {
   const chips = SHUTUBA_DIMS.map(({ key, sym, label }) => {
     const mark = (dm[h.number] || {})[key] || '';
@@ -1582,6 +1608,7 @@ function shutubaPanel(h, dm) {
   return `
     <div class="pnl">
       <div class="tpwhy" data-w="${h.number}"></div>
+      ${markWhyBlock(h)}
       <div class="dims">${chips}</div>
       ${diagnosisBlock(h)}
       ${noteHistoryBlock(h)}
@@ -1641,12 +1668,20 @@ function renderShutuba20(site) {
   `;
 }
 
-// 印は 能力印 → 地雷 → 穴 の順で1つだけ（mark-2.4 の排他ルールと同じ）
+// mark-2.3（2026-07-28）で穴は role から bet_mark へ移った（94-ana-redesign-spec §3.2）。
+// 移行前に公開したレースは role='穴' のまま残すので、両方を見る。
+function isAna(h) {
+  return h.bet_mark === '穴' || h.role === '穴';
+}
+
+// 印は 能力印 → 地雷 → 穴 の順で1つだけ（mark-2.4 の排他ルールと同じ）。
+// 印列は幅が狭く2つ並べられないため、能力印を持つ穴馬はここに穴が出ない。
+// その分は馬柱パネルの markWhyBlock が必ず拾う（＝穴が消えることはない）。
 function markBadge20(h) {
   const markCls = { '◎': 'm-hon', '○': 'm-tai', '▲': 'm-tan', '△': 'm-oku' };
   if (h.ability_mark) return `<span class="mkb ${markCls[h.ability_mark]}">${h.ability_mark}</span>`;
   if (h.bet_mark === '地雷') return '<span class="mkb m-jir">地雷</span>';
-  if (h.role === '穴') return '<span class="mkb m-ana">穴</span>';
+  if (isAna(h)) return '<span class="mkb m-ana">穴</span>';
   return '';
 }
 
@@ -2215,6 +2250,9 @@ function renderVerification20(site) {
   const markInTop3 = markFinishEntries.filter((e) => e.finish <= 3).length;
   const landmineEntries = Object.entries(verification.landmine_result || {});
   const landmineOk = landmineEntries.filter(([, lr]) => lr.ok).length;
+  // 穴は地雷と逆向きで、3着以内に来たら成功（94-spec §3.1）
+  const anaEntries = Object.entries(verification.ana_result || {});
+  const anaOk = anaEntries.filter(([, ar]) => ar.ok).length;
 
   const betCost = verification.bets_cost;
   const betReturn = verification.bets_return;
@@ -2276,6 +2314,16 @@ function renderVerification20(site) {
     ? `<div class="vgh">地雷 → 着順<span class="s">（${landmineOk}/${landmineEntries.length} 成功）</span></div><div class="g-mine">${landmineRows}</div>`
     : '';
 
+  const anaRows = anaEntries.map(([number, ar]) => {
+    const h = byNumber[number];
+    return vrow(`<span class="jm ${ar.ok ? 'ok' : 'ng'}">穴</span>`
+      + `${umaBox(Number(number), h && h.gate, 'sm')}<span class="nm">${h ? escapeHtml(h.name) : '—'}</span>`,
+      ar.finish != null ? `${ar.finish}着` : '—', ar.ok ? '激走成功' : '判定ミス', ar.ok, true);
+  }).join('');
+  const anaGroup = anaEntries.length
+    ? `<div class="vgh">穴 → 着順<span class="s">（${anaOk}/${anaEntries.length} 成功）</span></div><div class="g-ana">${anaRows}</div>`
+    : '';
+
   const payoutRows = Object.entries(result.payouts || {})
     .map(([type, val]) => {
       const list = Array.isArray(val) ? val : [val];
@@ -2294,6 +2342,7 @@ function renderVerification20(site) {
       ${resultGroup}
       ${markGroup}
       ${landmineGroup}
+      ${anaGroup}
     </div>
     <details class="fold"><summary><span class="tri"></span>払戻表</summary>
       <div class="fold-body"><table><tbody>${payoutRows}</tbody></table></div>
@@ -2492,10 +2541,7 @@ function tpWhy(site, h, step, total) {
       <th class="l">当てはまった条件</th>
       <th>3着内率</th><th>同じ人気なら</th><th class="vh">判定</th><th>母数</th></tr></thead>
       <tbody>${cRows}${more > 0 ? `<tr><td class="l" colspan="5" style="color:var(--cap)">ほか ${more} 件</td></tr>` : ''}</tbody></table>` : ''}
-    ${TP.sel.size || (TP.cross && h.topping.conds_total) ? tpLegend() : ''}
-    <div class="note">3着内率＝当てはまる馬が実際に3着以内に入った割合。
-      「同じ人気なら」＝同じくらいの人気の馬が、ふつう3着以内に入る割合。<br>
-      色はこのレースの中での並び順です。段が上でも「勝てる」という意味ではありません。</div>`;
+    ${TP.sel.size || (TP.cross && h.topping.conds_total) ? tpLegend() : ''}`;
 }
 
 // 色と説明を貼り直す（チップを押すたびに呼ぶ。表そのものは作り直さない）

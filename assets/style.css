@@ -824,7 +824,9 @@ details.fold.om-fold>summary .cnt{color:#fff;opacity:.85;font-size:11px}
 .race20 .g-res .vcr{border-left-color:#c9d3dd}
 .race20 .g-res .vcr .re{color:var(--text)}
 .race20 .g-mark .vcr{border-left-color:var(--mkb-hon)}
-.race20 .g-mine .vcr{border-left-color:var(--orange)}
+/* 地雷=赤・穴=橙。印バッジ（.m-jir / .m-ana）と同じ対応にして、2つの群を見分けられるようにする */
+.race20 .g-mine .vcr{border-left-color:var(--live)}
+.race20 .g-ana .vcr{border-left-color:var(--orange)}
 .race20 .jm{display:inline-block;flex:none;font-size:11px;font-weight:700;border-radius:2px;padding:0 5px}
 .race20 .jm.ok{background:#E7F3EA;color:#0F6A34} .race20 .jm.ng{background:#FDECEC;color:#B4271F}
 
@@ -1374,8 +1376,12 @@ details.fo-more .fold-body{padding-bottom:10px;}
 .rv-mc.hit{border-left-color:var(--hit);background:#F2F9F4;}
 .rv-mc.lm{border-left-color:var(--live);}
 .rv-mc.lm.hit{border-left-color:var(--hit);}
+/* 穴は地雷の裏返し。成功（3着以内）で緑になる向きは他のカードと揃える */
+.rv-mc.ana{border-left-color:var(--orange);}
+.rv-mc.ana.hit{border-left-color:var(--hit);}
 .rv-mk{font-size:20px;font-weight:700;color:var(--navy);width:24px;text-align:center;}
 .rv-mk.sm{font-size:11px;color:var(--live);width:30px;}
+.rv-mk.sm.ana{color:var(--orange);}
 .rv-mb{flex:1;font-size:13px;line-height:1.45;}
 .rv-s{font-size:11px;color:var(--cap);}
 .rv-mf{font-size:20px;font-weight:700;}
@@ -1455,6 +1461,15 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
    過去5走の表だけは別途 nowrap を当てているのでそちらが勝つ。 */
 .race20 tr.prow td,.race20 .pnl,.race20 .pnl div,.race20 .pnl li,.race20 .pnl span{white-space:normal}
 .race20 .mut{color:var(--cap)}
+
+/* 地雷・穴の理由文（87-spec §3.2 / 94-spec §3.3）。印列のバッジは記号だけなので、
+   オッズとのズレを示す数字はここでしか読めない。左の色帯でどちらの印かを示す。 */
+.race20 .mkw{display:flex;align-items:flex-start;gap:6px;margin:0 0 7px;padding:6px 8px;
+  background:#fff;border:1px solid var(--rule);border-left:3px solid var(--cap);
+  border-radius:3px;font-size:11.5px;line-height:1.5}
+.race20 .mkw.jir{border-left-color:var(--live)}
+.race20 .mkw.ana{border-left-color:var(--orange)}
+.race20 .mkw .mkb{flex:none}
 
 /* 項目別の印チップ */
 .race20 .dims{display:flex;gap:3px;flex-wrap:wrap;margin:0 0 6px}
@@ -1723,5 +1738,4 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
 .race20 .tpwhy .hd{font-size:11px;font-weight:700;color:var(--navy);margin-bottom:3px;
   display:flex;align-items:center;gap:6px}
 .race20 .tpwhy .sw{display:inline-block;width:24px;height:11px;border-radius:2px}
-.race20 .tpwhy .note{font-size:9.5px;color:var(--cap);margin-top:4px;line-height:1.7}
 .race20 .tpwhy:empty{display:none}
