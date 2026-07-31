@@ -2331,14 +2331,27 @@ function tpJp(key) {
     .find((x) => x.key === key);
   return a ? a.jp : key;
 }
-// 実÷期待 を言葉にする。％も倍率も画面に出さない
+// 実÷期待 を記号にする。％も倍率も画面に出さない。
+// 言葉（よく来る 等）だと判定の列が33pxしかなく1文字ずつ縦に割れるため、
+// 2026-07-31 に記号へ変更した。読み方は表の下の凡例（tpLegend）に出す。
+// しきい値は変更前とまったく同じ（>= と > の違いも含めてそのまま写す）
+const TP_MARKS = [
+  { hit: (v) => v >= 1.10, sym: '◉', cls: 'up', word: 'よく来る' },
+  { hit: (v) => v >= 1.03, sym: '○', cls: 'up', word: 'やや上' },
+  { hit: (v) => v > 0.97, sym: 'ー', cls: 'mid', word: '人気どおり' },
+  { hit: (v) => v > 0.90, sym: '△', cls: 'dn', word: 'やや下' },
+  { hit: () => true, sym: '✕', cls: 'dn', word: '来ない' },
+];
+
 function tpVerdict(lift) {
-  if (lift == null) return '<span class="tp-mid">—</span>';
-  if (lift >= 1.10) return '<span class="tp-up">よく来る</span>';
-  if (lift >= 1.03) return '<span class="tp-up">やや上</span>';
-  if (lift > 0.97) return '<span class="tp-mid">人気どおり</span>';
-  if (lift > 0.90) return '<span class="tp-dn">やや下</span>';
-  return '<span class="tp-dn">来ない</span>';
+  if (lift == null) return '<span class="tp-mid tpsym">—</span>';
+  const m = TP_MARKS.find((x) => x.hit(lift));
+  return `<span class="tp-${m.cls} tpsym" title="${m.word}">${m.sym}</span>`;
+}
+
+function tpLegend() {
+  return `<div class="tplgd">${TP_MARKS.map((m) =>
+    `<span><i class="tp-${m.cls} tpsym">${m.sym}</i>${m.word}</span>`).join('')}</div>`;
 }
 function tpPct(v) { return v == null ? '—' : `${(v * 100).toFixed(1)}%`; }
 
@@ -2422,22 +2435,23 @@ function tpWhy(site, h, step, total) {
     if (!lv) return `<tr><td class="l">${escapeHtml(tpJp(key))}</td><td class="l">—</td><td colspan="3">材料なし</td></tr>`;
     if (lv.lift == null) return `<tr><td class="l">${escapeHtml(tpJp(key))}</td><td class="l">${escapeHtml(lv.level)}</td><td colspan="3">このコースではデータ不足</td></tr>`;
     return `<tr><td class="l">${escapeHtml(tpJp(key))}</td><td class="l">${escapeHtml(lv.level)}</td>
-      <td><b>${tpPct(lv.rate)}</b></td><td>${tpPct(lv.exp)}</td><td>${tpVerdict(lv.lift)}</td></tr>`;
+      <td><b>${tpPct(lv.rate)}</b></td><td>${tpPct(lv.exp)}</td><td class="vd">${tpVerdict(lv.lift)}</td></tr>`;
   }).join('');
   const cRows = (h.topping.conds || []).map((c) => `<tr>
     <td class="l"><span class="${c.sign > 0 ? 'tp-up' : 'tp-dn'}">${c.sign > 0 ? '＋' : '−'}</span>
       ${c.c.map(([a, v]) => `${escapeHtml(tpJp(a))}:${escapeHtml(v)}`).join(' × ')}</td>
-    <td><b>${tpPct(c.rate)}</b></td><td>${tpPct(c.exp)}</td><td>${tpVerdict(c.lift)}</td>
+    <td><b>${tpPct(c.rate)}</b></td><td>${tpPct(c.exp)}</td><td class="vd">${tpVerdict(c.lift)}</td>
     <td>${c.n}走</td></tr>`).join('');
   const more = (h.topping.conds_total || 0) - (h.topping.conds || []).length;
   return `<div class="hd"><span class="sw" style="background:var(--tp${step})"></span>
       この馬は <b>${step}段目</b>（${total}頭中）</div>
-    ${TP.sel.size ? `<table class="tpt"><thead><tr><th class="l">材料</th><th class="l">この馬の区分</th>
-      <th>実際に3着内</th><th>人気どおりなら</th><th>判定</th></tr></thead><tbody>${axRows}</tbody></table>` : ''}
+    ${TP.sel.size ? `<table class="tpt"><thead><tr><th class="l">材料</th><th class="l">区分</th>
+      <th>実際に3着内</th><th>人気どおりなら</th><th class="vh">判定</th></tr></thead><tbody>${axRows}</tbody></table>` : ''}
     ${TP.cross && h.topping.conds_total ? `<table class="tpt"><thead><tr>
       <th class="l">掛け合わせ条件（走る${h.topping.up}・走らない${h.topping.dn}）</th>
-      <th>実際に3着内</th><th>人気どおりなら</th><th>判定</th><th>母数</th></tr></thead>
+      <th>実際に3着内</th><th>人気どおりなら</th><th class="vh">判定</th><th>母数</th></tr></thead>
       <tbody>${cRows}${more > 0 ? `<tr><td class="l" colspan="5" style="color:var(--cap)">ほか ${more} 件</td></tr>` : ''}</tbody></table>` : ''}
+    ${TP.sel.size || (TP.cross && h.topping.conds_total) ? tpLegend() : ''}
     <div class="note">色はこのレースの中での並び順です。段が上でも「勝てる」という意味ではありません。</div>`;
 }
 

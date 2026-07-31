@@ -1670,10 +1670,23 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
 .race20 table.tpt th,.race20 table.tpt td{padding:2px 4px;text-align:right;
   border-bottom:1px dotted var(--rule);white-space:nowrap}
 .race20 table.tpt th.l,.race20 table.tpt td.l{text-align:left;white-space:normal}
-.race20 table.tpt thead th{color:var(--cap);font-size:9.5px;border-bottom:1px solid var(--rule)}
+/* 見出しは濃紺の帯＋白文字。この表は出馬表 table.unified の中にあるため
+   `.race20 table.unified th{background:var(--navy)}` が当たって帯になっており、
+   そこに灰色文字を乗せていて読めなかった。帯は残して文字色を合わせる（2026-07-31） */
+.race20 table.tpt thead th{background:var(--navy);color:#fff;font-size:9.5px;
+  font-weight:700;border-bottom:0}
+.race20 table.tpt th.vh,.race20 table.tpt td.vd{text-align:center;padding-left:2px;
+  padding-right:2px}
 .race20 .tp-up{color:var(--hit);font-weight:700}
 .race20 .tp-dn{color:var(--live);font-weight:700}
 .race20 .tp-mid{color:var(--cap)}
+/* 判定は記号（◉○ー△✕）。言葉だと列幅33pxで1文字ずつ縦に割れるため */
+.race20 .tpsym{font-size:14px;line-height:1;font-weight:700}
+.race20 .tp-mid.tpsym{color:#9A9A94}
+.race20 .tplgd{margin-top:5px;font-size:9.5px;color:var(--cap);display:flex;
+  flex-wrap:wrap;gap:2px 10px}
+.race20 .tplgd span{display:inline-flex;align-items:center;gap:3px;white-space:nowrap}
+.race20 .tplgd i{font-style:normal;font-size:12px;font-weight:700}
 
 /* 行を開いたときの「この馬の色の理由」 */
 .race20 .tpwhy{margin:0 0 7px;padding:7px 8px;background:#fff;border:1px solid var(--rule);
