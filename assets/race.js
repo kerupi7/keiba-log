@@ -1533,6 +1533,7 @@ function shutubaPanel(h, dm) {
   }).join('');
   return `
     <div class="pnl">
+      <div class="tpwhy" data-w="${h.number}"></div>
       <div class="dims">${chips}</div>
       ${diagnosisBlock(h)}
       ${noteHistoryBlock(h)}
@@ -1565,7 +1566,7 @@ function renderShutuba20(site) {
       <tr class="hrow${h.ability_mark ? ' pred' : ''}" data-h="${h.number}">
         <td>${markBadge20(h)}</td>
         <td>${umaBox(h.number, h.gate, 'sm')}</td>
-        <td class="l nm">${escapeHtml(h.name)}<span class="tri">▸</span>
+        <td class="l nm"><span class="tpnm">${escapeHtml(h.name)}</span><span class="tri">▸</span>
           <div class="u prof"><span class="pa">${escapeHtml(h.sex_age ?? '')}</span><span class="pk">${h.weight_carried != null ? String(h.weight_carried).replace(/\.0$/, '') : '—'}</span><span class="pj">${escapeHtml(h.jockey && h.jockey !== 'N/A' ? h.jockey : '—')}</span>${legBar(h.running_style)}<span class="rot">${escapeHtml(h.rotation || '')}</span></div></td>
         <td>${fmtNum(h.total, 1)}<div class="u"><span class="grade ${gradeClass(h.grade)}">${gradeDisp(h.grade)}</span></div></td>
         <td>${medalSpan(winTxt, wr[h.number])}</td>
@@ -2285,6 +2286,7 @@ async function main() {
   setupAkinatorPanel(site, oddsAll, simCtl);
   setupOddsMasterTabs();
   if (is20) setupShutuba20();
+  if (is20) setupTopping(site);   // 102-spec: トッピング（データが無ければ何もしない）
   if (is20) setupUpset20();
   setupFinishOrder();
 }
@@ -2292,3 +2294,214 @@ async function main() {
 main();
 
 })();
+
+/* ============================================================
+   102-spec: トッピング（19軸の単体 ＋ 掛け合わせ条件）
+   既存38関数は1文字も変更しない。ここから下は追加のみ。
+   データは horses[].topping（keiba_topping_apply.py が公開時に埋める）。
+   ============================================================ */
+const TP = { sel: new Set(), cross: true, open: false, doc: null, site: null };
+
+function tpOn(site) {
+  return !!(site && site.topping_meta && (site.horses || []).some((h) => h.topping));
+}
+function tpJp(key) {
+  const a = ((TP.site && TP.site.topping_meta && TP.site.topping_meta.axes) || [])
+    .find((x) => x.key === key);
+  return a ? a.jp : key;
+}
+// 実÷期待 を言葉にする。％も倍率も画面に出さない
+function tpVerdict(lift) {
+  if (lift == null) return '<span class="tp-mid">—</span>';
+  if (lift >= 1.10) return '<span class="tp-up">よく来る</span>';
+  if (lift >= 1.03) return '<span class="tp-up">やや上</span>';
+  if (lift > 0.97) return '<span class="tp-mid">人気どおり</span>';
+  if (lift > 0.90) return '<span class="tp-dn">やや下</span>';
+  return '<span class="tp-dn">来ない</span>';
+}
+function tpPct(v) { return v == null ? '—' : `${(v * 100).toFixed(1)}%`; }
+
+// 値の配列 → 1位=1.0 〜 最下位=0.0 の位置。同点は同じ値
+function tpRankPos(vals) {
+  return vals.map((v) => {
+    const above = vals.filter((x) => x > v).length;
+    const tie = vals.filter((x) => x === v).length;
+    const mid = above + (tie - 1) / 2;
+    return vals.length > 1 ? 1 - mid / (vals.length - 1) : 0.5;
+  });
+}
+
+// 選んだ材料それぞれのレース内順位を平均し、10段階に割り当てる
+function tpSteps(site) {
+  const live = (site.horses || []).filter((h) => !h.scratched && h.topping);
+  const out = {};
+  if (!live.length) return out;
+  const parts = [];
+  TP.sel.forEach((key) => {
+    parts.push(tpRankPos(live.map((h) => {
+      const lv = (h.topping.levels || {})[key];
+      return lv && lv.lift != null ? lv.lift : 1.0;
+    })));
+  });
+  if (TP.cross) parts.push(tpRankPos(live.map((h) => h.topping.net || 0)));
+  if (!parts.length) return out;
+  const sc = live.map((_, i) => parts.reduce((s, p) => s + p[i], 0) / parts.length);
+  live.forEach((h, i) => {
+    const above = sc.filter((v) => v > sc[i]).length;
+    const tie = sc.filter((v) => v === sc[i]).length;
+    const mid = above + (tie - 1) / 2;
+    out[h.number] = 10 - Math.min(9, Math.floor((mid * 10) / sc.length));
+  });
+  return out;
+}
+
+function tpCtl(site) {
+  const meta = site.topping_meta || {};
+  const first = (site.horses || []).find((h) => h.topping) || {};
+  const ncond = (site.horses || []).reduce(
+    (m, h) => Math.max(m, (h.topping && h.topping.conds_total) || 0), 0);
+  const course = (first.topping || {}).course || '';
+  const zero = !(site.horses || []).some((h) => h.topping && h.topping.conds_total);
+  const on = [];
+  if (TP.cross) on.push('<b>掛け合わせ</b>');
+  if (TP.sel.size) on.push(`単体 <b>${[...TP.sel].map(tpJp).join('・')}</b>`);
+  const grid = (meta.groups || []).map((g) => {
+    const n = g.axes.filter((a) => TP.sel.has(a)).length;
+    const gi = n === g.axes.length ? '全部選択中・押すと外す'
+      : n ? `${n}/${g.axes.length}選択中・押すと全部選ぶ` : '押すとまとめて選ぶ';
+    return `<button type="button" class="tpgl" data-tpgrp="${escapeHtml(g.name)}">${escapeHtml(g.name)}<span class="gi">${gi}</span></button>`
+      + g.axes.map((a) => `<button type="button" class="tpchip${TP.sel.has(a) ? ' on' : ''}" data-tpax="${a}">${escapeHtml(tpJp(a))}<span class="q" data-tpdoc="${a}">?</span></button>`).join('');
+  }).join('');
+  return `<div class="tpctl" id="tpctl">
+    <div class="tpmain">
+      <button type="button" class="tpbig${TP.cross ? ' on' : ''}" id="tpx"${zero ? ' disabled' : ''}>掛け合わせ条件</button>
+      <div class="tx">${zero ? 'このコースでは条件が見つかっていません'
+        : `<b>${escapeHtml(course)} だけで見つけた条件</b>を当てはめ、<br>人気より走る条件 − 走らない条件 の数で10段階に分ける`}</div>
+    </div>
+    <button type="button" class="tpsum" id="tpsum">材料を1つずつ選ぶ（${(meta.axes || []).length}種類）
+      ${TP.sel.size ? `<span style="color:var(--cta)">・${TP.sel.size}個</span>` : ''}
+      <span class="ar">${TP.open ? '▾' : '▸'}</span></button>
+    <div class="tpbody${TP.open ? ' open' : ''}">
+      <div class="tpall"><button type="button" data-tpall="on">全部選ぶ</button>
+        <button type="button" data-tpall="off">全部外す</button></div>
+      <div class="tpgrid">${grid}</div>
+      ${TP.doc ? tpDoc(site, TP.doc) : ''}
+    </div>
+    <p class="tpstate">${on.length ? `乗せているもの：${on.join('　＋　')}`
+      : 'なにも乗せていない（＝いまの出馬表と同じ）'}</p>
+  </div>`;
+}
+
+// チップの ? で開く材料の説明。そのコースの実測を出す
+function tpDoc(site, key) {
+  const seen = new Map();
+  (site.horses || []).forEach((h) => {
+    const lv = h.topping && (h.topping.levels || {})[key];
+    if (lv && lv.level && lv.n != null && !seen.has(lv.level)) seen.set(lv.level, lv);
+  });
+  const rows = [...seen.values()].sort((a, b) => (b.lift || 0) - (a.lift || 0))
+    .map((x) => `<tr><td class="l">${escapeHtml(x.level)}</td><td>${x.n.toLocaleString()}</td>
+      <td><b>${tpPct(x.rate)}</b></td><td>${tpPct(x.exp)}</td><td>${tpVerdict(x.lift)}</td></tr>`).join('');
+  const course = ((site.horses || []).find((h) => h.topping) || {}).topping.course;
+  return `<div class="tpdoc">
+    <div class="dh"><b>${escapeHtml(tpJp(key))}</b>
+      <button type="button" class="x" data-tpdocclose>閉じる ✕</button></div>
+    <div class="how">このレースに出ている馬の区分だけを出しています。</div>
+    <table class="tpt"><thead><tr><th class="l">区分</th><th>頭数</th><th>実際に3着内</th>
+      <th>人気どおりなら</th><th>判定</th></tr></thead><tbody>${rows
+      || '<tr><td class="l" colspan="5">このコースでは母数が足りず、色を付けられません</td></tr>'}</tbody></table>
+    <div class="note" style="font-size:9.5px;color:var(--cap);margin-top:4px;line-height:1.7">
+      「人気どおりなら」＝同じくらいの人気の馬が、ふつう3着内に入る割合。
+      実際がそれを上回れば「よく来る」、下回れば「来ない」。数字は ${escapeHtml(course || '')} の実測。</div>
+  </div>`;
+}
+
+// 行を開いたときに出す「この馬の色の理由」
+function tpWhy(site, h, step, total) {
+  if (!h.topping || !step) return '';
+  const axRows = [...TP.sel].map((key) => {
+    const lv = (h.topping.levels || {})[key];
+    if (!lv) return `<tr><td class="l">${escapeHtml(tpJp(key))}</td><td class="l">—</td><td colspan="3">材料なし</td></tr>`;
+    if (lv.lift == null) return `<tr><td class="l">${escapeHtml(tpJp(key))}</td><td class="l">${escapeHtml(lv.level)}</td><td colspan="3">このコースではデータ不足</td></tr>`;
+    return `<tr><td class="l">${escapeHtml(tpJp(key))}</td><td class="l">${escapeHtml(lv.level)}</td>
+      <td><b>${tpPct(lv.rate)}</b></td><td>${tpPct(lv.exp)}</td><td>${tpVerdict(lv.lift)}</td></tr>`;
+  }).join('');
+  const cRows = (h.topping.conds || []).map((c) => `<tr>
+    <td class="l"><span class="${c.sign > 0 ? 'tp-up' : 'tp-dn'}">${c.sign > 0 ? '＋' : '−'}</span>
+      ${c.c.map(([a, v]) => `${escapeHtml(tpJp(a))}:${escapeHtml(v)}`).join(' × ')}</td>
+    <td><b>${tpPct(c.rate)}</b></td><td>${tpPct(c.exp)}</td><td>${tpVerdict(c.lift)}</td>
+    <td>${c.n}走</td></tr>`).join('');
+  const more = (h.topping.conds_total || 0) - (h.topping.conds || []).length;
+  return `<div class="hd"><span class="sw" style="background:var(--tp${step})"></span>
+      この馬は <b>${step}段目</b>（${total}頭中）</div>
+    ${TP.sel.size ? `<table class="tpt"><thead><tr><th class="l">材料</th><th class="l">この馬の区分</th>
+      <th>実際に3着内</th><th>人気どおりなら</th><th>判定</th></tr></thead><tbody>${axRows}</tbody></table>` : ''}
+    ${TP.cross && h.topping.conds_total ? `<table class="tpt"><thead><tr>
+      <th class="l">掛け合わせ条件（走る${h.topping.up}・走らない${h.topping.dn}）</th>
+      <th>実際に3着内</th><th>人気どおりなら</th><th>判定</th><th>母数</th></tr></thead>
+      <tbody>${cRows}${more > 0 ? `<tr><td class="l" colspan="5" style="color:var(--cap)">ほか ${more} 件</td></tr>` : ''}</tbody></table>` : ''}
+    <div class="note">色はこのレースの中での並び順です。段が上でも「勝てる」という意味ではありません。</div>`;
+}
+
+// 色と説明を貼り直す（チップを押すたびに呼ぶ。表そのものは作り直さない）
+function tpRefresh() {
+  const site = TP.site;
+  if (!site) return;
+  const root = document.querySelector('.race20');
+  if (!root) return;
+  const steps = tpSteps(site);
+  const total = (site.horses || []).filter((h) => !h.scratched && h.topping).length;
+  root.querySelectorAll('tr.hrow').forEach((tr) => {
+    for (let i = 1; i <= 10; i += 1) tr.classList.remove(`tp${i}`);
+    const s = steps[Number(tr.dataset.h)];
+    if (s) tr.classList.add(`tp${s}`);
+  });
+  const byNumber = {};
+  (site.horses || []).forEach((h) => { byNumber[h.number] = h; });
+  root.querySelectorAll('.tpwhy').forEach((el) => {
+    const h = byNumber[Number(el.dataset.w)];
+    el.innerHTML = h ? tpWhy(site, h, steps[h.number], total) : '';
+  });
+  const ctl = document.getElementById('tpctl');
+  if (ctl) ctl.outerHTML = tpCtl(site);
+}
+
+function setupTopping(site) {
+  if (!tpOn(site)) return;
+  TP.site = site;
+  const root = document.querySelector('.race20');
+  if (!root) return;
+  const shctl = root.querySelector('.shctl');
+  if (shctl) shctl.insertAdjacentHTML('afterbegin', tpCtl(site));
+  root.addEventListener('click', (e) => {
+    const q = e.target.closest('[data-tpdoc]');
+    if (q) { e.stopPropagation(); TP.doc = TP.doc === q.dataset.tpdoc ? null : q.dataset.tpdoc; TP.open = true; tpRefresh(); return; }
+    if (e.target.closest('[data-tpdocclose]')) { TP.doc = null; tpRefresh(); return; }
+    if (e.target.closest('#tpx')) { TP.cross = !TP.cross; tpRefresh(); return; }
+    if (e.target.closest('#tpsum')) { TP.open = !TP.open; tpRefresh(); return; }
+    const all = e.target.closest('[data-tpall]');
+    if (all) {
+      TP.sel.clear();
+      if (all.dataset.tpall === 'on') {
+        ((site.topping_meta || {}).groups || []).forEach((g) => g.axes.forEach((a) => TP.sel.add(a)));
+      }
+      tpRefresh(); return;
+    }
+    const grp = e.target.closest('[data-tpgrp]');
+    if (grp) {
+      const g = ((site.topping_meta || {}).groups || []).find((x) => x.name === grp.dataset.tpgrp);
+      if (g) {
+        const full = g.axes.every((a) => TP.sel.has(a));
+        g.axes.forEach((a) => (full ? TP.sel.delete(a) : TP.sel.add(a)));
+      }
+      tpRefresh(); return;
+    }
+    const chip = e.target.closest('[data-tpax]');
+    if (chip) {
+      const k = chip.dataset.tpax;
+      TP.sel.has(k) ? TP.sel.delete(k) : TP.sel.add(k);
+      tpRefresh(); return;
+    }
+  }, true);
+  tpRefresh();
+}

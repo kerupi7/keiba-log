@@ -1612,3 +1612,86 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
 .race20 table.pastt tr.pb-win td:first-child{box-shadow:inset 4px 0 0 #C8A200}
 .race20 table.pastt tr.pb-close td{background:#DCEBFA}
 .race20 table.pastt tr.pb-close td:first-child{box-shadow:inset 4px 0 0 #3D7EBB}
+
+/* ============================================================
+   102-spec: トッピング（19軸の単体 ＋ 掛け合わせ条件）
+   既存セレクタは1つも変更しない。ここから下は追加のみ。
+   色は馬名に引くマーカーだけ。総合・勝率・オッズの列と行の背景は触らない。
+   ============================================================ */
+.race20{
+  /* 馬名マーカーの10色。緑5＝人気より走る側 / 赤5＝走らない側 */
+  --tp1:#EBB0A2;--tp2:#F2C7BD;--tp3:#F7DBD4;--tp4:#FBEBE7;--tp5:#FCF3F1;
+  --tp6:#F2F9F5;--tp7:#E8F5ED;--tp8:#DAF0E3;--tp9:#C7E7D3;--tp10:#AEDCC1;
+}
+.race20 .tpnm{border-radius:2px;padding:0 2px}
+.race20 tr.hrow.tp1 .tpnm{background:var(--tp1)}
+.race20 tr.hrow.tp2 .tpnm{background:var(--tp2)}
+.race20 tr.hrow.tp3 .tpnm{background:var(--tp3)}
+.race20 tr.hrow.tp4 .tpnm{background:var(--tp4)}
+.race20 tr.hrow.tp5 .tpnm{background:var(--tp5)}
+.race20 tr.hrow.tp6 .tpnm{background:var(--tp6)}
+.race20 tr.hrow.tp7 .tpnm{background:var(--tp7)}
+.race20 tr.hrow.tp8 .tpnm{background:var(--tp8)}
+.race20 tr.hrow.tp9 .tpnm{background:var(--tp9)}
+.race20 tr.hrow.tp10 .tpnm{background:var(--tp10)}
+
+/* 操作盤（.shctl の空いている左側に入る） */
+.race20 .tpctl{flex:1 1 100%;margin:0 0 6px}
+.race20 .tpmain{display:flex;align-items:center;gap:9px;padding:7px 9px;
+  border:1.5px solid var(--orange);border-radius:4px;background:#FFF6EA}
+.race20 .tpmain .tx{flex:1 1 auto;font-size:10.5px;color:#B36200;line-height:1.5}
+.race20 .tpmain .tx b{color:#8A4B00;font-size:11.5px}
+.race20 button.tpbig{font:inherit;font-size:11.5px;font-weight:700;cursor:pointer;flex:none;
+  padding:7px 11px;border-radius:4px;border:1.5px solid var(--orange);background:#fff;color:#B36200}
+.race20 button.tpbig.on{background:var(--orange);border-color:var(--orange);color:#fff}
+.race20 button.tpbig:disabled{opacity:.45;cursor:not-allowed}
+.race20 button.tpsum{font:inherit;width:100%;text-align:left;font-size:11px;font-weight:700;
+  color:var(--navy);background:#EEF2F6;border:1px solid #CFDCE7;border-radius:4px;
+  padding:6px 9px;cursor:pointer;display:flex;align-items:center;gap:6px;margin-top:6px}
+.race20 button.tpsum .ar{margin-left:auto;font-size:10px}
+.race20 .tpbody{display:none;padding:7px 2px 0}
+.race20 .tpbody.open{display:block}
+.race20 .tpall{display:flex;gap:6px;justify-content:flex-end;margin-bottom:5px}
+.race20 .tpall button{font:inherit;font-size:10.5px;font-weight:700;color:var(--cta);
+  background:#fff;border:1px solid var(--rule);border-radius:4px;padding:3px 8px;cursor:pointer}
+.race20 .tpgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
+.race20 button.tpgl{grid-column:1/-1;font:inherit;font-size:9.5px;font-weight:700;
+  color:var(--cap);background:none;border:0;border-bottom:1px dotted var(--rule);
+  padding:5px 0 1px;margin-bottom:1px;text-align:left;cursor:pointer;width:100%}
+.race20 button.tpgl .gi{font-weight:400;margin-left:5px}
+.race20 button.tpchip{font:inherit;font-size:10.5px;line-height:1;padding:6px 3px;cursor:pointer;
+  border:1px solid var(--rule);background:#fff;color:var(--sub);border-radius:4px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.race20 button.tpchip.on{background:var(--navy);border-color:var(--navy);color:#fff;font-weight:700}
+.race20 button.tpchip .q{font-size:8.5px;font-weight:700;opacity:.55;margin-left:3px;
+  border:1px solid currentColor;border-radius:50%;padding:0 3px}
+.race20 .tpstate{font-size:10px;color:var(--cap);margin:5px 0 0}
+
+/* 材料の説明（チップの ? で開く） */
+.race20 .tpdoc{margin-top:7px;padding:8px 9px;background:#fff;border:1px solid var(--navy);
+  border-radius:4px}
+.race20 .tpdoc .dh{display:flex;align-items:baseline;gap:6px;margin-bottom:3px}
+.race20 .tpdoc .dh b{font-size:12px;color:var(--navy)}
+.race20 .tpdoc .dh .w{font-size:10.5px;color:var(--sub)}
+.race20 .tpdoc .dh .x{margin-left:auto;font:inherit;font-size:10.5px;color:var(--cta);
+  background:none;border:0;cursor:pointer;padding:2px 4px}
+.race20 .tpdoc .how{font-size:10.5px;color:var(--sub);line-height:1.7;margin-bottom:5px}
+
+/* 表（説明・パネル共通） */
+.race20 table.tpt{width:100%;border-collapse:collapse;font-size:10.5px;margin-top:3px}
+.race20 table.tpt th,.race20 table.tpt td{padding:2px 4px;text-align:right;
+  border-bottom:1px dotted var(--rule);white-space:nowrap}
+.race20 table.tpt th.l,.race20 table.tpt td.l{text-align:left;white-space:normal}
+.race20 table.tpt thead th{color:var(--cap);font-size:9.5px;border-bottom:1px solid var(--rule)}
+.race20 .tp-up{color:var(--hit);font-weight:700}
+.race20 .tp-dn{color:var(--live);font-weight:700}
+.race20 .tp-mid{color:var(--cap)}
+
+/* 行を開いたときの「この馬の色の理由」 */
+.race20 .tpwhy{margin:0 0 7px;padding:7px 8px;background:#fff;border:1px solid var(--rule);
+  border-radius:3px}
+.race20 .tpwhy .hd{font-size:11px;font-weight:700;color:var(--navy);margin-bottom:3px;
+  display:flex;align-items:center;gap:6px}
+.race20 .tpwhy .sw{display:inline-block;width:24px;height:11px;border-radius:2px}
+.race20 .tpwhy .note{font-size:9.5px;color:var(--cap);margin-top:4px;line-height:1.7}
+.race20 .tpwhy:empty{display:none}
