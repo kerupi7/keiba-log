@@ -2035,13 +2035,17 @@ function renderScenarioLegacy20(site) {
   const blocksHtml = blocks.map(({ key, cls }) => {
     const s = p.scenario[key];
     if (!s) return '';
+    // 93-spec 以降、シナリオ名（title）はペース区分だけを表し、決着型は side_label に分かれた。
+    // titleだけ出すと「ハイ」の前残りマスと差し・追込マスが同じ名前になり、3本中2本が
+    // 見分けられなくなる（2026-08-01 修正）。side_label が無い旧公開分は title のみのまま。
+    const nameText = s.side_label ? `${s.title} × ${s.side_label}` : s.title;
     const pctHtml = `<span class="p">${Math.round(s.prob * 100)}%</span>`;
     let passTimeHtml = '';
     if (key !== 'other' && s.pass_time && s.pass_time.label) {
       hasPassTime = true;
       passTimeHtml = `<span class="passtime">${escapeHtml(s.pass_time.label)}</span>`;
     }
-    return `<div class="scn${cls}"><div class="hd">${roleBadgeHtml(s.display_role)}${escapeHtml(s.title)}${pctHtml}${passTimeHtml}</div></div>`;
+    return `<div class="scn${cls}"><div class="hd">${roleBadgeHtml(s.display_role)}${escapeHtml(nameText)}${pctHtml}${passTimeHtml}</div></div>`;
   }).join('');
   const passTimeNoteHtml = hasPassTime
     ? '<div class="foldnote">過去の同コースの実績から出した目安。誤差はおおむね±1秒（実測で76%が±1秒以内）。</div>'
