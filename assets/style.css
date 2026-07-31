@@ -1448,6 +1448,13 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
 .race20 table.unified td.rot{font-size:11.5px;color:var(--sub);white-space:nowrap}
 /* 印セルは狭いので、地雷バッジが馬番へかぶらないよう詰める */
 .race20 table.unified td .mkb{min-width:20px;height:20px;font-size:12px}
+/* 能力印と穴は別基準なので同居する。印列は1バッジぶんの幅しかないため縦に積む
+   （mockup-38 案B）。横並びは印列の拡幅＝馬名列を削ることになるので採らない。
+   積んでも行の高さは変わらない（375px/430pxとも48pxのまま） */
+.mkstack{display:inline-flex;flex-direction:column;align-items:center;gap:1px;vertical-align:middle}
+.mkstack .mkb{margin-right:0}
+.race20 .mkb.m-ana.sub{min-width:20px;height:14px;line-height:14px;font-size:9.5px;padding:0}
+.race20 table.unified td .mkb.m-ana.sub{height:14px}
 .race20 table.unified td .mkb.m-jir{font-size:9px;min-width:0;padding:0 2px;letter-spacing:-.02em}
 .race20 tr.hrow{cursor:pointer}
 .race20 tr.hrow.pred td{background:#F4F8FC}

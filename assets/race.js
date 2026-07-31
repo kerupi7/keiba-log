@@ -534,12 +534,16 @@ function renderReviewLap(lap) {
 // 厩舎（原簿に無い）や通過順（settle時にnetkeiba側が未記入）が落ちることがある。
 const FO_TOP_N = 5;
 
+const ABILITY_CLS = { '◎': 'm-hon', '○': 'm-tai', '▲': 'm-tan', '△': 'm-oku' };
+
+// 出馬表の印列（markBadge20）と同じ並べ方。能力印を持つ穴馬は穴を下に積む
 function foMark(h) {
-  if (h.ability_mark) {
-    const cls = { '◎': 'm-hon', '○': 'm-tai', '▲': 'm-tan', '△': 'm-oku' }[h.ability_mark] || '';
-    return `<span class="mkb ${cls}">${escapeHtml(h.ability_mark)}</span>`;
-  }
   if (h.bet_mark === '地雷') return '<span class="mkb m-jir">地雷</span>';
+  const ana = isAna(h) ? '<span class="mkb m-ana sub">穴</span>' : '';
+  if (h.ability_mark) {
+    const badge = `<span class="mkb ${ABILITY_CLS[h.ability_mark] || ''}">${escapeHtml(h.ability_mark)}</span>`;
+    return ana ? `<span class="mkstack">${badge}${ana}</span>` : badge;
+  }
   if (isAna(h)) return '<span class="mkb m-ana">穴</span>';
   return '';
 }
@@ -1674,13 +1678,17 @@ function isAna(h) {
   return h.bet_mark === '穴' || h.role === '穴';
 }
 
-// 印は 能力印 → 地雷 → 穴 の順で1つだけ（mark-2.4 の排他ルールと同じ）。
-// 印列は幅が狭く2つ並べられないため、能力印を持つ穴馬はここに穴が出ない。
-// その分は馬柱パネルの markWhyBlock が必ず拾う（＝穴が消えることはない）。
+// 印は 地雷 → 能力印(＋穴) → 穴 の順。地雷は能力印と排他（mark-2.4）だが、穴は
+// 「人気7位以下なのに走る」で能力印とは別基準なので同居する（2026-08-01 時点で42頭中10頭）。
+// 同居分は能力印の下に穴を小さく積んで併記する（mockup-38 案B）。横並びや列の拡幅は
+// 馬名列を削ることになるので採らない。積んでも行の高さは変わらない（実測48pxで同じ）。
 function markBadge20(h) {
-  const markCls = { '◎': 'm-hon', '○': 'm-tai', '▲': 'm-tan', '△': 'm-oku' };
-  if (h.ability_mark) return `<span class="mkb ${markCls[h.ability_mark]}">${h.ability_mark}</span>`;
   if (h.bet_mark === '地雷') return '<span class="mkb m-jir">地雷</span>';
+  const ana = isAna(h) ? '<span class="mkb m-ana sub">穴</span>' : '';
+  if (h.ability_mark) {
+    const badge = `<span class="mkb ${ABILITY_CLS[h.ability_mark]}">${h.ability_mark}</span>`;
+    return ana ? `<span class="mkstack">${badge}${ana}</span>` : badge;
+  }
   if (isAna(h)) return '<span class="mkb m-ana">穴</span>';
   return '';
 }
