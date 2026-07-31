@@ -2445,14 +2445,16 @@ function tpWhy(site, h, step, total) {
   const more = (h.topping.conds_total || 0) - (h.topping.conds || []).length;
   return `<div class="hd"><span class="sw" style="background:var(--tp${step})"></span>
       この馬は <b>${step}段目</b>（${total}頭中）</div>
-    ${TP.sel.size ? `<table class="tpt"><thead><tr><th class="l">材料</th><th class="l">区分</th>
-      <th>実際に3着内</th><th>人気どおりなら</th><th class="vh">判定</th></tr></thead><tbody>${axRows}</tbody></table>` : ''}
+    ${TP.sel.size ? `<table class="tpt"><thead><tr><th class="l">材料</th><th class="l">この馬</th>
+      <th>3着内率</th><th>同じ人気なら</th><th class="vh">判定</th></tr></thead><tbody>${axRows}</tbody></table>` : ''}
     ${TP.cross && h.topping.conds_total ? `<table class="tpt"><thead><tr>
-      <th class="l">掛け合わせ条件（走る${h.topping.up}・走らない${h.topping.dn}）</th>
-      <th>実際に3着内</th><th>人気どおりなら</th><th class="vh">判定</th><th>母数</th></tr></thead>
+      <th class="l">当てはまった条件</th>
+      <th>3着内率</th><th>同じ人気なら</th><th class="vh">判定</th><th>母数</th></tr></thead>
       <tbody>${cRows}${more > 0 ? `<tr><td class="l" colspan="5" style="color:var(--cap)">ほか ${more} 件</td></tr>` : ''}</tbody></table>` : ''}
     ${TP.sel.size || (TP.cross && h.topping.conds_total) ? tpLegend() : ''}
-    <div class="note">色はこのレースの中での並び順です。段が上でも「勝てる」という意味ではありません。</div>`;
+    <div class="note">3着内率＝当てはまる馬が実際に3着以内に入った割合。
+      「同じ人気なら」＝同じくらいの人気の馬が、ふつう3着以内に入る割合。<br>
+      色はこのレースの中での並び順です。段が上でも「勝てる」という意味ではありません。</div>`;
 }
 
 // 色と説明を貼り直す（チップを押すたびに呼ぶ。表そのものは作り直さない）
