@@ -1932,7 +1932,10 @@ function scenarioCellBadgeKey(cell, p) {
   return null;
 }
 
-// 狙い（末脚順）: 6マス案でも旧3ブロック案でも共通（scenario.main.favoritesは93-spec §5で維持）
+// 狙い（末脚順）: 旧3ブロック表示（renderScenarioLegacy20）専用。
+// 6マス表示は「この展開で伸びる馬」と各マスの馬番で同じ馬を出しており重複するため、
+// そちらからは外した（2026-08-01 ユーザー判断）。旧3ブロック表示はここにしか馬名が
+// 出ないので残す。scenario.main.favorites 自体は93-spec §5で維持。
 function renderScenarioFavorites20(p, byNumberOv) {
   const recoFavs = (p.scenario && p.scenario.main && p.scenario.main.favorites) || [];
   if (!recoFavs.length) return '';
@@ -2010,8 +2013,7 @@ function renderScenarioGrid20(site) {
 
   return `<div class="subh">展開シナリオ</div>${bigHtml}<div class="o22">${rowsHtml}</div>
     <div class="pmlegend">オレンジ枠<span class="sw nige"></span>＝主逃げ候補／馬番の下は印／
-    確率は目安で「この展開になります」の断定ではありません</div>${basisNote}
-    ${renderScenarioFavorites20(p, byNumberOv)}`;
+    確率は目安で「この展開になります」の断定ではありません</div>${basisNote}`;
 }
 
 // 旧3ブロック表示（本命＋対抗＋畳んだ3番手）。scenario_grid の無い過去公開分はこちらのまま
