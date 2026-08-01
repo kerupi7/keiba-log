@@ -576,6 +576,11 @@ function timeToSec(text) {
   return (m[1] ? Number(m[1]) * 60 : 0) + Number(m[2]);
 }
 
+// 着順表で使う人気。確定人気が正で、持っていない過去の公開分だけ予想時点の人気に戻す。
+function foPop(h) {
+  return h.final_popularity != null ? h.final_popularity : h.popularity;
+}
+
 // 各列 = { label, cls, has(h), cell(h, ctx) }。has を持たない列は常に出す。
 const FO_COLS = [
   { label: '着', cls: 'fo-c1 num', cell: (h) => (h.finish != null ? h.finish : escapeHtml(h.finish_text || '—')) },
@@ -606,9 +611,12 @@ const FO_COLS = [
       return `<span title="勝ち馬とのタイム差">${d > 0 ? '+' : ''}${d.toFixed(1)}</span>`;
     } },
   // 人気は1・2・3番人気を金・銀・銅で塗る（セルの背景ではなく数字のボックス）
-  { label: '人気', cls: 'num', has: (h) => h.popularity != null,
-    cell: (h) => (h.popularity == null ? '—'
-      : medalSpan(h.popularity, MEDAL_CLS[h.popularity] || '', `${h.popularity}番人気`)) },
+  // 隣の単勝が確定オッズなので、人気も確定人気（final_popularity）を出す。popularity は
+  // 予想時点＝発走10分前のオッズ順で、並べると矛盾して見えていた（2026-08-01 中京3R:
+  // 単勝10.1倍で6番人気）。final_popularity を持たない過去の公開分は popularity に戻す。
+  { label: '人気', cls: 'num', has: (h) => foPop(h) != null,
+    cell: (h) => (foPop(h) == null ? '—'
+      : medalSpan(foPop(h), MEDAL_CLS[foPop(h)] || '', `${foPop(h)}番人気`)) },
   { label: '単勝', cls: 'num', has: (h) => h.final_odds != null,
     cell: (h) => (h.final_odds != null ? h.final_odds.toFixed(1) : '—') },
   // 上り3Fは速い順に金・銀・銅。同タイムは同じ色（重複を除いた値で順位を決める）
@@ -729,7 +737,7 @@ function renderReviewSection(site) {
     const good = h.finish && h.finish <= 3;
     return `<div class="rv-mc${good ? ' hit' : ''}"><div class="rv-mk">${mk}</div>
       <div class="rv-mb">${umaBox(h.number, h.gate, 'sm')}${escapeHtml(h.name)}<br>
-      <span class="rv-s">${h.popularity ?? '—'}人気</span></div>
+      <span class="rv-s">${foPop(h) ?? '—'}人気</span></div>
       <div class="rv-mf">${h.finish ?? '—'}<span class="rv-u">着</span></div></div>`;
   }).join('');
   // 印の的中サマリー。件数だけの1行だと「どの印が来たか」はカードを1枚ずつ読む
@@ -744,7 +752,7 @@ function renderReviewSection(site) {
     const lr = land[num]; const h = byNumber[num] || {};
     return `<div class="rv-mc lm${lr.ok ? ' hit' : ' ng'}"><div class="rv-mk sm">地雷</div>
       <div class="rv-mb">${umaBox(Number(num), h.gate, 'sm')}${escapeHtml(h.name ?? '')}<br>
-      <span class="rv-s">${h.popularity ?? '—'}人気　${lr.ok ? '読みどおり飛んだ' : '飛ばずに好走'}</span></div>
+      <span class="rv-s">${foPop(h) ?? '—'}人気　${lr.ok ? '読みどおり飛んだ' : '飛ばずに好走'}</span></div>
       <div class="rv-mf">${lr.finish}<span class="rv-u">着</span></div></div>`;
   }).join('');
   // 穴は地雷の裏返しで、3着以内に来たら成功。「危ないと見た馬」と対になる枠として並べる
@@ -753,7 +761,7 @@ function renderReviewSection(site) {
     const ar = ana[num]; const h = byNumber[num] || {};
     return `<div class="rv-mc ana${ar.ok ? ' hit' : ' ng'}"><div class="rv-mk sm ana">穴</div>
       <div class="rv-mb">${umaBox(Number(num), h.gate, 'sm')}${escapeHtml(h.name ?? '')}<br>
-      <span class="rv-s">${h.popularity ?? '—'}人気　${ar.ok ? '読みどおり走った' : '走らなかった'}</span></div>
+      <span class="rv-s">${foPop(h) ?? '—'}人気　${ar.ok ? '読みどおり走った' : '走らなかった'}</span></div>
       <div class="rv-mf">${ar.finish != null ? ar.finish : '—'}<span class="rv-u">着</span></div></div>`;
   }).join('');
   const bets = (site.bets || []).map((b) => {
@@ -2412,7 +2420,7 @@ function renderVerification20(site) {
     const h = byNumber[e.number];
     return vrow(`<span class="mkb ${markClsMap[e.mark] || ''}">${escapeHtml(e.mark)}</span>`
       + `${umaBox(Number(e.number), h && h.gate, 'sm')}<span class="nm">${h ? escapeHtml(h.name) : '—'}</span>`,
-      `${e.finish}着`, h && h.popularity ? `${h.popularity}人気` : '', e.finish <= 3, true);
+      `${e.finish}着`, h && foPop(h) ? `${foPop(h)}人気` : '', e.finish <= 3, true);
   }).join('');
   const markGroup = markFinishEntries.length
     ? `<div class="vgh">印 → 着順<span class="s">（${markInTop3}/${markFinishEntries.length} が馬券圏内）</span></div><div class="g-mark">${markRows}</div>`
