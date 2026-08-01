@@ -593,6 +593,23 @@ details.fold.om-fold>summary .cnt{color:#fff;opacity:.85;font-size:11px}
 .race20 .babadetail .l2 .fav{display:block;padding:2px 0}
 .race20 .babadetail .l2 .fav .nm{font-weight:700;color:var(--text)}
 .race20 .babadetail .l2 .fav .rs{color:var(--cap);font-size:12px}
+/* 実測値の明細（クッション値・前回比・平年比・含水率）。2026-08-01追加 */
+.race20 .babadetail .l3{margin-top:6px;border-top:1px solid #dbe6f0;padding-top:6px}
+.race20 .babadetail .mrow{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px;padding:1px 0}
+.race20 .babadetail .mrow.sub{padding-left:12px;font-size:12px;color:var(--cap)}
+.race20 .babadetail .mrow.sub::before{content:"└";color:#9fb4c8;margin-right:2px}
+.race20 .babadetail .mrow .k{color:var(--navy);font-weight:700;min-width:6.5em}
+.race20 .babadetail .mrow.sub .k{color:var(--cap);font-weight:400}
+.race20 .babadetail .mrow .v{font-weight:700;color:var(--text);font-variant-numeric:tabular-nums}
+.race20 .babadetail .mrow.sub .v{font-weight:400}
+.race20 .babadetail .mrow .t{color:var(--cap);font-size:11.5px}
+.race20 .babadetail .mrow .n{color:#9fb4c8;font-size:11px}
+.race20 .babadetail .mrow .w{color:var(--text)}
+.race20 .babadetail .mrow .d{font-weight:700;font-variant-numeric:tabular-nums}
+.race20 .babadetail .mrow .d.up{color:#A83232}
+.race20 .babadetail .mrow .d.down{color:#2E6DA4}
+.race20 .babadetail .mrow .d.flat{color:#8a8a84}
+.race20 .babadetail .stale{background:#FBE9E9;color:#A83232;font-size:11px;padding:0 5px;border-radius:2px}
 
 /* 脚質傾向・逃げ候補（見出し.subhは(c)(e)(f)で共有） */
 .race20 .subh{font-size:13px;font-weight:700;margin:14px 0 2px;color:var(--navy)}
@@ -1746,3 +1763,9 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
   display:flex;align-items:center;gap:6px}
 .race20 .tpwhy .sw{display:inline-block;width:24px;height:11px;border-radius:2px}
 .race20 .tpwhy:empty{display:none}
+
+/* 104-body-weight-live-spec.md §6.3: 体3軸は未発表のあいだ押せない。押せるのに何も
+   起きないのが一番悪いのでopacityで見た目にも分かるようにする */
+.race20 button.tpchip:disabled{opacity:.45;cursor:not-allowed}
+/* 「体」グループを開いたときだけ出す注記（常時表示はしない） */
+.race20 .tpgrid .tpbwnote{grid-column:1/-1;font-size:9.5px;color:var(--cap);margin:1px 0 4px}

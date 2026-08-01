@@ -11,6 +11,22 @@ function renderError(message) {
     `<div class="error-box">${escapeHtml(message)}</div>`;
 }
 
+// 差分の表示（馬場ブロックの「前回比」「平年比」で使う）。0は符号を付けない
+function signed(v) {
+  if (v == null || Number.isNaN(Number(v))) return '';
+  const n = Number(v);
+  if (n === 0) return '±0';
+  return (n > 0 ? '+' : '') + n.toFixed(n % 1 === 0 ? 0 : 1);
+}
+
+// ＋＝硬い方向／−＝軟らかい方向。良し悪しではなく向きなので中立色寄りにする
+function deltaCls(v) {
+  if (v == null) return '';
+  const n = Number(v);
+  if (Math.abs(n) < 0.25) return 'flat';
+  return n > 0 ? 'up' : 'down';
+}
+
 function payoutTypeLabel(type) {
   const map = {
     tansho: '単勝', fukusho: '複勝', wakuren: '枠連', umaren: '馬連',
@@ -570,6 +586,10 @@ const FO_COLS = [
   { label: '性齢', cls: 'num sub', has: (h) => !!h.sex_age, cell: (h) => escapeHtml(h.sex_age || '—') },
   { label: '斤量', cls: 'num sub', has: (h) => h.weight_carried != null,
     cell: (h) => (h.weight_carried != null ? h.weight_carried.toFixed(1) : '—') },
+  // 104-body-weight-live-spec.md §5.2: 当日馬体重＋前走比増減。位置は「斤量」の直後
+  { label: '馬体重', cls: 'num sub', has: (h) => h.body_weight != null,
+    cell: (h) => (h.body_weight == null ? '—'
+      : `${h.body_weight}${h.body_weight_diff != null ? `(${h.body_weight_diff > 0 ? '+' : ''}${h.body_weight_diff})` : ''}`) },
   { label: '騎手', cls: 'sub', has: (h) => !!h.jockey, cell: (h) => escapeHtml(h.jockey || '—') },
   { label: 'タイム', cls: 'num fo-tm', has: (h) => !!h.finish_time,
     cell: (h) => escapeHtml(h.finish_time || '—') },
@@ -600,7 +620,8 @@ const FO_COLS = [
     } },
   { label: '通過', cls: 'num sub', has: (h) => !!h.passing, cell: (h) => escapeHtml(h.passing || '—') },
   { label: '厩舎', cls: 'sub', has: (h) => !!h.trainer, cell: (h) => escapeHtml(h.trainer || '—') },
-  { label: '馬体重', cls: 'num sub', has: (h) => !!h.body_weight, cell: (h) => escapeHtml(h.body_weight || '—') },
+  // 95-specの「馬体重」列（結果ページの文字列をそのまま出すもの）は 104-spec で
+  // 斤量の直後の数値列に一本化した。settle が同じ int のキーへ埋めるので情報は失われない。
 ];
 
 function renderFinishOrder(site) {
@@ -1386,6 +1407,15 @@ function legBar(style) {
   return `<span class="legbar"><span class="legcells">${cells}</span>${label}</span>`;
 }
 
+// 104-spec §5.1: 当日馬体重（発走の約50分前に発表）。null のときは<span>ごと出さない
+// （'—'は出さない・空欄が並ぶと読みにくいため）。色は付けない（増減の大小はトッピングの仕事）。
+function bwDisplay(h) {
+  if (h.body_weight == null) return '';
+  const diff = h.body_weight_diff;
+  const txt = diff == null ? `${h.body_weight}` : `${h.body_weight}(${diff > 0 ? '+' : ''}${diff})`;
+  return `<span class="pw">${escapeHtml(txt)}</span>`;
+}
+
 function medalSpan(text, cls, title) {
   if (!cls) return escapeHtml(text);
   const t = title ? ` title="${escapeHtml(title)}"` : '';
@@ -1646,7 +1676,7 @@ function renderShutuba20(site) {
         <td>${markBadge20(h)}</td>
         <td>${umaBox(h.number, h.gate, 'sm')}</td>
         <td class="l nm"><span class="tpnm">${escapeHtml(h.name)}</span><span class="tri">▸</span>
-          <div class="u prof"><span class="pa">${escapeHtml(h.sex_age ?? '')}</span><span class="pk">${h.weight_carried != null ? String(h.weight_carried).replace(/\.0$/, '') : '—'}</span><span class="pj">${escapeHtml(h.jockey && h.jockey !== 'N/A' ? h.jockey : '—')}</span>${legBar(h.running_style)}<span class="rot">${escapeHtml(h.rotation || '')}</span></div></td>
+          <div class="u prof"><span class="pa">${escapeHtml(h.sex_age ?? '')}</span><span class="pk">${h.weight_carried != null ? String(h.weight_carried).replace(/\.0$/, '') : '—'}</span>${bwDisplay(h)}<span class="pj">${escapeHtml(h.jockey && h.jockey !== 'N/A' ? h.jockey : '—')}</span>${legBar(h.running_style)}<span class="rot">${escapeHtml(h.rotation || '')}</span></div></td>
         <td>${fmtNum(h.total, 1)}<div class="u"><span class="grade ${gradeClass(h.grade)}">${gradeDisp(h.grade)}</span></div></td>
         <td>${medalSpan(winTxt, wr[h.number])}</td>
         <td>${h.odds != null ? h.odds.toFixed(1) : '—'}<div class="u pp">${h.popularity ?? '—'}人</div></td>
@@ -2075,13 +2105,59 @@ function renderOverview20(site) {
   `);
 
   // (b) 馬場踏み込み
+  // 2026-08-01: クッション値をJRA公式から測定時刻つきで取れるようになり、過去4年ぶんも
+  // 揃ったので「前日からの変化」「その競馬場の平年比」まで出す。いずれも観測された事実で、
+  // どの馬が有利かの主張はしない（馬場適性は予測力ゼロと確定しているため）。
   if (p.baba_detail) {
-    const favs = p.baba_detail.favorites || [];
+    const bd = p.baba_detail;
+    const favs = bd.favorites || [];
     const favHtml = favs.map((f) => `<span class="fav"><span class="nm">${umaBox(Number(f.number), (byNumberOv[f.number] || {}).gate, 'sm')} ${escapeHtml(f.name)}</span> <span class="rs">（${escapeHtml(f.reason)}）</span></span>`).join('');
     const l2Html = favs.length ? `<div class="l2"><span class="h">この馬場が得意:</span>${favHtml}</div>` : '';
+
+    // 見出し行。headline が無い旧データは display_text をそのまま出す（後方互換）
+    const headHtml = bd.headline
+      ? `<div class="l1">${escapeHtml(bd.headline)}</div>`
+      : `<div class="l1">${escapeHtml(bd.display_text || '')}</div>`;
+
+    const rows = [];
+    const cu = bd.cushion_detail;
+    if (cu && cu.value != null) {
+      const staleHtml = cu.stale ? '<span class="stale">前日以前の値</span>' : '';
+      rows.push(`<div class="mrow">
+        <span class="k">クッション値</span>
+        <span class="v">${escapeHtml(String(cu.value))}</span>
+        <span class="t">${escapeHtml(cu.measured_label || '')}</span>${staleHtml}
+      </div>`);
+      const sub = [];
+      if (cu.prev && cu.prev.value != null) {
+        sub.push(`<span class="k">前回 ${escapeHtml(cu.prev.label || '')}</span>
+          <span class="v">${escapeHtml(String(cu.prev.value))}</span>
+          <span class="d ${deltaCls(cu.prev.delta)}">${signed(cu.prev.delta)}</span>
+          <span class="w">${escapeHtml(cu.prev.trend || '')}</span>`);
+      }
+      if (cu.normal && cu.normal.mean != null) {
+        sub.push(`<span class="k">${escapeHtml(cu.normal.scope || '')}の平年</span>
+          <span class="v">${escapeHtml(String(cu.normal.mean))}</span>
+          <span class="d ${deltaCls(cu.normal.delta)}">${signed(cu.normal.delta)}</span>
+          <span class="w">${escapeHtml(cu.normal.label || '')}</span>
+          <span class="n">${cu.normal.n}回ぶん</span>`);
+      }
+      for (const s of sub) rows.push(`<div class="mrow sub">${s}</div>`);
+    }
+    const mo = bd.moisture_detail;
+    if (mo && mo.goal != null) {
+      rows.push(`<div class="mrow">
+        <span class="k">含水率 ${escapeHtml(mo.surface || '')}</span>
+        <span class="v">G前 ${escapeHtml(String(mo.goal))}% ／ 4C ${escapeHtml(String(mo.corner4))}%</span>
+        <span class="t">${escapeHtml(mo.measured_label || '')}</span>
+      </div>`);
+    }
+    const measureHtml = rows.length ? `<div class="l3">${rows.join('')}</div>` : '';
+
     sections.push(`
       <div class="babadetail">
-        <div class="l1">${escapeHtml(p.baba_detail.display_text)}</div>
+        ${headHtml}
+        ${measureHtml}
         ${l2Html}
       </div>
     `);
@@ -2493,6 +2569,17 @@ function tpSteps(site) {
   return out;
 }
 
+// 104-spec §6.3: 体3軸（bweight/bwdelta/wratio）は当日体重が発表されるまで使えない。
+// 軸ごとに判定する（3軸まとめてではない・新馬戦はbwdeltaだけ'?'のまま残るため）。
+const TP_BODY_AXES = ['bweight', 'bwdelta', 'wratio'];
+function tpAxisHasData(site, axisKey) {
+  const live = (site.horses || []).filter((h) => !h.scratched && h.topping);
+  return live.some((h) => {
+    const lv = (h.topping.levels || {})[axisKey];
+    return lv && lv.level != null && lv.level !== '?';
+  });
+}
+
 function tpCtl(site) {
   const meta = site.topping_meta || {};
   const first = (site.horses || []).find((h) => h.topping) || {};
@@ -2507,8 +2594,15 @@ function tpCtl(site) {
     const n = g.axes.filter((a) => TP.sel.has(a)).length;
     const gi = n === g.axes.length ? '全部選択中・押すと外す'
       : n ? `${n}/${g.axes.length}選択中・押すと全部選ぶ` : '押すとまとめて選ぶ';
+    // 104-spec §6.3: 「体」グループを開いたときだけ、発表タイミングの注記を1行出す
+    const bwNote = g.name === '体'
+      ? '<p class="tpbwnote">馬体重は発走の約50分前に発表されます。それまでは体の3つは選べません。</p>' : '';
     return `<button type="button" class="tpgl" data-tpgrp="${escapeHtml(g.name)}">${escapeHtml(g.name)}<span class="gi">${gi}</span></button>`
-      + g.axes.map((a) => `<button type="button" class="tpchip${TP.sel.has(a) ? ' on' : ''}" data-tpax="${a}">${escapeHtml(tpJp(a))}</button>`).join('');
+      + g.axes.map((a) => {
+        const disabled = TP_BODY_AXES.includes(a) && !tpAxisHasData(site, a);
+        return `<button type="button" class="tpchip${TP.sel.has(a) ? ' on' : ''}" data-tpax="${a}"${disabled ? ' disabled' : ''}>${escapeHtml(tpJp(a))}</button>`;
+      }).join('')
+      + bwNote;
   }).join('');
   // 選ぶ／外すは1つのボタンで往復する
   const allAxes = (meta.groups || []).reduce((s, g) => s.concat(g.axes), []);
