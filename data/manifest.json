@@ -1,6 +1,6 @@
 {
   "schema_version": "keiba-log-manifest-1.0",
-  "generated_at": "2026-08-01T10:59:11",
+  "generated_at": "2026-08-01T11:04:29",
   "model_version": "v1.0",
   "races": [
     {
@@ -14,7 +14,7 @@
       "distance": 2000,
       "post_time": "10:40",
       "field_size": 16,
-      "status": "prediction",
+      "status": "final",
       "stance": "buy",
       "pick": {
         "honmei_number": 11,
@@ -24,7 +24,15 @@
         "value_name": "チェファルー",
         "bets_points": 4
       },
-      "outcome": null
+      "outcome": {
+        "bets_hit": false,
+        "bets_cost": 800,
+        "bets_return": 0,
+        "any_mark_in_top3": true,
+        "winner_number": 11,
+        "winner_gate": 6,
+        "winner_popularity": 1
+      }
     },
     {
       "race_id": "202607020304",
@@ -658,18 +666,18 @@
   ],
   "stats": {
     "n_races": 28,
-    "n_final": 1,
-    "n_pending": 27,
+    "n_final": 2,
+    "n_pending": 26,
     "period": {
       "from": "2026-08-01",
       "to": "2026-08-01"
     },
     "roi": {
       "total": {
-        "cost": 800,
+        "cost": 1600,
         "return": 0,
         "hits": 0,
-        "bets": 4,
+        "bets": 8,
         "roi": -1.0
       },
       "by_type": {
@@ -681,93 +689,111 @@
           "roi": -1.0
         },
         "馬連": {
-          "cost": 200,
+          "cost": 400,
           "return": 0,
           "hits": 0,
-          "bets": 1,
+          "bets": 2,
+          "roi": -1.0
+        },
+        "3連単": {
+          "cost": 600,
+          "return": 0,
+          "hits": 0,
+          "bets": 3,
           "roi": -1.0
         }
       }
     },
     "marks": {
       "honmei": {
-        "n": 1,
-        "win": 0,
-        "rentai": 0,
-        "top3": 0,
-        "win_rate": 0.0,
-        "rentai_rate": 0.0,
-        "top3_rate": 0.0,
-        "avg_finish": 9.0
+        "n": 2,
+        "win": 1,
+        "rentai": 1,
+        "top3": 1,
+        "win_rate": 0.5,
+        "rentai_rate": 0.5,
+        "top3_rate": 0.5,
+        "avg_finish": 5.0
       },
       "by_mark": [
         {
           "mark": "◎",
           "name": "本命",
-          "n": 1,
-          "win": 0,
-          "rentai": 0,
-          "top3": 0,
-          "win_rate": 0.0,
-          "rentai_rate": 0.0,
-          "top3_rate": 0.0,
-          "avg_finish": 9.0
+          "n": 2,
+          "win": 1,
+          "rentai": 1,
+          "top3": 1,
+          "win_rate": 0.5,
+          "rentai_rate": 0.5,
+          "top3_rate": 0.5,
+          "avg_finish": 5.0
         },
         {
           "mark": "○",
           "name": "対抗",
-          "n": 1,
+          "n": 2,
           "win": 1,
           "rentai": 1,
           "top3": 1,
-          "win_rate": 1.0,
-          "rentai_rate": 1.0,
-          "top3_rate": 1.0,
-          "avg_finish": 1.0
+          "win_rate": 0.5,
+          "rentai_rate": 0.5,
+          "top3_rate": 0.5,
+          "avg_finish": 6.5
         },
         {
           "mark": "▲",
           "name": "単穴",
-          "n": 1,
+          "n": 2,
           "win": 0,
           "rentai": 0,
-          "top3": 0,
+          "top3": 1,
           "win_rate": 0.0,
           "rentai_rate": 0.0,
-          "top3_rate": 0.0,
-          "avg_finish": 5.0
+          "top3_rate": 0.5,
+          "avg_finish": 4.0
         },
         {
           "mark": "△",
           "name": "連下",
-          "n": 2,
+          "n": 4,
           "win": 0,
           "rentai": 1,
           "top3": 2,
           "win_rate": 0.0,
-          "rentai_rate": 0.5,
-          "top3_rate": 1.0,
-          "avg_finish": 2.5
+          "rentai_rate": 0.25,
+          "top3_rate": 0.5,
+          "avg_finish": 7.5
         },
         {
           "mark": "無印",
           "name": "",
-          "n": 7,
+          "n": 18,
           "win": 0,
-          "rentai": 0,
-          "top3": 0,
+          "rentai": 1,
+          "top3": 1,
           "win_rate": 0.0,
-          "rentai_rate": 0.0,
-          "top3_rate": 0.0,
-          "avg_finish": 8.285714285714286
+          "rentai_rate": 0.05555555555555555,
+          "top3_rate": 0.05555555555555555,
+          "avg_finish": 8.5
         }
       ],
       "by_mark_odds": [
         {
           "mark": "◎",
           "name": "本命",
-          "n": 1,
+          "n": 2,
           "bands": [
+            {
+              "band": "〜1.9",
+              "n": 1,
+              "win": 1,
+              "rentai": 1,
+              "top3": 1,
+              "win_rate": 1.0,
+              "rentai_rate": 1.0,
+              "top3_rate": 1.0,
+              "avg_finish": 1.0
+            },
             {
               "band": "2.0〜4.9",
               "n": 1,
@@ -784,7 +810,7 @@
         {
           "mark": "○",
           "name": "対抗",
-          "n": 1,
+          "n": 2,
           "bands": [
             {
               "band": "2.0〜4.9",
@@ -796,13 +822,24 @@
               "rentai_rate": 1.0,
               "top3_rate": 1.0,
               "avg_finish": 1.0
+            },
+            {
+              "band": "10〜19.9",
+              "n": 1,
+              "win": 0,
+              "rentai": 0,
+              "top3": 0,
+              "win_rate": 0.0,
+              "rentai_rate": 0.0,
+              "top3_rate": 0.0,
+              "avg_finish": 12.0
             }
           ]
         },
         {
           "mark": "▲",
           "name": "単穴",
-          "n": 1,
+          "n": 2,
           "bands": [
             {
               "band": "5.0〜9.9",
@@ -814,13 +851,24 @@
               "rentai_rate": 0.0,
               "top3_rate": 0.0,
               "avg_finish": 5.0
+            },
+            {
+              "band": "10〜19.9",
+              "n": 1,
+              "win": 0,
+              "rentai": 0,
+              "top3": 1,
+              "win_rate": 0.0,
+              "rentai_rate": 0.0,
+              "top3_rate": 1.0,
+              "avg_finish": 3.0
             }
           ]
         },
         {
           "mark": "△",
           "name": "連下",
-          "n": 2,
+          "n": 4,
           "bands": [
             {
               "band": "5.0〜9.9",
@@ -835,46 +883,46 @@
             },
             {
               "band": "10〜19.9",
-              "n": 1,
+              "n": 2,
               "win": 0,
               "rentai": 1,
               "top3": 1,
               "win_rate": 0.0,
-              "rentai_rate": 1.0,
-              "top3_rate": 1.0,
-              "avg_finish": 2.0
+              "rentai_rate": 0.5,
+              "top3_rate": 0.5,
+              "avg_finish": 5.5
+            },
+            {
+              "band": "20〜49.9",
+              "n": 1,
+              "win": 0,
+              "rentai": 0,
+              "top3": 0,
+              "win_rate": 0.0,
+              "rentai_rate": 0.0,
+              "top3_rate": 0.0,
+              "avg_finish": 16.0
             }
           ]
         },
         {
           "mark": "無印",
           "name": "",
-          "n": 7,
+          "n": 18,
           "bands": [
             {
               "band": "10〜19.9",
-              "n": 2,
+              "n": 5,
               "win": 0,
-              "rentai": 0,
-              "top3": 0,
+              "rentai": 1,
+              "top3": 1,
               "win_rate": 0.0,
-              "rentai_rate": 0.0,
-              "top3_rate": 0.0,
-              "avg_finish": 9.0
+              "rentai_rate": 0.2,
+              "top3_rate": 0.2,
+              "avg_finish": 7.0
             },
             {
               "band": "20〜49.9",
-              "n": 2,
-              "win": 0,
-              "rentai": 0,
-              "top3": 0,
-              "win_rate": 0.0,
-              "rentai_rate": 0.0,
-              "top3_rate": 0.0,
-              "avg_finish": 8.0
-            },
-            {
-              "band": "50.0〜",
               "n": 3,
               "win": 0,
               "rentai": 0,
@@ -882,7 +930,18 @@
               "win_rate": 0.0,
               "rentai_rate": 0.0,
               "top3_rate": 0.0,
-              "avg_finish": 8.0
+              "avg_finish": 10.0
+            },
+            {
+              "band": "50.0〜",
+              "n": 10,
+              "win": 0,
+              "rentai": 0,
+              "top3": 0,
+              "win_rate": 0.0,
+              "rentai_rate": 0.0,
+              "top3_rate": 0.0,
+              "avg_finish": 8.8
             }
           ]
         }
@@ -893,7 +952,7 @@
         "out_rate": 1.0
       },
       "ana": {
-        "n": 1,
+        "n": 3,
         "top3": 0,
         "top3_rate": 0.0
       }
@@ -934,28 +993,6 @@
       },
       {
         "grade": "B+",
-        "n": 0,
-        "win": 0,
-        "rentai": 0,
-        "top3": 0,
-        "win_rate": 0.0,
-        "rentai_rate": 0.0,
-        "top3_rate": 0.0,
-        "avg_finish": 0.0
-      },
-      {
-        "grade": "B",
-        "n": 4,
-        "win": 0,
-        "rentai": 0,
-        "top3": 1,
-        "win_rate": 0.0,
-        "rentai_rate": 0.0,
-        "top3_rate": 0.25,
-        "avg_finish": 6.0
-      },
-      {
-        "grade": "C+",
         "n": 1,
         "win": 1,
         "rentai": 1,
@@ -966,37 +1003,59 @@
         "avg_finish": 1.0
       },
       {
+        "grade": "B",
+        "n": 5,
+        "win": 0,
+        "rentai": 0,
+        "top3": 2,
+        "win_rate": 0.0,
+        "rentai_rate": 0.0,
+        "top3_rate": 0.4,
+        "avg_finish": 5.4
+      },
+      {
+        "grade": "C+",
+        "n": 2,
+        "win": 1,
+        "rentai": 1,
+        "top3": 1,
+        "win_rate": 0.5,
+        "rentai_rate": 0.5,
+        "top3_rate": 0.5,
+        "avg_finish": 6.5
+      },
+      {
         "grade": "C",
-        "n": 1,
+        "n": 2,
         "win": 0,
         "rentai": 1,
         "top3": 1,
         "win_rate": 0.0,
-        "rentai_rate": 1.0,
-        "top3_rate": 1.0,
-        "avg_finish": 2.0
-      },
-      {
-        "grade": "D",
-        "n": 3,
-        "win": 0,
-        "rentai": 0,
-        "top3": 0,
-        "win_rate": 0.0,
-        "rentai_rate": 0.0,
-        "top3_rate": 0.0,
+        "rentai_rate": 0.5,
+        "top3_rate": 0.5,
         "avg_finish": 9.0
       },
       {
+        "grade": "D",
+        "n": 11,
+        "win": 0,
+        "rentai": 1,
+        "top3": 1,
+        "win_rate": 0.0,
+        "rentai_rate": 0.09090909090909091,
+        "top3_rate": 0.09090909090909091,
+        "avg_finish": 7.7272727272727275
+      },
+      {
         "grade": "E",
-        "n": 3,
+        "n": 7,
         "win": 0,
         "rentai": 0,
         "top3": 0,
         "win_rate": 0.0,
         "rentai_rate": 0.0,
         "top3_rate": 0.0,
-        "avg_finish": 8.0
+        "avg_finish": 10.0
       }
     ],
     "pace": {
@@ -1008,9 +1067,9 @@
       {
         "key": "honmei_top3_rate",
         "label": "◎3着内率",
-        "value": 0.0,
+        "value": 0.5,
         "min": 0.2,
-        "n": 1,
+        "n": 2,
         "min_races": 30,
         "status": "insufficient"
       },
@@ -1028,7 +1087,7 @@
         "label": "穴3着内率",
         "value": 0.0,
         "min": 0.11,
-        "n": 1,
+        "n": 3,
         "min_races": 20,
         "status": "insufficient"
       },
