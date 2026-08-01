@@ -1763,6 +1763,29 @@ function setupShutuba20() {
 }
 
 
+// 信頼度（bet-1の期間外実績から付いたラベル）。旧EV方式の買い目には無いので、
+// 値が無ければ何も描かない＝過去の公開分は見た目が一切変わらない。
+const CONF_CLASS = { '高': 'ok', '中': 'fair', '低': 'ng' };
+
+function confChip(b) {
+  const c = b && b.confidence;
+  if (!c) return '';
+  return ` <span class="chip ${CONF_CLASS[c] || 'acc'}">${escapeHtml(c)}</span>`;
+}
+
+// 表の下に置く1行。「低」が何を意味するかを数字で示す（ラベルだけでは読めないため）。
+function confNote(bets) {
+  const seen = new Map();
+  for (const b of bets) {
+    if (!b.confidence || b.confidence_roi === null || b.confidence_roi === undefined) continue;
+    const t = b.type.replace('三連', '3連');
+    if (!seen.has(t)) seen.set(t, `${t} ${b.confidence} ${b.confidence_roi.toFixed(2)}`);
+  }
+  if (!seen.size) return '';
+  return `<div class="conf">信頼度＝過去の検証で100円が何円で戻ったか（1.00でトントン）：`
+    + `${[...seen.values()].join('／')}</div>`;
+}
+
 // 買い目セルの組番整形・合計式は既存renderBetsSectionV11（:164-201）と同一ロジックをコピー（23-spec §3-9）
 function renderBets20(site) {
   const bets = sortedBets(site);
@@ -1786,7 +1809,7 @@ function renderBets20(site) {
       : '';
     return `
       <tr>
-        <td class="l">${escapeHtml(b.type.replace('三連', '3連'))}</td>
+        <td class="l">${escapeHtml(b.type.replace('三連', '3連'))}${confChip(b)}</td>
         <td class="l">${comboBoxes(b.type, b.combination, byNumberBets20)}</td>
         <td>${fmtYen(b.stake ?? b.tickets.length * 100)}</td>
         ${resultCell}
@@ -1818,6 +1841,7 @@ function renderBets20(site) {
       <tbody>${rows}</tbody>
       <tfoot>${footRow}</tfoot>
     </table>
+    ${confNote(bets)}
   `;
 }
 
