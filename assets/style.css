@@ -478,12 +478,33 @@ details.fold.om-fold>summary .cnt{color:#fff;opacity:.85;font-size:11px}
   background:var(--navy);color:#fff;font-size:15px;font-weight:700;border-radius:3px}
 .race20 .secthead .cnt{margin-left:auto;font-size:11px;font-weight:400;opacity:.85}
 
-/* レースヘッダ */
-.race20 .rhead{padding:14px 2px 10px;border-bottom:2px solid var(--navy)}
+/* レースヘッダ（タブより上に固定で出る帯）。
+   下の罫線はタブバー側が引くのでここでは引かない（2本並ぶため・2026-08-03） */
+.race20 .rhead{padding:14px 2px 8px}
 .race20 .rhead .cls{font-size:12px;color:var(--cap);font-weight:700}
 .race20 .rhead .ttl{font-size:17px;font-weight:700;margin:2px 0 4px}
 .race20 .rhead .cond{font-size:12.5px;color:var(--sub)}
 .race20 .rhead .pt{font-size:11px;color:var(--cap);margin-top:6px}
+
+/* 4タブ（2026-08-03）。情報は減らさず置き場所だけ分ける。
+   .tabs-ready は race.js が setup 群を全部終えてから付ける。付くまでは全パネルが
+   縦一列で出たまま＝JSが途中で落ちても全ブロックが読める（フォールバック）。 */
+.race20 .tabbar{display:flex;position:sticky;top:0;z-index:30;background:var(--bg);
+  border-bottom:2px solid var(--rule-strong)}
+.race20 .tabbar .t20{flex:1;min-width:0;border:0;background:none;font:inherit;
+  padding:11px 2px 9px;font-size:13px;font-weight:700;color:var(--cap);cursor:pointer;
+  border-bottom:3px solid transparent;margin-bottom:-2px;white-space:nowrap;
+  display:flex;align-items:center;justify-content:center;gap:2px}
+.race20 .tabbar .t20.on{color:var(--navy);border-bottom-color:var(--navy)}
+.race20 .tabbar .t20:focus-visible{outline:2px solid var(--cta);outline-offset:-2px}
+/* 結果が出ているレースの「回顧」だけに付く印。色だけに意味を持たせないよう、
+   タブ本体の文字（回顧）は常に出す */
+.race20 .tabbar .t20 .dot{width:6px;height:6px;border-radius:50%;background:var(--live);
+  align-self:flex-start;margin-top:1px;flex:0 0 auto}
+.race20.tabs-ready .tabpane{display:none}
+.race20.tabs-ready .tabpane.on{display:block}
+/* タブ直下の紺バー見出しは上マージンを詰める（縦一列時の16pxはタブ内では空きすぎる） */
+.race20 .tabpane>.secthead:first-child{margin-top:8px}
 
 /* 荒れ度ラベル（89-spec §3.1・案C-2）。3列カード＋高さ5pxの帯。
    色は同じ色相の濃淡だけ＝緑(--hit)・赤(--live)は使わない。良し悪しを含意させないため

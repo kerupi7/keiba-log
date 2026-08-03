@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>タブ構成モック — Ans.</title>
+<link rel="stylesheet" href="assets/style.css?v=20260803a">
+<style>
+/* =========================================================================
+   mock-tabs — レース詳細ページのタブ構成モック
+   本番の race.js が描いた DOM を「1ノードも作らず・消さず」タブへ移すだけ。
+   情報量は現状と完全に同一で、変わるのは置き場所だけ。
+   モック専用の見た目（.mockbar / .mvcheck）は採用時に本番へ持ち込まない。
+   ========================================================================= */
+
+/* --- モック説明バー（採用時に削除） --- */
+/* sticky にしない：モック用の帯がビューポートを食うとタブバーの固定位置が本番とズレるため */
+.mockbar{position:static;z-index:60;background:#1d1d1d;color:#fff;font-size:11.5px;
+  line-height:1.5;padding:7px 12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.mockbar b{color:#ffd400}
+.mockbar .mvcheck{margin-left:auto;font-variant-numeric:tabular-nums}
+.mockbar .ok{color:#7BE08A;font-weight:700}
+.mockbar .ng{color:#FF8A8A;font-weight:700}
+.mockbar button{background:#3a3a3a;color:#fff;border:1px solid #555;border-radius:4px;
+  font-size:11px;padding:2px 7px;cursor:pointer;font-family:inherit}
+
+/* --- 固定ヘッダ（レース名・条件・予想時刻）--- */
+.tabhead{padding:10px 0 8px}
+.tabhead .cls{margin-top:0}
+
+/* --- タブバー --- */
+.tabbar{display:flex;position:sticky;z-index:30;background:var(--bg);
+  border-bottom:2px solid var(--rule-strong);margin:0 0 4px}
+.tabbar button{flex:1;min-width:0;border:0;background:none;font-family:inherit;
+  padding:11px 2px 9px;font-size:13px;font-weight:700;color:var(--cap);cursor:pointer;
+  border-bottom:3px solid transparent;margin-bottom:-2px;white-space:nowrap;
+  display:flex;align-items:center;justify-content:center;gap:2px}
+.tabbar button:hover{color:var(--text)}
+.tabbar button.on{color:var(--navy);border-bottom-color:var(--navy)}
+.tabbar button .dot{width:6px;height:6px;border-radius:50%;background:var(--live);
+  align-self:flex-start;margin-top:1px;flex:0 0 auto}
+.tabbar button .qty{font-size:10px;font-weight:500;color:var(--cap)}
+
+/* --- パネル --- */
+.tabpane{display:none}
+.tabpane.on{display:block}
+/* タブ内では最初のセクション見出しの上マージンを詰める（情報は消さない） */
+.tabpane>.secthead:first-child{margin-top:6px}
+
+/* --- 縦の長さメーター（モック専用・採用時に削除）--- */
+.lenmeter{margin:22px 0 40px;padding:10px 12px;border:1px solid var(--rule);border-radius:8px;
+  font-size:12px;background:var(--sub-bg)}
+.lenmeter h4{margin:0 0 7px;font-size:12.5px}
+.lenmeter table{width:100%;border-collapse:collapse;font-size:11.5px}
+.lenmeter td,.lenmeter th{border-bottom:1px solid var(--rule);padding:4px 6px;text-align:left}
+.lenmeter td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.lenmeter tr.tot td{font-weight:700;border-top:2px solid var(--rule-strong)}
+.lenmeter .bar{height:7px;background:var(--navy);border-radius:4px;display:block}
+.lenmeter .note{color:var(--cap);font-size:11px;line-height:1.6;margin-top:7px}
+</style>
+</head>
+<body>
+
+<div class="mockbar">
+  <span><b>タブ構成モック</b>　本番 race.js の描画を1ノードも作らず／消さずタブへ移動しただけ。情報量は現状と同一。</span>
+  <span class="mvcheck" id="mvcheck">検証中…</span>
+  <button id="btn-flat">タブを解除して現状を見る</button>
+</div>
+
+<header id="site-header"></header>
+<div class="container">
+  <a class="back-link" href="index.html">← 一覧へ</a>
+  <div id="race-content"></div>
+</div>
+
+<script src="assets/vendor/marked.min.js"></script>
+<script src="assets/app.js?v=20260803a"></script>
+<script src="assets/harville.js?v=20260803a"></script>
+<script src="assets/akinator.js?v=20260803a"></script>
+<script src="assets/simulator.js?v=20260803a"></script>
+<script src="assets/race.js?v=20260803a"></script>
+
+<script>
+/* =========================================================================
+   タブ化。方針は1つだけ：
+     「本番が描いた要素を appendChild で移すだけ。createElement も remove もしない」
+   appendChild はノードを"移動"するので、race.js / simulator.js / akinator.js が
+   貼ったイベントリスナーも状態もそのまま生き残る。
+   ========================================================================= */
+
+/* タブ定義。key / ラベル / どのセクション見出しに対応するか */
+const TABS = [
+  { key:'shutuba', label:'出馬表', match:(t)=>t.includes('出馬表') },
+  { key:'tenkai',  label:'展開',   match:(t)=>t.includes('展開') || t.includes('レース分析') },
+  /* 買い目タブは「見立て（荒れ度・傾向・3連単100万）→ 買い目表 → シミュレーター」の順。
+     見立ては rhead から移すので、下の rkids ループで先に push される＝自然に一番上に来る。 */
+  { key:'kaime',   label:'買い目', match:(t)=>t.includes('買い目') },
+  { key:'kaiko',   label:'回顧',   match:(t)=>t.includes('回顧') || t.includes('答え合わせ') },
+];
+const DEFAULT_TAB = 'shutuba';
+
+/* 固定ヘッダに残す rhead 直下のクラス（レース名・条件・オッズ基準時刻） */
+const HEAD_KEEP = ['cls','ttl','cond','pt'];
+
+let ORIGINAL = [];   /* 移動前に控えた全ブロック（欠落検証用） */
+let FLAT_SNAPSHOT = null;
+
+function tabify(){
+  const race = document.querySelector('#race-content .race20');
+  if(!race) return false;
+  if(race.dataset.tabified) return true;
+
+  /* 2026-08-03: このタブ構成は race.js 本体に実装済み。本番が既にタブを描いている
+     場合、このモックの移し替えを重ねると構造が壊れるので何もしない。
+     モックは実装前の比較用として残してある（本番と見比べたい時だけ意味がある）。 */
+  if (race.querySelector('.tabbar')) {
+    document.getElementById('mvcheck').innerHTML =
+      'race.js 本体にタブ実装済みのため、このモックの移し替えは<span class="ok">停止中</span>（本番の描画をそのまま表示）';
+    document.getElementById('btn-flat').style.display = 'none';
+    race.dataset.tabified = '1';
+    return true;
+  }
+
+  const rhead = race.querySelector('.rhead');
+  const kids  = [...race.children];
+  const rkids = rhead ? [...rhead.children] : [];
+
+  /* 移動前の全ブロックを控える（rhead は中身に展開して数える） */
+  ORIGINAL = kids.flatMap(k => (k === rhead ? rkids : [k]));
+
+  /* --- 仕分け --- */
+  const headBlocks = [];
+  const buckets = {}; TABS.forEach(t => buckets[t.key] = []);
+
+  rkids.forEach(c => {
+    const first = (c.className || '').split(' ')[0];
+    if (HEAD_KEEP.includes(first)) headBlocks.push(c);
+    else buckets.kaime.push(c);           /* 荒れ度カード・傾向・3連単100万 → 買い目タブの先頭 */
+  });
+
+  let cur = null;
+  kids.forEach(k => {
+    if (k === rhead) return;
+    if (k.classList.contains('secthead')) {
+      const t = k.textContent || '';
+      const hit = TABS.find(tb => tb.match(t));
+      cur = hit ? hit.key : cur;
+    }
+    if (cur) buckets[cur].push(k);
+    else headBlocks.push(k);              /* 見出しより前に何かあれば固定ヘッダへ（取りこぼし防止） */
+  });
+
+  /* --- 器を作る --- */
+  const head = document.createElement('div'); head.className = 'tabhead';
+  const bar  = document.createElement('div'); bar.className  = 'tabbar';
+  const panes = {};
+  TABS.forEach(t => {
+    const p = document.createElement('div');
+    p.className = 'tabpane'; p.dataset.pane = t.key;
+    panes[t.key] = p;
+  });
+
+  /* --- 移動（createElement も remove もしない）--- */
+  headBlocks.forEach(el => head.appendChild(el));
+  TABS.forEach(t => buckets[t.key].forEach(el => panes[t.key].appendChild(el)));
+
+  /* rhead は空になったので器としてだけ残す（中身は全部移した） */
+  if (rhead) rhead.remove();
+
+  /* --- タブボタン --- */
+  TABS.forEach(t => {
+    const b = document.createElement('button');
+    b.dataset.tab = t.key;
+    b.innerHTML = t.label;
+    /* 回顧に中身があれば赤ドット（＝結果が出ている印） */
+    if (t.key === 'kaiko' && buckets.kaiko.some(el => !el.classList.contains('secthead')))
+      b.innerHTML += '<span class="dot"></span>';
+    bar.appendChild(b);
+  });
+
+  race.prepend(bar);
+  race.prepend(head);
+  TABS.forEach(t => race.appendChild(panes[t.key]));
+  race.dataset.tabified = '1';
+
+  /* 縦の長さメーター（モック専用） */
+  race.appendChild(buildMeter(panes));
+
+  /* --- タブ切替 --- */
+  bar.addEventListener('click', e => {
+    const b = e.target.closest('button'); if(!b) return;
+    selectTab(b.dataset.tab, true);
+  });
+  window.addEventListener('hashchange', () => {
+    const k = new URLSearchParams(location.hash.slice(1)).get('tab');
+    if (k && panes[k]) selectTab(k, false);
+  });
+
+  const fromHash = new URLSearchParams(location.hash.slice(1)).get('tab');
+  selectTab(panes[fromHash] ? fromHash : DEFAULT_TAB, false);
+
+  stickyOffsets();
+  window.addEventListener('resize', stickyOffsets);
+  verify();
+  return true;
+}
+
+function selectTab(key, scroll){
+  document.querySelectorAll('.tabbar button').forEach(b => b.classList.toggle('on', b.dataset.tab === key));
+  document.querySelectorAll('.tabpane').forEach(p => p.classList.toggle('on', p.dataset.pane === key));
+  const u = new URLSearchParams(location.hash.slice(1)); u.set('tab', key);
+  history.replaceState(null, '', location.pathname + location.search + '#' + u.toString());
+  if (scroll) {
+    const bar = document.querySelector('.tabbar');
+    const y = bar.getBoundingClientRect().top + scrollY - stickyTop();
+    if (scrollY > y) scrollTo({ top:y, behavior:'auto' });
+  }
+  updateMeter();
+}
+
+/* タブバーの固定位置。上に居座る（sticky/fixed な）要素のぶんだけ下げる。
+   いまのサイトヘッダは static なので実質 0 になる。 */
+function stickyTop(){
+  let top = 0;
+  ['.mockbar', '#site-header'].forEach(sel => {
+    const el = document.querySelector(sel); if (!el) return;
+    const pos = getComputedStyle(el).position;
+    if (pos === 'sticky' || pos === 'fixed') top += el.offsetHeight;
+  });
+  return top;
+}
+function stickyOffsets(){
+  const bar = document.querySelector('.tabbar');
+  if (bar) bar.style.top = stickyTop() + 'px';
+}
+
+/* =========================================================================
+   欠落検証：移動前に控えた全ブロックが、いま全部ページ上にあるか
+   ========================================================================= */
+function verify(){
+  const el = document.getElementById('mvcheck');
+  const lost = ORIGINAL.filter(n => !document.body.contains(n));
+  const moved = ORIGINAL.length - lost.length;
+  el.innerHTML = lost.length === 0
+    ? `ブロック <b>${ORIGINAL.length}</b> 個をタブへ移動 ／ 欠落 <span class="ok">0</span> ／ 新規作成 <span class="ok">0</span>`
+    : `<span class="ng">欠落 ${lost.length} 件</span>（${lost.map(n=>n.className).join(', ')}）`;
+}
+
+/* =========================================================================
+   縦の長さメーター（モック専用）
+   ========================================================================= */
+function buildMeter(panes){
+  const box = document.createElement('div');
+  box.className = 'lenmeter'; box.id = 'lenmeter';
+  box.innerHTML = `<h4>縦の長さ（このモックの実測・小さいほど良い）</h4>
+    <table><tbody id="lenrows"></tbody></table>
+    <p class="note">「現状」はタブを解除して1本につないだ時の長さ。合計は各タブの合計＋固定ヘッダで、
+    現状とほぼ一致します（タブは情報を減らさないので合計は減りません）。減るのは
+    <b>1度に目に入る量</b>です。</p>`;
+  return box;
+}
+function updateMeter(){
+  const rows = document.getElementById('lenrows'); if(!rows) return;
+  const head = document.querySelector('.tabhead');
+  const headH = head ? Math.round(head.getBoundingClientRect().height) : 0;
+  const data = TABS.map(t => {
+    const p = document.querySelector(`.tabpane[data-pane="${t.key}"]`);
+    const was = p.classList.contains('on');
+    /* 隠しパネルの実寸を測る。position は触らない（幅が変わって高さがズレるため）。
+       通常フローのまま visibility:hidden で開き、同じ同期ブロック内で戻すので画面はちらつかない。 */
+    if (!was) { p.style.display='block'; p.style.visibility='hidden'; }
+    const h = Math.round(p.getBoundingClientRect().height);
+    if (!was) { p.style.display=''; p.style.visibility=''; }
+    return { label:t.label, key:t.key, h };
+  });
+  const max = Math.max(...data.map(d=>d.h), 1);
+  const sum = data.reduce((a,d)=>a+d.h,0) + headH;
+  const vh = window.innerHeight || 812;
+  rows.innerHTML =
+    `<tr><th style="width:74px">タブ</th><th>長さ</th><th class="n" style="width:78px">px</th><th class="n" style="width:56px">画面</th></tr>` +
+    data.map(d=>{
+      const on = document.querySelector(`.tabpane[data-pane="${d.key}"]`).classList.contains('on');
+      return `<tr${on?' style="background:var(--pred-row)"':''}><td>${d.label}${on?' <span style="font-size:10px;color:var(--navy)">表示中</span>':''}</td>
+      <td><span class="bar" style="width:${Math.round(d.h/max*100)}%"></span></td>
+      <td class="n">${d.h.toLocaleString()}</td><td class="n">${(d.h/vh).toFixed(1)}</td></tr>`;
+    }).join('') +
+    `<tr class="tot"><td>合計＋ヘッダ<br><span style="font-weight:400;color:var(--cap);font-size:10.5px">＝現状の縦の長さ</span></td>
+      <td></td><td class="n">${sum.toLocaleString()}</td><td class="n">${(sum/vh).toFixed(1)}</td></tr>`;
+}
+
+/* =========================================================================
+   「タブを解除して現状を見る」— 移動したブロックを元の順に1本へ戻す
+   ========================================================================= */
+document.getElementById('btn-flat').addEventListener('click', function(){
+  const race = document.querySelector('#race-content .race20'); if(!race) return;
+  const bar = race.querySelector('.tabbar');
+  if (bar) {
+    /* → 現状表示へ */
+    FLAT_SNAPSHOT = true;
+    ORIGINAL.forEach(el => race.appendChild(el));     /* 元の順に1本へ戻す */
+    bar.remove();
+    race.querySelector('.tabhead')?.remove();
+    race.querySelectorAll('.tabpane').forEach(p => p.remove());
+    document.getElementById('lenmeter')?.remove();
+    race.dataset.tabified = '';
+    this.textContent = 'タブ構成に戻す';
+    document.getElementById('mvcheck').innerHTML =
+      `現状表示（1本）／ ブロック <b>${ORIGINAL.length}</b> 個・欠落 <span class="ok">0</span>`;
+  } else {
+    location.reload();
+  }
+});
+
+/* race.js の描画完了を待つ（fetch 後に #race-content へ挿入される） */
+(function wait(n){
+  if (tabify()) return;
+  if (n > 200) return;
+  setTimeout(() => wait(n+1), 50);
+})(0);
+</script>
+</body>
+</html>

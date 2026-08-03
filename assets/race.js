@@ -684,6 +684,48 @@ function setupFinishOrder() {
   }
 }
 
+// 4タブの切り替え。描画は buildRace20Html が済ませてあるので、ここは表示の出し入れだけ。
+//
+// 呼ぶ順番が重要：この関数は main() の setup 群の最後に呼ぶ。それまで全パネルは
+// 表示されたままで、.tabs-ready を付けた瞬間に初めて display:none が効き始める。
+// これは setupFinishOrder() が着順表の1列目の幅を実測しており（上の関数・w1==0 だと
+// 黙って諦める仕様）、隠れたパネルの中で走らせると固定2列がズレるため。
+// JS がここまで到達しなかった場合は .tabs-ready が付かず、従来どおり縦一列で
+// 全ブロックが読める状態に留まる（＝タブ化の失敗で情報が消えることはない）。
+function setupTabs20() {
+  const root = document.querySelector('#race-content .race20');
+  if (!root) return;
+  const bar = root.querySelector('.tabbar');
+  const panes = Array.from(root.querySelectorAll('.tabpane'));
+  if (!bar || !panes.length) return;
+
+  const show = (key, pushHash) => {
+    for (const b of bar.querySelectorAll('.t20')) {
+      const on = b.dataset.tab === key;
+      b.classList.toggle('on', on);
+      b.setAttribute('aria-selected', on ? 'true' : 'false');
+    }
+    for (const p of panes) p.classList.toggle('on', p.dataset.pane === key);
+    // 回顧タブは開いた瞬間に初めて幅が確定するので測り直す（折りたたみと同じ理由）
+    if (key === 'kaiko') setupFinishOrder();
+    if (pushHash) history.replaceState(null, '', `${location.pathname}${location.search}#tab=${key}`);
+  };
+
+  bar.addEventListener('click', (e) => {
+    const b = e.target.closest('.t20');
+    if (!b) return;
+    show(b.dataset.tab, true);
+    // タブより下まで読んでいたら、切り替え先の先頭に戻す（上には戻しすぎない）
+    const y = bar.getBoundingClientRect().top + window.scrollY;
+    if (window.scrollY > y) window.scrollTo(0, y);
+  });
+  // 共有リンクの #tab=... で直接そのタブを開く
+  window.addEventListener('hashchange', () => show(race20TabFromHash(), false));
+
+  root.classList.add('tabs-ready');
+  show(race20TabFromHash(), false);
+}
+
 // 画面幅が変わると列幅も変わるので測り直す（縦横の切り替え・ウィンドウ幅の変更）
 let foResizeTimer = null;
 window.addEventListener('resize', () => {
@@ -1320,16 +1362,25 @@ function renderHeader20(site) {
   ];
   if (r.weight_rule) condParts.push(r.weight_rule);
   if (r.post_time) condParts.push(`発走 ${r.post_time}`);
+  // タブ構成（2026-08-03）。ここに残すのはどのタブでも要るものだけ＝レース名・条件・
+  // オッズの基準時刻。荒れ度(upC)と3連単100万(bpC)は renderMitate20 で「買い目」タブの
+  // 先頭へ移した。ブロックそのものは1つも減らしていない（置き場所だけ変えた）。
   return `
     <div class="rhead">
       <div class="cls">${escapeHtml(cls)}</div>
       <div class="ttl">${escapeHtml(r.race_name)}</div>
       <div class="cond">${escapeHtml(condParts.join(' ／ '))}</div>
-      ${renderUpset20(p.upset)}
-      ${renderBigPay(p.bigpay, site.horses)}
       <div class="pt">予想: ${fmtDateTimeShort(p.predicted_at)}（${escapeHtml(p.odds_basis)}基準）</div>
     </div>
   `;
+}
+
+// 見立て。旧構成では .rhead の中にあった荒れ度カードと3連単100万を、そのまま
+// 「買い目」タブの先頭に出す。描画関数は renderUpset20 / renderBigPay を再利用し、
+// 中身・順番・クラス名は一切変えない（CSSは .race20 スコープなので移動しても効く）。
+function renderMitate20(site) {
+  const p = site.prediction;
+  return `${renderUpset20(p.upset)}${renderBigPay(p.bigpay, site.horses)}`;
 }
 
 // ===== 97-spec: 出馬表（馬柱）=====
@@ -1853,17 +1904,47 @@ function renderBets20(site) {
   `;
 }
 
+/* ============================================================
+   4タブ構成（2026-08-03）
+   縦8,000px超の1本を、読む目的ごとに4枚へ分ける。分けるのは表示だけで、
+   描画関数は1つも増減させていない（renderOverview20 等をそのまま各パネルへ入れる）。
+   タブの並び順と既定タブは mock-tabs.html で確定した形。
+   ============================================================ */
+const RACE20_TABS = [
+  { key: 'shutuba', label: '出馬表' },
+  { key: 'tenkai', label: '展開' },
+  { key: 'kaime', label: '買い目' },
+  // 回顧タブの見出しは中身に合わせる。レース前は renderVerification20 が
+  // 「答え合わせ／結果はレース後に反映されます」を出すので、タブ名も同じ言葉にする
+  { key: 'kaiko', label: '回顧', labelPre: '答え合わせ' },
+];
+const RACE20_TAB_DEFAULT = 'shutuba';
+
+function race20TabFromHash() {
+  const m = /(?:^|&)tab=([a-z]+)/.exec(String(location.hash || '').replace(/^#/, ''));
+  return m && RACE20_TABS.some((t) => t.key === m[1]) ? m[1] : RACE20_TAB_DEFAULT;
+}
+
 function buildRace20Html(site, oddsAll) {
   const banner = site.status === 'cancelled' ? '<div class="alert">このレースは中止になりました</div>' : '';
+  // 結果が出ているレースだけ「回顧」に赤ドットを出す（renderVerification20 と同じ判定）
+  const settled = site.status === 'final';
+  const bar = RACE20_TABS.map((t) => `<button type="button" class="t20" role="tab"`
+    + ` data-tab="${t.key}" aria-controls="pane-${t.key}" aria-selected="false">`
+    + `${!settled && t.labelPre ? t.labelPre : t.label}`
+    + `${t.key === 'kaiko' && settled ? '<span class="dot" aria-hidden="true"></span>' : ''}`
+    + `</button>`).join('');
+  const pane = (key, body) => `<div class="tabpane" id="pane-${key}" data-pane="${key}"`
+    + ` role="tabpanel">${body}</div>`;
   return `
     <div class="race20">
       ${renderHeader20(site)}
       ${banner}
-      ${renderOverview20(site)}
-      ${renderShutuba20(site)}
-      ${renderBets20(site)}
-      ${renderOddsMasterSection(site, oddsAll)}
-      ${renderVerification20(site)}
+      <div class="tabbar" role="tablist">${bar}</div>
+      ${pane('shutuba', renderShutuba20(site))}
+      ${pane('tenkai', renderOverview20(site))}
+      ${pane('kaime', renderMitate20(site) + renderBets20(site) + renderOddsMasterSection(site, oddsAll))}
+      ${pane('kaiko', renderVerification20(site))}
     </div>
   `;
 }
@@ -2521,6 +2602,9 @@ async function main() {
   if (is20) setupTopping(site);   // 102-spec: トッピング（データが無ければ何もしない）
   if (is20) setupUpset20();
   setupFinishOrder();
+  // タブ化は必ず最後。ここまでは全パネルが表示されたまま（.tabs-ready が付くまで
+  // CSS が display:none にしない）なので、setupFinishOrder の幅実測が正しい幅で走る。
+  if (is20) setupTabs20();
 }
 
 main();
