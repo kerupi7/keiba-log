@@ -1388,41 +1388,12 @@ function renderMitate20(site) {
 // 過去5走／コース適性は publish が site JSON に載せる（keiba_shutuba_columns.py）。
 // 無いレース（旧データ）でも壊れないよう、各ブロックは存在チェックしてから描く（97-spec §7）。
 
-const SHUTUBA_DIMS = [
-  { key: 's1', sym: '①', label: '近走' },
-  { key: 's2', sym: '②', label: '展開' },
-  { key: 's34', sym: '③', label: '適性' },
-  { key: 's5', sym: '⑤', label: '調教' },
-  { key: 's6', sym: '⑥', label: '枠斤騎' },
-  { key: 's7', sym: '⑦', label: '血統' },
-  { key: 's8', sym: '⑧', label: 'ローテ' },
-];
-const SHUTUBA_TIERS = ['◎', '○', '○', '▲', '▲', '△', '△', '△'];
 const LEG_ORDER = ['逃', '先', '差', '追'];
 const CLASS_CSS = {
   '新馬': 'c-shin', '未勝利': 'c-mi', '1勝': 'c-w1', '2勝': 'c-w2', '3勝': 'c-w3',
   'OP': 'c-op', 'L': 'c-l', 'G3': 'c-g3', 'G2': 'c-g2', 'G1': 'c-g1',
   'Jpn1': 'c-jpn1', 'Jpn2': 'c-jpn2', 'Jpn3': 'c-jpn3', '重賞': 'c-jusho',
 };
-
-// 項目別の印。その項目の中央値より上の馬だけを対象に、点数の高い順（同点は総合順）で
-// ◎/○○/▲▲/△△△ を配る。全馬同点の項目は印が1つも付かない（差がついていないため）。
-function shutubaDimMarks(horses) {
-  const live = horses.filter((h) => !h.scratched && h.scores);
-  const out = {};
-  horses.forEach((h) => { out[h.number] = {}; });
-  SHUTUBA_DIMS.forEach(({ key }) => {
-    const vals = live.map((h) => h.scores[key] ?? 0).sort((a, b) => a - b);
-    if (!vals.length) return;
-    const mid = vals.length % 2
-      ? vals[(vals.length - 1) / 2]
-      : (vals[vals.length / 2 - 1] + vals[vals.length / 2]) / 2;
-    live.filter((h) => (h.scores[key] ?? 0) > mid)
-      .sort((a, b) => ((b.scores[key] ?? 0) - (a.scores[key] ?? 0)) || (b.total - a.total))
-      .forEach((h, i) => { out[h.number][key] = SHUTUBA_TIERS[i] || ''; });
-  });
-  return out;
-}
 
 function shutubaRaceClass(grade, name) {
   const g = (grade || '').trim();
@@ -1692,75 +1663,6 @@ function markWhyBlock(h) {
   return rows.join('');
 }
 
-function shutubaPanel(h, dm) {
-  const chips = SHUTUBA_DIMS.map(({ key, sym, label }) => {
-    const mark = (dm[h.number] || {})[key] || '';
-    const cls = { '◎': 'mk-hon', '○': 'mk-tai', '▲': 'mk-tan', '△': 'mk-oku' }[mark] || 'off';
-    return `<span class="dchip ${cls}"><i>${sym}${label}</i>${mark || '・'}</span>`;
-  }).join('');
-  return `
-    <div class="pnl">
-      <div class="tpwhy" data-w="${h.number}"></div>
-      ${markWhyBlock(h)}
-      <div class="dims">${chips}</div>
-      ${diagnosisBlock(h)}
-      ${noteHistoryBlock(h)}
-      ${pastRunsTable(h)}
-      ${careerRunsBlock(h)}
-      ${courseRecordTable(h)}
-    </div>
-  `;
-}
-
-function renderShutuba20(site) {
-  const all = site.horses;
-  const live = all.filter((h) => !h.scratched);
-  const dm = shutubaDimMarks(all);
-  // 勝率の上位3頭に金・銀・銅（同率は馬番の若い方が上）
-  const wr = {};
-  [...live].sort((a, b) => ((b.estimated_prob ?? 0) - (a.estimated_prob ?? 0)) || (a.number - b.number))
-    .forEach((h, i) => { wr[h.number] = { 0: 'f1', 1: 'f2', 2: 'f3' }[i] || ''; });
-
-  const rows = [...all].sort((a, b) => a.number - b.number).map((h) => {
-    if (h.scratched) {
-      return `<tr class="hrow scratched" data-h="${h.number}">
-        <td></td><td>${umaBox(h.number, h.gate, 'sm')}</td>
-        <td class="l nm">${escapeHtml(h.name)}（取消）</td>
-        <td>—</td><td>—</td><td>—</td></tr>
-        <tr class="prow" data-p="${h.number}"><td colspan="6">${shutubaPanel(h, dm)}</td></tr>`;
-    }
-    const winTxt = fmtPercent(h.estimated_prob, 0);
-    return `
-      <tr class="hrow${h.ability_mark ? ' pred' : ''}" data-h="${h.number}">
-        <td>${markBadge20(h)}</td>
-        <td>${umaBox(h.number, h.gate, 'sm')}</td>
-        <td class="l nm"><span class="tpnm">${escapeHtml(h.name)}</span><span class="tri">▸</span>
-          <div class="u prof"><span class="pa">${escapeHtml(h.sex_age ?? '')}</span><span class="pk">${h.weight_carried != null ? String(h.weight_carried).replace(/\.0$/, '') : '—'}</span>${bwDisplay(h)}<span class="pj">${escapeHtml(h.jockey && h.jockey !== 'N/A' ? h.jockey : '—')}</span>${legBar(h.running_style)}<span class="rot">${escapeHtml(h.rotation || '')}</span></div></td>
-        <td>${fmtNum(h.total, 1)}<div class="u"><span class="grade ${gradeClass(h.grade)}">${gradeDisp(h.grade)}</span></div></td>
-        <td>${medalSpan(winTxt, wr[h.number])}</td>
-        <td>${h.odds != null ? h.odds.toFixed(1) : '—'}<div class="u pp">${h.popularity ?? '—'}人</div></td>
-      </tr>
-      <tr class="prow" data-p="${h.number}"><td colspan="6">${shutubaPanel(h, dm)}</td></tr>
-    `;
-  }).join('');
-
-  return `
-    <div class="secthead">出馬表<span class="cnt">全${site.race.field_size}頭・馬番順・タップで馬柱</span></div>
-    <div class="shctl">
-      <div class="allbtn"><button type="button" data-shall="toggle">全部開く</button></div>
-    </div>
-    <table class="unified">
-      <colgroup><col class="c-mk"><col class="c-no"><col class="c-nm">
-        <col class="c-tot"><col class="c-wr"><col class="c-od"></colgroup>
-      <thead><tr>
-        <th>印</th><th>番</th><th class="l">馬名・騎手</th>
-        <th>総合</th><th>勝率</th><th>オッズ</th>
-      </tr></thead>
-      <tbody>${rows}</tbody>
-    </table>
-  `;
-}
-
 // mark-2.3（2026-07-28）で穴は role から bet_mark へ移った（94-ana-redesign-spec §3.2）。
 // 移行前に公開したレースは role='穴' のまま残すので、両方を見る。
 function isAna(h) {
@@ -1782,43 +1684,281 @@ function markBadge20(h) {
   return '';
 }
 
+// ============================================================
+// 105-spec: 出馬表ワンシート化＋買える／消せるの10項目
+// ============================================================
+
+// §5.3: item_marks（10項目・順序固定・並べ替えない）を○／×だけチップにする
+function itemChips(h) {
+  const marks = h.item_marks;
+  if (!marks) return '';                     // §7: item_marks なし（取消・旧レース）→ 列は空
+  const on = marks.filter((m) => m.mark === '○' || m.mark === '×');
+  if (!on.length) return '<span class="chip2 none">目立つ長所も短所もなし</span>';
+  return on.map((m) => {
+    const cls = m.mark === '○' ? 'v-o' : 'v-x';
+    return `<span class="chip2 ${cls}"><span class="c2h"><b>${escapeHtml(m.label)}</b><em>${m.mark}</em></span>` +
+      `<span class="c2b">${escapeHtml(m.why || '')}</span></span>`;
+  }).join('');
+}
+
+// §5.2.5: 通過順の4マス。通過順÷頭数で前・中・後の3段階に塗り分ける
+const FRONT_CUT_POS = 1 / 3.0;
+const BACK_CUT_POS = 2 / 3.0;
+
+function cornersHtml(corners, fieldSize) {
+  const parts = String(corners || '').split('-').filter(Boolean);
+  if (!parts.length) return '<span class="cor mut">—</span>';
+  const cells = parts.map((x) => {
+    let cls = '';
+    const v = parseInt(x, 10);
+    if (fieldSize && !Number.isNaN(v)) {
+      const r = v / fieldSize;
+      cls = r <= FRONT_CUT_POS ? 'p1' : (r > BACK_CUT_POS ? 'p3' : 'p2');
+    }
+    return `<i class="${cls}">${escapeHtml(x)}</i>`;
+  }).join('');
+  return `<span class="cor">${cells}</span>`;
+}
+
+// §5.2.3: 展開（6通りの文字。引けない走は「展開なし」・推測しない）
+function scenarioHtml(scenario) {
+  if (!scenario) {
+    return '<span class="sc none" title="この走はレース結果をDBに取っていないため展開が出せない">展開なし</span>';
+  }
+  return `<span class="sc">${escapeHtml(scenario)}</span>`;
+}
+
+// §5.2.1: 休養の見出し
+function restLabel(days) {
+  const months = days / 30.4;
+  const n = Math.trunc(months);
+  const half = (months - n) >= 0.5 ? '半' : '';
+  if (n >= 12) return `${Math.floor(n / 12)}年${(n % 12) >= 6 ? '半' : ''}休養`;
+  return `${Math.max(n, 1)}ヵ月${half}休養`;
+}
+
+// 数値の末尾セル（走破タイム・上がり3F）。金銀銅が付く場合だけ .ag を足す。
+// medalSpan と違い、色が無くても右寄せレイアウト用の <span class="val"> は必ず出す。
+function rankSpan(text, cls, title) {
+  const c = cls ? ` ag ${cls}` : '';
+  const t = title ? ` title="${escapeHtml(title)}"` : '';
+  return `<span class="val${c}"${t}>${escapeHtml(text)}</span>`;
+}
+
+function marginText(p) {
+  return (p.margin === null || p.margin === undefined || p.margin === '') ? '—' : escapeHtml(p.margin);
+}
+
+// §5.2.2: 僅差・勝ちの塗り。勝ち＝金（着差は問わない）／僅差で負け＝青。
+// 本番の margin_band（1着が'win'に振られ僅差勝ちを拾えない）は使わず、着差の絶対値だけで判定する。
+const CLOSE_MARGIN = { '芝': 0.4, 'ダート': 0.6 };
+const CLOSE_MARGIN_DEFAULT = 0.5;
+
+function runBandClass(p) {
+  if (parseInt(p.finish, 10) === 1) return ' pb-win';
+  const m = parseFloat(p.margin);
+  if (Number.isNaN(m)) return '';
+  const th = CLOSE_MARGIN[p.surface] ?? CLOSE_MARGIN_DEFAULT;
+  return Math.abs(m) <= th ? ' pb-close' : '';
+}
+
+function surfShort(s) {
+  return String(s || '').startsWith('ダ') ? 'ダ' : (s || '');
+}
+function goingShort(g) {
+  return { '稍重': '稍', '不良': '不' }[g] || (g || '');
+}
+
+// §5.2: 過去走1マス（6〜7行）
+function runCell(p) {
+  const cond = `${escapeHtml(surfShort(p.surface))}${escapeHtml(p.distance || '')}${escapeHtml(goingShort(p.condition))}`;
+  const bw = p.body_weight != null ? String(p.body_weight) : '—';
+  const kg = p.weight != null ? escapeHtml(String(p.weight)) : '—';
+  const rankCls = { 1: 'f1', 2: 'f2', 3: 'f3' }[p.last3f_rank] || '';
+  const agTitle = p.last3f_rank ? `このレースの上がり${p.last3f_rank}位` : '上がり3F';
+  const timeTitle = p.time_grade
+    ? `基準比 ${p.time_resid > 0 ? '+' : ''}${p.time_resid}秒（当日の馬場差を補正後）・着差${marginText(p)}秒`
+    : (p.time_note || '');
+  const notes = (p.note_labels || []).map((l) => noteTag(l)).join('');
+  const row7 = notes
+    ? `<div class="r7"${p.note_text ? ` title="${escapeHtml(p.note_text)}"` : ''}>${notes}</div>` : '';
+  return `<div class="rcell${runBandClass(p)}">
+    <div class="r1"><span class="dt">${shutubaMd(p.date)}</span><span class="tk">${escapeHtml(p.track || '')}</span>${classBadge(p.grade, p.race_name)}</div>
+    <div class="r2">${shutubaFinBox(p.finish)}<span class="nm">${escapeHtml(p.runners ?? '—')}頭</span><span class="nm">${p.gate != null ? escapeHtml(String(p.gate)) : '—'}番</span><span class="nm">${escapeHtml(p.popularity ?? '—')}人</span></div>
+    <div class="r3"><span class="cd">${cond}</span>${rankSpan(p.time ?? '—', p.time_grade || '', timeTitle)}</div>
+    <div class="r4"><span class="jk">${escapeHtml(p.jockey ?? '—')}</span><span class="kg">${kg}</span><span class="bw">${bw}</span></div>
+    <div class="r5">${cornersHtml(p.corners, p.field_size)}${rankSpan(p.last_3f ?? '—', rankCls, agTitle)}</div>
+    <div class="r6">${scenarioHtml(p.scenario)}<span class="wn">${escapeHtml(p.winner || '')}</span><span class="mg">(${marginText(p)})</span></div>
+    ${row7}
+  </div>`;
+}
+
+// §5.2.1: 90日以上の間隔（rest_days）を休養セルとして差し込み、常に5枚にする。
+// rest_days は90日未満なら null（keiba_shutuba_columns.py 側で判定済み・FEでは暗算しない）。
+function buildRunCells(runs) {
+  const cells = [];
+  for (const r of (runs || [])) {
+    if (r.rest_days != null) cells.push({ kind: 'rest', days: r.rest_days });
+    cells.push({ kind: 'run', run: r });
+    if (cells.length >= 5) break;
+  }
+  while (cells.length < 5) cells.push({ kind: 'empty' });
+  return cells.slice(0, 5);
+}
+
+function runsRow(h) {
+  const html = buildRunCells(h.past_runs).map((c) => {
+    if (c.kind === 'run') return runCell(c.run);
+    if (c.kind === 'rest') {
+      return `<div class="rcell rest"><div class="rh">${escapeHtml(restLabel(c.days))}</div><div class="rd">${c.days}日</div></div>`;
+    }
+    return '<div class="rcell empty"></div>';
+  }).join('');
+  return `<div class="rrow">${html}</div>`;
+}
+
+// §5.5: 馬名ポップアップ ― 通算成績・コース適性・レース戦績（全部）
+function careerLine(h) {
+  const runs = (h.past_runs || []).concat(h.career_runs || []);
+  const cr = h.course_record || {};
+  const loc = cr.local_starts ? `<span class="cl-loc">地方${cr.local_starts}走</span>` : '';
+  if (!runs.length) return `<span class="cl">通算 —</span>${loc}`;
+  const c = [0, 0, 0, 0];
+  runs.forEach((r) => {
+    const f = parseInt(r.finish, 10);
+    c[(f >= 1 && f <= 3) ? f - 1 : 3] += 1;
+  });
+  return `<span class="cl">通算 ${runs.length}戦 <b>${c[0]}</b>-${c[1]}-${c[2]}-${c[3]}</span>${loc}`;
+}
+
+function popupRunsTable(h) {
+  const runs = (h.past_runs || []).concat(h.career_runs || []);
+  if (!runs.length) return '';
+  return `<div class="ph">レース戦績（全${runs.length}走・新しい順）</div>
+    <div class="ptwrap">
+      <table class="pastt">
+        <thead><tr><th class="l">日付</th><th class="l">場・条件</th><th class="l">レース</th>
+          <th>クラス</th><th>着</th><th>タイム</th><th>上り</th><th>頭数・人気</th><th>差</th>
+          <th class="l">通過</th><th class="l">騎手・斤量</th></tr></thead>
+        <tbody>${runs.map(pastRunRow).join('')}</tbody>
+      </table>
+    </div>
+    <div class="pthint">← 横にスクロールできます</div>`;
+}
+
+function popupBody(h) {
+  const kg = h.weight_carried != null ? String(h.weight_carried).replace(/\.0$/, '') : '—';
+  const oddsTxt = h.odds != null ? `${h.odds.toFixed(1)}倍` : '—倍';
+  return `
+    <div class="phead">${markBadge20(h)}${umaBox(h.number, h.gate, 'sm')}
+      <span class="pname">${escapeHtml(h.name)}</span>
+      <span class="pmeta">${escapeHtml(h.sex_age ?? '')} ${escapeHtml(kg)}kg ${escapeHtml(h.jockey ?? '')}／${oddsTxt} ${escapeHtml(h.popularity ?? '—')}人気</span>
+      <button type="button" class="pclose" data-close>閉じる</button>
+    </div>
+    <div class="pbody">
+      <div class="pcareer">${careerLine(h)}</div>
+      ${markWhyBlock(h)}
+      ${courseRecordTable(h)}
+      ${popupRunsTable(h)}
+    </div>`;
+}
+
+function nameButtonHtml(h) {
+  return `<button type="button" class="nmbtn" data-pop="${h.number}">` +
+    `<span class="tpnm">${escapeHtml(h.name)}</span><i>▸</i></button>`;
+}
+
+// §5.1: 1頭1行
+function shutubaRow(h, hasItemMarks) {
+  if (h.scratched) {
+    const chipsTd = hasItemMarks ? '<td class="c-chips"></td>' : '';
+    return `<tr class="hrow scratched" data-h="${h.number}">
+      <td></td><td>${umaBox(h.number, h.gate, 'sm')}</td>
+      <td class="l nm">${escapeHtml(h.name)}（取消）</td>
+      <td>—</td><td>—</td>${chipsTd}<td class="c-runs">${runsRow(h)}</td>
+    </tr>`;
+  }
+  const kg = h.weight_carried != null ? String(h.weight_carried).replace(/\.0$/, '') : '—';
+  const chipsTd = hasItemMarks ? `<td class="c-chips"><div class="chips">${itemChips(h)}</div></td>` : '';
+  return `<tr class="hrow${h.ability_mark ? ' pred' : ''}" data-h="${h.number}">
+    <td>${markBadge20(h)}</td>
+    <td>${umaBox(h.number, h.gate, 'sm')}</td>
+    <td class="l nm">${nameButtonHtml(h)}
+      <div class="u prof"><span class="pa">${escapeHtml(h.sex_age ?? '')}</span><span class="pk">${kg}</span>${bwDisplay(h)}<span class="pj">${escapeHtml(h.jockey && h.jockey !== 'N/A' ? h.jockey : '—')}</span>${legBar(h.running_style)}<span class="rot">${escapeHtml(h.rotation || '')}</span></div></td>
+    <td>${fmtNum(h.total, 1)}<div class="u"><span class="grade ${gradeClass(h.grade)}">${gradeDisp(h.grade)}</span></div></td>
+    <td>${h.odds != null ? h.odds.toFixed(1) : '—'}<div class="u pp">${h.popularity ?? '—'}人</div></td>
+    ${chipsTd}
+    <td class="c-runs">${runsRow(h)}</td>
+  </tr>`;
+}
+
+function renderShutuba20(site) {
+  const all = site.horses;
+  const live = all.filter((h) => !h.scratched);
+  const hasItemMarks = live.some((h) => h.item_marks);
+
+  const rows = [...all].sort((a, b) => a.number - b.number)
+    .map((h) => shutubaRow(h, hasItemMarks)).join('');
+  const popups = live.map((h) => `<div class="popup" id="pop-${h.number}">${popupBody(h)}</div>`).join('');
+
+  const chipsHead = hasItemMarks ? '<th class="l c-chips">買える／消せる</th>' : '';
+  const chipsCol = hasItemMarks ? '<col class="c-chips">' : '';
+  const toggleBtn = hasItemMarks
+    ? '<div class="allbtn"><button type="button" data-chips="toggle">買える／消せるを開く</button></div>' : '';
+
+  return `
+    <div class="secthead">出馬表<span class="cnt">全${site.race.field_size}頭・馬番順</span></div>
+    <div class="shctl">${toggleBtn}</div>
+    <div class="shwrap">
+      <table class="unified${hasItemMarks ? ' hide-chips' : ''}">
+        <colgroup><col class="c-mk"><col class="c-no"><col class="c-nm">
+          <col class="c-tot"><col class="c-od">${chipsCol}<col class="c-runs"></colgroup>
+        <thead><tr>
+          <th>印</th><th>番</th><th class="l">馬名・騎手</th>
+          <th>総合</th><th>オッズ</th>${chipsHead}<th class="l">競走成績（前走 → 5走前）</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+    ${popups}
+  `;
+}
+
 function setupShutuba20() {
   const root = document.querySelector('.race20');
   if (!root) return;
-  // 開く／閉じるは1つのボタンで往復する。ラベルは今の状態から決める
-  // （1行でも閉じていれば「全部開く」、全部開いていれば「全部閉じる」）
-  const syncAllBtn = () => {
-    const btn = root.querySelector('[data-shall]');
-    if (!btn) return;
-    const rows = [...root.querySelectorAll('tr.prow')];
-    const allOpen = rows.length > 0 && rows.every((p) => p.classList.contains('open'));
-    btn.textContent = allOpen ? '全部閉じる' : '全部開く';
+
+  const table = root.querySelector('table.unified');
+  const chipsBtn = root.querySelector('[data-chips]');
+  if (chipsBtn && table) {
+    chipsBtn.addEventListener('click', () => {
+      const willShow = table.classList.contains('hide-chips');
+      table.classList.toggle('hide-chips', !willShow);
+      chipsBtn.textContent = willShow ? '買える／消せるを消す' : '買える／消せるを開く';
+    });
+  }
+
+  // §5.5: 馬名ポップアップ。閉じ方は「閉じる」ボタン・背景クリック・Esc の3つ
+  const bg = document.createElement('div');
+  bg.className = 'pbg';
+  root.appendChild(bg);
+  let openPopup = null;
+  const closePopup = () => {
+    if (openPopup) { openPopup.classList.remove('on'); openPopup = null; }
+    bg.classList.remove('on');
   };
   root.addEventListener('click', (e) => {
-    const allBtn = e.target.closest('[data-shall]');
-    if (allBtn) {
-      const rows = [...root.querySelectorAll('tr.prow')];
-      const open = !(rows.length > 0 && rows.every((p) => p.classList.contains('open')));
-      rows.forEach((p) => p.classList.toggle('open', open));
-      root.querySelectorAll('tr.hrow').forEach((r) => {
-        r.classList.toggle('open', open);
-        const t = r.querySelector('.tri');
-        if (t) t.textContent = open ? '▾' : '▸';
-      });
-      syncAllBtn();
+    const nb = e.target.closest('[data-pop]');
+    if (nb) {
+      closePopup();
+      const p = root.querySelector(`#pop-${nb.dataset.pop}`);
+      if (p) { p.classList.add('on'); bg.classList.add('on'); openPopup = p; }
       return;
     }
-    const row = e.target.closest('tr.hrow');
-    if (!row) return;
-    const panel = root.querySelector(`tr.prow[data-p="${row.dataset.h}"]`);
-    if (!panel) return;
-    const open = panel.classList.toggle('open');
-    row.classList.toggle('open', open);
-    const tri = row.querySelector('.tri');
-    if (tri) tri.textContent = open ? '▾' : '▸';
-    syncAllBtn();
+    if (e.target.closest('[data-close]')) closePopup();
   });
-  syncAllBtn();
+  bg.addEventListener('click', closePopup);
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closePopup(); });
 }
 
 
