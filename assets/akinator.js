@@ -290,10 +290,14 @@
       },
     },
     {
-      key: 'ordered', kind: 'opt', q: '着順まで当てる自信は？', s: '',
+      // 107 §3.3b: 着順そのものは天井で決まっている（勝ち切る＝1着、2着まで＝2着枠…）。
+      //  ここで聞いているのは「その順番どおりに買うか」だけなので、そう書く。
+      //  旧文言「着順まで当てる自信は？」は、このあと何着かを聞かれると読めてしまう
+      key: 'ordered', kind: 'opt', q: '決めた順番どおりに買う？',
+      sf: function (S) { return ORDER_ECHO; },
       opts: [
-        { value: true, label: 'ある', desc: '' },
-        { value: false, label: 'ない', desc: '' },
+        { value: true, label: '順番も指定して買う', desc: '' },
+        { value: false, label: '順番は問わない', desc: '' },
         { value: 'any', label: 'わからない', desc: '', skip: true },
       ],
       apply: function (S, v) { S.ordered = v; },
@@ -314,6 +318,22 @@
       apply: function (S, v) { S.taste = v; },
     },
   ];
+
+  // 天井から決まっている着順を、そのまま読み上げる（新しい判断は足していない）
+  var ORDER_ECHO = '';
+  function orderEcho(ctx, S) {
+    if (!S.axis.length) return 'いまの予想では順番を決めていません。';
+    var g = { win: [], ren: [], place: [] };
+    cutOrder(ctx).forEach(function (n) { if (g[S.ceil[n]]) g[S.ceil[n]].push(n); });
+    var parts = [];
+    ['win', 'ren', 'place'].forEach(function (k) {
+      if (!g[k].length) return;
+      parts.push(g[k].map(function (n) { return n + '番'; }).join('・') + ' ＝ ' + CEIL_LABEL[k]);
+    });
+    return 'いまの予想は ' + parts.join(' ／ ')
+      + ' です。順番を指定して買うと、この順番どおりに来たときだけ当たります。'
+      + '配当は上がりますが、当たりにくくなります。';
+  }
 
   function optsFor(S, q) { return q.optsf ? q.optsf(S) : (q.opts || []); }
 
@@ -1528,7 +1548,7 @@
   }
 
   function render(ctx, S) {
-    if (S.phase !== 'cut' && S.phase !== 'ceil') deriveLegacy(ctx, S);
+    if (S.phase !== 'cut' && S.phase !== 'ceil') { deriveLegacy(ctx, S); ORDER_ECHO = orderEcho(ctx, S); }
     var body;
     if (S.phase === 'cut') {
       body = renderCut(ctx, S);
