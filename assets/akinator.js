@@ -933,22 +933,19 @@
     var killed = !opts.killMode && S.kill.indexOf(h.number) !== -1;
     var isAxis = !!opts.markAxis && S.axis.indexOf(h.number) !== -1;
     var landmine = !!(opts.killMode && h.landmine_reason);
-    var mkCls = MARK_CLASS[h.ability_mark];
     var cls = ['ak-h'];
     if (sel) cls.push('sel');
     if (killed) cls.push('killed');
     if (isAxis) cls.push('axisrow');
     if (landmine) cls.push('landmine');
     var pickAttr = opts.pickAttr || 'data-ak-pick';
-    var gradeHtml = h.grade ? '<span class="ak-grade ' + gradeClass(h.grade) + '">' + escapeHtml(gradeDisp(h.grade)) + '</span>' : '';
-    var mkHtml = mkCls ? '<span class="ak-mk ' + mkCls + '">' + h.ability_mark + '</span>' : '<span class="ak-mk none">・</span>';
+    // 107 §2.2: 質問中は Ans. の結論を出さない。印・評価・確率はすべて外す
     var tailHtml = isAxis ? '<span class="axischip">軸</span>' : ('<span class="chk' + (opts.radio ? ' radio' : '') + '"></span>');
     var subline = [h.sex_age, h.jockey, h.running_style].filter(Boolean).join(' ');
     return '<button type="button" class="' + cls.join(' ') + '" ' + pickAttr + '="' + h.number + '"' + (isAxis ? ' disabled' : '') + '>'
       + umaBox(h.number, h.gate)
-      + mkHtml
       + '<span class="nmwrap"><span class="nm">' + escapeHtml(h.name) + '</span>'
-      + '<span class="meta">' + gradeHtml
+      + '<span class="meta">'
       + '<span class="od">' + (h.odds != null ? h.odds.toFixed(1) + '倍' : '—') + '</span>'
       + '<span class="pop">' + (h.popularity ? h.popularity + '番人気' : '') + '</span>'
       + '<span>' + escapeHtml(subline) + '</span></span></span>'
