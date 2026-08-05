@@ -1622,6 +1622,20 @@ function noteTag(label, count) {
   return `<span class="nt ${cls}">${escapeHtml(label)}${c}</span>`;
 }
 
+// 過去走のマスに出すメモ（2026-08-05）。ここだけ色を1つに揃える。
+// マスには着順の金銀銅・クラスバッジ・見出しの帯が既にあり、赤緑を足すと色が多すぎるため。
+// 馬名ポップアップの回顧メモ（noteTag）は3色のまま＝あちらは色が唯一の手掛かりなので残す。
+//
+// 「上がり最速」は上がり3Fの金（last3f_rank=1）を見れば分かるので、マスには出さない。
+const RUN_NOTE_HIDE = new Set(['上がり最速']);
+
+function runNoteTags(labels) {
+  return (labels || [])
+    .filter((l) => !RUN_NOTE_HIDE.has(l))
+    .map((l) => `<span class="nt nt-one">${escapeHtml(l)}</span>`)
+    .join('');
+}
+
 function noteRow(n) {
   const labels = (n.labels || []).map((l) => noteTag(l)).join('');
   const extra = (n.notes || []).filter(Boolean)
@@ -1716,9 +1730,8 @@ function itemWhyBlock(h) {
   return `<div class="ph">買える／消せる</div><div class="chips">${rows}</div>`;
 }
 
-// §5.2.5: 通過順の4マス。通過順÷頭数で前・中・後の3段階に塗り分ける
-const FRONT_CUT_POS = 1 / 3.0;
-const BACK_CUT_POS = 2 / 3.0;
+// §5.2.5: 通過順の4マス。前・中・後の3段階の塗り分けは 2026-08-05 に廃止した
+// （色が多すぎて読みにくいという指摘。位置は数字そのもので読む）。
 
 // 106-spec: マスは走によらず必ず4つ出す。コーナーが2つしか無いレース（東京芝1600など）
 // は手前の2マスを「-」の空マスにする。こうすると最後のコーナー（4角）が縦に揃い、
@@ -1726,19 +1739,11 @@ const BACK_CUT_POS = 2 / 3.0;
 // 報告される通過順は常に4角で終わるため。5つ以上来た場合はゴールに近い4つを採る。
 const CORNER_CELLS = 4;
 
-function cornersHtml(corners, fieldSize) {
+function cornersHtml(corners) {
   const all = String(corners || '').split('-').filter(Boolean);
   const parts = all.slice(-CORNER_CELLS);
   const blanks = '<i class="none">-</i>'.repeat(Math.max(0, CORNER_CELLS - parts.length));
-  const cells = blanks + parts.map((x) => {
-    let cls = '';
-    const v = parseInt(x, 10);
-    if (fieldSize && !Number.isNaN(v)) {
-      const r = v / fieldSize;
-      cls = r <= FRONT_CUT_POS ? 'p1' : (r > BACK_CUT_POS ? 'p3' : 'p2');
-    }
-    return `<i class="${cls}">${escapeHtml(x)}</i>`;
-  }).join('');
+  const cells = blanks + parts.map((x) => `<i>${escapeHtml(x)}</i>`).join('');
   return `<span class="cor">${cells}</span>`;
 }
 
@@ -1805,9 +1810,12 @@ function runNameSpan(raceName) {
 // 106-spec §5.3: 過去走1走（横3行）。105-spec の6行マス（幅168px固定）を、画面幅を
 // 使い切る横3行に組み替えたもの。**項目は12のままで1つも減らしていない**。
 //   .vtab  走の見出し（前走・2走前…）。縦書き。横書きだと「3走前」で28px要るところが13pxで済む
-//   .l1    日付・場・クラス・レース名・着順・頭数・人気
+//   .l1    着順・日付・場・クラス・レース名・頭数・人気
 //   .l2    条件・タイム・通過順4マス・上がり3F・騎手・斤量・馬体重
 //   .l3    展開・勝ち馬・着差・回顧メモ
+//
+// 着順は 2026-08-05 に行の先頭へ移し、箱を 19×16px→26×21px（文字10.5→14px）に拡げた。
+// 左端で全走そろうので、5走ぶんの着順が縦一列に読める（新聞の着順柱と同じ読み方）。
 function runLine3(p, label) {
   const cond = `${escapeHtml(surfShort(p.surface))}${escapeHtml(p.distance || '')}${escapeHtml(goingShort(p.condition))}`;
   const bw = p.body_weight != null ? String(p.body_weight) : '—';
@@ -1817,11 +1825,11 @@ function runLine3(p, label) {
   const timeTitle = p.time_grade
     ? `基準比 ${p.time_resid > 0 ? '+' : ''}${p.time_resid}秒（当日の馬場差を補正後）・着差${marginText(p)}秒`
     : (p.time_note || '');
-  const notes = (p.note_labels || []).map((l) => noteTag(l)).join('');
+  const notes = runNoteTags(p.note_labels);
   const noteTitle = notes && p.note_text ? ` title="${escapeHtml(p.note_text)}"` : '';
   return `<div class="vrun${runBandClass(p)}"><span class="vtab">${escapeHtml(label)}</span><div class="vrb">
-    <div class="l1"><span class="dt">${shutubaMd(p.date)}</span><span class="tk">${escapeHtml(p.track || '')}</span>${classBadge(p.grade, p.race_name)}${runNameSpan(p.race_name)}${shutubaFinBox(p.finish)}<span class="nm hd">${escapeHtml(p.runners ?? '—')}頭</span><span class="nm pp">${escapeHtml(p.popularity ?? '—')}人</span></div>
-    <div class="l2"><span class="cd">${cond}</span>${rankSpan(p.time ?? '—', p.time_grade || '', timeTitle, 'tm')}${cornersHtml(p.corners, p.field_size)}${rankSpan(p.last_3f ?? '—', rankCls, agTitle)}<span class="jk">${escapeHtml(p.jockey ?? '—')}</span><span class="kg">${kg}</span><span class="bw">${bw}</span></div>
+    <div class="l1">${shutubaFinBox(p.finish)}<span class="dt">${shutubaMd(p.date)}</span><span class="tk">${escapeHtml(p.track || '')}</span>${classBadge(p.grade, p.race_name)}${runNameSpan(p.race_name)}<span class="nm hd">${escapeHtml(p.runners ?? '—')}頭</span><span class="nm pp">${escapeHtml(p.popularity ?? '—')}人</span></div>
+    <div class="l2"><span class="cd">${cond}</span>${rankSpan(p.time ?? '—', p.time_grade || '', timeTitle, 'tm')}${cornersHtml(p.corners)}${rankSpan(p.last_3f ?? '—', rankCls, agTitle)}<span class="jk">${escapeHtml(p.jockey ?? '—')}</span><span class="kg">${kg}</span><span class="bw">${bw}</span></div>
     <div class="l3"${noteTitle}>${scenarioHtml(p.scenario)}<span class="wn">${escapeHtml(p.winner || '')}</span><span class="mg">(${marginText(p)})</span>${notes}</div>
   </div></div>`;
 }
