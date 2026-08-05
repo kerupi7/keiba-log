@@ -1863,6 +1863,14 @@ function popupBody(h) {
     </div>`;
 }
 
+// 出走間隔（中10週・連闘など）。性齢〜騎手の行に混ぜると入りきらず「中」だけに
+// 切れていたので、性齢の真下に独立した行として出す（2026-08-05 ユーザー指定）。
+// 値が無い馬に空の行を作らないよう、無ければ行そのものを出さない。
+function rotLine(h) {
+  if (!h.rotation) return '';
+  return `<div class="u rotline">${escapeHtml(h.rotation)}</div>`;
+}
+
 function nameButtonHtml(h) {
   return `<button type="button" class="nmbtn" data-pop="${h.number}">` +
     `<span class="tpnm">${escapeHtml(h.name)}</span><i>▸</i></button>`;
@@ -1884,7 +1892,7 @@ function shutubaRow(h, hasItemMarks) {
     <td>${markBadge20(h)}</td>
     <td>${umaBox(h.number, h.gate, 'sm')}</td>
     <td class="l nm">${nameButtonHtml(h)}
-      <div class="u prof"><span class="pa">${escapeHtml(h.sex_age ?? '')}</span><span class="pk">${kg}</span>${bwDisplay(h)}<span class="pj">${escapeHtml(h.jockey && h.jockey !== 'N/A' ? h.jockey : '—')}</span>${legBar(h.running_style)}<span class="rot">${escapeHtml(h.rotation || '')}</span></div></td>
+      <div class="u prof"><span class="pa">${escapeHtml(h.sex_age ?? '')}</span><span class="pk">${kg}</span>${bwDisplay(h)}<span class="pj">${escapeHtml(h.jockey && h.jockey !== 'N/A' ? h.jockey : '—')}</span>${legBar(h.running_style)}</div>${rotLine(h)}</td>
     <td>${fmtNum(h.total, 1)}<div class="u"><span class="grade ${gradeClass(h.grade)}">${gradeDisp(h.grade)}</span></div></td>
     <td>${h.odds != null ? h.odds.toFixed(1) : '—'}<div class="u pp">${h.popularity ?? '—'}人</div></td>
     ${chipsTd}
@@ -1918,7 +1926,7 @@ function renderShutuba20(site) {
     <div class="secthead">出馬表<span class="cnt">全${site.race.field_size}頭・馬番順</span></div>
     <div class="shctl">${zoomCtl}${toggleBtn}</div>
     <div class="shwrap">
-      <div class="shzoom">
+      <div class="shzoom"><div class="shzin">
       <table class="unified${hasItemMarks ? ' hide-chips' : ''}">
         <colgroup><col class="c-mk"><col class="c-no"><col class="c-nm">
           <col class="c-tot"><col class="c-od">${chipsCol}<col class="c-runs"></colgroup>
@@ -1928,22 +1936,30 @@ function renderShutuba20(site) {
         </tr></thead>
         <tbody>${rows}</tbody>
       </table>
-      </div>
+      </div></div>
     </div>
     ${popups}
   `;
 }
 
-// 出馬表のピンチズーム。CSS の zoom を使う（transform:scale と違い、
-// 横スクロールの幅・表の高さがそのまま追従するので、スクロール量の補正が要らない）。
+// 出馬表のピンチズーム（拡大鏡型）。
+//
+// transform:scale を使う。CSS の zoom だと表そのものを組み直すことになり、列幅・行の
+// 高さ・ページ全体の長さが倍率ごとに変わってしまう。transform なら組み方は等倍のまま
+// 固定され、描き終えた絵を虫めがねで覗くのと同じ挙動になる（2026-08-05 ユーザー指定）。
+//
+// DOM: .shwrap（覗き窓・縦横スクロール） > .shzoom（拡大後の寸法を持つ土台）
+//        > .shzin（transform をかける実体・中身は常に等倍の組み）
 const SHZ_MIN = 0.5;
 const SHZ_MAX = 2.0;
 const SHZ_KEY = 'ans.shutuba.zoom';
 
 function setupShutubaZoom(root) {
   const wrap = root.querySelector('.shwrap');
-  const zoom = root.querySelector('.shzoom');
-  if (!wrap || !zoom) return;
+  const box = root.querySelector('.shzoom');
+  const zin = root.querySelector('.shzin');
+  const table = root.querySelector('.shzin table.unified');
+  if (!wrap || !box || !zin || !table) return;
 
   const label = root.querySelector('[data-zoom="value"]');
   let z = 1;
@@ -1955,21 +1971,53 @@ function setupShutubaZoom(root) {
   // 1%刻みに丸める。+0.1 を繰り返すと 1.2000000000000002 のような値が残るため
   const clamp = (v) => Math.round(Math.min(SHZ_MAX, Math.max(SHZ_MIN, v)) * 100) / 100;
 
-  // anchorX = wrap の左端から測った、拡大の中心にしたい画面上の位置(px)。
-  // 省略時は表示中の中央を保つ。
-  function apply(next, anchorX) {
+  // 表の等倍の実寸。offsetWidth/offsetHeight は transform の影響を受けないので、
+  // 拡大中でもそのまま測れる。
+  let natW = 0;
+  let natH = 0;
+
+  // 測るときは .shzin の幅をいったん 0 にする。table-layout:fixed の表は幅指定が
+  // auto だと入れ物の幅まで広がるので、土台の幅から測ると
+  // 「土台を広げる→表も広がる→さらに土台を広げる」で毎回太っていく。
+  function measure() {
+    zin.style.width = '0px';
+    natW = table.offsetWidth;
+    natH = table.offsetHeight;
+    zin.style.width = `${natW}px`;
+    paint();
+  }
+
+  // 土台に実寸×倍率を持たせることで、スクロールできる範囲が拡大に追従する
+  function paint() {
+    zin.style.transform = `scale(${z})`;
+    box.style.width = `${natW * z}px`;
+    box.style.height = `${natH * z}px`;
+    if (label) label.textContent = `${Math.round(z * 100)}%`;
+  }
+
+  // anchorX / anchorY = wrap の左上から測った、拡大の中心にしたい位置(px)。
+  // 省略時は覗き窓の中央を保つ。
+  function apply(next, anchorX, anchorY) {
     const prev = z;
     z = clamp(next);
     if (z === prev) return;
     const ax = anchorX == null ? wrap.clientWidth / 2 : anchorX;
-    zoom.style.zoom = z;
-    wrap.scrollLeft = (wrap.scrollLeft + ax) * (z / prev) - ax;
-    if (label) label.textContent = `${Math.round(z * 100)}%`;
+    const ay = anchorY == null ? wrap.clientHeight / 2 : anchorY;
+    const sl = wrap.scrollLeft;
+    const st = wrap.scrollTop;
+    paint();
+    wrap.scrollLeft = (sl + ax) * (z / prev) - ax;
+    wrap.scrollTop = (st + ay) * (z / prev) - ay;
     try { localStorage.setItem(SHZ_KEY, String(z)); } catch (e) { /* 保存できなくても動作は変わらない */ }
   }
 
-  zoom.style.zoom = z;
-  if (label) label.textContent = `${Math.round(z * 100)}%`;
+  measure();
+  // 「買える／消せる」の開閉で列が増減し、実寸そのものが変わる。倍率は変えずに測り直す。
+  // ボタン自身の処理（列の出し入れ）が先に走り、そのあとここへ上がってくるので同期でよい
+  root.addEventListener('click', (e) => {
+    if (e.target.closest('[data-chips]')) measure();
+  });
+  window.addEventListener('resize', measure);
 
   root.addEventListener('click', (e) => {
     const btn = e.target.closest('[data-zoom]');
@@ -1984,20 +2032,23 @@ function setupShutubaZoom(root) {
   // 1本指の縦横スクロールはそのまま残り、2本指だけこちらで拾う。
   let d0 = 0;
   let z0 = 1;
-  let anchor = 0;
+  let ancX = 0;
+  let ancY = 0;
   const dist = (t) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
 
   wrap.addEventListener('touchstart', (e) => {
     if (e.touches.length !== 2) { d0 = 0; return; }
+    const r = wrap.getBoundingClientRect();
     d0 = dist(e.touches);
     z0 = z;
-    anchor = (e.touches[0].clientX + e.touches[1].clientX) / 2 - wrap.getBoundingClientRect().left;
+    ancX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - r.left;
+    ancY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - r.top;
   }, { passive: true });
 
   wrap.addEventListener('touchmove', (e) => {
     if (e.touches.length !== 2 || !d0) return;
     e.preventDefault();
-    apply(z0 * (dist(e.touches) / d0), anchor);
+    apply(z0 * (dist(e.touches) / d0), ancX, ancY);
   }, { passive: false });
 
   wrap.addEventListener('touchend', () => { d0 = 0; });
@@ -2012,7 +2063,8 @@ function setupShutubaZoom(root) {
   wrap.addEventListener('wheel', (e) => {
     if (!e.ctrlKey) return;
     e.preventDefault();
-    apply(z * (1 - e.deltaY * 0.01), e.clientX - wrap.getBoundingClientRect().left);
+    const r = wrap.getBoundingClientRect();
+    apply(z * (1 - e.deltaY * 0.01), e.clientX - r.left, e.clientY - r.top);
   }, { passive: false });
 }
 

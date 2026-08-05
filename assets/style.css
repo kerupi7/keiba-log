@@ -1456,13 +1456,19 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
    105-spec: 出馬表ワンシート化（1頭1行・過去5走を常時セル表示・
    買える／消せるの10項目・馬名ポップアップ）。97-spec を置き換え。
    ============================================================ */
-/* touch-action: 1本指のスクロールは残し、2本指ピンチだけJS側で拾う（ページ全体の
+/* 出馬表の覗き窓。虫めがねを当てる紙の側は等倍で固定し、この窓を縦横に動かして読む。
+   高さを 82vh で止めてあるので、拡大しても窓の外（買い目タブ・ページの長さ）は動かない。
+   touch-action: 1本指のスクロールは残し、2本指ピンチだけJS側で拾う（ページ全体の
    ピンチにさらわれると表だけを拡大できないため）。 */
-.race20 .shwrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-top:8px;
-  touch-action:pan-x pan-y;overscroll-behavior-x:contain}
-/* 拡大は transform でなく zoom。表の実寸そのものが変わるので、横スクロールの幅も
-   下に続く要素の位置も自動で追従する（transform:scale だとどちらもズレる） */
-.race20 .shzoom{zoom:1}
+.race20 .shwrap{overflow:auto;-webkit-overflow-scrolling:touch;margin-top:8px;
+  max-height:82vh;touch-action:pan-x pan-y;overscroll-behavior:contain}
+/* .shzoom は「拡大後の寸法」だけを持つ土台（幅・高さはJSが入れる）。
+   .shzin が transform:scale の実体で、中の組み方は倍率によらず常に等倍のまま。
+   zoom プロパティは使わない（列幅・行の高さが倍率ごとに組み直されてしまうため）。
+   実寸は .shzin ではなく中の table を測る（.shzin に width:max-content を与えると
+   競走成績セルの中身が絡んで幅が壊れるため、素の block のまま table をはみ出させる）。 */
+.race20 .shzoom{position:relative}
+.race20 .shzin{transform-origin:0 0}
 /* ズーム操作（.shctl の左側。買える／消せるボタンは .allbtn で右端に残る） */
 .race20 .shzc{display:flex;align-items:center;gap:4px}
 .race20 .shzc .zl{font-size:10.5px;color:var(--cap);margin-right:2px}
@@ -1663,11 +1669,14 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
   font-size:10.5px;color:var(--sub);font-variant-numeric:tabular-nums}
 .race20 .prun .p2 .pv{white-space:nowrap}
 
-/* 出馬表の行: 馬名は省略せず、性齢・斤量・騎手・脚質・間隔を2行目にまとめる */
+/* 出馬表の行: 馬名は省略せず、性齢・斤量・騎手・脚質を2行目にまとめる。
+   出走間隔は入りきらず「中」だけに切れていたので3行目へ出した（2026-08-05） */
 .race20 table.unified td.nm{white-space:normal;overflow:visible;text-overflow:clip}
 .race20 table.unified td.nm .prof{display:flex;align-items:center;gap:3px;flex-wrap:nowrap;
   white-space:nowrap;font-size:9.5px;line-height:1.5;overflow:hidden}
-.race20 table.unified td.nm .prof .rot{font-size:9.5px;color:var(--cap)}
+/* 3行目＝出走間隔。性齢（.pa）の真下に来るよう、左端から書き出す */
+.race20 table.unified td.nm .rotline{font-size:9.5px;line-height:1.5;color:var(--cap);
+  white-space:nowrap;margin-top:0}
 .race20 table.unified td.nm .prof .pw{font-variant-numeric:tabular-nums}
 .race20 table.unified td.nm .legbar{transform:scale(.88);transform-origin:left center;margin:0 -2px}
 .race20 table.unified td{vertical-align:middle}
@@ -1676,13 +1685,12 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
 .race20 .pthint{font-size:10px;color:var(--cap);margin:2px 0 0}
 @media(min-width:620px){.race20 .pthint{display:none}}
 
-/* 2行目は列を固定幅にして、脚質バーと間隔が全馬で縦に揃うようにする */
+/* 2行目は列を固定幅にして、脚質バーが全馬で縦に揃うようにする */
 .race20 table.unified td.nm .prof .pa{display:inline-block;width:2.3em;flex:none}
 .race20 table.unified td.nm .prof .pk{display:inline-block;width:2.4em;flex:none;
   text-align:right;font-variant-numeric:tabular-nums}
 .race20 table.unified td.nm .prof .pj{display:inline-block;width:4em;flex:none;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.race20 table.unified td.nm .prof .rot{flex:none;width:3.4em;text-align:right}
 
 /* コーナー通過順位が枠からはみ出ないよう折り返す（馬群のかたまりは割らない） */
 .race20 .rv-ctbl td.rv-seq{white-space:normal}
