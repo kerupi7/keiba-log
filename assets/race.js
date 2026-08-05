@@ -1358,22 +1358,28 @@ function setupUpset20() {
 function renderHeader20(site) {
   const r = site.race;
   const p = site.prediction;
-  const cls = `${r.class}${r.grade ? '・' + r.grade : ''}・${r.surface}${r.distance}m`;
-  const condParts = [
-    `${r.date} ${r.track}${r.race_number}R`,
-    `${r.surface}${r.distance}m・${r.direction}`,
-    `${r.field_size}頭`,
+  // 108-spec §2: 基本情報4項目（コース／馬場／頭数／クラス）を展開タブから見出しへ移した。
+  // 格はバッジにしてレース名の左へ。重複していた細字1行（オープン・GIII・芝1800m）は削除。
+  // 4項目は等幅の列にそろえるので折り返さない（＝高さが毎回同じでタブ位置がぶれない）。
+  const baba = (p.baba_detail || {}).going_weather || r.going || '—';
+  const surfCls = r.surface === '芝' ? 'turf' : 'dirt';
+  const specs = [
+    ['コース', `<span class="sf ${surfCls}">${escapeHtml(r.surface)}</span>`
+      + `${r.distance}m<span class="w">・${escapeHtml(r.direction)}</span>`],
+    ['馬場', escapeHtml(baba)],
+    ['頭数', `${r.field_size}<span class="w">頭</span>`],
+    ['クラス', escapeHtml(r.class)
+      + (r.weight_rule ? `<span class="w">・${escapeHtml(r.weight_rule)}</span>` : '')],
   ];
-  if (r.weight_rule) condParts.push(r.weight_rule);
-  if (r.post_time) condParts.push(`発走 ${r.post_time}`);
-  // タブ構成（2026-08-03）。ここに残すのはどのタブでも要るものだけ＝レース名・条件・
-  // オッズの基準時刻。荒れ度(upC)と3連単100万(bpC)は renderMitate20 で「買い目」タブの
-  // 先頭へ移した。ブロックそのものは1つも減らしていない（置き場所だけ変えた）。
+  const cells = specs.map(([k, v]) =>
+    `<div class="sp"><span class="k">${escapeHtml(k)}</span><span class="v">${v}</span></div>`).join('');
+  const meta = `${r.date} ${r.track}${r.race_number}R`
+    + (r.post_time ? `<span class="dot">・</span>発走 ${escapeHtml(r.post_time)}` : '');
   return `
-    <div class="rhead">
-      <div class="cls">${escapeHtml(cls)}</div>
-      <div class="ttl">${escapeHtml(r.race_name)}</div>
-      <div class="cond">${escapeHtml(condParts.join(' ／ '))}</div>
+    <div class="rhead h2">
+      <div class="ttlrow">${r.grade ? `<span class="gb2">${escapeHtml(r.grade)}</span>` : ''}<span class="ttl">${escapeHtml(r.race_name)}</span></div>
+      <div class="meta">${meta}</div>
+      <div class="specrow">${cells}</div>
       <div class="pt">予想: ${fmtDateTimeShort(p.predicted_at)}（${escapeHtml(p.odds_basis)}基準）</div>
     </div>
   `;
@@ -2386,6 +2392,482 @@ function renderScenarioLegacy20(site) {
   return `<div class="subh">展開シナリオ（本命＋対抗）</div>${blocksHtml}${passTimeNoteHtml}${renderScenarioFavorites20(p, byNumberOv)}`;
 }
 
+/* ══════════════════════════════════════════════════════════════════
+   展開タブ 作り直し（docs/keiba-log-design/108-tenkai-tab-redesign-spec.md）
+   2026-08-05。判定を全場共通のしきい値ではなく **実測の表** から引く形にした。
+   表は publish が引いて site.prediction.display に載せている（108-spec §9）。
+   display が無い（＝旧データの）レースは、下の各関数が null を返して
+   renderOverview20 が旧ブロックへ落ちる。
+   ══════════════════════════════════════════════════════════════════ */
+
+const PACE_LABEL_108 = { S: 'スロー', M: '平均', H: 'ハイ' };
+const PACE_SUB_108 = { S: '上がり勝負', M: '一定ペース', H: '前半飛ばす消耗戦' };
+const TOP_PACE_108 = 2;          // §8.1 上位いくつのペースをマスにするか
+
+// §3 コースの形（C案・mockup-79）─────────────────────────────
+// 楕円の中心線は rect(25,26,286,106,rx=53)。下の直線＝ホームストレッチ。
+// 直線部は x=78〜258 ／ 上辺 y=26 ／ 下辺 y=132。
+//
+// **回りで左右が入れ替わる。** 右回り＝ホームストレッチを右→左に走るので4角は右端、
+// 左回り＝左→右なので4角は左端。進行順は必ず 4角 → スタート → ゴール → 1角。
+// 2026-08-05 まで4角を右端に固定しており、左回り7コース（新潟・東京・中京／33距離）で
+// 図が左右反転していた。
+const CS_XL = 78, CS_XR = 258;
+const CS_CY = 79, CS_R = 53;            // 楕円の中心の高さと、両端の半円の半径
+const CS_ARC = Math.PI * CS_R;          // 半円1つぶんの描画長（≒166.5）
+const CS_STRAIGHT_U = CS_XR - CS_XL;    // 直線区間1本ぶんの描画長（180）
+
+function courseLayout(g) {
+  const right = g.direction === '右';
+  const xC4 = right ? CS_XR : CS_XL;      // 最終コーナーの出口
+  const xC1 = right ? CS_XL : CS_XR;      // 1コーナーの入口
+  const sgn = right ? -1 : 1;             // ホームストレッチの進行方向（xの増減）
+  const lap = g.lap_m, straight = g.straight_m;
+  // ゴール〜スタートの公開値は無い。走る距離 − 1周 で出す
+  const over = g.distance - lap * Math.floor(g.distance / lap);
+  const goalToC1 = g.to_c1_m ? Math.max(g.to_c1_m - over, 5) : straight * 0.08;
+  const span = straight + goalToC1;       // 直線区間1本ぶん（ゴールの前後を合わせた長さ）
+  const ppm = CS_STRAIGHT_U / span;
+  const xGoal = xC4 + sgn * straight * ppm;
+  return { right, sgn, xC4, xC1, xGoal, ppm, span,
+           over, curve: (lap - span * 2) / 2 };
+}
+
+// ゴールから **走ってきた方向へ距離 d だけさかのぼった点** を返す。
+// スタートはホームストレッチ上にあるとは限らない（105距離のうち78距離は
+// コーナーか向正面から出る）。楕円1周のどこにでも置けるようにする。
+// 返すのは中心線上の点と、そこでの外向きの法線。
+function courseWalkBack(g, L, d) {
+  if (!(L.curve > 0) || d < 0) return null;
+  // ① ホームストレッチのゴール〜4角
+  if (d <= g.straight_m) {
+    return { x: L.xGoal - L.sgn * d * L.ppm, y: 132, nx: 0, ny: 1 };
+  }
+  let r = d - g.straight_m;
+  // ② 4角のあるコーナー（半円）。4角の側の端から、上の直線へ向かって回る
+  if (r <= L.curve) {
+    const t = Math.PI * (r / L.curve);
+    const sx = L.right ? 1 : -1;          // 右回りは右の半円、左回りは左の半円
+    const nx = sx * Math.sin(t), ny = Math.cos(t);
+    return { x: L.xC4 + CS_R * nx, y: CS_CY + CS_R * ny, nx, ny };
+  }
+  r -= L.curve;
+  // ③ 向正面（上の直線）。**上の直線はホームストレッチと逆向きに走る**ので、
+  //    さかのぼる向き（x の増減）はホームストレッチと同じ sgn になる
+  if (r <= L.span) {
+    return { x: L.xC4 + L.sgn * r * L.ppm, y: 26, nx: 0, ny: -1 };
+  }
+  r -= L.span;
+  // ④ 1〜2角のあるコーナー。ここまで戻るのは1周を大きく超える距離だけ
+  if (r <= L.curve) {
+    const t = Math.PI * (r / L.curve);
+    const sx = L.right ? -1 : 1;
+    const nx = sx * Math.sin(t), ny = -Math.cos(t);
+    return { x: L.xC1 + CS_R * nx, y: CS_CY + CS_R * ny, nx, ny };
+  }
+  return null;
+}
+
+const CS_DEFS = '<defs><marker id="a108" markerWidth="7" markerHeight="7" refX="6"'
+  + ' refY="3.5" orient="auto"><path d="M0 0 L7 3.5 L0 7 z" fill="#5C5C5C"/></marker></defs>';
+
+function courseShapeSvg(g, innerTone, outerTone) {
+  if (g.straight_only) {
+    // 新潟芝1000mのような直線競走。コーナーが無いので楕円では描けない
+    return `<svg class="tk2" viewBox="0 0 336 84" role="img"
+      aria-label="${escapeHtml(g.distance)}mの直線競走。コーナーなし。">
+      <rect x="24" y="40" width="288" height="22" rx="3" fill="#E6E6E2"/>
+      <rect x="309.75" y="36" width="2.5" height="30" class="tk gl"/>
+      <rect x="23.75" y="36" width="2.5" height="30" class="tk st"/>
+      <text x="27" y="31" class="tkl st">スタート</text>
+      <text x="309" y="31" class="tkl gl">ゴール</text>
+      <path d="M150 51 L186 51" class="arw2" marker-end="url(#a108)"/>
+      <text x="168" y="79" class="c2">コーナーなし・${g.distance.toLocaleString()}m 一直線</text>
+      ${CS_DEFS}
+    </svg>`;
+  }
+  const L = courseLayout(g);
+  // 目盛りはコース上のどこにでも置けるように、点と法線から引く。
+  // 線は中心線をまたいで外へ14・内へ14、ラベルはさらに内側（インフィールド側）へ
+  const mark = (p, label, cls, lab) => {
+    if (!p) return '';
+    const len = 14;
+    return `<path d="M${(p.x - p.nx * len).toFixed(1)} ${(p.y - p.ny * len).toFixed(1)}`
+      + ` L${(p.x + p.nx * len).toFixed(1)} ${(p.y + p.ny * len).toFixed(1)}"`
+      + ` class="tkm ${cls}"/>`
+      + `<text x="${(p.x - p.nx * lab).toFixed(1)}" y="${(p.y - p.ny * lab + 3.4).toFixed(1)}"`
+      + ` class="tkl ${cls}">${label}</text>`;
+  };
+  const pGoal = { x: L.xGoal, y: 132, nx: 0, ny: 1 };
+  const pStart = courseWalkBack(g, L, L.over);
+  // 走る距離が1周をわずかに下回る4距離（東京芝2000m など）では、スタートがゴールの
+  // すぐ隣に来てラベルが重なる。そのときだけスタートを1段内側へ下げる
+  let startLab = 20;
+  if (pStart) {
+    const dx = (pStart.x - pStart.nx * 20) - pGoal.x;
+    const dy = (pStart.y - pStart.ny * 20) - (pGoal.y - 20);
+    if (Math.abs(dx) < 40 && Math.abs(dy) < 12) startLab = 36;
+  }
+  // 回りは上辺と下辺の2本の矢印で示す。1本だけだと読み違える
+  const arrows = L.right
+    ? '<path d="M150 26 L186 26" class="arw2" marker-end="url(#a108)"/>'
+      + '<path d="M186 132 L150 132" class="arw2" marker-end="url(#a108)"/>'
+    : '<path d="M186 26 L150 26" class="arw2" marker-end="url(#a108)"/>'
+      + '<path d="M150 132 L186 132" class="arw2" marker-end="url(#a108)"/>';
+  // 4角のラベルは**コースの外側**（直線の端の真下）に置く。ゴールとスタートのラベルは
+  // 内側（インフィールド側）なので、トラックをはさんで反対になり、
+  // スタートが4角のすぐ近くのコーナーから出る距離でも重ならない。
+  return `<svg class="tk2" viewBox="0 0 336 158" role="img"
+      aria-label="${escapeHtml(g.distance)}mの俯瞰図。${escapeHtml(g.direction)}回り。">
+      <rect x="18.5" y="19.5" width="299" height="119" rx="59.5" fill="none"
+        stroke="${outerTone}" stroke-width="13"/>
+      <rect x="31.5" y="32.5" width="273" height="93" rx="46.5" fill="none"
+        stroke="${innerTone}" stroke-width="13"/>
+      <rect x="25" y="26" width="286" height="106" rx="53" fill="none" stroke="#fff" stroke-width="1"/>
+      ${arrows}
+      <text x="${L.xC4}" y="155.4" class="tkl cn">4角</text>
+      ${mark(pGoal, 'ゴール', 'gl', 20)}
+      ${mark(pStart, 'スタート', 'st', startLab)}
+      <text x="168" y="86" class="lp">${escapeHtml(g.direction)}回り</text>
+      ${CS_DEFS}
+    </svg>`;
+}
+
+// 帯の色は枠順成績。1.00 が標準で、離れるほど濃い（.strip の色分けと同じ考え）
+const GATE_TONE_108 = { b1: '#CBE5D6', b2: '#E3F0E7', b3: '#EDEDEA', b4: '#F7DEDE', b5: '#F0C9C9' };
+const CS_NEUTRAL = '#E6E6E2';
+
+// このレースの距離を、分かっている区間の実長比で横に展開する。
+// スタート〜1角 と 最後の直線 は実測値。あいだは引き算で出るので、3区間とも本当の長さで置ける。
+//
+// **帯の中には文字を入れない。** 1区間目は距離の 5.0%（東京芝2000m）まで細くなり、
+// そこには「1角まで」も「100m」も入らないため。区間名と距離は下のチップへ回し、
+// 色で帯と対応させる。こうすると帯の幅に文字が縛られない。
+const CS_SEGS = [['1角まで', 'sa'], ['コーナーと向正面', 'sb'], ['最後の直線', 'sc']];
+
+function courseSegs(g) {
+  if (g.straight_only || !g.to_c1_m) return null;
+  const mid = g.distance - g.to_c1_m - g.straight_m;
+  if (!(mid > 0)) return null;
+  return [g.to_c1_m, mid, g.straight_m];
+}
+
+// 帯の中に文字を置けるかは幅で決まる。名前(8.5px)と距離(12px太字)を2段で置くには
+// 46px ほど要る。375px の端末で帯に使えるのは 331px なので、区間が全体の 13.9% 以上あれば入る。
+// 入らない区間は帯の下に色見本つきで出す（全105距離のうち26距離で1区間だけ出る）。
+const CS_BAR_PX = 331, CS_FIT_PX = 46;
+
+function courseDistBar(g) {
+  const v = courseSegs(g);
+  if (!v) return '';
+  const tot = v[0] + v[1] + v[2];
+  const txt = [`${Math.round(v[0]).toLocaleString()}m`,
+               `${Math.round(v[1]).toLocaleString()}m`,
+               `${g.straight_m.toFixed(1)}m`];
+  const fits = v.map((m) => m / tot * CS_BAR_PX >= CS_FIT_PX);
+  const cells = v.map((m, i) => {
+    const inner = fits[i]
+      ? `<span class="sl">${escapeHtml(CS_SEGS[i][0])}</span><span class="sv">${txt[i]}</span>`
+      : '';
+    return `<div class="sg ${CS_SEGS[i][1]}" style="flex:${(m / tot).toFixed(4)}">${inner}</div>`;
+  }).join('');
+  // 帯に入らなかった区間だけ、下に色見本つきで出す。全部入れば行ごと消える
+  const rest = CS_SEGS.map(([name, cls], i) => (fits[i] ? '' :
+    `<span class="dl ${cls}"><i></i>${escapeHtml(name)}<b>${txt[i]}</b></span>`)).join('');
+  return `<div class="dwrap"><div class="dbar" role="img"
+    aria-label="${g.distance}mの内訳。1角まで約${Math.round(g.to_c1_m)}m、
+    コーナーと向正面 約${Math.round(v[1])}m、最後の直線${g.straight_m.toFixed(1)}m。">${cells}</div>`
+    + (rest ? `<div class="dlgd">${rest}</div>` : '') + '</div>';
+}
+
+function renderCourseShape20(site) {
+  const g = (site.prediction.display || {}).course;
+  if (!g) return '';
+  // 帯は枠順成績（内=1〜4枠の平均 / 外=5〜8枠の平均）。無ければ無彩色
+  const gates = (site.prediction.inner_outer_bias || {}).gates || [];
+  const avg = (list) => {
+    const v = list.filter((x) => x.ratio != null).map((x) => x.ratio);
+    return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null;
+  };
+  const iv = avg(gates.filter((x) => x.gate <= 4));
+  const ov = avg(gates.filter((x) => x.gate >= 5));
+  const innerTone = iv != null ? GATE_TONE_108[ratioClass(iv)] : CS_NEUTRAL;
+  const outerTone = ov != null ? GATE_TONE_108[ratioClass(ov)] : CS_NEUTRAL;
+
+  const grid = site.prediction.scenario_grid;
+  const top = grid && grid.cells ? [...grid.cells].sort((a, b) => a.rank - b.rank)[0] : null;
+  const pt = ((site.prediction.scenario || {}).main || {}).pass_time || {};
+  const pace = top
+    ? `<div class="paceline"><b>${PACE_LABEL_108[top.code]}ペース</b>`
+      + (pt.sec != null ? `<span>1000m通過 約${pt.sec}秒</span>` : '') + '</div>'
+    : '';
+
+  // 帯のすぐ下に帯の凡例（3区間）が来るように並べる。枠の内外はそのあと
+  const chips = [];
+  if (g.straight_only) {
+    chips.push(['コース', '直線競走・コーナーなし', '']);
+    chips.push(['距離', `${g.distance.toLocaleString()}m`, '']);
+  } else {
+    // 3区間は距離バーの凡例に出ている。帯を出せないときだけチップで補う
+    if (!courseSegs(g)) {
+      chips.push(['直線', `${g.straight_m.toFixed(1)}m`, '']);
+      if (g.to_c1_m) chips.push(['スタート〜1角', `約${Math.round(g.to_c1_m)}m`, '']);
+    }
+  }
+  // 内外の枠は**値で色を決める**。内が緑・外が赤という固定はしない
+  if (iv != null && ov != null) {
+    chips.push(['内めの枠', iv.toFixed(2), 'g' + ratioClass(iv)]);
+    chips.push(['外めの枠', ov.toFixed(2), 'g' + ratioClass(ov)]);
+  }
+  if (!g.straight_only) {
+    chips.push(['1周', `${g.lap_m.toLocaleString(undefined, { minimumFractionDigits: 1 })}m`, '']);
+    chips.push(['高低差', `${g.rise_m}m・${g.flat_label}`, '']);
+    chips.push(['回り', g.direction + (g.loop ? `・${g.loop}回り` : ''), 'gdir']);
+  }
+  const chipHtml = chips.map(([k, v, cls]) =>
+    `<span class="gc ${cls}"><span class="k">${escapeHtml(k)}</span>${escapeHtml(v)}</span>`).join('');
+  return `<div class="subh">コースの形</div>${pace}`
+    + courseShapeSvg(g, innerTone, outerTone)
+    + courseDistBar(g)
+    + `<div class="geochips">${chipHtml}</div>`;
+}
+
+// §4 馬場 ────────────────────────────────────────────────
+function babaOutlookTile(title, v, kind) {
+  let val = '—', word = '—', cls = 'z0';
+  if (v != null) {
+    if (Math.abs(v) < 0.05) { val = '±0.0秒'; word = kind === 'time' ? '基準どおり' : 'いつも通り'; }
+    else {
+      val = `${Math.abs(v).toFixed(2)}秒`;
+      const fast = v < 0;
+      word = kind === 'time' ? (fast ? '速い' : '時計がかかる')
+                             : (fast ? '速い脚が出る' : '上がりがかかる');
+      cls = fast ? 'p1' : 'm1';
+    }
+  }
+  return `<div class="ot ${cls}"><span class="ttl">${escapeHtml(title)}</span>`
+    + `<span class="v">${escapeHtml(val)}</span><span class="w">${escapeHtml(word)}</span></div>`;
+}
+
+function renderBaba20(site) {
+  const p = site.prediction;
+  const bd = p.baba_detail;
+  const disp = (p.display || {}).baba;
+  const cu = (bd || {}).cushion_detail || {};
+  const mo = (bd || {}).moisture_detail || {};
+  const isTurf = String(site.race.surface || '').startsWith('芝');
+  // 芝はクッション値、ダートは含水率が軸（§4 / §7.4）
+  const lv = isTurf ? cu.level : mo.level;
+  const norm = isTurf ? cu.normal : mo.normal;
+  if (!lv || !norm) return '';           // 旧データ → 呼び出し側が旧ブロックへ落とす
+
+  const delta = isTurf ? norm.delta : mo.normal_delta;
+  const sign = `${delta > 0 ? '+' : ''}${Number(delta).toFixed(1)}`;
+  const tail = lv.cls === 'z0' || lv.label === 'いつも通り' ? ''
+    : (delta < 0 ? (isTurf ? '時計はかかりやすい' : '時計はかかりやすい')
+                 : (isTurf ? '時計は速くなりやすい' : '時計は速くなりやすい'));
+  const head = `<div class="l1"><span class="lv ${lv.cls || 'z0'}">${escapeHtml(lv.label)}</span>`
+    + `<span class="hd">${escapeHtml(site.race.track)}の平年より <b>${sign}</b></span>`
+    + (tail ? `<span class="tl">${escapeHtml(tail)}</span>` : '') + '</div>';
+
+  const rows = [];
+  if (isTurf && cu.value != null) {
+    rows.push(`<div class="mrow"><span class="k">クッション値</span>`
+      + `<span class="v">${cu.value}</span>`
+      + `<span class="t">${escapeHtml(cu.measured_label || '')}</span></div>`);
+  }
+  if (mo.goal != null) {
+    rows.push(`<div class="mrow"><span class="k">含水率 ${escapeHtml(mo.surface || '')}</span>`
+      + `<span class="v">G前 ${mo.goal}% ／ 4C ${mo.corner4}%</span>`
+      + `<span class="t">${escapeHtml(mo.measured_label || '')}</span></div>`);
+  }
+
+  // 目盛り。芝だけ（クッション値の実測はばが要る）
+  let scale = '';
+  if (isTurf && cu.range && cu.value != null) {
+    const lo = cu.range.min, hi = cu.range.max, span = Math.max(hi - lo, 0.1);
+    const pos = (v) => Math.max(0, Math.min(100, (v - lo) / span * 100));
+    const bl = pos(norm.mean - 0.3), bh = pos(norm.mean + 0.3);
+    const prev = cu.prev && cu.prev.value != null ? cu.prev.value : null;
+    scale = `<div class="cscale">
+      <div class="lbl"><span class="soft">軟らかい</span><span class="hard">硬い</span></div>
+      <div class="tr">
+        <i class="band" style="left:${bl.toFixed(1)}%;width:${Math.max(bh - bl, 1).toFixed(1)}%"></i>
+        <i class="nm" style="left:${pos(norm.mean).toFixed(1)}%"></i>
+        <i class="td ${lv.cls || 'z0'}" style="left:${pos(cu.value).toFixed(1)}%"></i>
+        <span class="tdl" style="left:${pos(cu.value).toFixed(1)}%">今日 ${cu.value}</span>
+      </div>
+      ${prev != null ? `<div class="below"><i class="pv" style="left:${pos(prev).toFixed(1)}%"></i>
+        <span class="pvl" style="left:${pos(prev).toFixed(1)}%">前回 ${prev}</span></div>` : ''}
+      <div class="ends"><span>${lo}</span>
+        <span class="nml" style="left:${pos(norm.mean).toFixed(1)}%">平年 ${norm.mean}</span>
+        <span>${hi}</span></div>
+    </div>`;
+  }
+
+  // §4.3 実測の見込み。対照を超えた材料だけ載っている
+  let outlook = '';
+  if (disp) {
+    let tiles = babaOutlookTile('勝ちタイム', disp.time, 'time');
+    if (disp.last3f !== undefined) tiles += babaOutlookTile('勝ち馬の上がり3F', disp.last3f, 'l3');
+    outlook = `<div class="outlook"><div class="oh">この馬場だと、こうなりやすい</div>`
+      + `<div class="ots">${tiles}</div></div>`;
+  }
+  return `<div class="babadetail v2">${head}`
+    + (rows.length ? `<div class="l3">${rows.join('')}</div>` : '')
+    + scale + outlook + '</div>';
+}
+
+// §5 脚質 ────────────────────────────────────────────────
+function renderLeg20(site) {
+  const p = site.prediction;
+  const disp = (p.display || {}).leg;
+  if (!disp || !disp.length || !p.leg_bias) return '';
+  const byStyle = {};
+  p.leg_bias.forEach((lb) => { byStyle[lb.style] = lb; });
+  const runners = site.horses.filter((h) => !h.scratched);
+  const nige = scenarioMainNigeSet(p);
+  const best = Math.max(...disp.map((d) => d.delta));
+  const cards = disp.map((d) => {
+    const lb = byStyle[d.style] || {};
+    const key = PACE_STYLE_KEY[d.style];
+    const hs = runners.filter((h) => h.running_style === key);
+    const chips = hs.map((h) => paceHorsePiece(h, nige.has(h.number))).join('')
+      || '<span class="none">—</span>';
+    const cells = [['win_rate', d.baseline.win_rate], ['rentai_rate', d.baseline.rentai_rate],
+                   ['fukusho_rate', d.baseline.fukusho_rate]];
+    const cur = cells.map(([k, b]) => {
+      const v = parseFloat(String(lb[k] || '').replace('%', ''));
+      const cls = isNaN(v) ? '' : (v > b ? 'up' : v < b ? 'dn' : '');
+      return `<td class="${cls}">${isNaN(v) ? '—' : v.toFixed(1) + '%'}</td>`;
+    }).join('');
+    const avg = cells.map(([, b]) => `<td>${b.toFixed(1)}%</td>`).join('');
+    return `<div class="rk2 ${d.cls}${d.delta === best ? ' top' : ''}">
+      <div class="r1"><span class="st">${escapeHtml(d.style)}</span>
+        <span class="cnt">${hs.length}頭</span>
+        <span class="jd">${escapeHtml(d.label)}</span>
+        <span class="dt">${d.delta > 0 ? '+' : ''}${d.delta.toFixed(1)}pt</span></div>
+      <table class="rt3"><thead><tr><th class="l"></th>
+        <th>勝率</th><th>連対</th><th>複勝</th></tr></thead>
+        <tbody><tr class="cur"><th class="l">このコース</th>${cur}</tr>
+          <tr class="avg"><th class="l">全コース平均</th>${avg}</tr></tbody></table>
+      <div class="hs">${chips}</div>
+    </div>`;
+  }).join('');
+  return `<div class="subh">脚質</div><div class="rank2">${cards}</div>`;
+}
+
+// §7 逃げ候補・先行圧 ───────────────────────────────────────
+function renderFront20(site) {
+  const p = site.prediction;
+  const d = (p.display || {}).front;
+  const fp = p.front_pressure;
+  if (!d || !fp) return '';
+  const max = d.ppi_max || 1;
+  const pos = (v) => Math.max(0, Math.min(100, v / max * 100));
+  const lo = Math.min(...d.bands), hi = Math.max(...d.bands);
+  const segs = d.bands.map((h, i) => {
+    const w = 100 / d.bands.length;
+    const t = (h - lo) / Math.max(hi - lo, 0.001);
+    return `<i class="sg" style="left:${(i * w).toFixed(1)}%;width:${w.toFixed(1)}%;`
+      + `background:rgba(192,72,58,${(0.10 + t * 0.62).toFixed(2)})"></i>`;
+  }).join('');
+  const ticks = d.bands.map((h, i) => (i % 2 === 1
+    ? `<span class="tk" style="left:${((i + 1) * 100 / d.bands.length).toFixed(1)}%">${Math.round(h * 100)}</span>`
+    : '')).join('');
+  const byNumber = {};
+  site.horses.forEach((h) => { byNumber[h.number] = h; });
+  const nige = scenarioMainNigeSet(p);
+  const mainChips = (fp.main_nige || []).map((s) => {
+    const n = Number(String(s).match(/^\d+/));
+    const h = byNumber[n];
+    return h ? paceHorsePiece(h, true) : '';
+  }).join('');
+  const others = (p.front_runners || [])
+    .filter((fr) => !String(fr.type).startsWith('逃げ'))
+    .map((fr) => byNumber[Number(fr.number)])
+    .filter(Boolean)
+    .map((h) => paceHorsePiece(h, nige.has(h.number))).join('');
+  const lead = d.how === 'cross' ? 'この先行圧と主逃げの頭数だと' : 'この先行圧だと';
+  return `<div class="subh">逃げ候補・先行圧</div>
+    <div class="mt">
+      <div class="m1">${lead}<b>${Math.round(d.h * 100)}%</b>がハイペースだった</div>
+      <div class="mtr">${segs}<i class="pin" style="left:${pos(d.ppi).toFixed(1)}%"></i>
+        <span class="pv" style="left:${pos(d.ppi).toFixed(1)}%">${d.ppi.toFixed(2)}</span></div>
+      <div class="mtk">${ticks}</div>
+      <div class="mlb"><span>先行圧 低い</span><span>高い</span></div>
+    </div>
+    <div class="fh2">
+      <div class="row"><span class="k">主逃げ</span><span class="cnt">${d.nige_n}頭</span>
+        <span class="hs">${mainChips || '<i class="none">—</i>'}</span></div>
+      <div class="row"><span class="k">先行</span>
+        <span class="cnt">${(p.front_runners || []).length - d.nige_n}頭</span>
+        <span class="hs">${others || '<i class="none">—</i>'}</span></div>
+    </div>`;
+}
+
+// §8 展開シナリオ ───────────────────────────────────────────
+function renderScenarioCards20(site) {
+  const p = site.prediction;
+  const grid = p.scenario_grid;
+  const cal = (p.display || {}).scenario;
+  if (!grid || !grid.cells || !grid.cells.length || !cal) return '';
+  const byNumber = {};
+  site.horses.forEach((h) => { byNumber[h.number] = h; });
+  const nige = scenarioMainNigeSet(p);
+  const paceProb = {};
+  grid.cells.forEach((c) => { paceProb[c.code] = c.pace_prob; });
+  // §8.1 ペースは確率の高い上位2つだけ。落としたぶんは出さない
+  const keep = Object.keys(paceProb).sort((a, b) => paceProb[b] - paceProb[a]).slice(0, TOP_PACE_108);
+  // §8.3 前後は実測で較正した値を使う
+  const front = cal.front_by_pace || {};
+  const cellOf = (code, side) => grid.cells.find((c) => c.code === code && c.side === side);
+  const probOf = (code, side) => {
+    const f = front[code] != null ? front[code] : (cellOf(code, '前') || {}).side_prob;
+    return paceProb[code] * (side === '前' ? f : 1 - f);
+  };
+  let topKey = null, topVal = -1;
+  keep.forEach((k) => ['前', '後'].forEach((sd) => {
+    const v = probOf(k, sd);
+    if (v > topVal) { topVal = v; topKey = `${k}|${sd}`; }
+  }));
+  // 通過タイムはペースごとに違う。main/sub/other が持っているものを符号で引く
+  const pts = {};
+  ['main', 'sub', 'other'].forEach((key) => {
+    const s = (p.scenario || {})[key] || {};
+    if (s.code && s.pass_time && s.pass_time.sec != null && !pts[s.code]) pts[s.code] = s.pass_time;
+  });
+
+  const cards = keep.map((k) => {
+    const f = front[k] != null ? front[k] : (cellOf(k, '前') || {}).side_prob;
+    const chips = (side) => {
+      const c = cellOf(k, side) || {};
+      const hs = (c.horses || []).map((x) => byNumber[x.number]).filter((h) => h && !h.scratched);
+      const shown = hs.slice(0, 6).map((h) => paceHorsePiece(h, nige.has(h.number))).join('');
+      return shown + (hs.length > 6 ? `<span class="more">＋${hs.length - 6}</span>` : '');
+    };
+    const pt = pts[k];
+    const on = (sd) => (topKey === `${k}|${sd}` ? ' on' : '');
+    return `<div class="pc${topKey && topKey.startsWith(`${k}|`) ? ' on' : ''}">
+      <div class="pch"><span class="nm">${PACE_LABEL_108[k]}</span>
+        <span class="sb">${PACE_SUB_108[k]}</span>
+        ${pt ? `<span class="pt">${pt.point_m}m通過 約${pt.sec}秒</span>` : ''}
+        <span class="pp">${Math.round(paceProb[k] * 100)}%</span></div>
+      <div class="split"><i class="f" style="width:${(f * 100).toFixed(1)}%">
+          前残り ${Math.round(f * 100)}%</i>
+        <i class="r" style="width:${((1 - f) * 100).toFixed(1)}%">
+          差し・追込 ${Math.round((1 - f) * 100)}%</i></div>
+      <div class="pcb">
+        <div class="side f${on('前')}"><span class="v">${Math.round(probOf(k, '前') * 100)}%</span>
+          <div class="hs">${chips('前')}</div></div>
+        <div class="side r${on('後')}"><span class="v">${Math.round(probOf(k, '後') * 100)}%</span>
+          <div class="hs">${chips('後')}</div></div>
+      </div>
+    </div>`;
+  }).join('');
+  return `<div class="subh">展開シナリオ</div><div class="pcwrap p1">${cards}</div>`;
+}
+
 function renderOverview20(site) {
   const r = site.race;
   const p = site.prediction;
@@ -2393,22 +2875,20 @@ function renderOverview20(site) {
   const byNumberOv = {};
   for (const h of site.horses) byNumberOv[h.number] = h;
 
-  // (a) 基本情報
-  const babaLine = p.baba_detail?.going_weather ?? r.going ?? '—';
-  sections.push(`
-    <div class="info1">
-      <div class="irow"><b>コース</b> ${escapeHtml(r.track)} ${escapeHtml(r.surface)}${r.distance}m・${escapeHtml(r.direction)}</div>
-      <div class="irow"><b>馬場</b> ${escapeHtml(babaLine)}</div>
-      <div class="irow"><b>頭数</b> ${r.field_size}頭</div>
-      <div class="irow"><b>クラス</b> ${escapeHtml(r.class)}${r.weight_rule ? '・' + escapeHtml(r.weight_rule) : ''}</div>
-    </div>
-  `);
+  // (a) 108-spec §2/T3: 基本情報4行（.info1）は renderHeader20 へ移した。ここでは出さない。
+  //     代わりに先頭へ「コースの形」を置く（§3）。display が無い旧データでは空文字が返る。
+  sections.push(renderCourseShape20(site));
 
   // (b) 馬場踏み込み
   // 2026-08-01: クッション値をJRA公式から測定時刻つきで取れるようになり、過去4年ぶんも
   // 揃ったので「前日からの変化」「その競馬場の平年比」まで出す。いずれも観測された事実で、
   // どの馬が有利かの主張はしない（馬場適性は予測力ゼロと確定しているため）。
-  if (p.baba_detail) {
+  // 108-spec §4/T5: display と新しい baba_detail がそろえば新ブロック。
+  // 無ければ下の旧ブロックへ落ちる（93-spec §7 と同じ縮退）。
+  const baba108 = renderBaba20(site);
+  if (baba108) {
+    sections.push(baba108);
+  } else if (p.baba_detail) {
     const bd = p.baba_detail;
     const favs = bd.favorites || [];
     const favHtml = favs.map((f) => `<span class="fav"><span class="nm">${umaBox(Number(f.number), (byNumberOv[f.number] || {}).gate, 'sm')} ${escapeHtml(f.name)}</span> <span class="rs">（${escapeHtml(f.reason)}）</span></span>`).join('');
@@ -2466,7 +2946,12 @@ function renderOverview20(site) {
   // (c) 脚質傾向（コース別実績の内訳）＋ 脚質マップ（各脚質に出走馬を並べる）
   // 2026-07-27: マップ→傾向 だった並びを逆にした。先にこのコースの傾向を見て、
   // そのあと出走馬がどの脚質に入っているかを見る流れにする。
-  if (p.leg_bias && p.leg_bias.length) {
+  // 108-spec §5/T6: 傾向の表と脚質マップを1ブロックに統合し、判定を全コース平均との差に。
+  // display が無ければ下の旧2ブロックへ落ちる。
+  const leg108 = renderLeg20(site);
+  if (leg108) {
+    sections.push(leg108);
+  } else if (p.leg_bias && p.leg_bias.length) {
     // 数値セルは列ごとに濃淡を付ける（同じ列の脚質どうしの比較。列をまたぐ比較ではない）。
     // 判定ピルは5段階の発散スケールで、マップ側と同じ色。
     const cols = { win_rate: [], rentai_rate: [], fukusho_rate: [] };
@@ -2568,7 +3053,11 @@ function renderOverview20(site) {
   }
 
   // (e) 逃げ候補・先行圧
-  {
+  // 108-spec §7/T7: 3分割ラベルをやめ、実測のハイペース率に置き換える。
+  const front108 = renderFront20(site);
+  if (front108) {
+    sections.push(front108);
+  } else {
     const runners = p.front_runners || [];
     let tableHtml = '';
     if (runners.length) {
@@ -2593,7 +3082,12 @@ function renderOverview20(site) {
 
   // (f) 展開シナリオ。93-pace-scenario-6cell-spec.md §6-0-1: 案22（6マス・主役カード）。
   // scenario_grid が無い過去公開分（§7「再生成しない」）は旧3ブロック表示のまま併存させる。
-  if (p.scenario_grid && p.scenario_grid.cells && p.scenario_grid.cells.length === 6) {
+  // 108-spec §8: 上位2ペースの2枚カード（配色P1・前後は実測で較正）。
+  // 較正表が引けない旧データは6マス、6マスも無ければ旧3ブロック。
+  const scn108 = renderScenarioCards20(site);
+  if (scn108) {
+    sections.push(scn108);
+  } else if (p.scenario_grid && p.scenario_grid.cells && p.scenario_grid.cells.length === 6) {
     sections.push(renderScenarioGrid20(site));
   } else if (p.scenario) {
     sections.push(renderScenarioLegacy20(site));

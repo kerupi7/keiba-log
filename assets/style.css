@@ -1988,3 +1988,270 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
 /* 脚の役割チップ（本線／保険／上乗せ） */
 .ak-wrap .mainchip.guard{background:#0b6b3a}
 .ak-wrap .mainchip.boost{background:#7a6000}
+
+
+/* ══════════════════════════════════════════════════════════════════
+   展開タブ 作り直し（docs/keiba-log-design/108-tenkai-tab-redesign-spec.md）
+   2026-08-05。既存の .race20 スコープに足すだけで、旧クラスは1つも消していない
+   （旧データのレースは旧クラスのまま描かれる）。
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ── §2 レース見出し ── */
+.race20 .rhead.h2{padding:14px 2px 0}
+.race20 .rhead.h2 .ttlrow{display:flex;align-items:center;gap:7px}
+.race20 .rhead.h2 .gb2{flex:none;font-size:11px;font-weight:800;letter-spacing:.04em;
+  color:#fff;background:var(--navy);border-radius:3px;padding:2px 7px;line-height:1.25}
+.race20 .rhead.h2 .ttl{font-size:19px;font-weight:800;letter-spacing:.01em;margin:0}
+.race20 .rhead.h2 .meta{font-size:12px;color:var(--sub);margin-top:4px}
+.race20 .rhead.h2 .meta .dot{color:var(--rule);margin:0 4px}
+.race20 .rhead.h2 .specrow{display:flex;margin-top:9px;border-top:1px solid var(--rule);
+  border-bottom:1px solid var(--rule)}
+.race20 .rhead.h2 .sp{flex:1 1 auto;min-width:0;padding:7px 0 7px 10px;
+  border-left:1px solid var(--rule)}
+.race20 .rhead.h2 .sp:first-child{padding-left:0;border-left:0}
+.race20 .rhead.h2 .sp .k{display:block;font-size:10px;color:var(--cap);font-weight:700;
+  letter-spacing:.03em;margin-bottom:2px}
+.race20 .rhead.h2 .sp .v{font-size:13px;font-weight:700;white-space:nowrap}
+.race20 .rhead.h2 .sp .v .w{font-weight:400;color:var(--sub);font-size:11.5px}
+.race20 .rhead.h2 .sp .v .sf{display:inline-block;font-size:11px;font-weight:800;
+  border-radius:2px;padding:0 4px;margin-right:3px;color:#fff}
+.race20 .rhead.h2 .sp .v .sf.turf{background:var(--turf)}
+.race20 .rhead.h2 .sp .v .sf.dirt{background:var(--dirt)}
+.race20 .rhead.h2 .pt{margin-top:7px;padding-bottom:2px}
+
+/* ── §3 コースの形（C案・mockup-79） ──
+   図・距離・数値の3つを役割で分ける。図には位置しか置かない。
+     1段目 ペース（図の外）
+     2段目 オーバル … ゴール／スタート／4角／回り だけ。寸法線も数値も置かない
+     3段目 距離バー … 距離を実長比で3区間に割る
+     4段目 チップ   … 内外の枠と諸元。**内外の色は値で決める**（内=緑の固定はしない） */
+.race20 .paceline{display:flex;align-items:baseline;justify-content:center;gap:8px;
+  margin:2px 0 2px}
+.race20 .paceline b{font-size:15px;font-weight:800;color:#003E70}
+.race20 .paceline span{font-size:11px;color:var(--sub);
+  font-variant-numeric:tabular-nums}
+.race20 svg.tk2{width:100%;height:auto;display:block;margin:2px auto 0}
+.race20 svg.tk2 .c2{font-size:10.5px;fill:#6E6E68;text-anchor:middle}
+/* 目盛りはコース上のどこにでも置くので、矩形ではなく法線方向の線で引く */
+.race20 svg.tk2 .tkm{stroke:#333;stroke-width:2.5;stroke-linecap:butt;fill:none}
+.race20 svg.tk2 .tkm.st{stroke:#B26B00}
+.race20 svg.tk2 .tk{fill:#333}
+.race20 svg.tk2 .tk.st{fill:#B26B00}
+.race20 svg.tk2 .tkl{font-size:9.5px;font-weight:700;text-anchor:middle;fill:#333}
+.race20 svg.tk2 .tkl.st{fill:#B26B00}
+.race20 svg.tk2 .tkl.cn{fill:#8b8b84;font-weight:400}
+.race20 svg.tk2 .lp{font-size:11px;text-anchor:middle;fill:#8b8b84;letter-spacing:.08em}
+/* 回りの向きは2本の矢印で示す。1本だけだと読み違える */
+.race20 svg.tk2 .arw2{stroke:#5C5C5C;stroke-width:1.6;fill:none}
+/* 距離バー。数字は帯の中に置く。ただし1区間目は距離の 5.0%（東京芝2000m）まで
+   細くなり、そこには数字が入らない。**入る区間だけ帯の中**に置き、入らない区間は
+   帯の下に色見本つきで出す（全105距離のうち26距離で1区間だけ下に出る）。 */
+.race20 .dwrap{margin-top:9px}
+.race20 .dbar{display:flex;border-radius:4px;overflow:hidden;height:40px}
+.race20 .dbar .sg{display:flex;flex-direction:column;align-items:center;
+  justify-content:center;min-width:0;overflow:hidden}
+.race20 .dbar .sl{font-size:8.5px;color:var(--sub);white-space:nowrap;line-height:1.3}
+.race20 .dbar .sv{font-size:12px;font-weight:800;color:var(--text);white-space:nowrap;
+  font-variant-numeric:tabular-nums;line-height:1.3}
+.race20 .dbar .sa{background:#E8CFAE}
+.race20 .dbar .sb{background:#E4E4DF}
+.race20 .dbar .sc{background:#C3D6E8}
+.race20 .dbar .sc .sl{color:#4A7BA5}
+.race20 .dbar .sa .sl{color:#9A7442}
+.race20 .dlgd{display:flex;flex-wrap:wrap;gap:2px 12px;margin-top:6px}
+.race20 .dlgd .dl{display:inline-flex;align-items:center;gap:4px;font-size:11px;
+  color:var(--sub);white-space:nowrap}
+.race20 .dlgd .dl i{width:9px;height:9px;border-radius:2px;flex:none}
+.race20 .dlgd .dl b{font-weight:800;color:var(--text);font-variant-numeric:tabular-nums}
+.race20 .dlgd .sa i{background:#E8CFAE}
+.race20 .dlgd .sb i{background:#E4E4DF}
+.race20 .dlgd .sc i{background:#C3D6E8}
+.race20 .geochips{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.race20 .geochips .gc{font-size:11px;font-weight:700;line-height:1;padding:5px 7px;
+  border-radius:3px;background:var(--sub-bg2);white-space:nowrap;
+  font-variant-numeric:tabular-nums}
+.race20 .geochips .gc .k{color:var(--cap);font-weight:400;margin-right:4px}
+.race20 .geochips .gc.gdir{background:#E8EEF4;color:#003E70}
+.race20 .geochips .gc.gb1{background:#CBE5D6;color:#1F7A4D}
+.race20 .geochips .gc.gb1 .k{color:#3F8C63}
+.race20 .geochips .gc.gb2{background:#E3F0E7;color:#2F8B5C}
+.race20 .geochips .gc.gb2 .k{color:#5FA37E}
+.race20 .geochips .gc.gb3{background:#EDEDEA;color:#5C5C5C}
+.race20 .geochips .gc.gb4{background:#F7DEDE;color:#B03A3A}
+.race20 .geochips .gc.gb4 .k{color:#C46B6B}
+.race20 .geochips .gc.gb5{background:#F0C9C9;color:#8E2A2A}
+.race20 .geochips .gc.gb5 .k{color:#B05A5A}
+
+/* ── §4 馬場（クッション値） ── */
+.race20 .babadetail.v2{padding:10px 11px 11px}
+.race20 .babadetail.v2 .l1{display:flex;flex-wrap:wrap;align-items:center;gap:7px;
+  margin-bottom:2px}
+.race20 .babadetail.v2 .l1 .lv{font-size:12.5px;font-weight:800;border-radius:3px;
+  padding:2px 8px;line-height:1.35}
+.race20 .babadetail.v2 .l1 .lv.m2{background:#2E6DA4;color:#fff}
+.race20 .babadetail.v2 .l1 .lv.m1{background:#DCE8F3;color:#2E6DA4}
+.race20 .babadetail.v2 .l1 .lv.z0{background:#EDEDEA;color:#5C5C5C}
+.race20 .babadetail.v2 .l1 .lv.p1{background:#F6E4D6;color:#A8632B}
+.race20 .babadetail.v2 .l1 .lv.p2{background:#B26B00;color:#fff}
+.race20 .babadetail.v2 .l1 .hd{font-size:12.5px;color:var(--text)}
+.race20 .babadetail.v2 .l1 .hd b{font-variant-numeric:tabular-nums}
+.race20 .babadetail.v2 .l1 .tl{font-size:11.5px;color:var(--sub)}
+.race20 .babadetail.v2 .l3{margin-top:7px;border-top:1px solid #dbe6f0;padding-top:6px}
+.race20 .cscale{margin-top:13px}
+.race20 .cscale .lbl{display:flex;justify-content:space-between;font-size:10px;
+  color:var(--cap);margin-bottom:3px}
+.race20 .cscale .lbl .soft{color:#2E6DA4} .race20 .cscale .lbl .hard{color:#B26B00}
+.race20 .cscale .tr{position:relative;height:10px;border-radius:5px;
+  background:linear-gradient(90deg,#DCE8F3 0%,#EFEFEC 50%,#F6E4D6 100%);margin:14px 0 0}
+.race20 .cscale .tr .band{position:absolute;top:0;bottom:0;background:rgba(90,90,85,.20);
+  border-radius:2px}
+.race20 .cscale .tr .nm{position:absolute;top:-4px;bottom:-4px;width:2px;margin-left:-1px;
+  background:#5C5C5C}
+.race20 .cscale .below{position:relative;height:13px;margin-top:1px}
+.race20 .cscale .below .pv{position:absolute;top:0;width:0;height:0;margin-left:-4px;
+  border-left:4px solid transparent;border-right:4px solid transparent;
+  border-bottom:5px solid #9a9a94}
+.race20 .cscale .below .pvl{position:absolute;top:5px;transform:translateX(-50%);
+  font-size:9.5px;color:var(--cap);white-space:nowrap;font-variant-numeric:tabular-nums}
+.race20 .cscale .tr .td{position:absolute;top:50%;width:16px;height:16px;border-radius:50%;
+  margin:-8px 0 0 -8px;border:3px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.10)}
+.race20 .cscale .tr .td.m2{background:#2E6DA4} .race20 .cscale .tr .td.m1{background:#6C9BC4}
+.race20 .cscale .tr .td.z0{background:#5C5C5C} .race20 .cscale .tr .td.p1{background:#C98B4E}
+.race20 .cscale .tr .td.p2{background:#B26B00}
+.race20 .cscale .tr .tdl{position:absolute;top:-20px;transform:translateX(-50%);
+  font-size:13px;font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap}
+.race20 .cscale .ends{position:relative;display:flex;justify-content:space-between;
+  font-size:10px;color:var(--cap);margin-top:5px;font-variant-numeric:tabular-nums}
+.race20 .cscale .ends .nml{position:absolute;transform:translateX(-50%);color:#5C5C5C;
+  white-space:nowrap}
+.race20 .cscale .cnote{font-size:10.5px;color:var(--cap);line-height:1.7;margin-top:16px}
+.race20 .babadetail.v2 .striplegend{margin-top:8px;border-top:1px solid #dbe6f0;padding-top:6px}
+
+/* ── §4.3 この馬場だと、こうなりやすい ── */
+.race20 .outlook{margin-top:12px;border-top:1px solid #dbe6f0;padding-top:9px}
+.race20 .outlook .oh{font-size:10.5px;font-weight:800;letter-spacing:.05em;color:var(--cap);
+  margin-bottom:6px}
+.race20 .outlook .ots{display:flex;gap:6px}
+.race20 .outlook .ot{flex:1;min-width:0;background:#fff;border-radius:4px;padding:7px 8px 8px;
+  box-shadow:inset 0 0 0 1px #dbe6f0}
+.race20 .outlook .ot .ttl{display:block;font-size:10px;color:var(--cap);font-weight:700}
+.race20 .outlook .ot .v{display:block;font-size:17px;font-weight:800;line-height:1.25;
+  margin-top:2px;font-variant-numeric:tabular-nums}
+.race20 .outlook .ot .w{display:block;font-size:11.5px;font-weight:700}
+.race20 .outlook .ot .n{display:block;font-size:9.5px;color:var(--cap);margin-top:3px;line-height:1.5}
+.race20 .outlook .ot.p1 .v,.race20 .outlook .ot.p1 .w{color:#0F6A34}
+.race20 .outlook .ot.m1 .v,.race20 .outlook .ot.m1 .w{color:#A8632B}
+.race20 .outlook .ot.z0 .v{color:var(--text)} .race20 .outlook .ot.z0 .w{color:var(--sub)}
+.race20 .outlook .onote{font-size:10.5px;color:var(--cap);line-height:1.7;margin-top:7px}
+.race20 .outlook .onote b{color:var(--text)}
+.race20 .outlook .ocap{font-size:10px;color:var(--cap);line-height:1.7;margin-top:5px}
+
+/* ── §5 脚質 ── */
+.race20 .rank2{margin-top:4px}
+.race20 .rk2{padding:8px 9px 9px;border-radius:5px;margin-bottom:5px;
+  background:var(--jbg,#F1F1EE)}
+.race20 .rk2.top{box-shadow:inset 0 0 0 2px var(--jbar,#B4B4AC)}
+.race20 .rk2 .r1{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}
+.race20 .rk2 .r1 .st{font-size:14px;font-weight:800}
+.race20 .rk2 .r1 .cnt{font-size:10.5px;color:var(--cap)}
+.race20 .rk2 .r1 .jd{font-size:11px;font-weight:700;color:var(--jfg,var(--cap))}
+.race20 .rk2 .r1 .dt{margin-left:auto;font-size:13px;font-weight:800;
+  color:var(--jfg,var(--cap));font-variant-numeric:tabular-nums}
+/* 3列×2行の小さな表。行見出しがあるので、何と比べているかが本文なしで分かる */
+.race20 table.rt3{width:100%;border-collapse:collapse;margin:6px 0 2px;
+  font-variant-numeric:tabular-nums;background:none}
+.race20 table.rt3 th,.race20 table.rt3 td{border:0;padding:2px 4px;text-align:right;
+  white-space:nowrap;background:none}
+.race20 table.rt3 thead th{font-size:10px;color:var(--cap);font-weight:700;
+  border-bottom:1px solid rgba(90,90,85,.18)}
+.race20 table.rt3 th.l{text-align:left;font-size:10px;color:var(--cap);font-weight:400;
+  width:5.6em}
+.race20 table.rt3 tr.cur td{font-size:13.5px;font-weight:800;color:var(--text);padding-top:4px}
+.race20 table.rt3 tr.cur td.up{color:#0C5C2D}
+.race20 table.rt3 tr.cur td.dn{color:#A32B1F}
+.race20 table.rt3 tr.avg td{font-size:11px;color:var(--cap);font-weight:400}
+.race20 .rk2 .hs{display:flex;flex-wrap:wrap;gap:1px 0;margin-top:6px}
+.race20 .rk2 .hs .pz{display:inline-flex;flex-direction:column;align-items:center;width:26px}
+.race20 .rk2 .hs .pz .mk{height:12px;line-height:12px;font-size:11px;font-weight:700}
+.race20 .rk2 .hs .pz.jirai .hn{box-shadow:0 0 0 2px var(--live)}
+.race20 .rk2 .hs .pz.nige .hn{box-shadow:0 0 0 2px var(--orange)}
+.race20 .rk2 .hs .none{font-size:11px;color:var(--cap)}
+.race20 .rk2.p2{--jbg:#CBE5D6;--jfg:#0C5C2D;--jbar:#2E7D4F}
+.race20 .rk2.p1{--jbg:#E7F3EA;--jfg:#276B43;--jbar:#5FA07A}
+.race20 .rk2.z0{--jbg:#F1F1EE;--jfg:#6E6E68;--jbar:#B4B4AC}
+.race20 .rk2.m1{--jbg:#FBE9E9;--jfg:#A83232;--jbar:#D08A8A}
+.race20 .rk2.m2{--jbg:#F6D5D5;--jfg:#A32B1F;--jbar:#C05B4B}
+
+/* ── §7 逃げ候補・先行圧（メーター） ── */
+.race20 .mt{margin-top:5px}
+.race20 .mt .m1{font-size:12.5px;color:var(--sub);margin-bottom:7px}
+.race20 .mt .m1 b{font-size:17px;color:#A32B1F;font-variant-numeric:tabular-nums}
+.race20 .mtr{position:relative;height:16px;border-radius:3px;overflow:hidden;background:#F1F1EE}
+.race20 .mtr .sg{position:absolute;top:0;bottom:0}
+.race20 .mtr .pin{position:absolute;top:-3px;bottom:-3px;width:3px;margin-left:-1.5px;
+  background:#003E70;border-radius:2px;z-index:2}
+.race20 .mtr .pv{position:absolute;top:-17px;transform:translateX(-50%);font-size:11.5px;
+  font-weight:800;color:#003E70;font-variant-numeric:tabular-nums}
+.race20 .mtk{position:relative;height:12px;margin-top:2px;font-size:9px;color:var(--cap);
+  font-variant-numeric:tabular-nums}
+.race20 .mtk .tk{position:absolute;transform:translateX(-50%)}
+.race20 .mlb{display:flex;justify-content:space-between;font-size:10px;color:var(--cap)}
+.race20 .fh2{margin-top:10px;border-top:1px solid var(--rule)}
+.race20 .fh2 .row{display:flex;align-items:center;gap:8px;min-height:38px;padding:4px 0;
+  border-bottom:1px solid var(--rule)}
+.race20 .fh2 .row .k{flex:none;width:3.6em;font-size:11.5px;font-weight:700}
+.race20 .fh2 .row .cnt{flex:none;width:2.6em;text-align:right;font-size:12.5px;font-weight:800;
+  font-variant-numeric:tabular-nums}
+.race20 .fh2 .row .hs{flex:1;min-width:0;display:flex;flex-wrap:wrap;align-items:center;gap:1px 0}
+.race20 .fh2 .row .hs .none{font-size:11px;color:var(--cap);font-style:normal}
+.race20 .fh2 .row .pz{display:inline-flex;flex-direction:column;align-items:center;width:24px}
+.race20 .fh2 .row .pz .mk{height:10px;line-height:10px;font-size:9px;font-weight:700}
+.race20 .fh2 .row .pz.nige .hn{box-shadow:0 0 0 2px var(--orange)}
+
+/* ── §8 展開シナリオ（2枚カード） ── */
+.race20 .pcwrap{margin-top:5px}
+.race20 .pc{border:1px solid var(--rule);border-radius:6px;margin-bottom:7px;overflow:hidden}
+.race20 .pc.on{border-color:var(--navy)}
+.race20 .pch{display:flex;align-items:baseline;gap:6px;padding:7px 9px;background:var(--sub-bg)}
+.race20 .pc.on .pch{background:#E8EFF6}
+.race20 .pch .nm{font-size:13.5px;font-weight:800}
+.race20 .pch .sb{font-size:10px;color:var(--cap)}
+.race20 .pch .pp{margin-left:auto;font-size:16px;font-weight:800;color:var(--navy);
+  font-variant-numeric:tabular-nums}
+.race20 .pc .split{display:flex;height:20px;font-size:10px;font-weight:700;color:#fff}
+.race20 .pc .split i{display:flex;align-items:center;padding:0 7px;font-style:normal;
+  overflow:hidden;white-space:nowrap}
+.race20 .pc .split .f{background:#9BB0C4}
+.race20 .pc .split .r{background:#003E70;justify-content:flex-end}
+.race20 .pcb{display:flex}
+.race20 .pcb .side{flex:1;min-width:0;padding:7px 8px 8px}
+.race20 .pcb .side + .side{border-left:1px solid var(--rule)}
+.race20 .pcb .side.on{background:#F4F8FC}
+.race20 .pcb .side .v{font-size:17px;font-weight:800;color:var(--navy);
+  font-variant-numeric:tabular-nums}
+.race20 .pcb .side .hs{display:flex;flex-wrap:wrap;gap:1px 0;margin-top:4px}
+.race20 .pcb .side .hs .pz{display:inline-flex;flex-direction:column;align-items:center;width:24px}
+.race20 .pcb .side .hs .pz .mk{height:11px;line-height:11px;font-size:10px;font-weight:700}
+.race20 .pcb .side .hs .pz.jirai .hn{box-shadow:0 0 0 2px var(--live)}
+.race20 .pcb .side .hs .pz.nige .hn{box-shadow:0 0 0 2px var(--orange)}
+
+/* ── §8 展開シナリオ（通過タイムを見出しへ） ── */
+.race20 .pch{flex-wrap:wrap;row-gap:1px}
+.race20 .pch .pt{font-size:10px;color:var(--cap);font-variant-numeric:tabular-nums;
+  white-space:nowrap}
+.race20 .pcwrap.p1 .pc.on .pch .pt{color:var(--sub)}
+
+/* ── §8.2 展開シナリオ 配色P1（前残り＝琥珀 / 差し・追込＝青） ── */
+/* 対になる概念を色でも対にする。枠と見出しは無彩色にして、
+   色が意味するのは「前か後ろか」の1つだけにする。P2/P3 は採らない。 */
+.race20 .pcwrap.p1 .pc{border-color:var(--rule)}
+.race20 .pcwrap.p1 .pc.on{border-color:#8a8a84;box-shadow:0 0 0 1px #8a8a84}
+.race20 .pcwrap.p1 .pch{background:#F4F4F2}
+.race20 .pcwrap.p1 .pc.on .pch{background:#EDEDEA}
+.race20 .pcwrap.p1 .pch .pp{color:var(--text)}
+.race20 .pcwrap.p1 .split .f{background:#C08A4E;color:#fff}
+.race20 .pcwrap.p1 .split .r{background:#4E7FA6;color:#fff}
+.race20 .pcwrap.p1 .side.f .v{color:#A8632B}
+.race20 .pcwrap.p1 .side.r .v{color:#2E6DA4}
+.race20 .pcwrap.p1 .side.f.on{background:#F9EFE5}
+.race20 .pcwrap.p1 .side.r.on{background:#EAF1F7}
