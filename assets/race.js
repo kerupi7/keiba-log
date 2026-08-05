@@ -1769,6 +1769,15 @@ function goingShort(g) {
   return { '稍重': '稍', '不良': '不' }[g] || (g || '');
 }
 
+// レース名（mockup-52 案B）。1行目の余った幅に置き、入らない分は「…」で切る。
+// クラス名は .rnm。.rn は一覧ページのレース番号チップ（幅44px固定）で使用済みのため使えない。
+// 切れた名前は馬名ポップアップの「過去5走」表に全文が出る。
+function runNameSpan(raceName) {
+  const n = stripClassSuffix(raceName);
+  if (!n) return '';
+  return `<span class="rnm" title="${escapeHtml(n)}">${escapeHtml(n)}</span>`;
+}
+
 // §5.2: 過去走1マス（6〜7行）
 function runCell(p) {
   const cond = `${escapeHtml(surfShort(p.surface))}${escapeHtml(p.distance || '')}${escapeHtml(goingShort(p.condition))}`;
@@ -1783,7 +1792,7 @@ function runCell(p) {
   const row7 = notes
     ? `<div class="r7"${p.note_text ? ` title="${escapeHtml(p.note_text)}"` : ''}>${notes}</div>` : '';
   return `<div class="rcell${runBandClass(p)}">
-    <div class="r1"><span class="dt">${shutubaMd(p.date)}</span><span class="tk">${escapeHtml(p.track || '')}</span>${classBadge(p.grade, p.race_name)}</div>
+    <div class="r1"><span class="dt">${shutubaMd(p.date)}</span><span class="tk">${escapeHtml(p.track || '')}</span>${classBadge(p.grade, p.race_name)}${runNameSpan(p.race_name)}</div>
     <div class="r2">${shutubaFinBox(p.finish)}<span class="nm">${escapeHtml(p.runners ?? '—')}頭</span><span class="nm">${p.gate != null ? escapeHtml(String(p.gate)) : '—'}番</span><span class="nm">${escapeHtml(p.popularity ?? '—')}人</span></div>
     <div class="r3"><span class="cd">${cond}</span>${rankSpan(p.time ?? '—', p.time_grade || '', timeTitle)}</div>
     <div class="r4"><span class="jk">${escapeHtml(p.jockey ?? '—')}</span><span class="kg">${kg}</span><span class="bw">${bw}</span></div>
