@@ -1456,7 +1456,23 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
    105-spec: 出馬表ワンシート化（1頭1行・過去5走を常時セル表示・
    買える／消せるの10項目・馬名ポップアップ）。97-spec を置き換え。
    ============================================================ */
-.race20 .shwrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-top:8px}
+/* touch-action: 1本指のスクロールは残し、2本指ピンチだけJS側で拾う（ページ全体の
+   ピンチにさらわれると表だけを拡大できないため）。 */
+.race20 .shwrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-top:8px;
+  touch-action:pan-x pan-y;overscroll-behavior-x:contain}
+/* 拡大は transform でなく zoom。表の実寸そのものが変わるので、横スクロールの幅も
+   下に続く要素の位置も自動で追従する（transform:scale だとどちらもズレる） */
+.race20 .shzoom{zoom:1}
+/* ズーム操作（.shctl の左側。買える／消せるボタンは .allbtn で右端に残る） */
+.race20 .shzc{display:flex;align-items:center;gap:4px}
+.race20 .shzc .zl{font-size:10.5px;color:var(--cap);margin-right:2px}
+.race20 .shzc .zv{font-size:11px;font-weight:700;color:var(--navy);
+  min-width:3.2em;text-align:center;font-variant-numeric:tabular-nums}
+.race20 .shzc button{font:inherit;font-size:12px;font-weight:700;line-height:1;
+  color:var(--cta);background:#fff;border:1px solid var(--rule);border-radius:4px;
+  width:28px;height:24px;cursor:pointer;padding:0}
+.race20 .shzc button.zr{width:auto;font-size:10.5px;padding:0 7px}
+.race20 .shzc button:active{background:#F0F4F8}
 /* 割合ではなく固定pxで組む。画面が狭いときは列を縮めず、表ごと横スクロールする */
 .race20 table.unified{border-collapse:collapse;font-size:12.5px;table-layout:fixed;margin-top:0}
 .race20 table.unified th{background:var(--navy);color:#fff;font-size:11px;font-weight:700;

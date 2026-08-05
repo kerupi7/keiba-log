@@ -1906,10 +1906,19 @@ function renderShutuba20(site) {
   const toggleBtn = hasItemMarks
     ? '<div class="allbtn"><button type="button" data-chips="toggle">買える／消せるを開く</button></div>' : '';
 
+  const zoomCtl = `<div class="shzc">
+      <span class="zl">表の大きさ</span>
+      <button type="button" data-zoom="out" aria-label="小さく">−</button>
+      <span class="zv" data-zoom="value">100%</span>
+      <button type="button" data-zoom="in" aria-label="大きく">＋</button>
+      <button type="button" class="zr" data-zoom="reset">等倍</button>
+    </div>`;
+
   return `
     <div class="secthead">出馬表<span class="cnt">全${site.race.field_size}頭・馬番順</span></div>
-    <div class="shctl">${toggleBtn}</div>
+    <div class="shctl">${zoomCtl}${toggleBtn}</div>
     <div class="shwrap">
+      <div class="shzoom">
       <table class="unified${hasItemMarks ? ' hide-chips' : ''}">
         <colgroup><col class="c-mk"><col class="c-no"><col class="c-nm">
           <col class="c-tot"><col class="c-od">${chipsCol}<col class="c-runs"></colgroup>
@@ -1919,14 +1928,99 @@ function renderShutuba20(site) {
         </tr></thead>
         <tbody>${rows}</tbody>
       </table>
+      </div>
     </div>
     ${popups}
   `;
 }
 
+// 出馬表のピンチズーム。CSS の zoom を使う（transform:scale と違い、
+// 横スクロールの幅・表の高さがそのまま追従するので、スクロール量の補正が要らない）。
+const SHZ_MIN = 0.5;
+const SHZ_MAX = 2.0;
+const SHZ_KEY = 'ans.shutuba.zoom';
+
+function setupShutubaZoom(root) {
+  const wrap = root.querySelector('.shwrap');
+  const zoom = root.querySelector('.shzoom');
+  if (!wrap || !zoom) return;
+
+  const label = root.querySelector('[data-zoom="value"]');
+  let z = 1;
+  try {
+    const saved = parseFloat(localStorage.getItem(SHZ_KEY));
+    if (saved >= SHZ_MIN && saved <= SHZ_MAX) z = saved;
+  } catch (e) { /* localStorage が使えない環境では等倍のまま */ }
+
+  // 1%刻みに丸める。+0.1 を繰り返すと 1.2000000000000002 のような値が残るため
+  const clamp = (v) => Math.round(Math.min(SHZ_MAX, Math.max(SHZ_MIN, v)) * 100) / 100;
+
+  // anchorX = wrap の左端から測った、拡大の中心にしたい画面上の位置(px)。
+  // 省略時は表示中の中央を保つ。
+  function apply(next, anchorX) {
+    const prev = z;
+    z = clamp(next);
+    if (z === prev) return;
+    const ax = anchorX == null ? wrap.clientWidth / 2 : anchorX;
+    zoom.style.zoom = z;
+    wrap.scrollLeft = (wrap.scrollLeft + ax) * (z / prev) - ax;
+    if (label) label.textContent = `${Math.round(z * 100)}%`;
+    try { localStorage.setItem(SHZ_KEY, String(z)); } catch (e) { /* 保存できなくても動作は変わらない */ }
+  }
+
+  zoom.style.zoom = z;
+  if (label) label.textContent = `${Math.round(z * 100)}%`;
+
+  root.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-zoom]');
+    if (!btn || btn.tagName !== 'BUTTON') return;
+    const act = btn.dataset.zoom;
+    if (act === 'in') apply(z + 0.1);
+    else if (act === 'out') apply(z - 0.1);
+    else if (act === 'reset') apply(1);
+  });
+
+  // 2本指ピンチ。touch-action:pan-x pan-y でブラウザ側のピンチを切ってあるので、
+  // 1本指の縦横スクロールはそのまま残り、2本指だけこちらで拾う。
+  let d0 = 0;
+  let z0 = 1;
+  let anchor = 0;
+  const dist = (t) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+
+  wrap.addEventListener('touchstart', (e) => {
+    if (e.touches.length !== 2) { d0 = 0; return; }
+    d0 = dist(e.touches);
+    z0 = z;
+    anchor = (e.touches[0].clientX + e.touches[1].clientX) / 2 - wrap.getBoundingClientRect().left;
+  }, { passive: true });
+
+  wrap.addEventListener('touchmove', (e) => {
+    if (e.touches.length !== 2 || !d0) return;
+    e.preventDefault();
+    apply(z0 * (dist(e.touches) / d0), anchor);
+  }, { passive: false });
+
+  wrap.addEventListener('touchend', () => { d0 = 0; });
+
+  // iOS Safari は touch-action とは別に gesture 系も投げてくる。ここで止めないと
+  // 表を広げたつもりがページ全体の拡大になることがある（拡大の実行は touchmove 側）
+  for (const ev of ['gesturestart', 'gesturechange', 'gestureend']) {
+    wrap.addEventListener(ev, (e) => e.preventDefault());
+  }
+
+  // トラックパッドのピンチ・Ctrl+ホイール（PC）
+  wrap.addEventListener('wheel', (e) => {
+    if (!e.ctrlKey) return;
+    e.preventDefault();
+    apply(z * (1 - e.deltaY * 0.01), e.clientX - wrap.getBoundingClientRect().left);
+  }, { passive: false });
+}
+
 function setupShutuba20() {
   const root = document.querySelector('.race20');
   if (!root) return;
+
+  setupShutubaZoom(root);
 
   const table = root.querySelector('table.unified');
   const chipsBtn = root.querySelector('[data-chips]');
