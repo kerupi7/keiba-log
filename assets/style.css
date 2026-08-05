@@ -1453,68 +1453,46 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
 .rv-psrc{color:var(--cap);font-size:11px;margin-left:4px;}
 
 /* ============================================================
-   105-spec: 出馬表ワンシート化（1頭1行・過去5走を常時セル表示・
-   買える／消せるの10項目・馬名ポップアップ）。97-spec を置き換え。
+   106-spec: 出馬表の縦スクロール化（1頭1枚の札・馬名は縦書きの柱）。
+   105-spec の1枚表（table.unified・幅1,214px固定）を置き換える。
+   横スクロールは0。PC・スマホとも同じ組み方で、札の幅だけ上限で止める。
    ============================================================ */
-/* 出馬表の覗き窓。虫めがねを当てる紙の側は等倍で固定し、この窓を縦横に動かして読む。
-   高さを 82vh で止めてあるので、拡大しても窓の外（買い目タブ・ページの長さ）は動かない。
-   touch-action: 1本指のスクロールは残し、2本指ピンチだけJS側で拾う（ページ全体の
-   ピンチにさらわれると表だけを拡大できないため）。 */
-.race20 .shwrap{overflow:auto;-webkit-overflow-scrolling:touch;margin-top:8px;
-  max-height:82vh;touch-action:pan-x pan-y;overscroll-behavior:contain}
-/* .shzoom は「拡大後の寸法」だけを持つ土台（幅・高さはJSが入れる）。
-   .shzin が transform:scale の実体で、中の組み方は倍率によらず常に等倍のまま。
-   zoom プロパティは使わない（列幅・行の高さが倍率ごとに組み直されてしまうため）。
-   実寸は .shzin ではなく中の table を測る（.shzin に width:max-content を与えると
-   競走成績セルの中身が絡んで幅が壊れるため、素の block のまま table をはみ出させる）。 */
-.race20 .shzoom{position:relative}
-.race20 .shzin{transform-origin:0 0}
-/* ズーム操作（.shctl の左側。買える／消せるボタンは .allbtn で右端に残る） */
-.race20 .shzc{display:flex;align-items:center;gap:4px}
-.race20 .shzc .zl{font-size:10.5px;color:var(--cap);margin-right:2px}
-.race20 .shzc .zv{font-size:11px;font-weight:700;color:var(--navy);
-  min-width:3.2em;text-align:center;font-variant-numeric:tabular-nums}
-.race20 .shzc button{font:inherit;font-size:12px;font-weight:700;line-height:1;
-  color:var(--cta);background:#fff;border:1px solid var(--rule);border-radius:4px;
-  width:28px;height:24px;cursor:pointer;padding:0}
-.race20 .shzc button.zr{width:auto;font-size:10.5px;padding:0 7px}
-.race20 .shzc button:active{background:#F0F4F8}
-/* 割合ではなく固定pxで組む。画面が狭いときは列を縮めず、表ごと横スクロールする */
-.race20 table.unified{border-collapse:collapse;font-size:12.5px;table-layout:fixed;margin-top:0}
-.race20 table.unified th{background:var(--navy);color:#fff;font-size:11px;font-weight:700;
-  padding:6px 3px;text-align:center;white-space:nowrap}
-.race20 table.unified col.c-mk{width:34px}
-.race20 table.unified col.c-no{width:30px}
-.race20 table.unified col.c-nm{width:190px}
-.race20 table.unified col.c-tot{width:50px}
-.race20 table.unified col.c-od{width:54px}
-.race20 table.unified col.c-chips{width:410px}
-.race20 table.unified col.c-runs{width:856px}
-.race20 table.unified td{border-bottom:1px solid var(--rule);padding:5px 2px;text-align:center;
-  font-variant-numeric:tabular-nums;vertical-align:middle}
-.race20 table.unified th.l,.race20 table.unified td.l{text-align:left}
-.race20 table.unified td.nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-  letter-spacing:-.02em;font-weight:700}
-.race20 table.unified .u{font-size:10px;line-height:1.3;margin-top:1px;color:var(--cap);font-weight:400}
-.race20 table.unified td.rot{font-size:11.5px;color:var(--sub);white-space:nowrap}
-.race20 table.unified td.c-chips{text-align:left;vertical-align:top;padding:4px 5px;white-space:normal}
-.race20 table.unified td.c-runs{text-align:left;vertical-align:top;padding:4px 0}
-/* 買える／消せるは列見出しごと消す（初期状態）。§5.4 */
-.race20 table.unified.hide-chips col.c-chips,
-.race20 table.unified.hide-chips th.c-chips,
-.race20 table.unified.hide-chips td.c-chips{display:none}
-/* 印セルは狭いので、地雷バッジが馬番へかぶらないよう詰める */
-.race20 table.unified td .mkb{min-width:20px;height:20px;font-size:12px}
-/* 能力印と穴は別基準なので同居する。印列は1バッジぶんの幅しかないため縦に積む
-   （mockup-38 案B）。横並びは印列の拡幅＝馬名列を削ることになるので採らない。
-   積んでも行の高さは変わらない（375px/430pxとも48pxのまま） */
-.mkstack{display:inline-flex;flex-direction:column;align-items:center;gap:1px;vertical-align:middle}
-.mkstack .mkb{margin-right:0}
-.race20 .mkb.m-ana.sub{min-width:20px;height:14px;line-height:14px;font-size:9.5px;padding:0}
-.race20 table.unified td .mkb.m-ana.sub{height:14px}
-.race20 table.unified td .mkb.m-jir{font-size:9px;min-width:0;padding:0 2px;letter-spacing:-.02em}
-.race20 tr.hrow.pred td{background:#F4F8FC}
-.race20 tr.hrow.scratched td{color:var(--cap)}
+.race20 .shctl:empty{display:none}
+.race20 .shlist{margin-top:8px;max-width:760px}
+.race20 .acard{display:flex;border:1px solid var(--rule-strong);border-radius:7px;
+  overflow:hidden;background:#fff;margin-bottom:7px}
+.race20 .acard.pred{background:#F4F8FC;border-color:#B9CFE1}
+.race20 .acard.scratched{color:var(--cap)}
+/* 柱（新聞の1頭ぶんの縦帯）。幅28px固定。JRAの馬名は最長9文字なので
+   13px×9＝117px、札の高さ（約340px）に必ず収まる＝縦書きは折り返さない */
+.race20 .aspine{flex:none;width:28px;background:var(--sub-bg);border-right:1px solid var(--rule);
+  display:flex;flex-direction:column;align-items:center;gap:3px;padding:4px 0 6px;
+  border-radius:0;font:inherit;color:inherit;cursor:pointer;text-align:center}
+.race20 .aspine.plain{cursor:default}
+.race20 .aspine .vname{writing-mode:vertical-rl;font-size:13px;font-weight:700;
+  letter-spacing:.01em;line-height:1;margin-top:2px}
+.race20 .aspine .apop{margin-top:auto;font-style:normal;font-size:10px;color:var(--cta);opacity:.7}
+.race20 .aspine:hover .vname{text-decoration:underline}
+.race20 .aspine .mkb{margin-right:0}
+.race20 .aspine .mkb.m-jir{font-size:9px;min-width:0;padding:0 2px;letter-spacing:-.02em}
+.race20 .abody{flex:1 1 auto;min-width:0;padding:4px 5px 5px}
+/* 1行目＝この馬の今日。左に性齢・斤量・騎手・脚質、右端に総合点とオッズ */
+.race20 .ahead{display:flex;align-items:center;gap:5px;font-size:10.5px;color:var(--sub);
+  white-space:nowrap;border-bottom:1px dotted var(--rule);padding-bottom:3px;margin-bottom:3px}
+.race20 .ahead .pa{font-weight:700;color:var(--text)}
+.race20 .ahead .pk{font-variant-numeric:tabular-nums}
+.race20 .ahead .pj{overflow:hidden;text-overflow:ellipsis;max-width:5em}
+.race20 .ahead .tot{margin-left:auto;flex:none;font-weight:700;font-size:12.5px;color:var(--text);
+  font-variant-numeric:tabular-nums;display:flex;align-items:center;gap:3px}
+.race20 .ahead .od{flex:none;font-weight:700;font-size:12.5px;color:var(--text);
+  font-variant-numeric:tabular-nums;display:flex;align-items:baseline;gap:2px}
+.race20 .ahead .od i{font-style:normal;font-size:9.5px;font-weight:400;color:var(--cap)}
+.race20 .ahead .legbar{transform:scale(.85);transform-origin:left center;margin:0 -4px}
+/* 2行目＝馬体重・出走間隔・10項目の点。入らなければ折り返す */
+.race20 .asub{display:flex;align-items:center;flex-wrap:wrap;gap:0 5px;margin-bottom:3px}
+.race20 .asub:empty{display:none}
+.race20 .asub .pw,.race20 .asub .rot{font-size:9.5px;color:var(--cap);
+  font-variant-numeric:tabular-nums;white-space:nowrap}
 .race20 .mut{color:var(--cap)}
 
 /* 地雷・穴の理由文（87-spec §3.2 / 94-spec §3.3）。印列のバッジは記号だけなので、
@@ -1642,10 +1620,6 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
 
 /* 97-spec §9.6: 全開閉ボタン・実績の全部表示（脚質の頭数バンドは撤去） */
 .race20 .shctl{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:8px 0 0}
-.race20 .allbtn{margin-left:auto;display:flex;gap:6px}
-.race20 .allbtn button{font-size:11px;font-weight:700;color:var(--cta);background:#fff;
-  border:1px solid var(--rule);border-radius:4px;padding:3px 9px;cursor:pointer}
-.race20 .allbtn button:active{background:#F0F4F8}
 .race20 .arh{font-size:11px;font-weight:700;color:var(--navy);margin:8px 0 3px}
 .race20 details.arfold{margin-top:8px}
 .race20 details.arfold>summary{font-size:11.5px;color:var(--cta);cursor:pointer;
@@ -1669,28 +1643,14 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
   font-size:10.5px;color:var(--sub);font-variant-numeric:tabular-nums}
 .race20 .prun .p2 .pv{white-space:nowrap}
 
-/* 出馬表の行: 馬名は省略せず、性齢・斤量・騎手・脚質を2行目にまとめる。
-   出走間隔は入りきらず「中」だけに切れていたので3行目へ出した（2026-08-05） */
-.race20 table.unified td.nm{white-space:normal;overflow:visible;text-overflow:clip}
-.race20 table.unified td.nm .prof{display:flex;align-items:center;gap:3px;flex-wrap:nowrap;
-  white-space:nowrap;font-size:9.5px;line-height:1.5;overflow:hidden}
-/* 3行目＝出走間隔。性齢（.pa）の真下に来るよう、左端から書き出す */
-.race20 table.unified td.nm .rotline{font-size:9.5px;line-height:1.5;color:var(--cap);
-  white-space:nowrap;margin-top:0}
-.race20 table.unified td.nm .prof .pw{font-variant-numeric:tabular-nums}
-.race20 table.unified td.nm .legbar{transform:scale(.88);transform-origin:left center;margin:0 -2px}
-.race20 table.unified td{vertical-align:middle}
-
 /* 過去5走の表：狭い画面では横スクロールになるので、その旨を出す */
 .race20 .pthint{font-size:10px;color:var(--cap);margin:2px 0 0}
 @media(min-width:620px){.race20 .pthint{display:none}}
 
-/* 2行目は列を固定幅にして、脚質バーが全馬で縦に揃うようにする */
-.race20 table.unified td.nm .prof .pa{display:inline-block;width:2.3em;flex:none}
-.race20 table.unified td.nm .prof .pk{display:inline-block;width:2.4em;flex:none;
-  text-align:right;font-variant-numeric:tabular-nums}
-.race20 table.unified td.nm .prof .pj{display:inline-block;width:4em;flex:none;
-  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* 106-spec §5.1: 性齢・斤量は幅を固定して、脚質バーが全馬で縦に揃うようにする */
+.race20 .ahead .pa{display:inline-block;width:2.3em;flex:none}
+.race20 .ahead .pk{display:inline-block;width:2.4em;flex:none;text-align:right}
+.race20 .ahead .pj{display:inline-block;width:4em;flex:none}
 
 /* コーナー通過順位が枠からはみ出ないよう折り返す（馬群のかたまりは割らない） */
 .race20 .rv-ctbl td.rv-seq{white-space:normal}
@@ -1702,47 +1662,43 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
 .race20 table.pastt tr.pb-close td{background:#DCEBFA}
 .race20 table.pastt tr.pb-close td:first-child{box-shadow:inset 4px 0 0 #3D7EBB}
 
-/* 馬名ボタン（105-spec §5.5）。見た目は今までの太字馬名のまま、押せることだけ分かればよい */
-.race20 .nmbtn{border:0;background:none;padding:0;margin:0;font:inherit;font-weight:700;
-  font-size:inherit;line-height:1.3;letter-spacing:-.02em;color:var(--text);cursor:pointer;
-  white-space:nowrap;display:inline-flex;align-items:center;gap:2px;text-align:left}
-.race20 .nmbtn i{font-style:normal;font-size:9px;opacity:.6;color:var(--cta)}
-.race20 .nmbtn:hover{text-decoration:underline}
-
 /* ============================================================
-   105-spec §5.2: 過去5走セル（1枚168px固定・6〜7行・折り返さない）
+   106-spec §5.3: 過去走1走（横3行）。105-spec の6行マス（幅168px固定）を、
+   画面幅を使い切る横3行に組み替えた。項目は12のままで1つも減らしていない。
    ============================================================ */
-.race20 .rrow{display:grid;grid-template-columns:repeat(5,168px);gap:4px}
-.race20 .rcell{border:1px solid var(--rule);border-radius:5px;padding:4px 5px;
-  background:#fff;font-size:10px;line-height:1.5;min-width:0;overflow:hidden;text-align:left}
-.race20 .rcell>div{display:flex;gap:4px;align-items:center;white-space:nowrap}
-.race20 .rcell.empty{border-style:dashed;background:none}
-.race20 .rcell.rest{background:var(--sub-bg2);display:flex;flex-direction:column;
-  align-items:center;justify-content:center;text-align:center}
-.race20 .rcell.rest .rh{font-weight:700;font-size:11px;white-space:normal}
-.race20 .rcell.rest .rd{color:var(--cap);font-size:10px}
+.race20 .vrun{display:flex;gap:0;border:1px solid var(--rule);border-radius:5px;background:#fff;
+  overflow:hidden;margin-bottom:3px}
+.race20 .vrun:last-child{margin-bottom:0}
+/* 走の見出し（前走・2走前…）は縦書き。横書きだと「3走前」で28px要るところが13pxで済む */
+.race20 .vrun .vtab{writing-mode:vertical-rl;flex:none;width:13px;font-size:9px;line-height:13px;
+  color:var(--cap);background:var(--sub-bg2);text-align:center;letter-spacing:.04em;
+  display:flex;align-items:center;justify-content:center}
+.race20 .vrun .vrb{flex:1 1 auto;min-width:0;padding:3px 5px;font-size:10px;line-height:1.55}
+.race20 .vrun .vrb>div{display:flex;gap:4px;align-items:center;white-space:nowrap}
 /* §5.2.2: 僅差・勝ちの塗り。金＝勝ち（着差は問わない）／青＝僅差で負け。色は2つだけ */
-.race20 .rcell.pb-win{background:#F5E9C4;border-color:#D9C382}
-.race20 .rcell.pb-close{background:#E8EFF5;border-color:#C3D5E4}
-.race20 .rcell .dt{color:var(--cap);font-variant-numeric:tabular-nums}
-.race20 .rcell .tk{font-weight:700}
-/* レース名（mockup-52 案B）。1行目の余りを使い、入らない分は「…」。行は増やさない。
+.race20 .vrun.pb-win{background:#F5E9C4;border-color:#D9C382}
+.race20 .vrun.pb-close{background:#E8EFF5;border-color:#C3D5E4}
+.race20 .vrun .l1 .dt{color:var(--cap);font-variant-numeric:tabular-nums}
+.race20 .vrun .l1 .tk{font-weight:700}
+/* レース名は1行目の余った幅だけ使い、入らない分は「…」（mockup-52 案B）。
    クラス名は .rnm ―― .rn は一覧のレース番号チップ（幅44px固定）で使用済み */
-.race20 .rcell .r1 .rnm{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;
+.race20 .vrun .l1 .rnm{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;
   white-space:nowrap;font-weight:700}
-.race20 .rcell .r2 .nm{font-variant-numeric:tabular-nums;color:var(--sub)}
-.race20 .rcell .r3{font-weight:700}
-.race20 .rcell .r4{color:var(--sub)}
-.race20 .rcell .r4 .jk{overflow:hidden;text-overflow:ellipsis}
-.race20 .rcell .r4 .kg,.race20 .rcell .r4 .bw{margin-left:auto;font-variant-numeric:tabular-nums}
-.race20 .rcell .r6{color:var(--sub)}
-.race20 .rcell .r6 .wn{overflow:hidden;text-overflow:ellipsis;max-width:58px}
-.race20 .rcell .r6 .mg{font-variant-numeric:tabular-nums}
-.race20 .rcell .val{margin-left:auto;font-variant-numeric:tabular-nums}
-/* §5.2.4: 回顧メモ（付いている走だけ）。2個以上のときだけ2行に折る */
-.race20 .rcell .r7{flex-wrap:wrap;margin-top:1px;border-top:1px dotted var(--rule);
-  padding-top:2px;white-space:normal}
-.race20 .rcell .r7 .nt{margin:0 2px 1px 0}
+.race20 .vrun .l1 .nm{color:var(--sub);font-variant-numeric:tabular-nums}
+.race20 .vrun .l2{color:var(--sub)}
+.race20 .vrun .l2 .cd{font-weight:700;color:var(--text)}
+.race20 .vrun .l2 .val{margin-left:0;font-variant-numeric:tabular-nums}
+.race20 .vrun .l2 .val:first-of-type{font-weight:700;color:var(--text)}
+.race20 .vrun .l2 .jk{margin-left:auto;overflow:hidden;text-overflow:ellipsis;max-width:5em}
+.race20 .vrun .l2 .kg,.race20 .vrun .l2 .bw{font-variant-numeric:tabular-nums}
+.race20 .vrun .l3{color:var(--sub);flex-wrap:wrap}
+.race20 .vrun .l3 .wn{overflow:hidden;text-overflow:ellipsis;max-width:9em}
+.race20 .vrun .l3 .mg{font-variant-numeric:tabular-nums}
+.race20 .vrun .l3 .nt{margin:0 2px 1px 0}
+.race20 .vrun.rest{background:var(--sub-bg2)}
+.race20 .vrun.rest .vrb,.race20 .vrun.empty .vrb{color:var(--cap);text-align:center}
+.race20 .vrun.rest .l1,.race20 .vrun.empty .l1{justify-content:center}
+.race20 .vrun.empty{border-style:dashed;background:none}
 
 /* §5.2.5: 通過順の4マス。前・中・後を同じ色相の濃淡だけで塗る（緑・赤は使わない） */
 .race20 .cor{display:inline-flex;gap:2px}
@@ -1805,17 +1761,16 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
   --tp1:#EBB0A2;--tp2:#F2C7BD;--tp3:#F7DBD4;--tp4:#FBEBE7;--tp5:#FCF3F1;
   --tp6:#F2F9F5;--tp7:#E8F5ED;--tp8:#DAF0E3;--tp9:#C7E7D3;--tp10:#AEDCC1;
 }
-.race20 .tpnm{border-radius:2px;padding:0 2px}
-.race20 tr.hrow.tp1 .tpnm{background:var(--tp1)}
-.race20 tr.hrow.tp2 .tpnm{background:var(--tp2)}
-.race20 tr.hrow.tp3 .tpnm{background:var(--tp3)}
-.race20 tr.hrow.tp4 .tpnm{background:var(--tp4)}
-.race20 tr.hrow.tp5 .tpnm{background:var(--tp5)}
-.race20 tr.hrow.tp6 .tpnm{background:var(--tp6)}
-.race20 tr.hrow.tp7 .tpnm{background:var(--tp7)}
-.race20 tr.hrow.tp8 .tpnm{background:var(--tp8)}
-.race20 tr.hrow.tp9 .tpnm{background:var(--tp9)}
-.race20 tr.hrow.tp10 .tpnm{background:var(--tp10)}
+.race20 .acard.tp1 .aspine{background:var(--tp1)}
+.race20 .acard.tp2 .aspine{background:var(--tp2)}
+.race20 .acard.tp3 .aspine{background:var(--tp3)}
+.race20 .acard.tp4 .aspine{background:var(--tp4)}
+.race20 .acard.tp5 .aspine{background:var(--tp5)}
+.race20 .acard.tp6 .aspine{background:var(--tp6)}
+.race20 .acard.tp7 .aspine{background:var(--tp7)}
+.race20 .acard.tp8 .aspine{background:var(--tp8)}
+.race20 .acard.tp9 .aspine{background:var(--tp9)}
+.race20 .acard.tp10 .aspine{background:var(--tp10)}
 
 /* 操作盤（.shctl の空いている左側に入る） */
 .race20 .tpctl{flex:1 1 100%;margin:0 0 6px}

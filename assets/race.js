@@ -1688,17 +1688,32 @@ function markBadge20(h) {
 // 105-spec: 出馬表ワンシート化＋買える／消せるの10項目
 // ============================================================
 
-// §5.3: item_marks（10項目・順序固定・並べ替えない）を○／×だけチップにする
-function itemChips(h) {
+// 106-spec §5.2: item_marks（10項目・順序固定・並べ替えない）を、札には
+// 「項目名＋○×」の点だけ出す。理由文は札には入らないので馬名ポップアップへ（§5.4）。
+function itemDots(h) {
   const marks = h.item_marks;
-  if (!marks) return '';                     // §7: item_marks なし（取消・旧レース）→ 列は空
+  if (!marks) return '';                     // item_marks なし（取消・旧レース）→ 何も出さない
   const on = marks.filter((m) => m.mark === '○' || m.mark === '×');
-  if (!on.length) return '<span class="chip2 none">目立つ長所も短所もなし</span>';
+  if (!on.length) return '<span class="dot">目立つ長所も短所もなし</span>';
   return on.map((m) => {
+    const cls = m.mark === '○' ? 'd-o' : 'd-x';
+    return `<span class="dot ${cls}">${escapeHtml(m.label)}<i>${m.mark}</i></span>`;
+  }).join('');
+}
+
+// 106-spec §5.4: 札から追い出した理由文。ポップアップの中で全文を読ませる。
+// 文言は 105-spec §5.3 のチップと同じ（1文字も減らさない）。
+function itemWhyBlock(h) {
+  const marks = h.item_marks;
+  if (!marks) return '';
+  const on = marks.filter((m) => m.mark === '○' || m.mark === '×');
+  if (!on.length) return '';
+  const rows = on.map((m) => {
     const cls = m.mark === '○' ? 'v-o' : 'v-x';
     return `<span class="chip2 ${cls}"><span class="c2h"><b>${escapeHtml(m.label)}</b><em>${m.mark}</em></span>` +
       `<span class="c2b">${escapeHtml(m.why || '')}</span></span>`;
   }).join('');
+  return `<div class="ph">買える／消せる</div><div class="chips">${rows}</div>`;
 }
 
 // §5.2.5: 通過順の4マス。通過順÷頭数で前・中・後の3段階に塗り分ける
@@ -1778,8 +1793,13 @@ function runNameSpan(raceName) {
   return `<span class="rnm" title="${escapeHtml(n)}">${escapeHtml(n)}</span>`;
 }
 
-// §5.2: 過去走1マス（6〜7行）
-function runCell(p) {
+// 106-spec §5.3: 過去走1走（横3行）。105-spec の6行マス（幅168px固定）を、画面幅を
+// 使い切る横3行に組み替えたもの。**項目は12のままで1つも減らしていない**。
+//   .vtab  走の見出し（前走・2走前…）。縦書き。横書きだと「3走前」で28px要るところが13pxで済む
+//   .l1    日付・場・クラス・レース名・着順・頭数・人気
+//   .l2    条件・タイム・通過順4マス・上がり3F・騎手・斤量・馬体重
+//   .l3    展開・勝ち馬・着差・回顧メモ
+function runLine3(p, label) {
   const cond = `${escapeHtml(surfShort(p.surface))}${escapeHtml(p.distance || '')}${escapeHtml(goingShort(p.condition))}`;
   const bw = p.body_weight != null ? String(p.body_weight) : '—';
   const kg = p.weight != null ? escapeHtml(String(p.weight)) : '—';
@@ -1789,17 +1809,12 @@ function runCell(p) {
     ? `基準比 ${p.time_resid > 0 ? '+' : ''}${p.time_resid}秒（当日の馬場差を補正後）・着差${marginText(p)}秒`
     : (p.time_note || '');
   const notes = (p.note_labels || []).map((l) => noteTag(l)).join('');
-  const row7 = notes
-    ? `<div class="r7"${p.note_text ? ` title="${escapeHtml(p.note_text)}"` : ''}>${notes}</div>` : '';
-  return `<div class="rcell${runBandClass(p)}">
-    <div class="r1"><span class="dt">${shutubaMd(p.date)}</span><span class="tk">${escapeHtml(p.track || '')}</span>${classBadge(p.grade, p.race_name)}${runNameSpan(p.race_name)}</div>
-    <div class="r2">${shutubaFinBox(p.finish)}<span class="nm">${escapeHtml(p.runners ?? '—')}頭</span><span class="nm">${p.gate != null ? escapeHtml(String(p.gate)) : '—'}番</span><span class="nm">${escapeHtml(p.popularity ?? '—')}人</span></div>
-    <div class="r3"><span class="cd">${cond}</span>${rankSpan(p.time ?? '—', p.time_grade || '', timeTitle)}</div>
-    <div class="r4"><span class="jk">${escapeHtml(p.jockey ?? '—')}</span><span class="kg">${kg}</span><span class="bw">${bw}</span></div>
-    <div class="r5">${cornersHtml(p.corners, p.field_size)}${rankSpan(p.last_3f ?? '—', rankCls, agTitle)}</div>
-    <div class="r6">${scenarioHtml(p.scenario)}<span class="wn">${escapeHtml(p.winner || '')}</span><span class="mg">(${marginText(p)})</span></div>
-    ${row7}
-  </div>`;
+  const noteTitle = notes && p.note_text ? ` title="${escapeHtml(p.note_text)}"` : '';
+  return `<div class="vrun${runBandClass(p)}"><span class="vtab">${escapeHtml(label)}</span><div class="vrb">
+    <div class="l1"><span class="dt">${shutubaMd(p.date)}</span><span class="tk">${escapeHtml(p.track || '')}</span>${classBadge(p.grade, p.race_name)}${runNameSpan(p.race_name)}${shutubaFinBox(p.finish)}<span class="nm">${escapeHtml(p.runners ?? '—')}頭</span><span class="nm">${escapeHtml(p.popularity ?? '—')}人</span></div>
+    <div class="l2"><span class="cd">${cond}</span>${rankSpan(p.time ?? '—', p.time_grade || '', timeTitle)}${cornersHtml(p.corners, p.field_size)}${rankSpan(p.last_3f ?? '—', rankCls, agTitle)}<span class="jk">${escapeHtml(p.jockey ?? '—')}</span><span class="kg">${kg}</span><span class="bw">${bw}</span></div>
+    <div class="l3"${noteTitle}>${scenarioHtml(p.scenario)}<span class="wn">${escapeHtml(p.winner || '')}</span><span class="mg">(${marginText(p)})</span>${notes}</div>
+  </div></div>`;
 }
 
 // §5.2.1: 90日以上の間隔（rest_days）を休養セルとして差し込み、常に5枚にする。
@@ -1815,15 +1830,22 @@ function buildRunCells(runs) {
   return cells.slice(0, 5);
 }
 
-function runsRow(h) {
+// 走の見出しは「実際の走だけ」で数える。休養マスは枠を1つ使うが走ではないので、
+// 休養を挟んでも次の走は 2走前 のまま（マスの位置で数えると1つずれる）。
+function runsBlock(h) {
+  let runIdx = 0;
   const html = buildRunCells(h.past_runs).map((c) => {
-    if (c.kind === 'run') return runCell(c.run);
-    if (c.kind === 'rest') {
-      return `<div class="rcell rest"><div class="rh">${escapeHtml(restLabel(c.days))}</div><div class="rd">${c.days}日</div></div>`;
+    if (c.kind === 'run') {
+      const label = runIdx === 0 ? '前走' : `${runIdx + 1}走前`;
+      runIdx += 1;
+      return runLine3(c.run, label);
     }
-    return '<div class="rcell empty"></div>';
+    if (c.kind === 'rest') {
+      return `<div class="vrun rest"><span class="vtab">休養</span><div class="vrb"><div class="l1">${escapeHtml(restLabel(c.days))}（${c.days}日）</div></div></div>`;
+    }
+    return '<div class="vrun empty"><span class="vtab"></span><div class="vrb"><div class="l1">—</div></div></div>';
   }).join('');
-  return `<div class="rrow">${html}</div>`;
+  return `<div class="aruns">${html}</div>`;
 }
 
 // §5.5: 馬名ポップアップ ― 通算成績・コース適性・レース戦績（全部）
@@ -1867,233 +1889,72 @@ function popupBody(h) {
     <div class="pbody">
       <div class="pcareer">${careerLine(h)}</div>
       ${markWhyBlock(h)}
+      ${itemWhyBlock(h)}
       ${courseRecordTable(h)}
       ${popupRunsTable(h)}
     </div>`;
 }
 
-// 出走間隔（中10週・連闘など）。性齢〜騎手の行に混ぜると入りきらず「中」だけに
-// 切れていたので、性齢の真下に独立した行として出す（2026-08-05 ユーザー指定）。
-// 値が無い馬に空の行を作らないよう、無ければ行そのものを出さない。
-function rotLine(h) {
-  if (!h.rotation) return '';
-  return `<div class="u rotline">${escapeHtml(h.rotation)}</div>`;
+// 106-spec §4: 柱（新聞の1頭ぶんの縦帯）。押すと馬名ポップアップが開く。
+// 押しどころを縦書きの馬名（幅13px）だけにすると狭すぎるので、柱ごとボタンにする。
+function spineHtml(h) {
+  return `<button type="button" class="aspine" data-pop="${h.number}">
+    ${markBadge20(h)}${umaBox(h.number, h.gate, 'sm')}
+    <span class="vname">${escapeHtml(h.name)}</span><i class="apop">▸</i>
+  </button>`;
 }
 
-function nameButtonHtml(h) {
-  return `<button type="button" class="nmbtn" data-pop="${h.number}">` +
-    `<span class="tpnm">${escapeHtml(h.name)}</span><i>▸</i></button>`;
-}
-
-// §5.1: 1頭1行
-function shutubaRow(h, hasItemMarks) {
+// 106-spec §3: 1頭1枚の札
+function shutubaCard(h) {
   if (h.scratched) {
-    const chipsTd = hasItemMarks ? '<td class="c-chips"></td>' : '';
-    return `<tr class="hrow scratched" data-h="${h.number}">
-      <td></td><td>${umaBox(h.number, h.gate, 'sm')}</td>
-      <td class="l nm">${escapeHtml(h.name)}（取消）</td>
-      <td>—</td><td>—</td>${chipsTd}<td class="c-runs">${runsRow(h)}</td>
-    </tr>`;
+    return `<article class="acard scratched" data-h="${h.number}">
+      <div class="aspine plain">${umaBox(h.number, h.gate, 'sm')}<span class="vname">${escapeHtml(h.name)}</span></div>
+      <div class="abody"><div class="ahead">（取消）</div></div>
+    </article>`;
   }
   const kg = h.weight_carried != null ? String(h.weight_carried).replace(/\.0$/, '') : '—';
-  const chipsTd = hasItemMarks ? `<td class="c-chips"><div class="chips">${itemChips(h)}</div></td>` : '';
-  return `<tr class="hrow${h.ability_mark ? ' pred' : ''}" data-h="${h.number}">
-    <td>${markBadge20(h)}</td>
-    <td>${umaBox(h.number, h.gate, 'sm')}</td>
-    <td class="l nm">${nameButtonHtml(h)}
-      <div class="u prof"><span class="pa">${escapeHtml(h.sex_age ?? '')}</span><span class="pk">${kg}</span>${bwDisplay(h)}<span class="pj">${escapeHtml(h.jockey && h.jockey !== 'N/A' ? h.jockey : '—')}</span>${legBar(h.running_style)}</div>${rotLine(h)}</td>
-    <td>${fmtNum(h.total, 1)}<div class="u"><span class="grade ${gradeClass(h.grade)}">${gradeDisp(h.grade)}</span></div></td>
-    <td>${h.odds != null ? h.odds.toFixed(1) : '—'}<div class="u pp">${h.popularity ?? '—'}人</div></td>
-    ${chipsTd}
-    <td class="c-runs">${runsRow(h)}</td>
-  </tr>`;
+  const bw = bwDisplay(h);
+  const rot = h.rotation ? `<span class="rot">${escapeHtml(h.rotation)}</span>` : '';
+  return `<article class="acard${h.ability_mark ? ' pred' : ''}" data-h="${h.number}">
+    ${spineHtml(h)}
+    <div class="abody">
+      <div class="ahead">
+        <span class="pa">${escapeHtml(h.sex_age ?? '')}</span><span class="pk">${kg}</span>
+        <span class="pj">${escapeHtml(h.jockey && h.jockey !== 'N/A' ? h.jockey : '—')}</span>${legBar(h.running_style)}
+        <span class="tot">${fmtNum(h.total, 1)}<i class="grade ${gradeClass(h.grade)}">${gradeDisp(h.grade)}</i></span>
+        <span class="od">${h.odds != null ? h.odds.toFixed(1) : '—'}<i>倍</i><i>${h.popularity ?? '—'}人</i></span>
+      </div>
+      <div class="asub">${bw}${rot}${itemDots(h)}</div>
+      ${runsBlock(h)}
+    </div>
+  </article>`;
 }
 
 function renderShutuba20(site) {
   const all = site.horses;
   const live = all.filter((h) => !h.scratched);
-  const hasItemMarks = live.some((h) => h.item_marks);
 
-  const rows = [...all].sort((a, b) => a.number - b.number)
-    .map((h) => shutubaRow(h, hasItemMarks)).join('');
+  const cards = [...all].sort((a, b) => a.number - b.number).map(shutubaCard).join('');
   const popups = live.map((h) => `<div class="popup" id="pop-${h.number}">${popupBody(h)}</div>`).join('');
 
-  const chipsHead = hasItemMarks ? '<th class="l c-chips">買える／消せる</th>' : '';
-  const chipsCol = hasItemMarks ? '<col class="c-chips">' : '';
-  const toggleBtn = hasItemMarks
-    ? '<div class="allbtn"><button type="button" data-chips="toggle">買える／消せるを開く</button></div>' : '';
-
-  const zoomCtl = `<div class="shzc">
-      <span class="zl">表の大きさ</span>
-      <button type="button" data-zoom="out" aria-label="小さく">−</button>
-      <span class="zv" data-zoom="value">100%</span>
-      <button type="button" data-zoom="in" aria-label="大きく">＋</button>
-      <button type="button" class="zr" data-zoom="reset">等倍</button>
-    </div>`;
-
+  // .shctl は空でも残す。トッピングの操作パネルが setupTopping からここへ差し込まれる
   return `
     <div class="secthead">出馬表<span class="cnt">全${site.race.field_size}頭・馬番順</span></div>
-    <div class="shctl">${zoomCtl}${toggleBtn}</div>
-    <div class="shwrap">
-      <div class="shzoom"><div class="shzin">
-      <table class="unified${hasItemMarks ? ' hide-chips' : ''}">
-        <colgroup><col class="c-mk"><col class="c-no"><col class="c-nm">
-          <col class="c-tot"><col class="c-od">${chipsCol}<col class="c-runs"></colgroup>
-        <thead><tr>
-          <th>印</th><th>番</th><th class="l">馬名・騎手</th>
-          <th>総合</th><th>オッズ</th>${chipsHead}<th class="l">競走成績（前走 → 5走前）</th>
-        </tr></thead>
-        <tbody>${rows}</tbody>
-      </table>
-      </div></div>
-    </div>
+    <div class="shctl"></div>
+    <div class="shlist">${cards}</div>
     ${popups}
   `;
-}
-
-// 出馬表のピンチズーム（拡大鏡型）。
-//
-// transform:scale を使う。CSS の zoom だと表そのものを組み直すことになり、列幅・行の
-// 高さ・ページ全体の長さが倍率ごとに変わってしまう。transform なら組み方は等倍のまま
-// 固定され、描き終えた絵を虫めがねで覗くのと同じ挙動になる（2026-08-05 ユーザー指定）。
-//
-// DOM: .shwrap（覗き窓・縦横スクロール） > .shzoom（拡大後の寸法を持つ土台）
-//        > .shzin（transform をかける実体・中身は常に等倍の組み）
-const SHZ_MIN = 0.5;
-const SHZ_MAX = 2.0;
-const SHZ_KEY = 'ans.shutuba.zoom';
-
-function setupShutubaZoom(root) {
-  const wrap = root.querySelector('.shwrap');
-  const box = root.querySelector('.shzoom');
-  const zin = root.querySelector('.shzin');
-  const table = root.querySelector('.shzin table.unified');
-  if (!wrap || !box || !zin || !table) return;
-
-  const label = root.querySelector('[data-zoom="value"]');
-  let z = 1;
-  try {
-    const saved = parseFloat(localStorage.getItem(SHZ_KEY));
-    if (saved >= SHZ_MIN && saved <= SHZ_MAX) z = saved;
-  } catch (e) { /* localStorage が使えない環境では等倍のまま */ }
-
-  // 1%刻みに丸める。+0.1 を繰り返すと 1.2000000000000002 のような値が残るため
-  const clamp = (v) => Math.round(Math.min(SHZ_MAX, Math.max(SHZ_MIN, v)) * 100) / 100;
-
-  // 表の等倍の実寸。offsetWidth/offsetHeight は transform の影響を受けないので、
-  // 拡大中でもそのまま測れる。
-  let natW = 0;
-  let natH = 0;
-
-  // 測るときは .shzin の幅をいったん 0 にする。table-layout:fixed の表は幅指定が
-  // auto だと入れ物の幅まで広がるので、土台の幅から測ると
-  // 「土台を広げる→表も広がる→さらに土台を広げる」で毎回太っていく。
-  function measure() {
-    zin.style.width = '0px';
-    natW = table.offsetWidth;
-    natH = table.offsetHeight;
-    zin.style.width = `${natW}px`;
-    paint();
-  }
-
-  // 土台に実寸×倍率を持たせることで、スクロールできる範囲が拡大に追従する
-  function paint() {
-    zin.style.transform = `scale(${z})`;
-    box.style.width = `${natW * z}px`;
-    box.style.height = `${natH * z}px`;
-    if (label) label.textContent = `${Math.round(z * 100)}%`;
-  }
-
-  // anchorX / anchorY = wrap の左上から測った、拡大の中心にしたい位置(px)。
-  // 省略時は覗き窓の中央を保つ。
-  function apply(next, anchorX, anchorY) {
-    const prev = z;
-    z = clamp(next);
-    if (z === prev) return;
-    const ax = anchorX == null ? wrap.clientWidth / 2 : anchorX;
-    const ay = anchorY == null ? wrap.clientHeight / 2 : anchorY;
-    const sl = wrap.scrollLeft;
-    const st = wrap.scrollTop;
-    paint();
-    wrap.scrollLeft = (sl + ax) * (z / prev) - ax;
-    wrap.scrollTop = (st + ay) * (z / prev) - ay;
-    try { localStorage.setItem(SHZ_KEY, String(z)); } catch (e) { /* 保存できなくても動作は変わらない */ }
-  }
-
-  measure();
-  // 「買える／消せる」の開閉で列が増減し、実寸そのものが変わる。倍率は変えずに測り直す。
-  // ボタン自身の処理（列の出し入れ）が先に走り、そのあとここへ上がってくるので同期でよい
-  root.addEventListener('click', (e) => {
-    if (e.target.closest('[data-chips]')) measure();
-  });
-  window.addEventListener('resize', measure);
-
-  root.addEventListener('click', (e) => {
-    const btn = e.target.closest('[data-zoom]');
-    if (!btn || btn.tagName !== 'BUTTON') return;
-    const act = btn.dataset.zoom;
-    if (act === 'in') apply(z + 0.1);
-    else if (act === 'out') apply(z - 0.1);
-    else if (act === 'reset') apply(1);
-  });
-
-  // 2本指ピンチ。touch-action:pan-x pan-y でブラウザ側のピンチを切ってあるので、
-  // 1本指の縦横スクロールはそのまま残り、2本指だけこちらで拾う。
-  let d0 = 0;
-  let z0 = 1;
-  let ancX = 0;
-  let ancY = 0;
-  const dist = (t) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
-
-  wrap.addEventListener('touchstart', (e) => {
-    if (e.touches.length !== 2) { d0 = 0; return; }
-    const r = wrap.getBoundingClientRect();
-    d0 = dist(e.touches);
-    z0 = z;
-    ancX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - r.left;
-    ancY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - r.top;
-  }, { passive: true });
-
-  wrap.addEventListener('touchmove', (e) => {
-    if (e.touches.length !== 2 || !d0) return;
-    e.preventDefault();
-    apply(z0 * (dist(e.touches) / d0), ancX, ancY);
-  }, { passive: false });
-
-  wrap.addEventListener('touchend', () => { d0 = 0; });
-
-  // iOS Safari は touch-action とは別に gesture 系も投げてくる。ここで止めないと
-  // 表を広げたつもりがページ全体の拡大になることがある（拡大の実行は touchmove 側）
-  for (const ev of ['gesturestart', 'gesturechange', 'gestureend']) {
-    wrap.addEventListener(ev, (e) => e.preventDefault());
-  }
-
-  // トラックパッドのピンチ・Ctrl+ホイール（PC）
-  wrap.addEventListener('wheel', (e) => {
-    if (!e.ctrlKey) return;
-    e.preventDefault();
-    const r = wrap.getBoundingClientRect();
-    apply(z * (1 - e.deltaY * 0.01), e.clientX - r.left, e.clientY - r.top);
-  }, { passive: false });
 }
 
 function setupShutuba20() {
   const root = document.querySelector('.race20');
   if (!root) return;
 
-  setupShutubaZoom(root);
+  // 106-spec §2.2: ズーム操作（表の大きさ ±・ピンチ）は廃止した。横スクロールが
+  // 無くなり、虫めがねで覗く必要そのものが無くなったため。
+  // §5.4: 「買える／消せる」は札に常時出るので、開く／消すボタンも無い。
 
-  const table = root.querySelector('table.unified');
-  const chipsBtn = root.querySelector('[data-chips]');
-  if (chipsBtn && table) {
-    chipsBtn.addEventListener('click', () => {
-      const willShow = table.classList.contains('hide-chips');
-      table.classList.toggle('hide-chips', !willShow);
-      chipsBtn.textContent = willShow ? '買える／消せるを消す' : '買える／消せるを開く';
-    });
-  }
-
-  // §5.5: 馬名ポップアップ。閉じ方は「閉じる」ボタン・背景クリック・Esc の3つ
+  // 105-spec §5.5: 馬名ポップアップ。閉じ方は「閉じる」ボタン・背景クリック・Esc の3つ
   const bg = document.createElement('div');
   bg.className = 'pbg';
   root.appendChild(bg);
@@ -3071,10 +2932,12 @@ function tpRefresh() {
   if (!root) return;
   const steps = tpSteps(site);
   const total = (site.horses || []).filter((h) => !h.scratched && h.topping).length;
-  root.querySelectorAll('tr.hrow').forEach((tr) => {
-    for (let i = 1; i <= 10; i += 1) tr.classList.remove(`tp${i}`);
-    const s = steps[Number(tr.dataset.h)];
-    if (s) tr.classList.add(`tp${s}`);
+  // 106-spec §6.1: 表組みをやめたので拾う先は tr.hrow ではなく札（.acard）。
+  // data-h は同じ属性名を札にも付けてあるので、読み方は変えていない。
+  root.querySelectorAll('.acard').forEach((card) => {
+    for (let i = 1; i <= 10; i += 1) card.classList.remove(`tp${i}`);
+    const s = steps[Number(card.dataset.h)];
+    if (s) card.classList.add(`tp${s}`);
   });
   const byNumber = {};
   (site.horses || []).forEach((h) => { byNumber[h.number] = h; });
