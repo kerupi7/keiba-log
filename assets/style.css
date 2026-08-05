@@ -1493,6 +1493,13 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
 .race20 .asub:empty{display:none}
 .race20 .asub .pw,.race20 .asub .rot{font-size:9.5px;color:var(--cap);
   font-variant-numeric:tabular-nums;white-space:nowrap}
+/* 106-spec §5.2: 10項目の点（項目名＋○×）。理由文はポップアップ側（§5.4）。
+   クラス名は .idot ―― .dot はタブバーの赤丸・ラップ図の点で使用済み */
+.race20 .idot{display:inline-flex;align-items:center;gap:1px;font-size:9.5px;line-height:1.5;
+  border-radius:3px;padding:0 4px;margin:0 3px 2px 0;background:var(--sub-bg2);color:var(--sub)}
+.race20 .idot i{font-style:normal;font-weight:700}
+.race20 .idot.d-o{background:var(--chip-ok-bg);color:var(--chip-ok-fg)}
+.race20 .idot.d-x{background:var(--chip-ng-bg);color:var(--chip-ng-fg)}
 .race20 .mut{color:var(--cap)}
 
 /* 地雷・穴の理由文（87-spec §3.2 / 94-spec §3.3）。印列のバッジは記号だけなので、
@@ -1688,7 +1695,8 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
 .race20 .vrun .l2{color:var(--sub)}
 .race20 .vrun .l2 .cd{font-weight:700;color:var(--text)}
 .race20 .vrun .l2 .val{margin-left:0;font-variant-numeric:tabular-nums}
-.race20 .vrun .l2 .val:first-of-type{font-weight:700;color:var(--text)}
+/* タイムは条件と並ぶ主役なので太字。上がり3F（同じ .val）は補足なので細いまま */
+.race20 .vrun .l2 .val.tm{font-weight:700;color:var(--text)}
 .race20 .vrun .l2 .jk{margin-left:auto;overflow:hidden;text-overflow:ellipsis;max-width:5em}
 .race20 .vrun .l2 .kg,.race20 .vrun .l2 .bw{font-variant-numeric:tabular-nums}
 .race20 .vrun .l3{color:var(--sub);flex-wrap:wrap}

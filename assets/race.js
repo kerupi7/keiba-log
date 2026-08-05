@@ -1694,10 +1694,10 @@ function itemDots(h) {
   const marks = h.item_marks;
   if (!marks) return '';                     // item_marks なし（取消・旧レース）→ 何も出さない
   const on = marks.filter((m) => m.mark === '○' || m.mark === '×');
-  if (!on.length) return '<span class="dot">目立つ長所も短所もなし</span>';
+  if (!on.length) return '<span class="idot">目立つ長所も短所もなし</span>';
   return on.map((m) => {
     const cls = m.mark === '○' ? 'd-o' : 'd-x';
-    return `<span class="dot ${cls}">${escapeHtml(m.label)}<i>${m.mark}</i></span>`;
+    return `<span class="idot ${cls}">${escapeHtml(m.label)}<i>${m.mark}</i></span>`;
   }).join('');
 }
 
@@ -1754,10 +1754,12 @@ function restLabel(days) {
 
 // 数値の末尾セル（走破タイム・上がり3F）。金銀銅が付く場合だけ .ag を足す。
 // medalSpan と違い、色が無くても右寄せレイアウト用の <span class="val"> は必ず出す。
-function rankSpan(text, cls, title) {
+// extra は追加クラス（タイムだけ太字にするための .tm など）。金銀銅の .ag は cls 側。
+function rankSpan(text, cls, title, extra) {
   const c = cls ? ` ag ${cls}` : '';
+  const x = extra ? ` ${extra}` : '';
   const t = title ? ` title="${escapeHtml(title)}"` : '';
-  return `<span class="val${c}"${t}>${escapeHtml(text)}</span>`;
+  return `<span class="val${x}${c}"${t}>${escapeHtml(text)}</span>`;
 }
 
 function marginText(p) {
@@ -1812,7 +1814,7 @@ function runLine3(p, label) {
   const noteTitle = notes && p.note_text ? ` title="${escapeHtml(p.note_text)}"` : '';
   return `<div class="vrun${runBandClass(p)}"><span class="vtab">${escapeHtml(label)}</span><div class="vrb">
     <div class="l1"><span class="dt">${shutubaMd(p.date)}</span><span class="tk">${escapeHtml(p.track || '')}</span>${classBadge(p.grade, p.race_name)}${runNameSpan(p.race_name)}${shutubaFinBox(p.finish)}<span class="nm">${escapeHtml(p.runners ?? '—')}頭</span><span class="nm">${escapeHtml(p.popularity ?? '—')}人</span></div>
-    <div class="l2"><span class="cd">${cond}</span>${rankSpan(p.time ?? '—', p.time_grade || '', timeTitle)}${cornersHtml(p.corners, p.field_size)}${rankSpan(p.last_3f ?? '—', rankCls, agTitle)}<span class="jk">${escapeHtml(p.jockey ?? '—')}</span><span class="kg">${kg}</span><span class="bw">${bw}</span></div>
+    <div class="l2"><span class="cd">${cond}</span>${rankSpan(p.time ?? '—', p.time_grade || '', timeTitle, 'tm')}${cornersHtml(p.corners, p.field_size)}${rankSpan(p.last_3f ?? '—', rankCls, agTitle)}<span class="jk">${escapeHtml(p.jockey ?? '—')}</span><span class="kg">${kg}</span><span class="bw">${bw}</span></div>
     <div class="l3"${noteTitle}>${scenarioHtml(p.scenario)}<span class="wn">${escapeHtml(p.winner || '')}</span><span class="mg">(${marginText(p)})</span>${notes}</div>
   </div></div>`;
 }
