@@ -1720,10 +1720,17 @@ function itemWhyBlock(h) {
 const FRONT_CUT_POS = 1 / 3.0;
 const BACK_CUT_POS = 2 / 3.0;
 
+// 106-spec: マスは走によらず必ず4つ出す。コーナーが2つしか無いレース（東京芝1600など）
+// は手前の2マスを「-」の空マスにする。こうすると最後のコーナー（4角）が縦に揃い、
+// 右隣の上がり3F・騎手・斤量・馬体重もずれない。数が足りない側は必ず手前（＝走り出し）で、
+// 報告される通過順は常に4角で終わるため。5つ以上来た場合はゴールに近い4つを採る。
+const CORNER_CELLS = 4;
+
 function cornersHtml(corners, fieldSize) {
-  const parts = String(corners || '').split('-').filter(Boolean);
-  if (!parts.length) return '<span class="cor mut">—</span>';
-  const cells = parts.map((x) => {
+  const all = String(corners || '').split('-').filter(Boolean);
+  const parts = all.slice(-CORNER_CELLS);
+  const blanks = '<i class="none">-</i>'.repeat(Math.max(0, CORNER_CELLS - parts.length));
+  const cells = blanks + parts.map((x) => {
     let cls = '';
     const v = parseInt(x, 10);
     if (fieldSize && !Number.isNaN(v)) {
@@ -1813,7 +1820,7 @@ function runLine3(p, label) {
   const notes = (p.note_labels || []).map((l) => noteTag(l)).join('');
   const noteTitle = notes && p.note_text ? ` title="${escapeHtml(p.note_text)}"` : '';
   return `<div class="vrun${runBandClass(p)}"><span class="vtab">${escapeHtml(label)}</span><div class="vrb">
-    <div class="l1"><span class="dt">${shutubaMd(p.date)}</span><span class="tk">${escapeHtml(p.track || '')}</span>${classBadge(p.grade, p.race_name)}${runNameSpan(p.race_name)}${shutubaFinBox(p.finish)}<span class="nm">${escapeHtml(p.runners ?? '—')}頭</span><span class="nm">${escapeHtml(p.popularity ?? '—')}人</span></div>
+    <div class="l1"><span class="dt">${shutubaMd(p.date)}</span><span class="tk">${escapeHtml(p.track || '')}</span>${classBadge(p.grade, p.race_name)}${runNameSpan(p.race_name)}${shutubaFinBox(p.finish)}<span class="nm hd">${escapeHtml(p.runners ?? '—')}頭</span><span class="nm pp">${escapeHtml(p.popularity ?? '—')}人</span></div>
     <div class="l2"><span class="cd">${cond}</span>${rankSpan(p.time ?? '—', p.time_grade || '', timeTitle, 'tm')}${cornersHtml(p.corners, p.field_size)}${rankSpan(p.last_3f ?? '—', rankCls, agTitle)}<span class="jk">${escapeHtml(p.jockey ?? '—')}</span><span class="kg">${kg}</span><span class="bw">${bw}</span></div>
     <div class="l3"${noteTitle}>${scenarioHtml(p.scenario)}<span class="wn">${escapeHtml(p.winner || '')}</span><span class="mg">(${marginText(p)})</span>${notes}</div>
   </div></div>`;
@@ -1881,7 +1888,9 @@ function popupRunsTable(h) {
 
 function popupBody(h) {
   const kg = h.weight_carried != null ? String(h.weight_carried).replace(/\.0$/, '') : '—';
-  const oddsTxt = h.odds != null ? `${h.odds.toFixed(1)}倍` : '—倍';
+  // 札の見出しと同じ赤オッズにする（片方だけ黒だと不具合に見えるため）
+  const oddsTxt = h.odds != null
+    ? `<span class="od${oddsHotClass(h.odds)}">${h.odds.toFixed(1)}倍</span>` : '—倍';
   return `
     <div class="phead">${markBadge20(h)}${umaBox(h.number, h.gate, 'sm')}
       <span class="pname">${escapeHtml(h.name)}</span>
@@ -1895,6 +1904,14 @@ function popupBody(h) {
       ${courseRecordTable(h)}
       ${popupRunsTable(h)}
     </div>`;
+}
+
+// 10倍を切ったら赤オッズ（新聞・netkeibaと同じ表記。2026-08-05 ユーザー指定）。
+// 境目は「10.0未満」で、9.9倍までが赤・10.0倍からは黒。
+const ODDS_HOT = 10;
+
+function oddsHotClass(odds) {
+  return (odds != null && odds < ODDS_HOT) ? ' hot' : '';
 }
 
 // 106-spec §4: 柱（新聞の1頭ぶんの縦帯）。押すと馬名ポップアップが開く。
@@ -1924,7 +1941,7 @@ function shutubaCard(h) {
         <span class="pa">${escapeHtml(h.sex_age ?? '')}</span><span class="pk">${kg}</span>
         <span class="pj">${escapeHtml(h.jockey && h.jockey !== 'N/A' ? h.jockey : '—')}</span>${legBar(h.running_style)}
         <span class="tot">${fmtNum(h.total, 1)}<i class="grade ${gradeClass(h.grade)}">${gradeDisp(h.grade)}</i></span>
-        <span class="od">${h.odds != null ? h.odds.toFixed(1) : '—'}<i>倍</i><i>${h.popularity ?? '—'}人</i></span>
+        <span class="od${oddsHotClass(h.odds)}">${h.odds != null ? h.odds.toFixed(1) : '—'}<i>倍</i><i>${h.popularity ?? '—'}人</i></span>
       </div>
       <div class="asub">${bw}${rot}${itemDots(h)}</div>
       ${runsBlock(h)}

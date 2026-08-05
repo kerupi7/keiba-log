@@ -1487,6 +1487,10 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
 .race20 .ahead .od{flex:none;font-weight:700;font-size:12.5px;color:var(--text);
   font-variant-numeric:tabular-nums;display:flex;align-items:baseline;gap:2px}
 .race20 .ahead .od i{font-style:normal;font-size:9.5px;font-weight:400;color:var(--cap)}
+/* 10倍を切ったら赤オッズ（新聞・netkeibaと同じ表記）。数字だけ赤にし、
+   単位の「倍」と人気は灰色のまま＝どこが数字かが分かるようにする */
+.race20 .od.hot{color:var(--live)}
+.race20 .popup .phead .od.hot{color:var(--live);font-weight:700}
 .race20 .ahead .legbar{transform:scale(.85);transform-origin:left center;margin:0 -4px}
 /* 2行目＝馬体重・出走間隔・10項目の点。入らなければ折り返す */
 .race20 .asub{display:flex;align-items:center;flex-wrap:wrap;gap:0 5px;margin-bottom:3px}
@@ -1691,14 +1695,40 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
    クラス名は .rnm ―― .rn は一覧のレース番号チップ（幅44px固定）で使用済み */
 .race20 .vrun .l1 .rnm{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;
   white-space:nowrap;font-weight:700}
-.race20 .vrun .l1 .nm{color:var(--sub);font-variant-numeric:tabular-nums}
+/* 着順・頭数・人気は桁数がまちまちなので、幅を決めて縦に揃える。
+   決めないと「7人」と「16人」の差だけ着順の箱が左右にずれて読みにくい */
+/* 1桁と2桁で箱の幅が変わると、着順そのものが左右にずれる。幅を決めて止める */
+.race20 .vrun .l1 .fb{flex:none;width:19px;min-width:0;padding:0}
+.race20 .vrun .l1 .nm{color:var(--sub);font-variant-numeric:tabular-nums;
+  flex:none;text-align:right}
+.race20 .vrun .l1 .nm.hd{width:3.3em}
+.race20 .vrun .l1 .nm.pp{width:2.7em}
+/* 2行目は「条件・タイム・通過順・上がり・騎手・斤量・馬体重」の7列。走ごとに
+   桁数や箱の有無で幅が変わると縦に揃わないので、騎手以外は幅を決める。
+   余りは騎手が受け持つ（＝騎手の書き出しも結果的に揃う） */
 .race20 .vrun .l2{color:var(--sub)}
+/* 列の間隔だけ 4px→3px に詰める。騎手名4文字（40px）が入る幅を作るため。
+   .vrb>div より弱いセレクタだと gap:4px に負けるので、こちらも子結合子で書く */
+.race20 .vrun .vrb>.l2{gap:3px}
 .race20 .vrun .l2 .cd{font-weight:700;color:var(--text)}
-.race20 .vrun .l2 .val{margin-left:0;font-variant-numeric:tabular-nums}
+/* 通過順は常に4マス（足りない手前は「-」の空マス。race.js の cornersHtml）。
+   13px×4 ＋ マスの間隔2px×3 ＝ 58px で固定し、4角と右隣の上がり3Fを縦に揃える */
+.race20 .vrun .l2 .cor{flex:none;width:58px;justify-content:flex-end}
+.race20 .vrun .l2 .cor i{min-width:13px}
+/* タイムと上がり3Fは、速い走だけ金銀銅の箱（.ag）が付いて左右3pxずつ広がる。
+   幅を決めておかないと、箱が付いた走だけ右隣がずれる。中身は桁数が一定なので中央寄せ */
+.race20 .vrun .l2 .val{margin-left:0;font-variant-numeric:tabular-nums;
+  flex:none;width:31px;min-width:0;text-align:center}
+.race20 .vrun .l2 .val.tm{width:41px}
 /* タイムは条件と並ぶ主役なので太字。上がり3F（同じ .val）は補足なので細いまま */
 .race20 .vrun .l2 .val.tm{font-weight:700;color:var(--text)}
-.race20 .vrun .l2 .jk{margin-left:auto;overflow:hidden;text-overflow:ellipsis;max-width:5em}
-.race20 .vrun .l2 .kg,.race20 .vrun .l2 .bw{font-variant-numeric:tabular-nums}
+/* 騎手だけは余りを受け持つ列。左の6列が固定幅なので書き出しは揃う。
+   入らない名前は「…」で切る */
+.race20 .vrun .l2 .jk{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.race20 .vrun .l2 .kg,.race20 .vrun .l2 .bw{font-variant-numeric:tabular-nums;
+  flex:none;text-align:right}
+.race20 .vrun .l2 .kg{width:2.6em}
+.race20 .vrun .l2 .bw{width:2.4em}
 .race20 .vrun .l3{color:var(--sub);flex-wrap:wrap}
 .race20 .vrun .l3 .wn{overflow:hidden;text-overflow:ellipsis;max-width:9em}
 .race20 .vrun .l3 .mg{font-variant-numeric:tabular-nums}
@@ -1713,6 +1743,10 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
 .race20 .cor i{font-style:normal;min-width:14px;height:14px;line-height:14px;text-align:center;
   border-radius:2px;font-variant-numeric:tabular-nums;display:inline-block;
   background:var(--bp-off);color:#4a4a44}
+/* コーナーが足りないぶんの空マス。枠線は box-shadow で描く
+   （border だとマスが2px太って、揃えたばかりの列がまたずれる） */
+.race20 .cor i.none{background:#fff;color:var(--cap);
+  box-shadow:inset 0 0 0 1px var(--rule)}
 .race20 .cor i.p1{background:var(--navy);color:#fff}
 .race20 .cor i.p2{background:var(--up-naka);color:#fff}
 .race20 .cor i.p3{background:var(--bp-band);color:#31465a}
