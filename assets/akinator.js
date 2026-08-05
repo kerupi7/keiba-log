@@ -952,7 +952,6 @@
       + '<span class="od">' + (h.odds != null ? h.odds.toFixed(1) + '倍' : '—') + '</span>'
       + '<span class="pop">' + (h.popularity ? h.popularity + '番人気' : '') + '</span>'
       + '<span>' + escapeHtml(subline) + '</span></span></span>'
-      + probBar(h, opts.maxP)
       + tailHtml
       + '</button>';
   }
@@ -1000,25 +999,65 @@
     return ns.map(function (n) { return umaBox(n, ctx.BY[n] ? ctx.BY[n].gate : undefined, 'sm'); }).join('<span class="nsep"></span>');
   }
   // 予算で絞って構造が壊れた脚・振替済みの脚は列挙にフォールバック（§6.2）
+  // 買い目の表記（§6.2）。**必ず leg.rows（実際に買う点）から作る**。
+  //  S.partners から作っていたため、予算や元割れで点数が絞られると
+  //  「9頭ながし」と書いてあるのに2点しか買わない、という食い違いが出ていた
   function legNotation(ctx, S, leg) {
-    if (leg.trimmedFrom || leg.swapped) return null;
-    var A = S.axis.slice(), P = S.partners.slice();
+    if (leg.swapped) return null;
+    var A = S.axis.slice();
     var ar = '<span class="cbsep">→</span>', da = '<span class="cbsep">-</span>', mu = '<span class="cbsep">⇄</span>';
     var box = function (ns) { return numList(ctx, ns) + '<span class="boxtag">BOX</span>'; };
+    var rows = leg.rows;
+    // 2頭の買い方は、実際に買った相手をそのまま拾える
+    var partnersOf = function (fixed) {
+      var out = [];
+      for (var i = 0; i < rows.length; i++) {
+        var rest = rows[i].ids.filter(function (x) { return x !== fixed; });
+        if (rest.length !== rows[i].ids.length - 1) return null;   // 軸が入っていない点がある
+        rest.forEach(function (x) { if (out.indexOf(x) === -1) out.push(x); });
+      }
+      return out;
+    };
+    // 構造どおりの点数と実際の点数が合わなければ表記を出さない（1点ずつ列挙にフォールバック）
+    var P = S.partners.slice();
+    var fits = function (n) { return leg.pts === n; };
     switch (leg.c.id) {
       case 'tan1': case 'fuku1': return numList(ctx, A);
-      case 'widenag': case 'urennag': case 'spkax1': return numList(ctx, A) + da + numList(ctx, P);
-      case 'widef': case 'urenf': return numList(ctx, A) + da + numList(ctx, A.concat(P));
-      case 'spkax2': return numList(ctx, A) + da + numList(ctx, P);
-      case 'widebox': case 'urenbox': case 'spkbox': case 'utanbox': case 'stnbox': return box(P);
-      case 'utannag': return numList(ctx, A) + ar + numList(ctx, P);
-      case 'utannag2': return numList(ctx, P) + ar + numList(ctx, A);
-      case 'utanmul': case 'stnmul': return numList(ctx, A) + mu + numList(ctx, P);
-      case 'stnax1': return numList(ctx, A) + ar + numList(ctx, P) + ar + numList(ctx, P);
-      case 'stnax2': return numList(ctx, P) + ar + numList(ctx, A) + ar + numList(ctx, P);
-      case 'stnax3': return numList(ctx, P) + ar + numList(ctx, P) + ar + numList(ctx, A);
-      case 'stnax12': return numList(ctx, [A[0]]) + ar + numList(ctx, [A[1]]) + ar + numList(ctx, P);
-      case 'stnf': return numList(ctx, [A[0]]) + ar + numList(ctx, P) + ar + numList(ctx, P);
+      case 'widenag': case 'urennag': case 'utannag': case 'utannag2': case 'utanmul': {
+        var pp = partnersOf(A[0]);
+        if (!pp || !pp.length) return null;
+        if (leg.c.id === 'utanmul' && leg.pts !== pp.length * 2) return null;
+        if (leg.c.id !== 'utanmul' && leg.pts !== pp.length) return null;
+        if (leg.c.id === 'utannag2') return numList(ctx, pp) + ar + numList(ctx, A);
+        if (leg.c.id === 'utanmul') return numList(ctx, A) + mu + numList(ctx, pp);
+        return numList(ctx, A) + (leg.c.id === 'utannag' ? ar : da) + numList(ctx, pp);
+      }
+      case 'widef': case 'urenf': return fits(1 + P.length * 2) ? numList(ctx, A) + da + numList(ctx, A.concat(P)) : null;
+      case 'spkax1': return fits(P.length * (P.length - 1) / 2) ? numList(ctx, A) + da + numList(ctx, P) : null;
+      case 'spkax2': case 'stnax12': {
+        var pp2 = partnersOf(A[0]);
+        if (!pp2 || leg.pts !== pp2.length - 1 + 1) { /* 軸2頭ぶんを除く */ }
+        return fits(P.length)
+          ? (leg.c.id === 'spkax2' ? numList(ctx, A) + da + numList(ctx, P)
+             : numList(ctx, [A[0]]) + ar + numList(ctx, [A[1]]) + ar + numList(ctx, P))
+          : null;
+      }
+      case 'widebox': case 'urenbox': return fits(P.length * (P.length - 1) / 2) ? box(P) : null;
+      case 'spkbox': return fits(P.length * (P.length - 1) * (P.length - 2) / 6) ? box(P) : null;
+      case 'utanbox': return fits(P.length * (P.length - 1)) ? box(P) : null;
+      case 'stnbox': return fits(P.length * (P.length - 1) * (P.length - 2)) ? box(P) : null;
+      case 'stnmul': return fits(P.length * (P.length - 1) / 2 * 6) ? numList(ctx, A) + mu + numList(ctx, P) : null;
+      case 'stnax1': case 'stnax2': case 'stnax3': case 'stnf': {
+        // 枠ごとにふるった直積。実際の点数と合うときだけ構造で出す
+        var s1 = sieveOf(S, leg.c.slots[0]), s2 = sieveOf(S, leg.c.slots[1]);
+        var n = 0;
+        s1.forEach(function (a) { s2.forEach(function (b) { if (a !== b) n++; }); });
+        if (!fits(n)) return null;
+        if (leg.c.id === 'stnax1') return numList(ctx, A) + ar + numList(ctx, s1) + ar + numList(ctx, s2);
+        if (leg.c.id === 'stnax2') return numList(ctx, s1) + ar + numList(ctx, A) + ar + numList(ctx, s2);
+        if (leg.c.id === 'stnax3') return numList(ctx, s1) + ar + numList(ctx, s2) + ar + numList(ctx, A);
+        return numList(ctx, [A[0]]) + ar + numList(ctx, s1) + ar + numList(ctx, s2);
+      }
       default: return null;
     }
   }
@@ -1099,7 +1138,11 @@
       + '<span class="lamt">' + l.pts + '点 × ' + l.unit.toLocaleString('ja-JP') + '円 = <b>' + l.yen.toLocaleString('ja-JP') + '円</b></span></div>'
       + bodyHtml
       + (payRange ? ('<div class="lpay">' + payRange + '</div>') : '')
-      + (l.trimmedFrom ? ('<div class="ltrim">本来' + l.trimmedFrom + '点の買い方を、予算内で確率の高い' + l.pts + '点に絞ったため、上は1点ずつの表示です</div>') : '')
+      + (note ? '' : (
+          '<div class="ltrim">'
+          + (l.trimmedFrom ? ('本来' + l.trimmedFrom + '点の買い方を、予算内で確率の高い' + l.pts + '点に絞りました。') : '')
+          + (l.droppedLosing ? ('当たっても合計に届かない組 ' + l.droppedLosing + '点を外しました。') : '')
+          + '上は買う ' + l.pts + '点をそのまま並べています</div>'))
       + '</div>';
   }
 
@@ -1474,7 +1517,7 @@
       return '<div class="ak-cl"><div class="ak-hh">' + umaBox(n, h.gate, 'sm')
         + '<span class="nm">' + escapeHtml(h.name) + '</span>'
         + '<span class="pop">' + (h.popularity || '—') + '番人気 ' + (h.odds != null ? h.odds + '倍' : '—') + '</span>'
-        + probBar(h, maxP) + '</div>'
+        + '</div>'
         + (S.memo[n] ? ('<div class="ak-cl-m">─ ' + escapeHtml(S.memo[n]) + '</div>') : '')
         + '<div class="ak-segs">' + seg + '</div>'
         + '<button type="button" class="ak-cl-x" data-ak-uncut="' + n + '">この馬はやっぱり切る</button></div>';
@@ -1751,6 +1794,7 @@
       decideAxis: decideAxis,
       toCeil: toCeil,
       cutOrder: cutOrder,
+      legNotation: legNotation,
     },
   };
 
