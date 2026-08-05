@@ -1215,6 +1215,10 @@ function setupAkinatorPanel(site, oddsAll, simCtl) {
       if (goBtn) goBtn.disabled = !Akinator.parseYen(state.inputRaw);
       return;
     }
+    if (ev.target && ev.target.id === 'ak-memo-input') {
+      Akinator.setMemo(ctx, state, ev.target.value);   // 107 §2.4: 再描画しない（入力を邪魔しない）
+      return;
+    }
     if (ev.target && ev.target.matches && ev.target.matches('[data-ak-w]')) {
       const lbl = document.getElementById('ak-w-' + ev.target.dataset.akW);
       if (lbl) lbl.textContent = ev.target.value;

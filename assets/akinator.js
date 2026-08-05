@@ -31,6 +31,11 @@
 
   // ===== 定数 =====
   var TASTE_LAMBDA = { hit: 0.25, mid: 0.45, big: 0.70 };
+  // 107 §7.5b: 「リスクとリターンに見合う」の下限。当たっても合計投資額のこの倍数に
+  //   届かない買い方は本線にしない。「とにかく当てたい」は当てること自体が目的なので下限なし。
+  //   値に実測の裏づけはない（複勝1.3倍を本線から外すために引いた線。ユーザー判断 2026-08-05）
+  var MIN_MULT = { hit: 0, mid: 1.5, big: 2.5 };
+  var MIN_MULT_JA = { hit: null, mid: '1.5倍', big: '2.5倍' };
   var ORDERED = { umatan: 1, sanrentan: 1 };
   var FAM_LABEL = { hit: '当てにいく', mid: '中核', big: '一撃' };
   var TYPE_LABEL = {
@@ -64,39 +69,43 @@
 
   // ===== T1: 買い方カタログ（§2）。answerが割れるまでの「答え」の全部。質問はここから逆算する =====
   // build(S, BY): S.axis / S.partners から買い目候補（ids配列の配列）を作る。BYはwakunagのみ使用。
+  // 107-spec §4.2: axisReq = 軸に要求する集合 / slots = 相手に要求する枠の集合。
+  //   W=1着枠に置ける / R=2着枠に置ける / P=3着枠に置ける（W ⊆ R ⊆ P）
+  //   build() が受け取る S は sieveState() が作った代理で、S.partners は
+  //   その買い方の枠を満たす馬だけ、S.slotPartners[i] は slots[i] ごとの集合。
   var CATALOG = [
     // --- 当てにいく ---
-    { id: 'tan1', fam: 'hit', type: 'tansho', name: '単勝', axisN: 1, target: ['win'], ord: 'no',
+    { id: 'tan1', fam: 'hit', type: 'tansho', name: '単勝', axisN: 1, axisReq: ['W'], slots: [], ord: 'no',
       build: function (S) { return [[S.axis[0]]]; },
       memo: '80倍超は切る（実測0.402）。1.0〜1.5倍が最良帯0.893' },
-    { id: 'fuku1', fam: 'hit', type: 'fukusho', name: '複勝', axisN: 1, target: ['place'], ord: 'no',
+    { id: 'fuku1', fam: 'hit', type: 'fukusho', name: '複勝', axisN: 1, axisReq: ['P'], slots: [], ord: 'no',
       build: function (S) { return [[S.axis[0]]]; },
       memo: '印だけで買う2320通りの総当たりで最良（的中52.4%・ROI 0.834）' },
-    { id: 'widenag', fam: 'hit', type: 'wide', name: 'ワイド 軸1頭ながし', axisN: 1, target: ['place', 'ren'], ord: 'no',
+    { id: 'widenag', fam: 'hit', type: 'wide', name: 'ワイド 軸1頭ながし', axisN: 1, axisReq: ['P'], slots: ['P'], ord: 'no',
       build: function (S) { return S.partners.map(function (p) { return [S.axis[0], p]; }); } },
-    { id: 'widef', fam: 'hit', type: 'wide', name: 'ワイド 軸2頭ながし', axisN: 2, target: ['place', 'ren'], ord: 'no',
+    { id: 'widef', fam: 'hit', type: 'wide', name: 'ワイド 軸2頭ながし', axisN: 2, axisReq: ['P', 'P'], slots: ['P'], ord: 'no',
       build: function (S) {
         var o = [[S.axis[0], S.axis[1]]];
         S.partners.forEach(function (p) { o.push([S.axis[0], p]); o.push([S.axis[1], p]); });
         return o;
       },
       memo: '◎○2軸流し0.807。同点数の人気順対照0.796をわずかに上回る' },
-    { id: 'widebox', fam: 'hit', type: 'wide', name: 'ワイド ボックス', axisN: 0, target: ['place', 'ren'], ord: 'no',
+    { id: 'widebox', fam: 'hit', type: 'wide', name: 'ワイド ボックス', axisN: 0, axisReq: [], slots: ['P', 'P', 'P'], ord: 'no',
       build: function (S) { return combos(S.partners, 2); },
       memo: '印5頭10点で的中71.1%・0.800。基準線0.775を超えた数少ない例' },
     // --- 中核 ---
-    { id: 'urennag', fam: 'mid', type: 'umaren', name: '馬連 ながし', axisN: 1, target: ['ren', 'win'], ord: 'no',
+    { id: 'urennag', fam: 'mid', type: 'umaren', name: '馬連 ながし', axisN: 1, axisReq: ['R'], slots: ['R'], ord: 'no',
       build: function (S) { return S.partners.map(function (p) { return [S.axis[0], p]; }); } },
-    { id: 'urenf', fam: 'mid', type: 'umaren', name: '馬連 フォーメーション', axisN: 2, target: ['ren', 'win'], ord: 'no',
+    { id: 'urenf', fam: 'mid', type: 'umaren', name: '馬連 フォーメーション', axisN: 2, axisReq: ['R', 'R'], slots: ['R'], ord: 'no',
       build: function (S) {
         var o = [[S.axis[0], S.axis[1]]];
         S.partners.forEach(function (p) { o.push([S.axis[0], p]); o.push([S.axis[1], p]); });
         return o;
       } },
-    { id: 'urenbox', fam: 'mid', type: 'umaren', name: '馬連 ボックス', axisN: 0, target: ['ren', 'win'], ord: 'no',
+    { id: 'urenbox', fam: 'mid', type: 'umaren', name: '馬連 ボックス', axisN: 0, axisReq: [], slots: ['R', 'R', 'R'], ord: 'no',
       build: function (S) { return combos(S.partners, 2); },
       memo: '印3頭0.744。動画12/12本がボックスを否定' },
-    { id: 'wakunag', fam: 'mid', type: 'wakuren', name: '枠連 ながし', axisN: 1, target: ['ren', 'win'], ord: 'no',
+    { id: 'wakunag', fam: 'mid', type: 'wakuren', name: '枠連 ながし', axisN: 1, axisReq: ['R'], slots: ['R'], ord: 'no',
       build: function (S, BY) {
         var g = BY[S.axis[0]].gate;
         var set = [];
@@ -104,97 +113,181 @@
         return set.map(function (f) { return [g, f]; });
       },
       memo: '枠連オッズは未取得のため払戻を出せない' },
-    { id: 'utannag', fam: 'mid', type: 'umatan', name: '馬単 1着軸ながし', axisN: 1, target: ['win'], ord: 'yes',
+    { id: 'utannag', fam: 'mid', type: 'umatan', name: '馬単 1着軸ながし', axisN: 1, axisReq: ['W'], slots: ['R'], ord: 'yes',
       build: function (S) { return S.partners.map(function (p) { return [S.axis[0], p]; }); },
       memo: '◎1着固定→印3頭 2点で0.853。印ベースで2番目に良い行' },
-    { id: 'utannag2', fam: 'mid', type: 'umatan', name: '馬単 2着軸ながし', axisN: 1, target: ['ren'], ord: 'yes',
+    { id: 'utannag2', fam: 'mid', type: 'umatan', name: '馬単 2着軸ながし', axisN: 1, axisReq: ['R'], slots: ['W'], ord: 'yes',
       build: function (S) { return S.partners.map(function (p) { return [p, S.axis[0]]; }); } },
-    { id: 'utanmul', fam: 'mid', type: 'umatan', name: '馬単 ながしマルチ', axisN: 1, target: ['ren', 'win'], ord: 'multi',
+    // マルチは順序を主張していないので、要求は馬連と同じ（107 §4.1）
+    { id: 'utanmul', fam: 'mid', type: 'umatan', name: '馬単 ながしマルチ', axisN: 1, axisReq: ['R'], slots: ['R'], ord: 'multi',
       build: function (S) {
         var o = [];
         S.partners.forEach(function (p) { o.push([S.axis[0], p]); o.push([p, S.axis[0]]); });
         return o;
       },
       memo: '馬連に構造的に負ける。分岐点は着順正解率53.8%' },
-    { id: 'utanbox', fam: 'mid', type: 'umatan', name: '馬単 ボックス', axisN: 0, target: ['ren', 'win'], ord: 'yes',
+    { id: 'utanbox', fam: 'mid', type: 'umatan', name: '馬単 ボックス', axisN: 0, axisReq: [], slots: ['R', 'R'], ord: 'yes',
       build: function (S) { return perms(S.partners, 2); } },
     // --- 一撃 ---
-    { id: 'spkax1', fam: 'big', type: 'sanrenpuku', name: '3連複 軸1頭ながし', axisN: 1, target: ['place', 'ren', 'win'], ord: 'no',
+    { id: 'spkax1', fam: 'big', type: 'sanrenpuku', name: '3連複 軸1頭ながし', axisN: 1, axisReq: ['P'], slots: ['P', 'P'], ord: 'no',
       build: function (S) { return combos(S.partners, 2).map(function (pr) { return [S.axis[0], pr[0], pr[1]]; }); } },
-    { id: 'spkax2', fam: 'big', type: 'sanrenpuku', name: '3連複 軸2頭ながし', axisN: 2, target: ['place', 'ren', 'win'], ord: 'no',
+    { id: 'spkax2', fam: 'big', type: 'sanrenpuku', name: '3連複 軸2頭ながし', axisN: 2, axisReq: ['P', 'P'], slots: ['P'], ord: 'no',
       build: function (S) { return S.partners.map(function (p) { return [S.axis[0], S.axis[1], p]; }); },
       memo: '◎○軸→印4頭 2点で0.838' },
-    { id: 'spkbox', fam: 'big', type: 'sanrenpuku', name: '3連複 ボックス', axisN: 0, target: ['place', 'ren', 'win'], ord: 'no',
+    { id: 'spkbox', fam: 'big', type: 'sanrenpuku', name: '3連複 ボックス', axisN: 0, axisReq: [], slots: ['P', 'P', 'P'], ord: 'no',
       build: function (S) { return combos(S.partners, 3); },
       memo: '点数を絞るほどROIは上がる（110点0.653→1点0.776）。ただし1.0には届かない' },
-    { id: 'stnax1', fam: 'big', type: 'sanrentan', name: '3連単 1着軸ながし', axisN: 1, target: ['win'], ord: 'yes',
-      build: function (S) { return perms(S.partners, 2).map(function (pr) { return [S.axis[0], pr[0], pr[1]]; }); } },
-    { id: 'stnax2', fam: 'big', type: 'sanrentan', name: '3連単 2着軸ながし', axisN: 1, target: ['ren'], ord: 'yes',
-      build: function (S) { return perms(S.partners, 2).map(function (pr) { return [pr[0], S.axis[0], pr[1]]; }); } },
-    { id: 'stnax3', fam: 'big', type: 'sanrentan', name: '3連単 3着軸ながし', axisN: 1, target: ['place'], ord: 'yes',
-      build: function (S) { return perms(S.partners, 2).map(function (pr) { return [pr[0], pr[1], S.axis[0]]; }); } },
-    { id: 'stnax12', fam: 'big', type: 'sanrentan', name: '3連単 1・2着軸ながし', axisN: 2, target: ['win', 'ren'], ord: 'yes',
-      build: function (S) { return S.partners.map(function (p) { return [S.axis[0], S.axis[1], p]; }); } },
-    { id: 'stnmul', fam: 'big', type: 'sanrentan', name: '3連単 軸1頭ながしマルチ', axisN: 1, target: ['win', 'ren', 'place'], ord: 'multi',
+    // 着順を指定する3連単ながしは、枠ごとにふるった2集合の直積（同一馬を除く）
+    { id: 'stnax1', fam: 'big', type: 'sanrentan', name: '3連単 1着軸ながし', axisN: 1, axisReq: ['W'], slots: ['R', 'P'], ord: 'yes',
       build: function (S) {
         var o = [];
-        perms(S.partners, 2).forEach(function (pr) {
-          o.push([S.axis[0], pr[0], pr[1]]); o.push([pr[0], S.axis[0], pr[1]]); o.push([pr[0], pr[1], S.axis[0]]);
+        S.slotPartners[0].forEach(function (b) {
+          S.slotPartners[1].forEach(function (c) { if (b !== c) o.push([S.axis[0], b, c]); });
+        });
+        return o;
+      } },
+    { id: 'stnax2', fam: 'big', type: 'sanrentan', name: '3連単 2着軸ながし', axisN: 1, axisReq: ['R'], slots: ['W', 'P'], ord: 'yes',
+      build: function (S) {
+        var o = [];
+        S.slotPartners[0].forEach(function (a) {
+          S.slotPartners[1].forEach(function (c) { if (a !== c) o.push([a, S.axis[0], c]); });
+        });
+        return o;
+      } },
+    { id: 'stnax3', fam: 'big', type: 'sanrentan', name: '3連単 3着軸ながし', axisN: 1, axisReq: ['P'], slots: ['W', 'R'], ord: 'yes',
+      build: function (S) {
+        var o = [];
+        S.slotPartners[0].forEach(function (a) {
+          S.slotPartners[1].forEach(function (b) { if (a !== b) o.push([a, b, S.axis[0]]); });
+        });
+        return o;
+      } },
+    { id: 'stnax12', fam: 'big', type: 'sanrentan', name: '3連単 1・2着軸ながし', axisN: 2, axisReq: ['W', 'R'], slots: ['P'], ord: 'yes',
+      build: function (S) { return S.partners.map(function (p) { return [S.axis[0], S.axis[1], p]; }); } },
+    { id: 'stnmul', fam: 'big', type: 'sanrentan', name: '3連単 軸1頭ながしマルチ', axisN: 1, axisReq: ['P'], slots: ['P', 'P'], ord: 'multi',
+      build: function (S) {
+        var o = [];
+        combos(S.partners, 2).forEach(function (pr) {
+          o.push([S.axis[0], pr[0], pr[1]]); o.push([S.axis[0], pr[1], pr[0]]);
+          o.push([pr[0], S.axis[0], pr[1]]); o.push([pr[1], S.axis[0], pr[0]]);
+          o.push([pr[0], pr[1], S.axis[0]]); o.push([pr[1], pr[0], S.axis[0]]);
         });
         return o;
       },
       memo: '63.7%のケースで3連複に負ける（同じ狙いを難しい券種で表現している）' },
-    { id: 'stnbox', fam: 'big', type: 'sanrentan', name: '3連単 ボックス', axisN: 0, target: ['win', 'ren', 'place'], ord: 'yes',
+    { id: 'stnbox', fam: 'big', type: 'sanrentan', name: '3連単 ボックス', axisN: 0, axisReq: [], slots: ['P', 'P', 'P'], ord: 'yes',
       build: function (S) { return perms(S.partners, 3); },
       memo: '印3頭6点0.725。動画は全会一致で否定' },
-    { id: 'stnf', fam: 'big', type: 'sanrentan', name: '3連単 フォーメーション', axisN: 2, target: ['win', 'ren'], ord: 'yes',
+    // stnf は 1着=軸[0]、2・3着=相手の順列（既存の build を意味ごと据え置く。107 実装時メモ）
+    { id: 'stnf', fam: 'big', type: 'sanrentan', name: '3連単 フォーメーション', axisN: 2, axisReq: ['W', 'P'], slots: ['R', 'P'], ord: 'yes',
       build: function (S) {
         var o = [];
-        S.partners.forEach(function (p) {
-          S.partners.forEach(function (p2) {
-            if (p === p2) return;
+        S.slotPartners[0].forEach(function (p) {
+          S.slotPartners[1].forEach(function (p2) {
+            if (p === p2 || p === S.axis[0] || p2 === S.axis[0]) return;
             o.push([S.axis[0], p, p2]);
           });
         });
-        return o.filter(function (x) { return x[1] !== S.axis[0] && x[2] !== S.axis[0]; });
+        return o;
       },
       memo: '◎○/◎○▲/印5 の12点で0.893（見た目は最良だが決着に56,674レース必要＝判定不能）' },
   ];
 
+
+  // ===== 107 §1: 天井（ceiling）=====
+  //  win/ren/place/out/unknown。買い目に入るのは win|ren|place だけ。
+  //  out・unknown はどちらも確率を動かさない（107 §1.4。ボタン操作で的中確率が
+  //  良く見えるのを避けるため、88-spec §4 の消しペナルティ ×0.25 は廃止）
+  function inW(c) { return c === 'win'; }
+  function inR(c) { return c === 'win' || c === 'ren'; }
+  function inP(c) { return c === 'win' || c === 'ren' || c === 'place'; }
+  var SET_FN = { W: inW, R: inR, P: inP };
+  var SET_JA = { W: '1着まであると答えた馬', R: '2着まではあると答えた馬', P: '3着まではあると答えた馬' };
+  var CEIL_LABEL = { win: '勝ち切ると思う', ren: '2着までなら', place: '3着までなら',
+                     out: '3着にも来ない', unknown: 'わからない' };
+  var DEPTH = { win: 0, ren: 1, place: 2 };
+
+  function keptOf(ctx, S) {
+    return ctx.HORSES.map(function (h) { return h.number; })
+      .filter(function (n) { return inP(S.ceil[n]); });
+  }
+  // 107 §3.1: 軸候補＝残した馬のうち天井が最も浅い集合
+  function axisPool(ctx, S) {
+    var lv = ['win', 'ren', 'place'];
+    for (var i = 0; i < lv.length; i++) {
+      var g = keptOf(ctx, S).filter(function (n) { return S.ceil[n] === lv[i]; });
+      if (g.length) return { level: lv[i], nums: g };
+    }
+    return { level: null, nums: [] };
+  }
+  // 107 §3.2 / §8.1: 天井 → 既存 state。下流（buildPlan・buildPackage・applyPlan）は無改造で動く
+  function deriveLegacy(ctx, S) {
+    var nums = ctx.HORSES.map(function (h) { return h.number; });
+    S.kill = nums.filter(function (n) { return S.ceil[n] === 'out'; });
+    S.partners = keptOf(ctx, S).filter(function (n) { return S.axis.indexOf(n) === -1; });
+    S.target = S.axis.length
+      ? S.axis.map(function (n) { return S.ceil[n]; })
+          .sort(function (a, b) { return DEPTH[b] - DEPTH[a]; })[0]
+      : null;
+  }
+
+  // ===== 107 §4: 成立条件と相手のふるい =====
+  function sieveOf(S, set) {
+    return S.partners.filter(function (n) { return SET_FN[set](S.ceil[n]); });
+  }
+  //  build() に渡す代理 state。S.partners はその買い方の枠を満たす馬だけに絞る（§4.1・U5）
+  function sieveState(S, c) {
+    var slots = c.slots || [];
+    var slotP = slots.map(function (set) { return sieveOf(S, set); });
+    var uniform = slots.every(function (x) { return x === slots[0]; });
+    var union = [];
+    slotP.forEach(function (a) { a.forEach(function (n) { if (union.indexOf(n) === -1) union.push(n); }); });
+    var S2 = Object.create(S);
+    S2.partners = slots.length ? (uniform ? slotP[0] : union) : [];
+    S2.slotPartners = slotP;
+    return S2;
+  }
+  //  成立しない理由を返す（成立するなら null）。W ⊆ R ⊆ P なので入れ子のホール条件で足りる
+  function infeasibleReason(ctx, S, c) {
+    if (c.type === 'wakuren') return 'オッズ未取得のため候補外';
+    if (S.axisMode === null) return 'まだ査定の途中です';
+    if (c.axisN !== S.axis.length) {
+      return c.axisN === 0 ? '軸を決めた買い方ではありません'
+        : ('軸' + c.axisN + '頭の買い方（いまは' + S.axis.length + '頭）');
+    }
+    for (var i = 0; i < c.axisN; i++) {
+      if (!SET_FN[c.axisReq[i]](S.ceil[S.axis[i]])) {
+        return '軸' + (c.axisN > 1 ? (i + 1) + '頭目' : '') + 'は' + SET_JA[c.axisReq[i]] + 'である必要があります';
+      }
+    }
+    var nW = 0, nR = 0, nP = 0;
+    S.partners.forEach(function (n) {
+      var cc = S.ceil[n];
+      if (inW(cc)) nW++;
+      if (inR(cc)) nR++;
+      if (inP(cc)) nP++;
+    });
+    var need = { W: 0, R: 0, P: 0 };
+    (c.slots || []).forEach(function (x) { need[x]++; });
+    if (need.W > nW) return SET_JA.W + 'が' + need.W + '頭必要（いまは' + nW + '頭）';
+    if (need.W + need.R > nR) return SET_JA.R + 'が' + (need.W + need.R) + '頭必要（いまは' + nR + '頭）';
+    if (need.W + need.R + need.P > nP) return SET_JA.P + 'が' + (need.W + need.R + need.P) + '頭必要（いまは' + nP + '頭）';
+    return null;
+  }
+
   // ===== T2: 質問エンジン（§3） =====
   // apply/qf/sf/optsf は明示的に S を受け取る（モックアップの module-global S をやめた差分）
+  // 107 §5.1: 第1段（切り分け）と第2段（天井）は phase で持ち、
+  //   ここに残すのは「軸・着順・予算・好み」の4問だけ
   var QUESTIONS = [
     {
-      key: 'axis', kind: 'horse', max: 2, always: true,
-      q: '軸にする馬は？',
-      // 上限は説明文で書かず、見出し脇の残り枠カウンター（0/2頭）で示す。
-      // 文章に混ぜると読み飛ばされ、2頭選べることに気づかれなかった
-      counter: true,
-      extra: [{ label: '決めきれない（何頭かに絞るだけ）', desc: '', value: 'none' }],
+      key: 'axisPick', kind: 'horse', max: 2, counter: true, always: true,
+      q: 'この中で軸にするのはどれ？', s: '',
+      listOf: function (ctx, S) { return axisPool(ctx, S).nums; },
+      extra: [{ label: '差はつけられない', desc: '', value: 'none' }],
       apply: function (S, v) {
         if (v === 'none') { S.axisMode = 'none'; S.axis = []; } else { S.axisMode = 'pick'; S.axis = v; }
       },
-    },
-    {
-      key: 'target', kind: 'opt',
-      qf: function (S) {
-        return S.axisMode === 'none' ? 'どこまで当てにいく？'
-          : (S.axis.length === 2 ? 'その2頭、どこまで来ると思う？' : 'その馬、どこまで来ると思う？');
-      },
-      s: '',
-      optsf: function (S) {
-        var base = S.axisMode === 'none' ? [
-          { value: 'win', label: '1着から当てにいく', desc: '' },
-          { value: 'ren', label: '2着までの顔ぶれ', desc: '' },
-          { value: 'place', label: '3着内の顔ぶれ', desc: '' },
-        ] : [
-          { value: 'win', label: '勝つと思う', desc: '' },
-          { value: 'ren', label: '2着までには来る', desc: '' },
-          { value: 'place', label: '3着内なら十分', desc: '' },
-        ];
-        return base.concat([{ value: 'any', label: 'わからない', desc: '', skip: true }]);
-      },
-      apply: function (S, v) { S.target = v; },
     },
     {
       key: 'ordered', kind: 'opt', q: '着順まで当てる自信は？', s: '',
@@ -204,14 +297,6 @@
         { value: 'any', label: 'わからない', desc: '', skip: true },
       ],
       apply: function (S, v) { S.ordered = v; },
-    },
-    {
-      key: 'partners', kind: 'horse', max: 9,
-      qf: function (S) { return S.axisMode === 'none' ? '何頭に絞れてる？' : '相手はどの馬？'; },
-      sf: function (S) {
-        return S.axisMode === 'none' ? 'ボックスに入れる馬を選んでください。' : '軸と組ませる馬を選んでください。選ぶ数で点数が変わります。';
-      },
-      apply: function (S, v) { S.partners = v.filter(function (n) { return S.axis.indexOf(n) === -1; }); },
     },
     {
       key: 'budget', kind: 'input', q: 'このレースの予算は？',
@@ -233,24 +318,17 @@
   function optsFor(S, q) { return q.optsf ? q.optsf(S) : (q.opts || []); }
 
   function answered(S, q) {
-    if (q.key === 'axis') return S.axisMode !== null;
-    if (q.key === 'partners') return S.partners.length > 0;
+    if (q.key === 'axisPick') return S.axisMode !== null;
     return S[q.key] !== null;
   }
 
   // ===== T1: 残り候補（§2 alive） =====
   function alive(ctx, S) {
     return CATALOG.filter(function (c) {
-      if (S.axisMode !== null) {
-        if (S.axisMode === 'none' && c.axisN !== 0) return false;
-        if (S.axisMode !== 'none' && c.axisN !== S.axis.length) return false;
-      }
-      if (S.target !== null && S.target !== 'any' && c.target.indexOf(S.target) === -1) return false;
+      // 107 §4.4: target による絞り込みは充足判定と役割が重なるので外した
       if (S.ordered === false && c.ord === 'yes') return false;
       if (S.ordered === true && c.ord === 'multi') return false;
-      // 枠連はオッズ未取得＝払戻を出せないので推奨には出さない（§6.4。一覧にはヒントとして残す）
-      if (c.type === 'wakuren') return false;
-      return true;
+      return infeasibleReason(ctx, S, c) === null;
     });
   }
 
@@ -283,15 +361,28 @@
     for (var i = 0; i < QUESTIONS.length; i++) {
       var q = QUESTIONS[i];
       if (answered(S, q)) continue;
-      if (q.key === 'partners') {
-        var al = alive(ctx, S);
-        var beyondTanFuku = al.some(function (c) { return c.id !== 'tan1' && c.id !== 'fuku1'; });
-        if (!beyondTanFuku) continue;
-        return q;
-      }
-      if (q.always || splits(ctx, S, q.key)) return q;
+      if (q.key === 'axisPick') return q;      // 軸候補2頭以上のときだけ未回答で残る
+      if (splits(ctx, S, q.key)) return q;
     }
     return null;
+  }
+
+  // 107 §2.1: 第1段を抜けるとき。一度も見ていない馬も「保留」に寄せる
+  //  （未設定のまま残すと第2段の保留リストから漏れ、二度と出てこない）
+  function toCeil(ctx, S) {
+    cutOrder(ctx).forEach(function (n) { if (!S.ceil[n]) S.ceil[n] = 'unknown'; });
+    S.detail = null;
+    if (!keptOf(ctx, S).length) { S.axisMode = 'none'; S.axis = []; deriveLegacy(ctx, S); S.phase = 'q'; return; }
+    S.phase = 'ceil';
+  }
+
+  // 107 §3.1: 第2段を抜けたところで軸を決める。候補2頭以上のときだけ質問に回す
+  function decideAxis(ctx, S) {
+    var pool = axisPool(ctx, S);
+    if (!pool.nums.length) { S.axisMode = 'none'; S.axis = []; }
+    else if (pool.nums.length === 1) { S.axisMode = 'pick'; S.axis = pool.nums.slice(); }
+    else { S.axisMode = null; S.axis = []; }
+    deriveLegacy(ctx, S);
   }
 
   // ===== T4: 予算の自由入力パーサ（§3.4） =====
@@ -312,12 +403,17 @@
   }
 
   // ===== 確率q（§4） =====
+  // 107 §1.4（2026-08-05 改訂）
+  //  q は Ans. の素の確率（estimated_prob）をそのまま正規化しただけ。
+  //  88-spec §4 の「軸ブースト ×1.6」「消しペナルティ ×0.25」は両方とも廃止した。
+  //  どちらも根拠が無く（仕様書にも決定の記録にも由来が無い）、ボタン操作だけで
+  //  画面の「どれくらい当たる」が良く見える原因になっていたため。
+  //  T は「堅い・荒れる」を将来効かせるためのフックとして残す（当面 1.0 固定＝素通し）。
+  var T_EXP = 1.0;
   function qprobs(ctx, S) {
     var q = {}, sum = 0;
     ctx.HORSES.forEach(function (h) {
-      var v = ctx.P0[h.number];
-      if (S.axis.indexOf(h.number) !== -1) v *= 1.6;
-      if (S.kill.indexOf(h.number) !== -1) v *= 0.25;
+      var v = T_EXP === 1.0 ? ctx.P0[h.number] : Math.pow(ctx.P0[h.number], 1 / T_EXP);
       q[h.number] = v; sum += v;
     });
     for (var k in q) { if (Object.prototype.hasOwnProperty.call(q, k)) q[k] = q[k] / sum; }
@@ -355,7 +451,7 @@
   // buildPlan: 予算を反映した単一買い方の評価（allPlans()・budgetPreview()用）
   function buildPlan(ctx, S, c, q) {
     var list;
-    try { list = c.build(S, ctx.BY); } catch (e) { return null; }
+    try { list = c.build(sieveState(S, c), ctx.BY); } catch (e) { return null; }
     if (!list || !list.length) return null;
     var seen = {}, uniq = [];
     list.forEach(function (ids) {
@@ -398,7 +494,7 @@
   // ===== T5: buildRows / blocksOf / fundLeg / swapToSanrenpuku（§5） =====
   function buildRows(ctx, S, c, q) {           // 予算を見ない素の買い目（確率降順）
     var list;
-    try { list = c.build(S, ctx.BY); } catch (e) { return null; }
+    try { list = c.build(sieveState(S, c), ctx.BY); } catch (e) { return null; }
     if (!list || !list.length) return null;
     var seen = {}, rows = [];
     list.forEach(function (ids) {
@@ -429,7 +525,7 @@
   function familyCandidates(ctx, S, fam, q) {
     var out = [];
     alive(ctx, S).forEach(function (c) {
-      if (c.fam !== fam) return;
+      if (fam !== 'all' && c.fam !== fam) return;   // 107 §7.5: 'all' で全ファミリー横断
       var r = buildRows(ctx, S, c, q);
       if (r) out.push(r);
     });
@@ -520,65 +616,179 @@
     });
     return pay;
   }
+  // 107 §7.5（2026-08-05 改訂）
+  //  推奨は「合計がプラスになるか」で選ぶ。脚を足すかどうかも、足した束のほうが
+  //  プラスになりやすい／大きく返るときだけ。結果として1本になることもある。
+  //  以前は最大3本まで機械的に足していたため、本線が当たっても合計に届かない
+  //  （複勝1,400円→1,820円／合計2,000円）束を勧めてしまっていた。
   function buildPackage(ctx, S, fam, q, budget, w, outcomes) {
-    var ladder = bestPerType(ctx, S, q);
-    // 本線は「好み」で選ぶ。的中確率だけで選ぶと 3連複が 3連単に、馬連が馬単に必ず勝ち、
-    // 「大きく取りたい」と答えても券種が変わらなくなる
     var lam = TASTE_LAMBDA[S.taste || 'mid'];
-    var mainYen = Math.max(100, Math.floor(budget * w / 100) * 100);
-    var main = null, mainLeg = null, bestScore = -1;
-    familyCandidates(ctx, S, fam, q).forEach(function (r) {
-      var lg = fundLeg(r, mainYen);
-      if (!lg) return;
-      var sc = legScore(lg, lam);
-      if (sc > bestScore) { bestScore = sc; main = r; mainLeg = lg; }
-    });
-    if (!mainLeg) return null;
-    mainLeg = swapToSanrenpuku(ctx, mainLeg, q);
-    var legs = [mainLeg];
-    var rest = budget - mainLeg.yen;
-
     var outs = outcomes.outs, totP = outcomes.tot;
     var maskOf = function (leg) { return outs.map(function (o) { return legPayout(ctx, leg, o.t) > 0 ? 1 : 0; }); };
-    var cover = maskOf(mainLeg);
     var covP = function (mk) {
       return outs.reduce(function (a, o, i2) { return a + (mk[i2] ? o.p : 0); }, 0) / totP;
     };
-    // 保険＝本線より当てやすい脚。ただし「何か返ってくる場面」を実際に広げる脚だけ入れる（§5.2）
-    var MIN_GAIN = 0.01;
-    var guards = ladder.filter(function (r) { return r.c.id !== main.c.id && r.pHit > main.pHit; });
-    for (var gi = 0; gi < guards.length; gi++) {
-      if (rest < 100) break;
-      var share = Math.max(100, Math.floor(rest / (guards.length - gi) / 100) * 100);
-      var leg = fundLeg(guards[gi], Math.min(share, rest));
-      if (!leg) continue;
-      if (leg.trimmedFrom) continue;           // 中途半端に削れる保険は足さない
-      var mk = maskOf(leg);
-      var merged = cover.map(function (c, j) { return c | mk[j]; });
-      if (covP(merged) - covP(cover) < MIN_GAIN) continue;
-      cover = merged; legs.push(leg); rest -= leg.yen;
+    // 束のスコア＝プラスになる確率と、返るときの倍率の重みづけ（好みλ）
+    // 本線が当たれば必ず合計を上回るか。
+    //  保険だけ当たって元割れになるのは保険の役割なので、ここでは問わない（88-spec §6.6）
+    function isClean(ev) { return !(ev.pMainLoss > 1e-9); }
+    function evalOf(pkg) {
+      var ev = evalPackage(ctx, pkg, outcomes);
+      var sc = (ev.pPlus > 0) ? Math.pow(ev.pPlus, 1 - lam) * Math.pow((ev.med || 1) / pkg.stake, lam) : 0;
+      return { ev: ev, sc: sc, clean: isClean(ev) };
     }
-    // 余った予算は各脚の単価に100円ずつ乗せて使い切る（本線優先。点数は増やさない）
-    var guardLoop = 0;
-    while (rest >= 100 && guardLoop++ < 200) {
-      var moved = false;
-      legs.forEach(function (l) {
-        if (rest >= l.pts * 100) { l.unit += 100; l.yen = l.unit * l.pts; rest -= l.pts * 100; moved = true; }
+    // 本線から「当たっても合計に届かない点」を落とす。落とすと単価が上がるので収束まで繰り返す。
+    //  ワイド軸2頭ながしのように点数が多く安い組が混じる買い方で、当たっているのに
+    //  マイナスになる目を買わされるのを防ぐ（57レースの掃き出しで324枚に発生）
+    function trimLosing(leg, yen) {
+      // 全点が同じ単価なので、単価は打ち消し合う。オッズを高い順に並べ、
+      // 「k番目に高いオッズ > k」を満たす最大のkが、当たればどれも合計を上回る点数になる。
+      //   例）[8.5, 6.2, 4.4, 3.9, …] → k=3（4.4>3 は成立、3.9>4 は不成立）
+      var withOdds = leg.rows.filter(function (r) { return r.odds !== null; });
+      if (withOdds.length !== leg.rows.length) return leg;   // 枠連など払戻不明は触らない
+      var sorted = leg.rows.slice().sort(function (a, b) { return b.odds - a.odds; });
+      var k = 0;
+      while (k < sorted.length && sorted[k].odds > k + 1) k++;
+      // 1点も残らない＝どの組も当たって合計に届かない（複勝1.0倍など）。この買い方は使わない
+      if (k === 0) return null;
+      if (k === leg.rows.length) return leg;                  // 絞る必要なし
+      var keepSet = {};
+      sorted.slice(0, k).forEach(function (r) { keepSet[r.ids.join('-')] = true; });
+      var dropped = leg.rows.length - k;
+      leg.rows = leg.rows.filter(function (r) { return keepSet[r.ids.join('-')]; });
+      leg.pts = leg.rows.length;
+      leg.unit = Math.max(100, Math.floor(yen / leg.pts / 100) * 100);
+      leg.yen = leg.unit * leg.pts;
+      leg.pHit = leg.rows.reduce(function (a, r) { return a + r.p; }, 0);
+      leg.droppedLosing = (leg.droppedLosing || 0) + dropped;
+      return leg;
+    }
+
+    // 与えた本線＋追加脚で束を組み上げる（余りは単価に乗せて使い切る。点数は増やさない）
+    function assemble(mainRaw, adds) {
+      var useW = adds.length ? w : 1.0;
+      var mainYen = Math.max(100, Math.floor(budget * useW / 100) * 100);
+      var mLeg = fundLeg(mainRaw, mainYen);
+      if (!mLeg) return null;
+      mLeg = swapToSanrenpuku(ctx, mLeg, q);
+      mLeg = trimLosing(mLeg, mainYen);
+      if (!mLeg) return null;          // 当たっても合計に届く組が1つも無い買い方は使わない
+      mLeg.role = 'main';
+      var legs = [mLeg], rest = budget - mLeg.yen;
+      adds.forEach(function (a, i2) {
+        var share = Math.max(100, Math.floor(rest / (adds.length - i2) / 100) * 100);
+        var lg = fundLeg(a.raw, Math.min(share, rest));
+        if (!lg || lg.trimmedFrom) return;
+        lg.role = a.role;
+        legs.push(lg); rest -= lg.yen;
       });
-      if (!moved) break;
+      legs = [legs[0]].concat(
+        legs.slice(1).filter(function (l) { return l.role === 'guard'; }),
+        legs.slice(1).filter(function (l) { return l.role === 'boost'; }));
+      var loop = 0;
+      while (rest >= 100 && loop++ < 200) {
+        var moved = false;
+        legs.forEach(function (l) {
+          if (rest >= l.pts * 100) { l.unit += 100; l.yen = l.unit * l.pts; rest -= l.pts * 100; moved = true; }
+        });
+        if (!moved) break;
+      }
+      // 余りを単価に乗せると合計が上がり、いったん残した組がまた合計に届かなくなることがある。
+      // 最終の合計でもう一度ふるいにかける
+      var stake0 = legs.reduce(function (a, l) { return a + l.yen; }, 0);
+      var before = legs[0].pts;
+      if (!trimLosing(legs[0], legs[0].yen)) return null;
+      if (legs[0].pts !== before) {
+        legs[0].droppedLosing = (legs[0].droppedLosing || 0);
+        rest = budget - legs.reduce(function (a, l) { return a + l.yen; }, 0);
+      }
+      return { fam: fam, legs: legs, main: legs[0], hasGuards: legs.length > 1,
+        stake: legs.reduce(function (a, l) { return a + l.yen; }, 0), leftover: rest };
     }
-    return { fam: fam, legs: legs, main: legs[0], hasGuards: guards.length > 0,
-      stake: legs.reduce(function (a, l) { return a + l.yen; }, 0), leftover: rest };
+
+    var famCands = familyCandidates(ctx, S, fam, q);
+    if (!famCands.length) return null;
+    // 本線もこのスコアで選ぶ。単独で買ったときに元が取れない買い方を先頭に置かないため
+    var solos = [];
+    famCands.forEach(function (r) {
+      var pkg = assemble(r, []);
+      if (!pkg) return;
+      var ev = evalPackage(ctx, pkg, outcomes);
+      var mult = (ev.med || 0) / pkg.stake;
+      var sc = (ev.pPlus > 0) ? Math.pow(ev.pPlus, 1 - lam) * Math.pow((ev.med || 1) / pkg.stake, lam) : 0;
+      solos.push({ sc: sc, raw: r, pkg: pkg, mult: mult, clean: isClean(ev) });
+    });
+    if (!solos.length) return null;
+    // ⑴ 当たっても元が取れない目を含む買い方は、含まないものがある限り選ばない。
+    //    ワイド軸2頭ながしのように、点数が多く安い組が混じる買い方がこれに当たる
+    //    （57レース×18通りの掃き出しで、元割れ326枚すべてに同じ枠内の代替があった）
+    var cleanSolos = solos.filter(function (x) { return x.clean; });
+    var base = cleanSolos.length ? cleanSolos : solos;
+    // ⑵ §7.5b: 見合う下限。全部が下限割れなら下限を外す（買い目を消さない）
+    var floor = MIN_MULT[S.taste || 'mid'] || 0;
+    var passed = base.filter(function (x) { return x.mult >= floor; });
+    var cut = floor > 0 && passed.length && passed.length < base.length ? base.length - passed.length : 0;
+    var pool = passed.length ? passed : base;
+    var best = null;
+    pool.forEach(function (x) { if (!best || x.sc > best.sc) best = x; });
+    if (!best) return null;
+    var floorNote = cut
+      ? ('「' + { hit: 'とにかく当てたい', mid: '半々', big: '大きく取りたい' }[S.taste || 'mid']
+         + '」を選んだので、当たっても合計の' + MIN_MULT_JA[S.taste || 'mid'] + 'に届かない買い方 '
+         + cut + '通りは本線にしていません。')
+      : null;
+
+    // 追加候補（同ファミリー → 他ファミリー）を貪欲に並べ、役割を決める
+    var ladder = bestPerType(ctx, S, q);
+    var mainLegForMask = best.pkg.legs[0];
+    var cover = maskOf(mainLegForMask), masks = [cover.join('')];
+    var sameFam = famCands.filter(function (r) { return r.c.id !== best.raw.c.id; })
+      .sort(function (a, b) { return b.pHit - a.pHit; });
+    var crossFam = ladder.filter(function (r) {
+      return r.c.id !== best.raw.c.id && r.pHit > best.raw.pHit
+        && !sameFam.some(function (x) { return x.c.id === r.c.id; });
+    });
+    var MIN_GAIN = 0.01, MAX_LEGS = 3;
+    var adds = [];
+    sameFam.concat(crossFam).forEach(function (r) {
+      if (adds.length >= MAX_LEGS - 1) return;
+      var probe = fundLeg(r, Math.max(100, Math.floor(budget * (1 - w) / 100) * 100));
+      if (!probe || probe.trimmedFrom) return;
+      var mk = maskOf(probe);
+      if (!mk.some(function (x) { return x; })) return;
+      // 当たる場面が既存の脚とまったく同じ脚は足さない（同じ出来事の二重買い）
+      if (masks.indexOf(mk.join('')) !== -1) return;
+      var merged = cover.map(function (c, j) { return c | mk[j]; });
+      var role = (covP(merged) - covP(cover)) >= MIN_GAIN ? 'guard' : 'boost';
+      cover = merged; masks.push(mk.join(''));
+      adds.push({ raw: r, role: role });
+    });
+
+    // 0本・1本・2本…を組んで、束として最良のものを採る。改善しないなら足さない
+    var chosen = best.pkg, chosenSc = best.sc, chosenClean = best.clean;
+    chosen.floorNote = floorNote;
+    for (var k = 1; k <= adds.length; k++) {
+      var pkg2 = assemble(best.raw, adds.slice(0, k));
+      if (!pkg2 || pkg2.legs.length !== k + 1) continue;
+      var e2 = evalOf(pkg2);
+      // 脚を足したせいで元割れが生まれるなら足さない（予算を分けると起きる）
+      if (chosenClean && !e2.clean) continue;
+      if ((!chosenClean && e2.clean) || e2.sc > chosenSc) {
+        pkg2.floorNote = floorNote; chosen = pkg2; chosenSc = e2.sc; chosenClean = e2.clean;
+      }
+    }
+    return chosen;
   }
+
   function evalPackage(ctx, pkg, outcomes) {    // 決着を全通り回して束全体の分布を出す
     var outs = outcomes.outs, tot = outcomes.tot;
-    var pAny = 0, pPlus = 0, pMain = 0, maxPay = 0, minPay = Infinity, hits = [];
+    var pAny = 0, pPlus = 0, pMain = 0, pMainLoss = 0, maxPay = 0, minPay = Infinity, hits = [];
     outs.forEach(function (o) {
       var t = o.t, p = o.p;
       var pay = 0;
       pkg.legs.forEach(function (l) { pay += legPayout(ctx, l, t); });
       var mainPay = legPayout(ctx, pkg.legs[0], t);
-      if (mainPay > 0) pMain += p;
+      if (mainPay > 0) { pMain += p; if (pay <= pkg.stake) pMainLoss += p; }
       if (pay > 0) { pAny += p; hits.push([pay, p]); if (pay > maxPay) maxPay = pay; if (pay < minPay) minPay = pay; }
       if (pay > pkg.stake) pPlus += p;
     });
@@ -586,31 +796,27 @@
     var ht = hits.reduce(function (a, x) { return a + x[1]; }, 0), acc = 0, med = null;
     for (var i = 0; i < hits.length; i++) { acc += hits[i][1]; if (acc >= ht / 2) { med = hits[i][0]; break; } }
     return {
-      pAny: pAny / tot, pPlus: pPlus / tot, pMain: pMain / tot, pGuardOnly: (pAny - pMain) / tot,
+      pAny: pAny / tot, pPlus: pPlus / tot, pMain: pMain / tot, pMainLoss: pMainLoss / tot,
+      pGuardOnly: (pAny - pMain) / tot,
       pNone: 1 - pAny / tot, med: med, maxPay: maxPay, minPay: minPay === Infinity ? null : minPay,
     };
   }
 
   // 全券種×全買い方。答えで落ちたものも理由つきで残す（§6.5。結論に全部を含めるための担保）
-  function excludeReason(S, c) {
-    if (c.type === 'wakuren') return 'オッズ未取得のため候補外';
-    if (S.axisMode === 'none' && c.axisN !== 0) return '軸を決めていないため';
-    if (S.axisMode !== null && S.axisMode !== 'none' && c.axisN !== S.axis.length) {
-      return '軸' + c.axisN + '頭の買い方（いまは' + S.axis.length + '頭）';
-    }
-    if (S.target !== null && S.target !== 'any' && c.target.indexOf(S.target) === -1) return '「どこまで来るか」の答えに合わない';
+  function excludeReason(ctx, S, c) {
     if (S.ordered === false && c.ord === 'yes') return '着順に自信なしと答えたため';
     if (S.ordered === true && c.ord === 'multi') return '着順に自信ありと答えたため';
-    return '条件に合わない';
+    return infeasibleReason(ctx, S, c) || '';
   }
+
   function allPlans(ctx, S) {
     var q = qprobs(ctx, S);
     var al = {}; alive(ctx, S).forEach(function (c) { al[c.id] = true; });
     return CATALOG.map(function (c) {
       var pl = buildPlan(ctx, S, c, q);
-      if (!pl) return { c: c, reason: al[c.id] ? 'この頭数・選択では組めない' : excludeReason(S, c) };
+      if (!pl) return { c: c, reason: al[c.id] ? 'この頭数・選択では組めない' : excludeReason(ctx, S, c) };
       if (pl.over) return { c: c, pl: pl, reason: '予算オーバー（' + pl.stake.toLocaleString('ja-JP') + '円）' };
-      if (!al[c.id]) return { c: c, pl: pl, reason: excludeReason(S, c) };
+      if (!al[c.id]) return { c: c, pl: pl, reason: excludeReason(ctx, S, c) };
       return { c: c, pl: pl, reason: null };
     });
   }
@@ -633,12 +839,16 @@
 
   function initialState() {
     return {
+      // 107: ceil が正本。axis/kill/partners/target は deriveLegacy() の導出値
+      ceil: {}, memo: {}, phase: 'cut', idx: 0, pendOpen: false, detail: null,
       axis: [], axisMode: null, kill: [], target: null, ordered: null, partners: [], budget: null,
       taste: null, asked: [], done: false, killOpen: false,
-      pick: [], inputRaw: '', pkgW: { hit: 0.7, mid: 0.7, big: 0.7 },
+      pick: [], inputRaw: '', pkgW: { hit: 0.7, mid: 0.7, big: 0.7, all: 0.6 },
     };
   }
   function setInputRaw(S, raw) { S.inputRaw = raw; }
+  // 107 §2.4: ひとこと（任意・保存しない）
+  function setMemo(ctx, S, v) { S.memo[cutOrder(ctx)[S.idx]] = v; }
   function setPkgW(S, fam, pct) { S.pkgW[fam] = Number(pct) / 100; }
 
   function computeDone(ctx, S) {
@@ -821,7 +1031,11 @@
     }
     var payRange = legPayRange(l);
     return '<div class="leg' + (isMain ? ' main' : '') + '">'
-      + '<div class="lh"><span class="lname">' + (isMain ? '<span class="mainchip">本線</span>' : '') + escapeHtml(TYPE_LABEL[l.c.type])
+      + '<div class="lh"><span class="lname">'
+      + (l.role === 'main' || isMain ? '<span class="mainchip">本線</span>'
+         : l.role === 'guard' ? '<span class="mainchip guard">保険</span>'
+         : l.role === 'boost' ? '<span class="mainchip boost">上乗せ</span>' : '')
+      + escapeHtml(TYPE_LABEL[l.c.type])
       + (wayLabel(l.c, l) ? ('<span class="lway">' + escapeHtml(wayLabel(l.c, l)) + '</span>') : '') + '</span>'
       + '<span class="lamt">' + l.pts + '点 × ' + l.unit.toLocaleString('ja-JP') + '円 = <b>' + l.yen.toLocaleString('ja-JP') + '円</b></span></div>'
       + bodyHtml
@@ -956,6 +1170,11 @@
       var legsHtml = pkg.legs.map(function (l, j) { return legRow(ctx, S, l, j === 0); }).join('');
       var warn = warnFor(m.c, m);
       var memo = m.c.memo ? ('<div class="ctrl">実測メモ：' + escapeHtml(m.c.memo) + '</div>') : '';
+      var floorHtml = pkg.floorNote ? ('<div class="ctrl">' + escapeHtml(pkg.floorNote) + '</div>') : '';
+      if (pkg.legs[0].droppedLosing) {
+        floorHtml += '<div class="ctrl">当たっても合計に届かない組 ' + pkg.legs[0].droppedLosing
+          + '点を外しました。残した ' + pkg.legs[0].pts + '点は、当たればどれも合計を上回ります。</div>';
+      }
       var wPct = Math.round(S.pkgW[f] * 100);
       var bandType = m.c.type;
       return '<div class="rc">'
@@ -973,7 +1192,7 @@
           + '<span class="sl-val">本線 <b id="ak-w-' + f + '">' + wPct + '</b>%</span><span>本線に厚く</span></div>'
           + '<input type="range" min="30" max="100" step="10" value="' + wPct + '" data-ak-w="' + f + '"></div>'
         ) : '')
-        + warn + memo
+        + warn + floorHtml + memo
         + '<div class="act"><button type="button" class="ak-btn sm" data-ak-load="' + f + '">シミュレーターに入れる</button>'
         + '<button type="button" class="ak-btn ghost sm">他の案を見る</button></div>'
         + '</div>';
@@ -1010,28 +1229,6 @@
       + '<div class="alive-body">' + body + '</div></details>';
   }
 
-  function renderKillBar(ctx, S) {
-    var listHtml = S.kill.length
-      ? S.kill.map(function (n) {
-        var h = ctx.BY[n];
-        return h ? (umaBox(n, h.gate, 'sm') + '<span class="killnm">' + escapeHtml(h.name) + '</span>') : '';
-      }).join('')
-      : '';
-    var bar = '<div class="ak-bar"><span class="lbl">気に入らない馬を消す</span>'
-      + '<span class="killed">' + listHtml + '</span>'
-      + '<button type="button" class="ak-mini' + (S.killOpen ? ' on' : '') + '" data-ak-kill-toggle style="margin-left:auto">'
-      + (S.killOpen ? '閉じる' : '消す馬を選ぶ') + '</button></div>';
-    var panel = '';
-    if (S.killOpen) {
-      var rows = ctx.HORSES.slice().sort(function (a, b) { return a.number - b.number; })
-        .map(function (h) { return horseRow(ctx, S, h, { selected: S.kill, killMode: true, pickAttr: 'data-ak-kill', maxP: maxProb(ctx) }); }).join('');
-      panel = '<div class="ak-card" style="margin-bottom:12px"><div class="ak-q"><div class="q" style="font-size:14px">消す馬を選ぶ</div>'
-        + '<div class="s">選んだ馬の確率を大きく下げ、買い目からも外します。Ans.が地雷と判定した馬は<b style="color:var(--live)">赤枠</b>で出します。</div></div>'
-        + '<div class="ak-hlist">' + rows + '</div></div>';
-    }
-    return bar + panel;
-  }
-
   function renderQuestion(ctx, S) {
     var Q = nextQuestion(ctx, S);
     if (!Q) return renderResults(ctx, S) + renderAlive(ctx, S); // computeDone()が既にS.doneをtrueにしている前提
@@ -1042,10 +1239,12 @@
 
     var body = '';
     if (Q.kind === 'horse') {
-      var list = ctx.HORSES.filter(function (h) { return S.kill.indexOf(h.number) === -1; })
-        .sort(function (a, b) { return a.number - b.number; });
+      var allow = Q.listOf ? Q.listOf(ctx, S) : null;
+      var list = ctx.HORSES.filter(function (h) {
+        return allow ? allow.indexOf(h.number) !== -1 : S.kill.indexOf(h.number) === -1;
+      }).sort(function (a, b) { return a.number - b.number; });
       body = '<div class="ak-hlist">' + list.map(function (h) {
-        return horseRow(ctx, S, h, { selected: S.pick, radio: Q.max === 1, markAxis: Q.key === 'partners', maxP: maxProb(ctx) });
+        return horseRow(ctx, S, h, { selected: S.pick, radio: Q.max === 1, markAxis: false, maxP: maxProb(ctx) });
       }).join('') + '</div>';
       var extras = (Q.extra || []).map(function (e) {
         return '<button type="button" class="ak-opt" data-ak-extra="' + e.value + '" style="border-top:1px solid var(--rule)">'
@@ -1056,7 +1255,7 @@
       var pickedHtml = S.pick.length
         ? S.pick.map(function (n2) { return umaBox(n2, ctx.BY[n2] ? ctx.BY[n2].gate : undefined, 'sm') + '<b>' + escapeHtml(ctx.BY[n2] ? ctx.BY[n2].name : '') + '</b>'; }).join('　')
         : '<span style="color:var(--cap)">まだ選んでいません</span>';
-      var cnt = Q.key === 'partners' ? previewPoints(ctx, S) : '';
+      var cnt = '';
       body += '<div class="ak-foot"><span class="picked">' + pickedHtml + cnt + '</span>'
         + '<button type="button" class="ak-btn" data-ak-go' + (S.pick.length ? '' : ' disabled') + '>次へ</button></div>';
     } else if (Q.kind === 'input') {
@@ -1099,11 +1298,221 @@
       + renderAlive(ctx, S);
   }
 
+  // ===== 107 §2.1: 第1段 切り分け（全頭・1頭ずつ） =====
+  var CUT_OPTS = [
+    { v: 'keep', label: '残す', c: '#0b6b3a' },
+    { v: 'cut', label: '切る', c: '#8a2020' },
+    { v: 'unknown', label: 'わからない', c: '#999' },
+  ];
+  function cutOrder(ctx) {
+    return ctx.HORSES.slice().sort(function (a, b) {
+      return (a.popularity || 99) - (b.popularity || 99) || a.number - b.number;
+    }).map(function (h) { return h.number; });
+  }
+  function keptCount(ctx, S) {
+    return cutOrder(ctx).filter(function (n) { return S.ceil[n] && S.ceil[n] !== 'out' && S.ceil[n] !== 'unknown'; }).length;
+  }
+
+  // 107 §2.2b: 「わからない」を押したときだけ出す戦績。採点順位・評価・合計点・確率は出さない
+  function materialPanel(ctx, h) {
+    var runs = h.past_runs || [];
+    var body;
+    if (!runs.length) {
+      body = '<div class="mt-none">この馬の戦績が取れませんでした。</div>';
+    } else {
+      body = '<div class="mtr">' + runs.map(function (r) {
+        var f = Number(r.finish);
+        var fin = r.finish_text || (r.finish != null && r.finish !== '' ? r.finish + '着' : '—');
+        var cond = [r.track, (r.surface || '') + (r.distance || ''), r.condition].filter(Boolean).join(' ');
+        var meta = [
+          r.runners ? r.runners + '頭' : null,
+          r.popularity ? r.popularity + '番人気' : null,
+          (r.margin !== null && r.margin !== undefined && r.margin !== '') ? r.margin + '秒差' : null,
+          r.last_3f ? '上り' + r.last_3f : null,
+          r.corners ? '通過' + r.corners : null,
+          r.jockey || null,
+        ].filter(Boolean).join(' ／ ');
+        return '<div class="mtr-row">'
+          + '<div class="mtr-h"><span class="mtr-dt">' + escapeHtml(String(r.date || '').slice(2)) + '</span>'
+          + '<span class="mtr-cd">' + escapeHtml(cond) + '</span>'
+          + '<span class="mtr-nm">' + escapeHtml(r.race_name || '') + '</span>'
+          + '<span class="mtr-fi' + (f >= 1 && f <= 3 ? ' in' : '') + '">' + escapeHtml(fin) + '</span></div>'
+          + '<div class="mtr-m">' + escapeHtml(meta) + '</div></div>';
+      }).join('') + '</div>';
+    }
+    return '<div class="mt"><div class="mt-t">戦績（近' + runs.length + '走）</div>' + body
+      + '<div class="mt-q">これを見て、どうしますか？</div>'
+      + '<div class="ak-opts">'
+      + '<button type="button" class="ak-opt" data-ak-cut="keep"><span class="oi">›</span>'
+      + '<span class="obody"><span class="ol">残す</span></span></button>'
+      + '<button type="button" class="ak-opt" data-ak-cut="cut"><span class="oi">›</span>'
+      + '<span class="obody"><span class="ol">切る</span></span></button>'
+      + '<button type="button" class="ak-opt skip" data-ak-cut="unknown"><span class="oi">›</span>'
+      + '<span class="obody"><span class="ol">それでも決められない</span></span></button>'
+      + '</div>'
+      + '<div class="mt-note">「それでも決められない」を選ぶと保留になります。'
+      + '保留の馬は<b>次の画面でもう一度出ます</b>ので、そこで決め直せます。</div></div>';
+  }
+
+  function renderCut(ctx, S) {
+    var order = cutOrder(ctx);
+    var n = order[S.idx], h = ctx.BY[n];
+    if (!h) return '';
+    var dots = order.map(function (x, i) { return '<i class="' + (i <= S.idx ? 'on' : '') + '"></i>'; }).join('');
+    var opts = S.detail === n ? '' : ('<div class="ak-opts">' + CUT_OPTS.map(function (o) {
+      return '<button type="button" class="ak-opt' + (o.v === 'unknown' ? ' skip' : '')
+        + '" data-ak-cut="' + o.v + '"><span class="oi">›</span>'
+        + '<span class="obody"><span class="ol">' + o.label + '</span></span></button>';
+    }).join('') + '</div>');
+    var done = order.slice(0, S.idx);
+    var stack = done.filter(function (x) { return S.ceil[x] && S.ceil[x] !== 'unknown'; }).map(function (x) {
+      var lab = S.ceil[x] === 'out' ? '切る' : '残す';
+      return '<span class="ak-st-row">' + umaBox(x, ctx.BY[x] ? ctx.BY[x].gate : undefined, 'sm')
+        + '<span class="ak-st-tag ' + (S.ceil[x] === 'out' ? 'out' : 'keep') + '">' + lab + '</span>'
+        + (S.memo[x] ? ('<span class="ak-st-m">─ ' + escapeHtml(S.memo[x]) + '</span>') : '') + '</span>';
+    }).join('');
+    var nUnk = done.filter(function (x) { return S.ceil[x] === 'unknown'; }).length;
+    if (nUnk) stack += '<span class="ak-st-row"><span class="ak-st-m">ほか ' + nUnk + '頭は「わからない」</span></span>';
+
+    return '<div class="ak-prog"><span class="ak-step">まず全頭を切り分けます</span>'
+      + '<span class="ak-cand">' + (S.idx + 1) + ' / ' + order.length + '頭　残している <b>'
+      + keptCount(ctx, S) + '</b>頭</span></div>'
+      + '<div class="ak-dots">' + dots + '</div>'
+      + '<div class="ak-card"><div class="ak-q">'
+      + '<div class="ak-hh">' + umaBox(n, h.gate, 'md') + '<span class="nm">' + escapeHtml(h.name) + '</span>'
+      + '<span class="pop">' + (h.popularity || '—') + '番人気 ' + (h.odds != null ? h.odds + '倍' : '—') + '</span></div>'
+      + '<div class="s">' + escapeHtml([h.sex_age, h.jockey, h.running_style, h.gate + '枠'].filter(Boolean).join(' / '))
+      + (h.ability_mark ? ' / 印 ' + escapeHtml(h.ability_mark) : '') + '</div>'
+      + (h.landmine_reason ? ('<div class="ak-mine">⚠ Ans.は地雷と判定 — ' + escapeHtml(h.landmine_reason) + '</div>') : '')
+      + '<div class="q" style="margin-top:10px">この馬、買い目に入れる？</div></div>'
+      + opts
+      + (S.detail === n ? materialPanel(ctx, h) : '')
+      + '<div class="ak-memo"><input type="text" id="ak-memo-input" autocomplete="off" '
+      + 'placeholder="ひとこと（任意）　例: 外枠だが展開が向く" value="' + escapeHtml(S.memo[n] || '') + '"></div>'
+      + '</div>'
+      + '<div class="restart">'
+      + (S.idx > 0 ? '<button type="button" class="ak-btn gray sm" data-ak-cut-back>← 前の馬</button>' : '')
+      + (keptCount(ctx, S) ? '<button type="button" class="ak-btn sm" data-ak-cut-finish style="margin-left:auto">ここまでで先へ →</button>' : '')
+      + '</div>'
+      + (stack ? '<div class="ak-stack">' + stack + '</div>' : '');
+  }
+
+  // ===== 107 §2.3 / §2.3b: 第2段 確認と天井＋保留リスト =====
+  function renderCeil(ctx, S) {
+    var order = cutOrder(ctx);
+    var ks = order.filter(function (n) { return inP(S.ceil[n]); });
+    var cuts = order.filter(function (n) { return S.ceil[n] === 'out'; });
+    var unks = order.filter(function (n) { return S.ceil[n] === 'unknown'; });
+    var maxP = maxProb(ctx);
+    var rows = ks.map(function (n) {
+      var h = ctx.BY[n];
+      var seg = [['win', '勝ち切る'], ['ren', '2着まで'], ['place', '3着まで']].map(function (x) {
+        return '<button type="button" class="ak-seg' + (S.ceil[n] === x[0] ? ' on' : '')
+          + '" data-ak-ceil="' + n + ':' + x[0] + '">' + x[1] + '</button>';
+      }).join('');
+      return '<div class="ak-cl"><div class="ak-hh">' + umaBox(n, h.gate, 'sm')
+        + '<span class="nm">' + escapeHtml(h.name) + '</span>'
+        + '<span class="pop">' + (h.popularity || '—') + '番人気 ' + (h.odds != null ? h.odds + '倍' : '—') + '</span>'
+        + probBar(h, maxP) + '</div>'
+        + (S.memo[n] ? ('<div class="ak-cl-m">─ ' + escapeHtml(S.memo[n]) + '</div>') : '')
+        + '<div class="ak-segs">' + seg + '</div>'
+        + '<button type="button" class="ak-cl-x" data-ak-uncut="' + n + '">この馬はやっぱり切る</button></div>';
+    }).join('');
+
+    var pend = '';
+    if (unks.length) {
+      var need = '';
+      if (ks.length === 1) need = '<div class="ak-need">もう1頭決まると、ワイド・馬連・馬単が組めます。</div>';
+      else if (ks.length === 2) need = '<div class="ak-need">もう1頭決まると、3連複・3連単が組めます。</div>';
+      var list = S.pendOpen ? ('<div class="ak-pd-list">' + unks.map(function (n) {
+        var h = ctx.BY[n];
+        return '<div class="ak-pd-row">' + umaBox(n, h.gate, 'sm')
+          + '<span class="nm">' + escapeHtml(h.name) + '</span>'
+          + '<span class="pop">' + (h.popularity || '—') + '番人気 ' + (h.odds != null ? h.odds + '倍' : '—') + '</span>'
+          + '<span class="bt"><button type="button" data-ak-pend="' + n + ':keep">残す</button>'
+          + '<button type="button" data-ak-pend="' + n + ':cut">切る</button></span></div>';
+      }).join('') + '</div>'
+        + '<div class="ak-pd-note">決めなくても先へ進めます。そのときは<b>買い目に入りません</b>。</div>') : '';
+      pend = '<div class="ak-pd"><button type="button" class="ak-pd-h" data-ak-pend-toggle>'
+        + (S.pendOpen ? '▾' : '▸') + ' 保留のまま ' + unks.length + '頭 — 決めますか？</button>'
+        + (S.pendOpen ? need : '') + list + '</div>';
+    }
+
+    return '<div class="ak-prog"><span class="ak-step">残ったのはこの ' + ks.length + '頭です</span>'
+      + '<span class="ak-cand">切った ' + cuts.length + '頭 ／ わからない ' + unks.length + '頭</span></div>'
+      + '<div class="ak-card"><div class="ak-q"><div class="q">それぞれ、どこまで来ると思う？</div>'
+      + '<div class="s">既定は「3着まで」です。上げた馬が軸の候補になります。</div></div>'
+      + '<div class="ak-cls">' + rows + '</div>' + pend + '</div>'
+      + '<div class="restart"><button type="button" class="ak-btn gray sm" data-ak-recut>← 切り分けに戻る</button>'
+      + '<button type="button" class="ak-btn sm" data-ak-ceil-done style="margin-left:auto">この予想で進む →</button></div>';
+  }
+
+  // ===== 107 §6.1: 見送り =====
+  function renderSkip(ctx, S) {
+    var order = cutOrder(ctx), cnt = {};
+    ['win', 'ren', 'place', 'out', 'unknown'].forEach(function (k) {
+      cnt[k] = order.filter(function (n) { return S.ceil[n] === k; }).length;
+    });
+    return '<div class="ak-skip"><div class="t">このレースは見送りをおすすめします。</div>'
+      + '<div class="b">買い目の形になる答えが揃っていません。<table>'
+      + ['win', 'ren', 'place', 'out', 'unknown'].map(function (k) {
+          return '<tr><td>' + CEIL_LABEL[k] + 'と答えた馬</td><td>' + cnt[k] + '頭</td></tr>'; }).join('')
+      + '</table>買わないという判断も予想のうちです。控除率20.8%を払わずに済みます。</div></div>'
+      + '<div class="restart"><button type="button" class="ak-btn gray sm" data-ak-recut>もう一度切り分ける</button></div>'
+      + renderMine(ctx, S, true);
+  }
+
+  // ===== 107 §7.2 / §7.3: あなたの予想と、矛盾の指摘 =====
+  function renderMine(ctx, S, skipped) {
+    var order = cutOrder(ctx);
+    var shown = order.filter(function (n) { return inP(S.ceil[n]) || S.ceil[n] === 'out'; });
+    var unk = order.filter(function (n) { return S.ceil[n] === 'unknown'; }).length;
+    var rows = shown.map(function (n) {
+      return '<div class="row">' + umaBox(n, ctx.BY[n] ? ctx.BY[n].gate : undefined, 'sm')
+        + '<span class="ak-st-tag ' + (S.ceil[n] === 'out' ? 'out' : 'keep') + '">' + CEIL_LABEL[S.ceil[n]] + '</span>'
+        + (S.memo[n] ? ('<span class="ak-st-m">─ ' + escapeHtml(S.memo[n]) + '</span>') : '') + '</div>';
+    }).join('');
+    if (unk) rows += '<div class="row"><span class="ak-st-m">ほか ' + unk + '頭は「わからない」（買い目に入れていません）</span></div>';
+    var hint = '';
+    if (!skipped && S.axis.length) {
+      var ap = Math.max.apply(null, S.axis.map(function (n) { return ctx.P0[n] || 0; }));
+      var over = order.filter(function (n) { return (ctx.P0[n] || 0) > ap && S.ceil[n] === 'unknown'; });
+      if (over.length) {
+        hint = '<div class="cap">⚠ ' + umaBox(over[0], ctx.BY[over[0]].gate, 'sm') + '（'
+          + ctx.BY[over[0]].popularity + '番人気）はまだ査定していません。相手に入れるか消すか決めますか？</div>';
+      }
+    }
+    return '<div class="ak-mine">' + rows
+      + (skipped ? '' : '<div class="cap">この買い目は上のとおりに組んであります。</div>') + hint + '</div>';
+  }
+
   function render(ctx, S) {
-    computeDone(ctx, S);
-    // 見出しはタブ側が担うので出さない
-    var body = S.done ? (renderResults(ctx, S) + renderAlive(ctx, S)) : renderQuestion(ctx, S);
-    return '<div class="ak-wrap">' + renderKillBar(ctx, S) + '<div class="ak-root">' + body + '</div></div>';
+    if (S.phase !== 'cut' && S.phase !== 'ceil') deriveLegacy(ctx, S);
+    var body;
+    if (S.phase === 'cut') {
+      body = renderCut(ctx, S);
+    } else if (S.phase === 'ceil') {
+      body = renderCeil(ctx, S);
+    } else if (S.axisMode === 'none' && !keptOf(ctx, S).length) {
+      body = renderSkip(ctx, S);
+    } else {
+      computeDone(ctx, S);
+      body = S.done
+        ? (warnThin(ctx, S) + renderResults(ctx, S) + renderMine(ctx, S) + renderAlive(ctx, S))
+        : renderQuestion(ctx, S);
+    }
+    // 107 §2.5: 常設の「消す」トグルは廃止（第1段の「切る」に統合）
+    return '<div class="ak-wrap"><div class="ak-root">' + body + '</div></div>';
+  }
+
+  // 107 §6.2: 判断が薄いときの警告。人気上位5頭に絞って判定する
+  //  （全頭を回すフローでは下位人気が unknown になるのが普通で、全体比だと出っぱなしになる）
+  function warnThin(ctx, S) {
+    var top5 = cutOrder(ctx).slice(0, 5);
+    var u = top5.filter(function (n) { return !inP(S.ceil[n]) && S.ceil[n] !== 'out'; }).length;
+    if (u < 3) return '';
+    return '<div class="ak-thin">人気上位5頭のうち' + u
+      + '頭を「わからない」のままにしています。買い目は下に出しますが、見送りも選択肢です。</div>';
   }
 
   // ===== T9: イベント処理（race.js側のイベント委譲から呼ばれる） =====
@@ -1112,17 +1521,44 @@
   function handleClick(ctx, S, target) {
     var el;
 
-    el = target.closest('[data-ak-kill-toggle]');
-    if (el) { S.killOpen = !S.killOpen; return {}; }
-
-    el = target.closest('[data-ak-kill]');
+    // ===== 107 §2: 第1段（切り分け）=====
+    el = target.closest('[data-ak-cut]');
     if (el) {
-      var nk = Number(el.getAttribute('data-ak-kill'));
-      S.kill = S.kill.indexOf(nk) !== -1 ? S.kill.filter(function (x) { return x !== nk; }) : S.kill.concat([nk]);
-      S.axis = S.axis.filter(function (x) { return S.kill.indexOf(x) === -1; });
-      S.partners = S.partners.filter(function (x) { return S.kill.indexOf(x) === -1; });
+      var order = cutOrder(ctx), cn = order[S.idx];
+      var cv = el.getAttribute('data-ak-cut');
+      if (cv === 'unknown' && S.detail !== cn) { S.detail = cn; return {}; }  // 1回目は戦績を出す
+      S.ceil[cn] = cv === 'keep' ? 'place' : (cv === 'cut' ? 'out' : 'unknown');
+      S.detail = null;
+      if (S.idx < order.length - 1) S.idx++; else toCeil(ctx, S);
       return {};
     }
+    el = target.closest('[data-ak-cut-back]');
+    if (el) { if (S.idx > 0) S.idx--; S.detail = null; return {}; }
+    el = target.closest('[data-ak-cut-finish]');
+    if (el) { toCeil(ctx, S); return {}; }
+
+    // ===== 107 §2.3 / §2.3b: 第2段（確認と天井・保留）=====
+    el = target.closest('[data-ak-ceil]');
+    if (el) {
+      var pr = el.getAttribute('data-ak-ceil').split(':');
+      S.ceil[Number(pr[0])] = pr[1];
+      return {};
+    }
+    el = target.closest('[data-ak-uncut]');
+    if (el) { S.ceil[Number(el.getAttribute('data-ak-uncut'))] = 'out'; return {}; }
+    el = target.closest('[data-ak-pend-toggle]');
+    if (el) { S.pendOpen = !S.pendOpen; return {}; }
+    el = target.closest('[data-ak-pend]');
+    if (el) {
+      var pp = el.getAttribute('data-ak-pend').split(':');
+      S.ceil[Number(pp[0])] = pp[1] === 'keep' ? 'place' : 'out';
+      S.pendOpen = true;
+      return {};
+    }
+    el = target.closest('[data-ak-recut]');
+    if (el) { S.phase = 'cut'; S.idx = 0; S.detail = null; return {}; }
+    el = target.closest('[data-ak-ceil-done]');
+    if (el) { decideAxis(ctx, S); S.phase = 'q'; return {}; }
 
     el = target.closest('[data-ak-pick]');
     if (el) {
@@ -1187,7 +1623,7 @@
     el = target.closest('[data-ak-back]');
     if (el) {
       var k = S.asked.pop();
-      if (k === 'axis') { S.axis = []; S.axisMode = null; } else if (k === 'partners') { S.partners = []; }
+      if (k === 'axisPick') { S.axis = []; S.axisMode = null; }
       else if (k === 'budget') { S.budget = null; S.inputRaw = ''; } else if (k) { S[k] = null; }
       S.pick = [];
       S.done = false;
@@ -1196,9 +1632,7 @@
 
     el = target.closest('[data-ak-restart]');
     if (el) {
-      var kill = S.kill.slice();
       var fresh = initialState();
-      fresh.kill = kill;
       Object.keys(S).forEach(function (kk) { delete S[kk]; });
       Object.keys(fresh).forEach(function (kk) { S[kk] = fresh[kk]; });
       return {};
@@ -1227,6 +1661,7 @@
     eligible: eligible,
     initialState: initialState,
     setInputRaw: setInputRaw,
+    setMemo: setMemo,
     setPkgW: setPkgW,
     parseYen: parseYen,
     budgetPreviewHtml: budgetPreview,
@@ -1248,6 +1683,13 @@
       fundLeg: fundLeg,
       swapToSanrenpuku: swapToSanrenpuku,
       allPlans: allPlans,
+      deriveLegacy: deriveLegacy,
+      infeasibleReason: infeasibleReason,
+      sieveState: sieveState,
+      axisPool: axisPool,
+      decideAxis: decideAxis,
+      toCeil: toCeil,
+      cutOrder: cutOrder,
     },
   };
 

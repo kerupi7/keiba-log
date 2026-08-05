@@ -1892,3 +1892,88 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
 .race20 button.tpchip:disabled{opacity:.45;cursor:not-allowed}
 /* 「体」グループを開いたときだけ出す注記（常時表示はしない） */
 .race20 .tpgrid .tpbwnote{grid-column:1/-1;font-size:9.5px;color:var(--cap);margin:1px 0 4px}
+
+
+/* ===== 107-spec: 買い目アキネーター 1頭ずつ査定 ===== */
+.ak-wrap .ak-hh{display:flex;align-items:baseline;gap:7px;flex-wrap:wrap}
+.ak-wrap .ak-hh .nm{font-size:16px;font-weight:700;letter-spacing:.01em}
+.ak-wrap .ak-hh .pop{font-size:11.5px;color:var(--cap);font-weight:700}
+.ak-wrap .ak-mine{font-size:12px;line-height:1.9;border:1px solid var(--rule);border-radius:10px;
+  padding:11px 12px;background:var(--sub-bg);margin-top:10px}
+.ak-wrap .ak-mine .row{display:flex;align-items:baseline;gap:7px;flex-wrap:wrap}
+.ak-wrap .ak-mine .cap{font-size:11.5px;color:var(--cap);margin-top:7px}
+.ak-wrap .ak-mine-reason{font-size:11.5px;color:var(--cap)}
+
+.ak-wrap .ak-memo{padding:0 12px 12px}
+.ak-wrap .ak-memo input{width:100%;font-family:inherit;font-size:12.5px;padding:8px 10px;
+  border:1px solid var(--rule);border-radius:8px;background:#fafafa;color:var(--text)}
+
+.ak-wrap .ak-stack{margin-top:10px;border-top:1px dashed var(--rule);padding-top:9px;
+  font-size:11.5px;color:var(--cap);line-height:2;display:flex;flex-direction:column;gap:2px}
+.ak-wrap .ak-st-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.ak-wrap .ak-st-m{color:#999}
+.ak-wrap .ak-st-tag{font-size:10.5px;font-weight:700;padding:1px 6px;border-radius:4px;border:1px solid;line-height:1.6}
+.ak-wrap .ak-st-tag.keep{color:#0b6b3a;border-color:#9ed3b6;background:#eefaf3}
+.ak-wrap .ak-st-tag.out{color:#8a2020;border-color:#e2adad;background:#fdeeee}
+
+.ak-wrap .ak-mine-warn,.ak-wrap .ak-thin{font-size:12px;line-height:1.8;color:#6b5400;
+  background:#fff7e6;border:1px solid #f0dcb0;border-radius:10px;padding:11px 12px;margin-bottom:10px}
+
+/* 戦績（「わからない」を押したときだけ） */
+.ak-wrap .mt{margin:0 12px 12px;border:1px solid #a8cbe4;background:#f5f9fc;border-radius:9px;padding:11px 12px}
+.ak-wrap .mt-t{font-size:12px;font-weight:700;color:#1a5c8a;margin-bottom:8px}
+.ak-wrap .mt-none{font-size:12px;color:var(--cap)}
+.ak-wrap .mt-q{font-size:13.5px;font-weight:700;margin:12px 0 7px}
+.ak-wrap .mt-note{font-size:11px;color:var(--cap);margin-top:9px;line-height:1.6}
+.ak-wrap .mtr{display:flex;flex-direction:column;gap:7px}
+.ak-wrap .mtr-row{border-bottom:1px solid var(--rule);padding-bottom:6px}
+.ak-wrap .mtr-row:last-child{border-bottom:none;padding-bottom:0}
+.ak-wrap .mtr-h{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;font-size:12px}
+.ak-wrap .mtr-dt{font-variant-numeric:tabular-nums;color:var(--cap);font-size:11px}
+.ak-wrap .mtr-cd{font-weight:700}
+.ak-wrap .mtr-nm{color:var(--cap);font-size:11.5px}
+.ak-wrap .mtr-fi{margin-left:auto;font-weight:700;font-size:13px;color:var(--cap)}
+.ak-wrap .mtr-fi.in{color:#0b5c33}
+.ak-wrap .mtr-m{font-size:11px;color:var(--cap);line-height:1.6;margin-top:2px}
+
+/* 第2段：確認と天井 */
+.ak-wrap .ak-cls{display:flex;flex-direction:column;gap:8px;padding:0 12px 12px}
+.ak-wrap .ak-cl{border:1px solid var(--rule);border-radius:9px;padding:9px 10px;background:#fff}
+.ak-wrap .ak-cl-m{font-size:11.5px;color:var(--cap);margin-top:3px}
+.ak-wrap .ak-segs{display:flex;margin-top:8px}
+.ak-wrap .ak-seg{flex:1;font-family:inherit;font-size:12.5px;font-weight:700;padding:8px 4px;
+  border:1px solid var(--rule);background:#fff;color:var(--cap);cursor:pointer}
+.ak-wrap .ak-seg:first-child{border-radius:7px 0 0 7px}
+.ak-wrap .ak-seg:last-child{border-radius:0 7px 7px 0}
+.ak-wrap .ak-seg+.ak-seg{border-left:none}
+.ak-wrap .ak-seg.on{background:#3a6ea5;border-color:#3a6ea5;color:#fff}
+.ak-wrap .ak-cl-x{margin-top:7px;font-family:inherit;font-size:11px;color:var(--cap);background:none;
+  border:none;text-decoration:underline;cursor:pointer;padding:0}
+
+/* 保留リスト */
+.ak-wrap .ak-pd{margin:0 12px 12px;border:1px solid var(--rule);border-radius:9px;
+  padding:9px 11px;background:var(--sub-bg)}
+.ak-wrap .ak-pd-h{font-family:inherit;font-size:12.5px;font-weight:700;color:var(--text);
+  background:none;border:none;cursor:pointer;padding:0;text-align:left;width:100%}
+.ak-wrap .ak-need{font-size:11.5px;color:#6b5400;background:#fff7e6;border:1px solid #f0dcb0;
+  border-radius:7px;padding:6px 9px;margin-top:8px;line-height:1.6}
+.ak-wrap .ak-pd-list{display:flex;flex-direction:column;gap:5px;margin-top:8px}
+.ak-wrap .ak-pd-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:12px;
+  border-bottom:1px solid var(--rule);padding-bottom:5px}
+.ak-wrap .ak-pd-row .nm{font-weight:700}
+.ak-wrap .ak-pd-row .pop{color:var(--cap);font-size:11px}
+.ak-wrap .ak-pd-row .bt{margin-left:auto;display:flex;gap:5px}
+.ak-wrap .ak-pd-row .bt button{font-family:inherit;font-size:11.5px;font-weight:700;padding:4px 10px;
+  border-radius:6px;border:1px solid var(--rule);background:#fff;color:var(--cap);cursor:pointer}
+.ak-wrap .ak-pd-note{font-size:11px;color:var(--cap);margin-top:8px;line-height:1.6}
+
+/* 見送り */
+.ak-wrap .ak-skip{border:1px solid #e2adad;background:#fdeeee;border-radius:12px;padding:15px;margin-bottom:12px}
+.ak-wrap .ak-skip .t{font-size:16px;font-weight:700;color:#8a2020}
+.ak-wrap .ak-skip .b{font-size:12.5px;line-height:1.85;margin-top:7px}
+.ak-wrap .ak-skip table{border-collapse:collapse;margin:8px 0;font-size:12px}
+.ak-wrap .ak-skip td{padding:1px 12px 1px 0;font-variant-numeric:tabular-nums}
+
+/* 脚の役割チップ（本線／保険／上乗せ） */
+.ak-wrap .mainchip.guard{background:#0b6b3a}
+.ak-wrap .mainchip.boost{background:#7a6000}
