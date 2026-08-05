@@ -341,20 +341,59 @@
 
   // splits()は候補「集合」を比較する（数が偶然一致するだけの分岐を取り逃さないため。§3.2）
   function splits(ctx, S, qk) {
+    // 予算は金額に必ず効くので、買い方が1通りしか残っていなくても聞く。
+    //  「候補が2通り以上あるか」で判定していたため、16%のケースで聞かずに
+    //  1点100円で確定していた（実測）
+    if (qk === 'budget') return alive(ctx, S).length >= 1;
     if (alive(ctx, S).length <= 1) return false;
     var q = null;
     for (var i = 0; i < QUESTIONS.length; i++) { if (QUESTIONS[i].key === qk) { q = QUESTIONS[i]; break; } }
-    if (qk === 'budget' || qk === 'taste') {
-      var byFam = {};
-      alive(ctx, S).forEach(function (c) { (byFam[c.fam] = byFam[c.fam] || []).push(c); });
-      return Object.keys(byFam).some(function (f) { return byFam[f].length > 1; });
-    }
+    // 107 §3.3（2026-08-05 改訂）: 「候補の集合が割れるか」ではなく
+    //  「実際に出る推奨が変わるか」で判定する。天井が着順の情報を持つようになり、
+    //  推奨をスコアで選ぶようになったため、候補が割れても選ばれる買い方は同じ、
+    //  ということが起きる（着順で34%・好みで7.6pt が空振りだった）
+    if (qk === 'ordered') return recoChanges(ctx, S, 'ordered', [true, false]);
+    if (qk === 'taste') return recoChanges(ctx, S, 'taste', ['hit', 'mid', 'big']);
     var keys = optsFor(S, q).map(function (o) {
       var clone = cloneState(S);
       q.apply(clone, o.value);
       return aliveKey(ctx, clone);
     });
     return (new Set(keys)).size > 1;
+  }
+
+  // 「ある」と「ない」で推奨カードが変わるか。q は ordered に影響されないので使い回す。
+  //  nextQuestion() は描画のたびに呼ばれるので、同じ状態なら結果を使い回す（1回128ms→2ms）
+  var RECO_CACHE = {};
+  function recoKey(ctx, S, qk) {
+    // レースIDを必ず含める。含めないと、天井の付き方が同じ別レースの結果を使い回す
+    var rid = (ctx.site && ctx.site.race && ctx.site.race.race_id) || '';
+    return qk + '|' + rid + '|' + cutOrder(ctx).map(function (n) { return S.ceil[n] || '-'; }).join('')
+      + '|' + S.axis.join(',') + '|' + S.axisMode + '|' + S.budget + '|' + S.taste + '|' + S.ordered;
+  }
+  function recoChanges(ctx, S, qk, vals) {
+    var key = recoKey(ctx, S, qk);
+    if (Object.prototype.hasOwnProperty.call(RECO_CACHE, key)) return RECO_CACHE[key];
+    var v = recoChangesRaw(ctx, S, qk, vals);
+    if (Object.keys(RECO_CACHE).length > 200) RECO_CACHE = {};
+    RECO_CACHE[key] = v;
+    return v;
+  }
+  function recoChangesRaw(ctx, S, qk, vals) {
+    var qp = qprobs(ctx, S);
+    var outcomes = allOutcomes(qp);
+    var budget = (typeof S.budget === 'number' && S.budget > 0) ? S.budget : 1000;
+    var sig = function (v) {
+      var clone = cloneState(S);
+      clone[qk] = v;
+      return ['hit', 'mid', 'big'].map(function (fam) {
+        var pkg = buildPackage(ctx, clone, fam, qp, budget, clone.pkgW[fam] || 0.7, outcomes);
+        return pkg ? pkg.legs.map(function (l) { return l.c.id + ':' + l.pts; }).join('+') : '-';
+      }).join('|');
+    };
+    var first = sig(vals[0]);
+    for (var i = 1; i < vals.length; i++) { if (sig(vals[i]) !== first) return true; }
+    return false;
   }
 
   function nextQuestion(ctx, S) {
@@ -1382,8 +1421,10 @@
       + '<div class="ak-hh">' + umaBox(n, h.gate, 'md') + '<span class="nm">' + escapeHtml(h.name) + '</span>'
       + '<span class="pop">' + (h.popularity || '—') + '番人気 ' + (h.odds != null ? h.odds + '倍' : '—') + '</span></div>'
       + '<div class="s">' + escapeHtml([h.sex_age, h.jockey, h.running_style, h.gate + '枠'].filter(Boolean).join(' / '))
-      + (h.ability_mark ? ' / 印 ' + escapeHtml(h.ability_mark) : '') + '</div>'
-      + (h.landmine_reason ? ('<div class="ak-mine">⚠ Ans.は地雷と判定 — ' + escapeHtml(h.landmine_reason) + '</div>') : '')
+      + '</div>'
+      // 107 §2.2: 第1段には Ans. の結論を一切出さない。
+      //   地雷判定・印・採点順位・確率はすべて Ans. の意見であり、
+      //   切るか残すかは自分の目で決めるところなので置かない
       + '<div class="q" style="margin-top:10px">この馬、買い目に入れる？</div></div>'
       + opts
       + (S.detail === n ? materialPanel(ctx, h) : '')
