@@ -2110,8 +2110,10 @@ function renderBets20(site) {
 const RACE20_TABS = [
   { key: 'shutuba', label: '出馬表' },
   { key: 'tenkai', label: '展開' },
+  // 109-spec: コースが真ん中・買い目が右から2番目（2026-08-06 ユーザー決定）。
+  // course_entities が無いレースはコースを落とすので、その場合は従来の4枚のまま
+  { key: 'course', label: 'コース' },
   { key: 'kaime', label: '買い目' },
-  { key: 'course', label: 'コース' },   // 109-spec: course_entities が無いレースは落とす（§2.2）
   // 回顧タブの見出しは中身に合わせる。レース前は renderVerification20 が
   // 「答え合わせ／結果はレース後に反映されます」を出すので、タブ名も同じ言葉にする
   { key: 'kaiko', label: '回顧', labelPre: '答え合わせ' },
@@ -2144,8 +2146,8 @@ function buildRace20Html(site, oddsAll) {
       <div class="tabbar" role="tablist">${bar}</div>
       ${pane('shutuba', renderShutuba20(site))}
       ${pane('tenkai', renderOverview20(site))}
-      ${pane('kaime', renderMitate20(site) + renderBets20(site) + renderOddsMasterSection(site, oddsAll))}
       ${site.course_entities ? pane('course', window.CourseTab.render(site)) : ''}
+      ${pane('kaime', renderMitate20(site) + renderBets20(site) + renderOddsMasterSection(site, oddsAll))}
       ${pane('kaiko', renderVerification20(site))}
     </div>
   `;
