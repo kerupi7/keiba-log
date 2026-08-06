@@ -2026,17 +2026,18 @@ function mmRow(h) {
 function mmBar() {
   return `<div class="mm-bar">
     <span class="mm-seg">
-      <button type="button" data-view="mark">印を付ける</button>
-      <button type="button" data-view="runs" class="on">戦績5走</button>
+      <button type="button" data-view="mark" class="on">印を付ける</button>
+      <button type="button" data-view="runs">戦績5走</button>
     </span>
     <span class="mm-sum"></span>
     <span class="mm-save">この端末に自動保存</span>
   </div>`;
 }
 
+// 既定は「印を付ける」（2026-08-06 ユーザー決定）。従来の札は .shlist 側を off で始める
 function mmList(site) {
   const rows = [...site.horses].sort((a, b) => a.number - b.number).map(mmRow).join('');
-  return `<div class="mm-list off">
+  return `<div class="mm-list">
       <div class="mm-hd"><span class="h-my">自分</span><span class="h-ai">AI</span>
         <span class="h-nm">馬</span><span class="h-tot">点数・評価</span><span class="h-od">オッズ</span></div>
       ${rows}
@@ -2194,7 +2195,7 @@ function renderShutuba20(site) {
     <div class="secthead">出馬表<span class="cnt">全${site.race.field_size}頭・馬番順</span></div>
     <div class="shctl"></div>
     ${mmBar()}
-    <div class="shlist">${cards}</div>
+    <div class="shlist off">${cards}</div>
     ${mmList(site)}
     ${popups}
   `;
