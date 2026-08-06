@@ -1527,9 +1527,7 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
 .race20 .aspine .mkb.m-jir{font-size:9px;min-width:0;padding:0 2px;letter-spacing:-.02em}
 .race20 .abody{flex:1 1 auto;min-width:0;padding:4px 5px 5px}
 /* 1行目＝この馬の今日。左に性齢・斤量・騎手・脚質、右端に総合点とオッズ */
-/* 2026-08-06（111-spec）: 左に自分の印の列（28px）が増えたぶん、gap を 5px → 4px に詰めた。
-   3桁オッズの馬（130.4倍など）だけ 375px 幅で右端の人気が欠けていたため */
-.race20 .ahead{display:flex;align-items:center;gap:4px;font-size:10.5px;color:var(--sub);
+.race20 .ahead{display:flex;align-items:center;gap:5px;font-size:10.5px;color:var(--sub);
   white-space:nowrap;border-bottom:1px dotted var(--rule);padding-bottom:3px;margin-bottom:3px}
 .race20 .ahead .pa{font-weight:700;color:var(--text)}
 .race20 .ahead .pk{font-variant-numeric:tabular-nums}
@@ -1721,10 +1719,7 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
 /* 106-spec §5.1: 性齢・斤量は幅を固定して、脚質バーが全馬で縦に揃うようにする */
 .race20 .ahead .pa{display:inline-block;width:2.3em;flex:none}
 .race20 .ahead .pk{display:inline-block;width:2.4em;flex:none;text-align:right}
-/* 2026-08-06（111-spec）: 騎手だけ縮められるようにした（flex:none → 0 1 4em）。
-   行が入りきらないとき、右端のオッズ・人気が欠けるのではなく騎手名が「…」で詰まる。
-   幅に余裕がある通常時は 4em のままなので、いまの見た目は変わらない */
-.race20 .ahead .pj{display:inline-block;flex:0 1 4em;width:auto;min-width:0}
+.race20 .ahead .pj{display:inline-block;width:4em;flex:none}
 
 /* コーナー通過順位が枠からはみ出ないよう折り返す（馬群のかたまりは割らない） */
 .race20 .rv-ctbl td.rv-seq{white-space:normal}
@@ -1853,13 +1848,11 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
 .race20 .mm-save{font-size:10px;color:var(--cap);flex:none}
 
 /* ── 印のマス（札・1行の共通部品） ── */
-/* 幅は柱（.aspine）と同じ28px。札の本文（.abody）から取る幅を最小限にするため。
-   32pxにすると 375px 幅で1行目（.ahead）が3桁オッズの馬だけ8px はみ出して人気が欠ける */
-.race20 .mm-my{flex:none;width:28px;display:flex;align-items:center;justify-content:center;
+.race20 .mm-my{flex:none;width:32px;display:flex;align-items:center;justify-content:center;
   border:0;border-right:1px solid var(--rule);background:#fff;font:inherit;cursor:pointer;
   padding:0;color:var(--cap)}
-.race20 .mm-my .v{display:flex;align-items:center;justify-content:center;width:24px;height:24px;
-  border:1px solid var(--rule);border-radius:5px;font-size:16px;font-weight:700;line-height:1;
+.race20 .mm-my .v{display:flex;align-items:center;justify-content:center;width:26px;height:26px;
+  border:1px solid var(--rule);border-radius:5px;font-size:17px;font-weight:700;line-height:1;
   background:#fff}
 .race20 .mm-my.set .v{border-color:var(--navy);background:#F4F8FC}
 .race20 .mm-my .v.e{font-size:10px;font-weight:400;color:#C4C4BF}
@@ -1868,11 +1861,8 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
 .race20 .mm-my.m1 .v{color:var(--mk-hon)} .race20 .mm-my.m2 .v{color:var(--mk-tai)}
 .race20 .mm-my.m3 .v{color:var(--mk-tan)} .race20 .mm-my.m4 .v{color:var(--mk-oku)}
 .race20 .mm-my.m5 .v{color:var(--orange)}
-/* 札は縦に長いので、マスは上端に寄せて柱の印と高さをそろえる。
-   トッピングの色は .aspine に付くので、自分の印の列は白のまま残る */
-.race20 .acard .mm-my{align-items:flex-start;padding-top:4px}
-/* 取消馬は札でも1行でも同じ見え方（押せない灰色のマス）にする。
-   札だけ非表示にすると、同じ列なのに欠けている行がある状態になる */
+/* 取消馬は押せない灰色のマスにする（2026-08-06: 印を付けられるのは
+   「印を付ける」モードだけ。従来の札には印の列を出さない） */
 .race20 .mm-my:disabled{cursor:default}
 .race20 .mm-my:disabled .v{background:var(--sub-bg);color:#C4C4BF}
 
@@ -1882,7 +1872,7 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
 .race20 .mm-list.off,.race20 .shlist.off{display:none}
 .race20 .mm-hd{display:flex;align-items:center;gap:5px;padding:4px 6px;background:var(--sub-bg2);
   font-size:9.5px;color:var(--cap);font-weight:700;border-bottom:1px solid var(--rule-strong)}
-.race20 .mm-hd .h-my{width:28px;text-align:center;flex:none}
+.race20 .mm-hd .h-my{width:32px;text-align:center;flex:none}
 .race20 .mm-hd .h-ai{width:30px;text-align:center;flex:none}
 .race20 .mm-hd .h-nm{flex:1 1 auto}
 .race20 .mm-hd .h-tot{width:62px;text-align:center;flex:none}
@@ -1943,8 +1933,6 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
 .mm-sheet .subs button{flex:1;height:32px;border:1px solid var(--rule);background:#fff;
   border-radius:6px;font:inherit;font-size:11.5px;color:var(--sub);cursor:pointer}
 .mm-sheet .subs button:disabled{opacity:.38;cursor:default}
-.mm-sheet .msg{font-size:11px;color:var(--cap);margin-top:7px;min-height:17px;line-height:1.5}
-.mm-sheet .msg b{color:var(--text)}
 
 /* ============================================================
    105-spec §5.3: 買える／消せるの10項目チップ（2段・○×だけ表示）

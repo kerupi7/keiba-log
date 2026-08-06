@@ -2065,7 +2065,7 @@ function mmPaint() {
     : '<span class="e">自分の印はまだありません</span>';
 }
 
-function mmOpenSheet(n, note) {
+function mmOpenSheet(n) {
   const h = MM.by[n];
   if (!h || h.scratched) return;
   MM.target = String(n);
@@ -2077,7 +2077,6 @@ function mmOpenSheet(n, note) {
     b.classList.toggle('on', !!cur && b.dataset.mk === cur);
   });
   MM.sheet.querySelector('[data-mmundo]').disabled = !MM.hist.length;
-  MM.sheet.querySelector('.msg').innerHTML = note || '';
   MM.sheet.classList.add('on');
   MM.shade.classList.add('on');
 }
@@ -2100,8 +2099,7 @@ function setupMyMarks(site) {
     <div class="mks">${MM_MARKS.map((m) => `<button type="button" data-mk="${m}">${m}</button>`).join('')}
       <button type="button" class="x" data-mk="">消</button></div>
     <div class="subs"><button type="button" data-mmundo>元に戻す</button>
-      <button type="button" data-mmclose>閉じる</button></div>
-    <div class="msg"></div>`;
+      <button type="button" data-mmclose>閉じる</button></div>`;
   document.body.appendChild(shade);
   document.body.appendChild(sheet);
   MM.sheet = sheet;
@@ -2112,17 +2110,13 @@ function setupMyMarks(site) {
   sheet.querySelector('[data-mmclose]').addEventListener('click', close);
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
 
+  // 押した瞬間に閉じる。結果の説明文は出さない（1テンポ遅れて操作感が落ちるため。
+  // 何が起きたかは、印のマスと上の要約行が即座に変わることで分かる）
   sheet.querySelectorAll('.mks button').forEach((b) => b.addEventListener('click', () => {
     if (MM.target == null) return;
-    const n = MM.target;
-    const mk = b.dataset.mk || null;
-    const moved = mmSet(n, mk);
+    mmSet(MM.target, b.dataset.mk || null);
     mmPaint();
-    const msg = sheet.querySelector('.msg');
-    if (!mk) msg.innerHTML = `<b>${n}番</b>の印を消しました`;
-    else if (moved) msg.innerHTML = `<b>${moved}番</b>の${mk}を外して<b>${n}番</b>へ移しました（${mk}は1頭まで）`;
-    else msg.innerHTML = `<b>${n}番</b>に <b>${mk}</b> を付けました`;
-    setTimeout(close, 240);
+    close();
   }));
   sheet.querySelector('[data-mmundo]').addEventListener('click', () => {
     const s = MM.hist.pop();
@@ -2130,11 +2124,11 @@ function setupMyMarks(site) {
     MM.marks = JSON.parse(s);
     mmSave();
     mmPaint();
-    mmOpenSheet(MM.target, '1つ前に戻しました');
+    mmOpenSheet(MM.target);
   });
 
-  // 印のマスは capture で拾って止める。札のマスは柱（馬名ポップアップ）の隣にあるので、
-  // ここで止めないと同じクリックでポップアップまで開いてしまう
+  // 印のマスは capture で拾って止める。同じ .race20 に馬名ポップアップの click が
+  // 付いているので、拾ったクリックはそこへ流さない
   root.addEventListener('click', (e) => {
     const b = e.target.closest('[data-my]');
     if (!b || b.disabled) return;
@@ -2159,7 +2153,6 @@ function setupMyMarks(site) {
 function shutubaCard(h) {
   if (h.scratched) {
     return `<article class="acard scratched" data-h="${h.number}">
-      ${mmCell(h)}
       <div class="aspine plain">${umaBox(h.number, h.gate, 'sm')}<span class="vname">${escapeHtml(h.name)}</span></div>
       <div class="abody"><div class="ahead">（取消）</div></div>
     </article>`;
@@ -2168,7 +2161,6 @@ function shutubaCard(h) {
   const bw = bwDisplay(h);
   const rot = h.rotation ? `<span class="rot">${escapeHtml(h.rotation)}</span>` : '';
   return `<article class="acard${h.ability_mark ? ' pred' : ''}" data-h="${h.number}">
-    ${mmCell(h)}
     ${spineHtml(h)}
     <div class="abody">
       <div class="ahead">
