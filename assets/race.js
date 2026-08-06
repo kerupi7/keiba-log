@@ -1972,14 +1972,21 @@ function spineHtml(h) {
 // 消（＝この馬は切る）と ー（＝見たうえで印なし）も印のひとつとして扱う。
 // 印を取り消すのは「いま付いている印をもう一度押す」（2026-08-06 ユーザー決定で
 // 「元に戻す」「閉じる」のボタンを外したため、消しゴム専用のボタンは持たない）。
-const MM_MARKS = ['◎', '○', '▲', '△', '☆', '消', 'ー'];
-const MM_CLS = { '◎': 'm1', '○': 'm2', '▲': 'm3', '△': 'm4', '☆': 'm5', '消': 'm6', 'ー': 'm7' };
+const MM_MARKS = ['◎', '○', '▲', '△', '☆', '消'];
+const MM_CLS = { '◎': 'm1', '○': 'm2', '▲': 'm3', '△': 'm4', '☆': 'm5', '消': 'm6' };
 const MM_SINGLE = new Set(['◎', '○', '▲']);   // 1頭までの印
 const MM = { key: '', marks: {}, target: null, by: {}, sheet: null, shade: null };
 
 function mmLoad(raceId) {
   MM.key = `mymark:${raceId}`;
   try { MM.marks = JSON.parse(localStorage.getItem(MM.key)) || {}; } catch (e) { MM.marks = {}; }
+  // ー は 2026-08-07 に廃止。前に保存した ー は読み捨てる
+  // （ボタンが無くなったので、残しても押して消せない印になるため）
+  let dropped = false;
+  for (const k of Object.keys(MM.marks)) {
+    if (!MM_CLS[MM.marks[k]]) { delete MM.marks[k]; dropped = true; }
+  }
+  if (dropped) mmSave();
 }
 // localStorage が使えない環境（プライベートブラウズ等）でも印は付く。保存されないだけ。
 function mmSave() {
@@ -2050,7 +2057,7 @@ function mmList(site) {
           <span class="h-od">オッズ</span></span></div>
       ${rows}
     </div>
-    <div class="mm-hint">印のマスを押すと下から選べます。◎○▲は1頭まで（別の馬に付けると前の馬から外れます）、△☆消ーは何頭でも。同じ印をもう一度押すと外れます。</div>`;
+    <div class="mm-hint">印のマスを押すと下から選べます。◎○▲は1頭まで（別の馬に付けると前の馬から外れます）、△☆消は何頭でも。<b>印が付いたマスを押すと、その印が消えます。</b></div>`;
 }
 
 // 印のマスと要約行を、いまの MM.marks に合わせて塗り直す
@@ -2143,6 +2150,9 @@ function setupMyMarks(site) {
     if (!b || b.disabled) return;
     e.preventDefault();
     e.stopPropagation();
+    // 印が付いている馬のマスは、押した時点で消す（シートは開かない）。
+    // 2026-08-07 ユーザー決定。付け替えは「消す → もう一度押してシート → 選ぶ」の2段になる
+    if (MM.marks[b.dataset.my]) { mmSet(b.dataset.my, null); mmPaint(); return; }
     mmOpenSheet(b.dataset.my);
   }, true);
 
