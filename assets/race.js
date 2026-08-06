@@ -2019,6 +2019,17 @@ function mmRow(h) {
         <span class="pp">${h.popularity ?? '—'}人</span></span></span></div>`;
 }
 
+// 111-spec §3.4（mockup-86 案C）: 札（戦績5走）の中の印の1行。
+// 一覧のマスと違い**シートは開かず、押した印がその場で付く**。
+// 札は幅に余裕が無い（1行目の余りは最悪の馬で56px）ので、横に列を足さず縦に1行敷く。
+// そのぶん札は1枚38px高くなる（14頭で 4,417px → 4,919px＝+11.4%・実測）。取消馬には出さない。
+function mmInline(h) {
+  if (h.scratched) return '';
+  return `<div class="mm-in" data-n="${h.number}"><span class="lb">自分の印</span>`
+    + MM_MARKS.map((m) => `<button type="button" class="${MM_CLS[m]}" data-mk="${m}">${m}</button>`).join('')
+    + '</div>';
+}
+
 function mmBar() {
   return `<div class="mm-bar">
     <span class="mm-seg">
@@ -2050,6 +2061,11 @@ function mmPaint() {
     b.className = 'mm-my' + (mk ? ` set ${MM_CLS[mk]}` : '');
     v.className = mk ? 'v' : 'v e';
     v.textContent = mk || '—';
+  });
+  // 札の中の1行（.mm-in）も同じ印で塗る。一覧のマスと札は同じ MM.marks を見ている
+  document.querySelectorAll('.race20 .mm-in').forEach((row) => {
+    const mk = MM.marks[row.dataset.n];
+    row.querySelectorAll('button').forEach((b) => b.classList.toggle('on', !!mk && b.dataset.mk === mk));
   });
   const sum = document.querySelector('.race20 .mm-sum');
   if (!sum) return;
@@ -2114,6 +2130,15 @@ function setupMyMarks(site) {
   // 印のマスは capture で拾って止める。同じ .race20 に馬名ポップアップの click が
   // 付いているので、拾ったクリックはそこへ流さない
   root.addEventListener('click', (e) => {
+    // 札の中の1行はシートを開かず、その場で印が付く（111-spec §3.4）
+    const ib = e.target.closest('.mm-in button');
+    if (ib) {
+      e.preventDefault();
+      e.stopPropagation();
+      mmSet(ib.closest('.mm-in').dataset.n, ib.dataset.mk);
+      mmPaint();
+      return;
+    }
     const b = e.target.closest('[data-my]');
     if (!b || b.disabled) return;
     e.preventDefault();
@@ -2154,6 +2179,7 @@ function shutubaCard(h) {
         <span class="od${oddsHotClass(h.odds)}">${h.odds != null ? h.odds.toFixed(1) : '—'}<i>倍</i><i>${h.popularity ?? '—'}人</i></span>
       </div>
       <div class="asub">${bw}${rot}${itemDots(h)}</div>
+      ${mmInline(h)}
       ${runsBlock(h)}
     </div>
   </article>`;
