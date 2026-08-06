@@ -1259,45 +1259,66 @@ function ratioClass(ratio) {
   return 'b5';
 }
 
-// 荒れ度ラベル（89-spec §3.1・案C-2）。upset が無いレースは何も出さない（§3.3 の縮退）。
+// 荒れ度ラベル（110-upset-display-v2-spec.md・案2「1クラス1行」）。
+// upset が無いレースは何も出さない（89-spec §3.3 の縮退）。
 // 文言も整数%も keiba_build_analysis.py が確定済み。ここでは組み立てるだけで計算しない。
-function renderUpset20(upset) {
+//
+// 3枚のカード（旧 .upC）をやめた理由は 110-spec §0。要点は、ラベルが**しきい値**で
+// 決まるため「大荒れ20% / 中荒れ78% でラベルは大荒れ」が起きるのに、画面が
+// 「一番大きい数字が選ばれる」形をしていたこと。しきい値の1行（threshold_line）で解いている。
+//
+// bigpayHtml（3連単100万超え・103-spec）は折りたたみの**上**に入れる（110-spec §2）。
+// 呼び出し元 renderMitate20 が組み立てて渡す。
+function renderUpset20(upset, bigpayHtml) {
   if (!upset || !Array.isArray(upset.classes) || upset.classes.length !== 3) return '';
-  // 2つの状態を混ぜないこと:
-  //   .on      = モデルの見立て（selected）。タップしても動かない
-  //   .viewing = いま下の表に出しているクラス。初期値は見立てと同じ
-  // 色と枠だけに頼らず、表の見出しに必ずクラス名が入る（tendency_caption）。
-  const cols = upset.classes.map((c) => `
-      <button type="button" class="col${c.selected ? ' on' : ''}${c.selected ? ' viewing' : ''}"
+  const sel = upset.classes.find((c) => c.selected) || upset.classes[0];
+  // 2つの状態を混ぜないこと（89-spec §3.1）:
+  //   .hit     = モデルの見立て（selected）。タップしても動かない
+  //   .viewing = いま折りたたみに出しているクラス。初期値は見立てと同じ
+  // 並びは 堅い → 中荒れ → 大荒れ で固定。確率順に並べ替えない（110-spec §2.2）。
+  const rows = upset.classes.map((c, i) => `
+      <button type="button" class="row c${i}${c.selected ? ' hit viewing' : ''}"
               data-upset="${escapeHtml(c.key)}" aria-pressed="${c.selected ? 'true' : 'false'}">
         <span class="nm">${escapeHtml(c.name)}</span>
+        <span class="track"><span class="fill" style="width:${c.percent}%"></span></span>
         <span class="pv">${c.percent}<small>%</small></span>
-        <span class="dl">${escapeHtml(c.card)}</span>
       </button>`).join('');
-  const bar = upset.classes.map((c, i) =>
-    `<span class="s${i}" style="width:${c.percent}%"></span>`).join('');
-  // 傾向表は「その決着になったレースの顔ぶれ」であってラベルの的中率ではない。
+  // 傾向表は「その決着になったレースの顔ぶれ」であってラベルの的中率ではない
+  // （ラベル堅いのレースが実際に堅く決まるのは55%＝89-spec §2.6）。
   // 3クラス分を先に書き出しておき、表示の切り替えだけを setupUpset20 が行う。
   const tables = upset.classes.map((c) => {
     if (!Array.isArray(c.tendencies) || !c.tendencies.length) return '';
     return `
-    <table class="upCtend${c.selected ? ' show' : ''}" data-upsettend="${escapeHtml(c.key)}">
-      <caption>${escapeHtml(c.tendency_caption || '')}</caption>
-      <tbody>${c.tendencies.map((t) =>
+      <table class="up2tend${c.selected ? ' show' : ''}" data-upsettend="${escapeHtml(c.key)}">
+        <tbody>${c.tendencies.map((t) =>
       `<tr><th>${escapeHtml(t.label)}</th><td>${escapeHtml(t.value)}</td></tr>`).join('')}
-      </tbody>
-    </table>`;
+        </tbody>
+      </table>`;
   }).join('');
-  const hint = upset.tendency_hint
-    ? `<div class="upChint">${escapeHtml(upset.tendency_hint)}</div>` : '';
-  // upCfoot（注記文）は103-spec §3.4（ユーザー指示・2026-07-31）で削除した。
-  // upset.note 自体は analysis.json に残るが（89-spec の契約は無改修）、ここでは描画しない。
+  // 古いレース（110-spec より前に公開）には無い。その行だけ出さない（110-spec §5.4）
+  const avg = upset.average_line
+    ? `<div class="avg">${escapeHtml(upset.average_line)}</div>` : '';
+  const th = upset.threshold_line
+    ? `<div class="th">${escapeHtml(upset.threshold_line)}</div>` : '';
+  // upset.line / tendency_hint / note は analysis.json に残るが（89-spec の契約は無改修）、
+  // ここでは描画しない（110-spec §9-2）。
   return `
-    <div class="upC">${cols}</div>
-    <div class="upCbar">${bar}</div>
-    <div class="upCnote">${escapeHtml(upset.line)}</div>
-    ${tables}
-    ${hint}
+    <div class="up2">
+      <div class="hd k-${escapeHtml(sel.key)}">
+        <div class="l">
+          <div class="lb">${escapeHtml(upset.label_name)}</div>
+          <div class="tx">${escapeHtml(sel.card)}</div>
+        </div>
+        <div class="r"><span class="big">${sel.percent}</span><span class="pc">%</span></div>
+      </div>
+      <div class="rows">${rows}</div>
+      ${avg}${th}
+      ${bigpayHtml || ''}
+      <details class="up2fold">
+        <summary>「<span class="sname">${escapeHtml(sel.name)}</span>」で決まったレースの顔ぶれ</summary>
+        ${tables}
+      </details>
+    </div>
   `;
 }
 
@@ -1340,7 +1361,9 @@ function renderBigPay(bigpay, horses) {
   `;
 }
 
-// 荒れ度カードのタップで傾向表を差し替える。見立て(.on)は動かさない（89-spec §3.1）。
+// 荒れ度の行をタップすると折りたたみの傾向表が差し替わる。見立て(.hit)は動かさない
+// （89-spec §3.1）。旧デザインではカードのタップだったが、案2では行そのものが押せる
+// （110-spec §1-7・操作ヒントの1行を消したのでここで機能を保つ）。
 function setupUpset20() {
   const root = document.querySelector('.race20');
   if (!root) return;
@@ -1356,6 +1379,11 @@ function setupUpset20() {
     root.querySelectorAll('[data-upsettend]').forEach((t) => {
       t.classList.toggle('show', t.dataset.upsettend === key);
     });
+    // 折りたたみの見出しも一緒に変える。色や枠だけでなく必ず文字でどの形か分かるように
+    const nm = root.querySelector('.up2fold .sname');
+    if (nm) nm.textContent = btn.querySelector('.nm').textContent;
+    const fold = root.querySelector('.up2fold');
+    if (fold) fold.open = true;
   });
 }
 
@@ -1389,12 +1417,13 @@ function renderHeader20(site) {
   `;
 }
 
-// 見立て。旧構成では .rhead の中にあった荒れ度カードと3連単100万を、そのまま
-// 「買い目」タブの先頭に出す。描画関数は renderUpset20 / renderBigPay を再利用し、
-// 中身・順番・クラス名は一切変えない（CSSは .race20 スコープなので移動しても効く）。
+// 見立て。「買い目」タブの先頭に、荒れ度（110-spec）と3連単100万超え（103-spec）を出す。
+// 3連単100万は荒れ度パネルの**中**（折りたたみの上）に入る（110-spec §2）ので、
+// 先に組み立てて renderUpset20 に渡す。荒れ度が無いレースは 3連単100万だけを単独で出す。
 function renderMitate20(site) {
   const p = site.prediction;
-  return `${renderUpset20(p.upset)}${renderBigPay(p.bigpay, site.horses)}`;
+  const bp = renderBigPay(p.bigpay, site.horses);
+  return renderUpset20(p.upset, bp) || bp;
 }
 
 // ===== 97-spec: 出馬表（馬柱）=====

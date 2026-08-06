@@ -33,6 +33,11 @@
   --up-naka:#6E8CA6;     /* 中荒れ = 中間 */
   --up-dai:#B7C6D3;      /* 大荒れ = 薄い（ばらける） */
   --up-on-bg:#E8EFF5;    /* 該当クラスのカード背景 */
+  /* 荒れ度の**文字色**（110-spec §3）。塗りをそのまま文字に使うと読めないので分ける。
+     濃さの向きは塗りと同じ。カッコ内は白地でのコントラスト比（本文は4.5以上が必要） */
+  --up-kata-t:#003E70;   /* 堅い   (10.9:1) 塗りと同じ値でよい */
+  --up-naka-t:#35617F;   /* 中荒れ  (6.6:1) 塗り#6E8CA6は3.5:1で不足 */
+  --up-dai-t:#63798A;    /* 大荒れ  (4.5:1) 塗り#B7C6D3は1.75:1で論外 */
 
   /* 3連単100万超え（103-spec）。荒れ度と同じく色相の濃淡だけ。緑・赤は使わない */
   --bp-on:#003E70;       /* 実際に3着以内に来た人気（確定後のみ） */
@@ -506,53 +511,77 @@ details.fold.om-fold>summary .cnt{color:#fff;opacity:.85;font-size:11px}
 /* タブ直下の紺バー見出しは上マージンを詰める（縦一列時の16pxはタブ内では空きすぎる） */
 .race20 .tabpane>.secthead:first-child{margin-top:8px}
 
-/* 荒れ度ラベル（89-spec §3.1・案C-2）。3列カード＋高さ5pxの帯。
+/* 荒れ度ラベル（110-upset-display-v2-spec.md・案2「1クラス1行」）。
+   見出し（クラス名＋一言＋大きい%）＋3行（名前・帯・%）＋平均の1行＋しきい値の1行。
    色は同じ色相の濃淡だけ＝緑(--hit)・赤(--live)は使わない。良し悪しを含意させないため
-   （見送り推奨と読まれないこと。89-spec §3.1）。濃い=人気に集中、薄い=ばらける。 */
-.race20 .upC{margin-top:11px;display:flex;gap:7px}
-/* .on=モデルの見立て（不動） / .viewing=いま表に出しているクラス（タップで動く）。
-   2つは別物なので見た目も分ける。混ざると「堅いレースなのに大荒れ」に読める */
-.race20 .upC .col{flex:1;border:1px solid var(--rule);border-radius:4px;padding:9px 8px 10px;
-  text-align:center;background:var(--bg);display:block;width:100%;
-  font:inherit;color:inherit;cursor:pointer;-webkit-appearance:none;appearance:none}
-.race20 .upC .col:focus-visible{outline:2px solid var(--cta);outline-offset:2px}
-.race20 .upC .col.on{border-color:var(--navy);border-width:2px;padding:8px 7px 9px;
-  background:var(--up-on-bg)}
-.race20 .upC .col.viewing{box-shadow:inset 0 -3px 0 var(--navy)}
-.race20 .upC .nm{display:block;font-size:12px;font-weight:700;color:var(--sub)}
-.race20 .upC .col.on .nm{color:var(--navy)}
-.race20 .upC .pv{display:block;font-size:22px;font-weight:700;
-  font-variant-numeric:tabular-nums;line-height:1.25;color:var(--cap)}
-.race20 .upC .col.on .pv{color:var(--navy)}
-.race20 .upC .pv small{font-size:12px;font-weight:700;margin-left:1px}
-.race20 .upC .dl{display:block;font-size:10.5px;color:var(--cap);line-height:1.45;margin-top:3px}
-.race20 .upC .col.on .dl{color:var(--sub)}
-.race20 .upChint{font-size:10.5px;color:var(--cap);margin-top:5px}
-.race20 .upCbar{display:flex;height:5px;border-radius:3px;overflow:hidden;
-  background:var(--sub-bg2);margin-top:8px}
-.race20 .upCbar span{display:block}
-.race20 .upCbar .s0{background:var(--up-kata)}
-.race20 .upCbar .s1{background:var(--up-naka)}
-.race20 .upCbar .s2{background:var(--up-dai)}
-.race20 .upCnote{font-size:11.5px;color:var(--sub);margin-top:7px}
-/* 傾向表: その決着になったレースの1着・2着の顔ぶれ（ラベルの的中率ではない） */
-.race20 .upCtend{display:none;width:100%;border-collapse:collapse;margin-top:7px}
-.race20 .upCtend.show{display:table}
-.race20 .upCtend caption{caption-side:top;text-align:left;font-size:10.5px;color:var(--cap);
-  padding-bottom:3px}
-.race20 .upCtend th{font-size:11.5px;font-weight:400;color:var(--sub);text-align:left;
-  padding:3px 0;border-bottom:1px solid var(--rule)}
-.race20 .upCtend td{font-size:12px;font-weight:700;color:var(--text);text-align:right;
-  font-variant-numeric:tabular-nums;padding:3px 0;border-bottom:1px solid var(--rule);
+   （見送り推奨と読まれないこと。89-spec §3.1）。濃い=人気に集中、薄い=ばらける。
+   色だけに意味を持たせない＝どの行にもクラス名の文字が必ず出る。 */
+.race20 .up2{margin-top:11px;font-variant-numeric:tabular-nums}
+.race20 .up2 .hd{display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
+.race20 .up2 .hd .lb{font-size:17px;font-weight:700;letter-spacing:.02em;line-height:1.3}
+.race20 .up2 .hd .tx{font-size:11.5px;color:var(--sub);line-height:1.5}
+.race20 .up2 .hd .r{display:flex;align-items:baseline;white-space:nowrap}
+.race20 .up2 .hd .big{font-size:40px;font-weight:700;line-height:.92;letter-spacing:-.02em}
+.race20 .up2 .hd .pc{font-size:15px;font-weight:700;margin-left:2px}
+/* 見出しの色は見立てクラスの文字色。大きい%は「見立てクラスの確率」であって最大値ではない
+   （しきい値で決まるため。理由は .th の1行が説明する） */
+.race20 .up2 .hd.k-kata{color:var(--up-kata-t)}
+.race20 .up2 .hd.k-naka{color:var(--up-naka-t)}
+.race20 .up2 .hd.k-dai{color:var(--up-dai-t)}
+
+/* 3行。並びは 堅い→中荒れ→大荒れ で固定（確率順に並べ替えない）。
+   .hit=モデルの見立て（不動・左の紺アクセント） / .viewing=いま折りたたみに出している
+   クラス（タップで動く）。2つは別物なので見た目も分ける */
+.race20 .up2 .rows{margin-top:12px}
+.race20 .up2 .row{display:flex;align-items:center;gap:9px;width:100%;padding:5px 0 5px 8px;
+  background:none;border:0;font:inherit;color:inherit;cursor:pointer;text-align:left;
+  -webkit-appearance:none;appearance:none}
+.race20 .up2 .row+.row{border-top:1px solid var(--rule)}
+.race20 .up2 .row:focus-visible{outline:2px solid var(--cta);outline-offset:-2px}
+.race20 .up2 .row.hit{box-shadow:inset 3px 0 0 var(--navy)}
+.race20 .up2 .row.viewing .nm{text-decoration:underline;text-underline-offset:3px}
+.race20 .up2 .row .nm{width:44px;flex:none;font-size:12px;font-weight:700}
+.race20 .up2 .row .track{flex:1;height:10px;border-radius:3px;background:var(--sub-bg2);
+  display:block}
+.race20 .up2 .row .fill{display:block;height:100%;border-radius:3px;min-width:3px}
+.race20 .up2 .row .pv{width:46px;flex:none;text-align:right;font-size:15px;font-weight:700}
+.race20 .up2 .row .pv small{font-size:10px;margin-left:1px}
+.race20 .up2 .row.hit .pv{font-size:18px}
+/* 文字は文字色（--up-*-t）、帯の塗りは既存の --up-*（89-spec のまま） */
+.race20 .up2 .row.c0 .nm,.race20 .up2 .row.c0 .pv{color:var(--up-kata-t)}
+.race20 .up2 .row.c1 .nm,.race20 .up2 .row.c1 .pv{color:var(--up-naka-t)}
+.race20 .up2 .row.c2 .nm,.race20 .up2 .row.c2 .pv{color:var(--up-dai-t)}
+.race20 .up2 .row.c0 .fill{background:var(--up-kata)}
+.race20 .up2 .row.c1 .fill{background:var(--up-naka)}
+.race20 .up2 .row.c2 .fill{background:var(--up-dai)}
+
+/* 全レース平均との差（110-spec §4.2）としきい値の1行（同 §4.1）。
+   古いレースには両方とも無い＝その行だけ出ない */
+.race20 .up2 .avg{font-size:10.5px;color:var(--cap);text-align:right;margin-top:6px}
+.race20 .up2 .th{font-size:10.5px;color:var(--cap);line-height:1.6;margin-top:8px;
+  padding-top:8px;border-top:1px solid var(--rule)}
+
+/* 折りたたみ。中身は「その決着になったレースの1着・2着の顔ぶれ」であって
+   ラベルの的中率ではない（89-spec §2.6）。見出しの言い回しでそこを外さないこと */
+.race20 .up2fold{margin-top:12px;border-top:1px solid var(--rule);padding-top:8px}
+.race20 .up2fold summary{font-size:11px;color:var(--link);cursor:pointer;list-style:none}
+.race20 .up2fold summary::-webkit-details-marker{display:none}
+.race20 .up2fold summary::before{content:"▸ ";color:var(--cap)}
+.race20 .up2fold[open] summary::before{content:"▾ "}
+.race20 .up2fold summary .sname{font-weight:700}
+.race20 .up2tend{display:none;width:100%;border-collapse:collapse;margin-top:6px}
+.race20 .up2tend.show{display:table}
+.race20 .up2tend th{font-size:11.5px;font-weight:400;color:var(--sub);text-align:left;
+  padding:4px 0;border-bottom:1px solid var(--rule)}
+.race20 .up2tend td{font-size:12px;font-weight:700;color:var(--text);text-align:right;
+  font-variant-numeric:tabular-nums;padding:4px 0;border-bottom:1px solid var(--rule);
   width:4.5em}
-.race20 .upCtend tr:last-child th,.race20 .upCtend tr:last-child td{border-bottom:none}
-.race20 .upCfoot{font-size:11px;color:var(--cap);margin-top:5px}
+.race20 .up2tend tr:last-child th,.race20 .up2tend tr:last-child td{border-bottom:none}
 @media(max-width:420px){
-  .race20 .upC{gap:5px}
-  .race20 .upC .col{padding:8px 4px 9px}
-  .race20 .upC .col.on{padding:7px 3px 8px}
-  .race20 .upC .pv{font-size:19px}
-  .race20 .upC .dl{font-size:10px}
+  .race20 .up2 .hd .big{font-size:34px}
+  .race20 .up2 .row .nm{width:40px}
+  .race20 .up2 .row .pv{width:42px;font-size:14px}
+  .race20 .up2 .row.hit .pv{font-size:17px}
 }
 
 /* 3連単100万超え（103-sanrentan-1m-spec.md §3.3・案A）。荒れ度パネルの直下に1行＋帯。
