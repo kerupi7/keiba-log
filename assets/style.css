@@ -1077,6 +1077,27 @@ details.fold.om-fold>summary .cnt{color:#fff;opacity:.85;font-size:11px}
    最長は「マジェスティックウォリアー」等の13文字（12px×13＝約156px）。 */
 .cstats table.st[data-tbl="tblEnt"] td:first-child{font-size:12px}
 
+/* ===== 10.1 レース詳細「コース」タブ（109-course-tab-spec.md §6.3）
+   C案（フィルタ〜ペース傾向）はcourse stats(.cstats)をそのまま流用。ここは
+   B案（今日の出走馬を重ねる下半分）専用に新規追加した4クラスだけ。値はmockup-78のもの。 ===== */
+.cstats .ctab-flag{margin-top:16px;padding:6px 0;font-size:11px;font-weight:700;
+  color:#8a6a00;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule)}
+.cstats .ctab-flag b{font-weight:700}
+.eyebrow .ctab-dup{font-size:9.5px;font-weight:700;color:#8a6a00;
+  background:#FBF2DC;border-radius:2px;padding:1px 5px}
+.cstats .ctab-miss{margin-top:8px;display:flex;gap:6px;align-items:flex-start;
+  background:var(--sub-bg);border-radius:4px;padding:7px 8px}
+.cstats .ctab-miss .bl{flex-wrap:wrap}
+.cstats .ctab-miss .mw{font-size:10.5px;color:var(--cap);line-height:1.6}
+/* 区分名(bn)を上・馬番(bl)を下の2段組み。逆にすると馬番が折り返した時に区分名と同じ行に見える。
+   bnはinline-blockにして既存の.rkslot（①②③の順位バッジ枠・常設）と同じ1行目に乗せる
+   （blockにすると.rkslotだけの空行が挟まり、V8の縦の長さが目算より伸びた実測差の主因だった）。
+   blはdisplay:flexで確実に2行目へ改行させ、min-widthで1行あたりの馬番バッジ数を確保する
+   （狙いが無いと表の自動レイアウトで1列目が極端に狭くなり、馬番が1個ずつ縦に折り返して伸びる）。 */
+.cstats table.st .bn{display:inline-block;font-size:11px;margin-bottom:2px}
+.cstats table.st .bn i{font-style:normal;font-size:9.5px;color:var(--cap);margin-left:4px}
+.cstats table.st .bl{display:flex;gap:2px;flex-wrap:wrap;min-width:84px}
+
 /* ===== 9. 買い目アキネーター（88-akinator-spec.md）。.ak-wrap配下に全スコープ ===== */
 .ak-wrap{margin-top:4px}
 
@@ -1783,6 +1804,9 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
    105-spec §5.3: 買える／消せるの10項目チップ（2段・○×だけ表示）
    ============================================================ */
 .race20 .chips{display:flex;flex-wrap:wrap;gap:4px}
+/* 109-spec §6.2: コースタブは.race20の内側に.cstatsを置くため.chipsだけ取り合いになる。
+   .race20 .chips（上記）が.cstats .chipsに勝ってしまうので、フィルタ用の見た目に戻す */
+.race20 .cstats .chips{gap:5px;flex:1}
 .race20 .chip2{display:inline-flex;flex-direction:column;border-radius:4px;padding:2px 6px;
   background:var(--sub-bg2);line-height:1.45;max-width:196px}
 .race20 .chip2 .c2h{display:flex;align-items:baseline;gap:4px;font-size:10px}

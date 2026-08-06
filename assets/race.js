@@ -692,14 +692,16 @@ function setupFinishOrder() {
 // 黙って諦める仕様）、隠れたパネルの中で走らせると固定2列がズレるため。
 // JS がここまで到達しなかった場合は .tabs-ready が付かず、従来どおり縦一列で
 // 全ブロックが読める状態に留まる（＝タブ化の失敗で情報が消えることはない）。
-function setupTabs20() {
+function setupTabs20(site) {
   const root = document.querySelector('#race-content .race20');
   if (!root) return;
   const bar = root.querySelector('.tabbar');
   const panes = Array.from(root.querySelectorAll('.tabpane'));
   if (!bar || !panes.length) return;
 
-  const show = (key, pushHash) => {
+  const show = (keyIn, pushHash) => {
+    // #tab=course 等、実在しないパネルを指す場合は既定タブへ落とす（109-spec §2.2 縮退）
+    const key = panes.some((p) => p.dataset.pane === keyIn) ? keyIn : RACE20_TAB_DEFAULT;
     for (const b of bar.querySelectorAll('.t20')) {
       const on = b.dataset.tab === key;
       b.classList.toggle('on', on);
@@ -708,6 +710,8 @@ function setupTabs20() {
     for (const p of panes) p.classList.toggle('on', p.dataset.pane === key);
     // 回顧タブは開いた瞬間に初めて幅が確定するので測り直す（折りたたみと同じ理由）
     if (key === 'kaiko') setupFinishOrder();
+    // 109-spec §3.1: コースタブは最初に開いた時だけ data/courses/*.json を読む（遅延読み込み）
+    if (key === 'course' && window.CourseTab) window.CourseTab.onShow(site);
     if (pushHash) history.replaceState(null, '', `${location.pathname}${location.search}#tab=${key}`);
   };
 
@@ -2107,6 +2111,7 @@ const RACE20_TABS = [
   { key: 'shutuba', label: '出馬表' },
   { key: 'tenkai', label: '展開' },
   { key: 'kaime', label: '買い目' },
+  { key: 'course', label: 'コース' },   // 109-spec: course_entities が無いレースは落とす（§2.2）
   // 回顧タブの見出しは中身に合わせる。レース前は renderVerification20 が
   // 「答え合わせ／結果はレース後に反映されます」を出すので、タブ名も同じ言葉にする
   { key: 'kaiko', label: '回顧', labelPre: '答え合わせ' },
@@ -2122,7 +2127,10 @@ function buildRace20Html(site, oddsAll) {
   const banner = site.status === 'cancelled' ? '<div class="alert">このレースは中止になりました</div>' : '';
   // 結果が出ているレースだけ「回顧」に赤ドットを出す（renderVerification20 と同じ判定）
   const settled = site.status === 'final';
-  const bar = RACE20_TABS.map((t) => `<button type="button" class="t20" role="tab"`
+  // 109-spec §2.2: course_entities（course_idが確定できたレースの人物・血統ぶん）が
+  // 無いレースはコースタブ自体を配列から落とす（推測でコースJSONを引かない）
+  const tabs = RACE20_TABS.filter((t) => t.key !== 'course' || site.course_entities);
+  const bar = tabs.map((t) => `<button type="button" class="t20" role="tab"`
     + ` data-tab="${t.key}" aria-controls="pane-${t.key}" aria-selected="false">`
     + `${!settled && t.labelPre ? t.labelPre : t.label}`
     + `${t.key === 'kaiko' && settled ? '<span class="dot" aria-hidden="true"></span>' : ''}`
@@ -2137,6 +2145,7 @@ function buildRace20Html(site, oddsAll) {
       ${pane('shutuba', renderShutuba20(site))}
       ${pane('tenkai', renderOverview20(site))}
       ${pane('kaime', renderMitate20(site) + renderBets20(site) + renderOddsMasterSection(site, oddsAll))}
+      ${site.course_entities ? pane('course', window.CourseTab.render(site)) : ''}
       ${pane('kaiko', renderVerification20(site))}
     </div>
   `;
@@ -3282,10 +3291,12 @@ async function main() {
   if (is20) setupShutuba20();
   if (is20) setupTopping(site);   // 102-spec: トッピング（データが無ければ何もしない）
   if (is20) setupUpset20();
+  // 109-spec T6: コースタブのクリック配線（読み込み自体はタブが最初に開かれた時・setupTabs20内）
+  if (is20 && site.course_entities && window.CourseTab) window.CourseTab.setup(site);
   setupFinishOrder();
   // タブ化は必ず最後。ここまでは全パネルが表示されたまま（.tabs-ready が付くまで
   // CSS が display:none にしない）なので、setupFinishOrder の幅実測が正しい幅で走る。
-  if (is20) setupTabs20();
+  if (is20) setupTabs20(site);
 }
 
 main();
