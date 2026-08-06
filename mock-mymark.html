@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>mock 自分の印（案3 ボトムシート） — Ans.</title>
+<link rel="stylesheet" href="assets/style.css?v=20260806d">
+<style>
+/* ============================================================
+   自分の印（案3 印欄タップ→ボトムシート）のモックアップ用CSS。
+   本番の style.css には手を入れず、ここだけで完結させる。
+   接頭辞は mm-（my mark）。本番クラス（.hn/.mkb/.grade/.od）はそのまま借りる。
+   ============================================================ */
+
+/* ── 表示の切り替え（戦績5走 ⇄ 印を付ける） ── */
+.race20 .mm-bar{display:flex;align-items:center;gap:8px;margin:8px 0 0;flex-wrap:wrap}
+.race20 .mm-seg{display:inline-flex;border:1px solid var(--rule-strong);border-radius:6px;
+  overflow:hidden;background:#fff;flex:none}
+.race20 .mm-seg button{border:0;background:#fff;font:inherit;font-size:12px;font-weight:700;
+  color:var(--sub);padding:6px 12px;cursor:pointer;line-height:1.3;
+  border-right:1px solid var(--rule)}
+.race20 .mm-seg button:last-child{border-right:0}
+.race20 .mm-seg button.on{background:var(--navy);color:#fff}
+.race20 .mm-sum{font-size:11.5px;color:var(--sub);flex:1 1 auto;min-width:0;
+  font-variant-numeric:tabular-nums}
+.race20 .mm-sum b{color:var(--navy);font-weight:700;margin-left:5px}
+.race20 .mm-sum .e{color:var(--cap)}
+.race20 .mm-save{font-size:10px;color:var(--cap);flex:none}
+
+/* ── 自分の印のマス（両モード共通）。押せる＝白地＋枠、AI印＝灰地の柱 ── */
+.race20 .mm-my{flex:none;width:32px;display:flex;align-items:center;justify-content:center;
+  border:0;border-right:1px solid var(--rule);background:#fff;font:inherit;cursor:pointer;
+  padding:0;color:var(--cap)}
+.race20 .mm-my .v{display:flex;align-items:center;justify-content:center;width:26px;height:26px;
+  border:1px solid var(--rule);border-radius:5px;font-size:17px;font-weight:700;line-height:1;
+  background:#fff}
+.race20 .mm-my.set .v{border-color:var(--navy);background:#F4F8FC}
+.race20 .mm-my .v.e{font-size:10px;font-weight:400;color:#C4C4BF}
+.race20 .mm-my.m1 .v{color:var(--mk-hon)} .race20 .mm-my.m2 .v{color:var(--mk-tai)}
+.race20 .mm-my.m3 .v{color:var(--mk-tan)} .race20 .mm-my.m4 .v{color:var(--mk-oku)}
+.race20 .mm-my.m5 .v{color:var(--orange)}
+/* 戦績モードの札では上端に寄せる（柱の印と高さをそろえる） */
+.race20 .acard .mm-my{align-items:flex-start;padding-top:4px;background:#fff}
+.race20 .acard.scratched .mm-my{visibility:hidden}
+
+/* ── 印モードの一覧（1頭1行） ── */
+.race20 .mm-list{margin-top:8px;max-width:760px;border:1px solid var(--rule-strong);
+  border-radius:7px;overflow:hidden;background:#fff}
+.race20 .mm-list.off,.race20 .shlist.off{display:none}
+.race20 .mm-hd{display:flex;align-items:center;gap:5px;padding:4px 6px;background:var(--sub-bg2);
+  font-size:9.5px;color:var(--cap);font-weight:700;border-bottom:1px solid var(--rule-strong)}
+.race20 .mm-hd .h-my{width:32px;text-align:center;flex:none}
+.race20 .mm-hd .h-ai{width:30px;text-align:center;flex:none}
+.race20 .mm-hd .h-nm{flex:1 1 auto}
+.race20 .mm-hd .h-tot{width:62px;text-align:center;flex:none}
+.race20 .mm-hd .h-od{width:54px;text-align:right;flex:none}
+.race20 .mm-row{display:flex;align-items:stretch;border-bottom:1px solid var(--rule);
+  background:#fff;min-height:40px}
+.race20 .mm-row:last-child{border-bottom:0}
+.race20 .mm-row.pred{background:#F4F8FC}
+.race20 .mm-row.scr{color:var(--cap)}
+.race20 .mm-ai{flex:none;width:30px;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:1px;background:var(--sub-bg);border-right:1px solid var(--sep)}
+.race20 .mm-ai .none{font-size:9px;color:#C4C4BF}
+.race20 .mm-c{flex:1 1 auto;min-width:0;display:flex;align-items:center;gap:5px;padding:0 5px}
+.race20 .mm-c .nm{flex:1 1 auto;min-width:0;font-size:12.5px;font-weight:700;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+.race20 .mm-c .tot{flex:none;width:62px;display:flex;align-items:center;justify-content:flex-end;
+  gap:3px;font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums}
+.race20 .mm-c .tot .grade{min-width:22px;font-size:10.5px;padding:1px 3px}
+/* 3桁オッズ（130.4倍）で「倍」が折り返すと行だけ高くなるので、幅を確保して折り返さない */
+.race20 .mm-c .od{flex:none;width:54px;text-align:right;font-size:12.5px;font-weight:700;
+  font-variant-numeric:tabular-nums;line-height:1.15;white-space:nowrap}
+.race20 .mm-c .od i{font-style:normal;font-size:9px;font-weight:400;color:var(--cap);margin-left:1px}
+.race20 .mm-c .od .pp{display:block;font-size:9.5px;font-weight:400;color:var(--cap)}
+.race20 .mm-c .od.hot{color:var(--live)}
+.race20 .mm-c .od.hot .pp{color:var(--cap)}
+
+/* ── ボトムシート（案3） ── */
+.mm-shade{position:fixed;inset:0;background:rgba(0,0,0,.28);opacity:0;pointer-events:none;
+  transition:opacity .16s;z-index:60}
+.mm-shade.on{opacity:1;pointer-events:auto}
+.mm-sheet{position:fixed;left:0;right:0;bottom:0;z-index:61;background:#fff;
+  border-top:1px solid var(--rule-strong);border-radius:12px 12px 0 0;
+  box-shadow:0 -4px 18px rgba(0,0,0,.22);padding:9px 12px calc(14px + env(safe-area-inset-bottom));
+  transform:translateY(105%);transition:transform .18s ease-out;
+  max-width:760px;margin:0 auto;
+  font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif}
+.mm-sheet.on{transform:translateY(0)}
+.mm-sheet .grip{width:36px;height:4px;border-radius:2px;background:var(--rule);margin:0 auto 8px}
+.mm-sheet .sh{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text);
+  margin-bottom:9px;padding-bottom:8px;border-bottom:1px solid var(--rule)}
+.mm-sheet .sh b{font-weight:700}
+.mm-sheet .sh .cur{margin-left:auto;font-size:10.5px;color:var(--cap);font-weight:400}
+.mm-sheet .sh .cur i{font-style:normal;font-size:15px;font-weight:700;color:var(--navy);
+  margin-left:3px;vertical-align:-2px}
+.mm-sheet .mks{display:flex;gap:6px}
+.mm-sheet .mks button{flex:1;height:52px;border:1px solid var(--rule);background:#fff;
+  border-radius:8px;font:inherit;font-size:22px;font-weight:700;color:var(--text);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;line-height:1}
+.mm-sheet .mks button.on{border-color:var(--navy);background:#F4F8FC;color:var(--navy);
+  box-shadow:inset 0 0 0 1px var(--navy)}
+.mm-sheet .mks button.x{font-size:12px;font-weight:400;color:var(--sub)}
+.mm-sheet .subs{display:flex;gap:6px;margin-top:7px}
+.mm-sheet .subs button{flex:1;height:32px;border:1px solid var(--rule);background:#fff;
+  border-radius:6px;font:inherit;font-size:11.5px;color:var(--sub);cursor:pointer}
+.mm-sheet .subs button:disabled{opacity:.38;cursor:default}
+.mm-sheet .msg{font-size:11px;color:var(--cap);margin-top:7px;min-height:17px;line-height:1.5}
+.mm-sheet .msg b{color:var(--text)}
+
+.mm-note{max-width:760px;margin:10px 0 0;padding:8px 10px;background:var(--sub-bg2);
+  border-left:3px solid var(--cap);border-radius:2px;font-size:11.5px;color:var(--sub);
+  line-height:1.65}
+.mm-note b{color:var(--text)}
+</style>
+</head>
+<body>
+<header id="site-header"></header>
+<div class="container">
+  <a class="back-link" href="index.html">← 一覧へ</a>
+  <div id="race-content"></div>
+</div>
+
+<script>
+// モック用: id 未指定なら実データのある1レースを既定にする（本番 race.html には無い挙動）
+(function () {
+  if (!/[?&]id=\d{12}/.test(location.search)) {
+    history.replaceState(null, '', location.pathname + '?id=202601010401');
+  }
+})();
+</script>
+
+<script src="assets/vendor/marked.min.js"></script>
+<script src="assets/app.js?v=20260806d"></script>
+<script src="assets/coursecore.js?v=20260806d"></script>
+<script src="assets/coursetab.js?v=20260806d"></script>
+<script src="assets/harville.js?v=20260806d"></script>
+<script src="assets/akinator.js?v=20260806d"></script>
+<script src="assets/simulator.js?v=20260806d"></script>
+<script src="assets/race.js?v=20260806d"></script>
+
+<script>
+// ============================================================
+// 自分の印 — 案3（印欄タップ → ボトムシート）
+//
+// 本番の race.js / style.css には触らず、描画が終わった出馬表に後から差し込む。
+// 借りている本番の部品: .hn（枠色の馬番）/ .mkb（AI印バッジ）/ .grade（評価バッジ）
+//                       / .od.hot（10倍未満は赤）/ umaBox() / gradeClass() / gradeDisp()
+// race.js は IIFE で包まれていて中の関数が外から呼べないため、AI印バッジの組み立て
+// （markBadge20 / isAna / ABILITY_CLS）だけ本番と同じ規則でここに写している。
+// **本番を直すときはここも直す必要がある**（モックアップ限りの重複）。
+//
+// 決めごと（重複ルール）: ◎○▲は1頭まで＝別の馬に付けると前の馬から自動で外れる。
+//                         △☆は何頭でも可。
+// 保存: localStorage に race_id ごとに置く。読み込み時に復元する。
+// ============================================================
+(function () {
+  const MARKS = ['◎', '○', '▲', '△', '☆'];
+  const CLS = { '◎': 'm1', '○': 'm2', '▲': 'm3', '△': 'm4', '☆': 'm5' };
+  const SINGLE = new Set(['◎', '○', '▲']);   // 1頭までの印
+
+  // race.js の markBadge20 / isAna / ABILITY_CLS と同じ規則（写し）
+  const ABILITY_CLS = { '◎': 'm-hon', '○': 'm-tai', '▲': 'm-tan', '△': 'm-oku' };
+  const isAna = (h) => h.bet_mark === '穴' || h.role === '穴';
+  function aiBadge(h) {
+    if (h.bet_mark === '地雷') return '<span class="mkb m-jir">地雷</span>';
+    const ana = isAna(h) ? '<span class="mkb m-ana sub">穴</span>' : '';
+    if (h.ability_mark) {
+      const badge = `<span class="mkb ${ABILITY_CLS[h.ability_mark]}">${h.ability_mark}</span>`;
+      return ana ? `<span class="mkstack">${badge}${ana}</span>` : badge;
+    }
+    if (isAna(h)) return '<span class="mkb m-ana">穴</span>';
+    return '';
+  }
+
+  const raceId = (location.search.match(/[?&]id=(\d{12})/) || [])[1] || 'unknown';
+  const KEY = 'mymark:' + raceId;
+
+  let marks = {};
+  let history = [];
+  let target = null;
+  let horses = [];
+
+  const load = () => { try { marks = JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { marks = {}; } };
+  const save = () => localStorage.setItem(KEY, JSON.stringify(marks));
+  const snap = () => { history.push(JSON.stringify(marks)); if (history.length > 40) history.shift(); };
+
+  function setMark(n, mk) {
+    snap();
+    let moved = null;
+    if (mk === null) { delete marks[n]; save(); return null; }
+    if (SINGLE.has(mk)) {
+      for (const k of Object.keys(marks)) {
+        if (marks[k] === mk && String(k) !== String(n)) { delete marks[k]; moved = k; }
+      }
+    }
+    marks[n] = mk;
+    save();
+    return moved;
+  }
+
+  // ── 印モードの1行 ──
+  function rowHtml(h) {
+    if (h.scratched) {
+      return `<div class="mm-row scr" data-n="${h.number}">
+        <button type="button" class="mm-my" data-my="${h.number}" disabled><span class="v e">—</span></button>
+        <span class="mm-ai"><span class="none">—</span></span>
+        <span class="mm-c">${umaBox(h.number, h.gate, 'sm')}
+          <span class="nm">${escapeHtml(h.name)}</span>
+          <span class="tot">（取消）</span><span class="od">—</span></span>
+      </div>`;
+    }
+    const ai = aiBadge(h) || '<span class="none">—</span>';
+    const hot = (h.odds != null && h.odds < 10) ? ' hot' : '';
+    return `<div class="mm-row${h.ability_mark ? ' pred' : ''}" data-n="${h.number}">
+      <button type="button" class="mm-my" data-my="${h.number}"><span class="v e">—</span></button>
+      <span class="mm-ai">${ai}</span>
+      <span class="mm-c">${umaBox(h.number, h.gate, 'sm')}
+        <span class="nm">${escapeHtml(h.name)}</span>
+        <span class="tot">${fmtNum(h.total, 1)}<i class="grade ${gradeClass(h.grade)}">${gradeDisp(h.grade)}</i></span>
+        <span class="od${hot}">${h.odds != null ? h.odds.toFixed(1) : '—'}<i>倍</i>
+          <span class="pp">${h.popularity ?? '—'}人</span></span>
+      </span>
+    </div>`;
+  }
+
+  // ── 画面の塗り直し（両モードの印マス＋見出しの要約） ──
+  function paint() {
+    document.querySelectorAll('[data-my]').forEach((b) => {
+      const n = b.dataset.my, mk = marks[n];
+      const v = b.querySelector('.v');
+      b.className = 'mm-my' + (mk ? ' set ' + CLS[mk] : '');
+      v.className = 'v' + (mk ? '' : ' e');
+      v.textContent = mk || '—';
+    });
+    const sum = document.querySelector('.mm-sum');
+    if (sum) {
+      const by = {};
+      Object.entries(marks).forEach(([n, mk]) => (by[mk] = by[mk] || []).push(+n));
+      const parts = MARKS.filter((mk) => by[mk])
+        .map((mk) => `<b>${mk}</b>${by[mk].sort((a, b) => a - b).join('・')}`);
+      sum.innerHTML = parts.length
+        ? '自分の印　' + parts.join('　')
+        : '<span class="e">自分の印はまだありません。印のマスを押すと下から選べます</span>';
+    }
+  }
+
+  // ── ボトムシート ──
+  function buildSheet() {
+    const shade = document.createElement('div');
+    shade.className = 'mm-shade';
+    const sheet = document.createElement('div');
+    sheet.className = 'mm-sheet';
+    sheet.innerHTML = `
+      <div class="grip"></div>
+      <div class="sh"></div>
+      <div class="mks">
+        ${MARKS.map((m) => `<button type="button" data-mk="${m}">${m}</button>`).join('')}
+        <button type="button" class="x" data-mk="">消</button>
+      </div>
+      <div class="subs">
+        <button type="button" data-undo>元に戻す</button>
+        <button type="button" data-close>閉じる</button>
+      </div>
+      <div class="msg"></div>`;
+    document.body.appendChild(shade);
+    document.body.appendChild(sheet);
+
+    const msg = (html) => { sheet.querySelector('.msg').innerHTML = html; };
+    const close = () => { sheet.classList.remove('on'); shade.classList.remove('on'); target = null; };
+
+    shade.addEventListener('click', close);
+    sheet.querySelector('[data-close]').addEventListener('click', close);
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
+
+    sheet.querySelectorAll('.mks button').forEach((b) => b.addEventListener('click', () => {
+      if (target == null) return;
+      const mk = b.dataset.mk || null;
+      const moved = setMark(target, mk);
+      paint();
+      if (!mk) msg(`<b>${target}番</b>の印を消しました`);
+      else if (moved) msg(`<b>${moved}番</b>の${mk}を外して<b>${target}番</b>へ移しました（${mk}は1頭まで）`);
+      else msg(`<b>${target}番</b>に <b>${mk}</b> を付けました`);
+      setTimeout(close, 240);
+    }));
+    sheet.querySelector('[data-undo]').addEventListener('click', () => {
+      const s = history.pop();
+      if (!s) return;
+      marks = JSON.parse(s); save(); paint(); openFor(target, '1つ前に戻しました');
+    });
+    return { sheet, shade, msg, close };
+  }
+
+  let SH = null;
+
+  function openFor(n, note) {
+    if (n == null) return;
+    target = String(n);
+    const h = horses.find((x) => String(x.number) === target);
+    if (!h || h.scratched) return;
+    const cur = marks[target];
+    SH.sheet.querySelector('.sh').innerHTML =
+      `${umaBox(h.number, h.gate, 'sm')}<b>${escapeHtml(h.name)}</b>
+       <span class="cur">${cur ? 'いまの印<i>' + cur + '</i>' : '印なし'}</span>`;
+    SH.sheet.querySelectorAll('.mks button').forEach((b) =>
+      b.classList.toggle('on', !!cur && b.dataset.mk === cur));
+    SH.sheet.querySelector('[data-undo]').disabled = !history.length;
+    SH.msg(note || '');
+    SH.sheet.classList.add('on');
+    SH.shade.classList.add('on');
+  }
+
+  // ── 出馬表への差し込み ──
+  function inject(site) {
+    const pane = document.querySelector('[data-pane="shutuba"]');
+    const list = pane && pane.querySelector('.shlist');
+    if (!list) return false;
+
+    horses = site.horses;
+
+    // 1. 表示の切り替え＋要約行
+    const bar = document.createElement('div');
+    bar.className = 'mm-bar';
+    bar.innerHTML = `
+      <span class="mm-seg">
+        <button type="button" data-view="mark">印を付ける</button>
+        <button type="button" data-view="runs" class="on">戦績5走</button>
+      </span>
+      <span class="mm-sum"></span>
+      <span class="mm-save">この端末に自動保存</span>`;
+    list.parentNode.insertBefore(bar, list);
+
+    // 2. 印モードの一覧
+    const ml = document.createElement('div');
+    ml.className = 'mm-list off';
+    ml.innerHTML = `<div class="mm-hd"><span class="h-my">自分</span><span class="h-ai">AI</span>
+        <span class="h-nm">馬</span><span class="h-tot">点数・評価</span>
+        <span class="h-od">オッズ</span></div>`
+      + [...horses].sort((a, b) => a.number - b.number).map(rowHtml).join('');
+    list.parentNode.insertBefore(ml, list.nextSibling);
+
+    // 3. 戦績モードの札にも自分の印のマスを足す（左端＝自分／その右の柱＝AI）
+    list.querySelectorAll('.acard').forEach((card) => {
+      const n = card.dataset.h;
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'mm-my';
+      b.dataset.my = n;
+      b.innerHTML = '<span class="v e">—</span>';
+      card.insertBefore(b, card.firstChild);
+    });
+
+    // 4. 補足
+    const note = document.createElement('div');
+    note.className = 'mm-note';
+    note.innerHTML = `<b>モックアップ</b>：印のマス（左端の白い枠）を押すと下から選べます。
+      戦績5走のままでも、印だけの一覧でも、同じように付けられます。
+      ◎○▲は1頭まで（別の馬に付けると前の馬から外れます）、△☆は何頭でも可。
+      印はこの端末に保存され、再読み込みしても残ります。`;
+    ml.parentNode.insertBefore(note, ml.nextSibling);
+
+    // 5. 操作の結線
+    bar.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-view]');
+      if (!b) return;
+      const mark = b.dataset.view === 'mark';
+      bar.querySelectorAll('[data-view]').forEach((x) => x.classList.toggle('on', x === b));
+      list.classList.toggle('off', mark);
+      ml.classList.toggle('off', !mark);
+    });
+    pane.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-my]');
+      if (!b || b.disabled) return;
+      e.preventDefault();
+      e.stopPropagation();          // 札の柱（馬名ポップアップ）に伝えない
+      openFor(b.dataset.my);
+    }, true);
+
+    SH = buildSheet();
+    load();
+    paint();
+    return true;
+  }
+
+  // race.js の main() は非同期。出馬表が描かれるまで待ってから差し込む
+  const t0 = Date.now();
+  const timer = setInterval(async () => {
+    if (Date.now() - t0 > 15000) { clearInterval(timer); return; }
+    if (!document.querySelector('[data-pane="shutuba"] .shlist .acard')) return;
+    clearInterval(timer);
+    try {
+      const site = await getData(`data/races/${raceId}.json`);
+      inject(site);
+    } catch (err) {
+      console.error('mock-mymark: レースデータを読めませんでした', err);
+    }
+  }, 120);
+})();
+</script>
+</body>
+</html>

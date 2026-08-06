@@ -39,10 +39,10 @@
   --up-naka-t:#35617F;   /* 中荒れ  (6.6:1) 塗り#6E8CA6は3.5:1で不足 */
   --up-dai-t:#63798A;    /* 大荒れ  (4.5:1) 塗り#B7C6D3は1.75:1で論外 */
 
-  /* 3連単100万超え（103-spec）。荒れ度と同じく色相の濃淡だけ。緑・赤は使わない */
-  --bp-on:#003E70;       /* 実際に3着以内に来た人気（確定後のみ） */
-  --bp-band:#D3DEE8;     /* 射程の帯（人気4位〜min(14,頭数)位） */
-  --bp-off:#EDEDEA;      /* 帯の外 */
+  /* 3連単100万超え（103-spec）。荒れ度と同じく色相の濃淡だけ。緑・赤は使わない。
+     人気番号の帯は 2026-08-06 に廃止したので --bp-band は削除した（--bp-off は別用途で生存中） */
+  --bp-on:#003E70;       /* 発生率が高いレースの枠線 */
+  --bp-off:#EDEDEA;      /* 淡い塗り（他ブロックでも使用） */
 
   /* 背景・罫線 */
   --bg:#FFFFFF;
@@ -597,11 +597,8 @@ details.fold.om-fold>summary .cnt{color:#fff;opacity:.85;font-size:11px}
 .race20 .bpC.on .pv{color:var(--navy)}
 .race20 .bpC .pv small{font-size:11px;margin-left:1px}
 .race20 .bpC .rt{font-size:11px;color:var(--cap);white-space:nowrap;margin-left:auto}
-.race20 .bpMap{display:flex;gap:1px;margin-top:6px}
-.race20 .bpMap i{flex:1;height:16px;background:var(--bp-off);border-radius:1px;font-style:normal;
-  font-size:9px;line-height:16px;text-align:center;color:var(--cap);font-variant-numeric:tabular-nums}
-.race20 .bpMap i.band{background:var(--bp-band);color:var(--navy);font-weight:700}
-.race20 .bpMap i.came{background:var(--bp-on);color:#fff;font-weight:700}
+/* 人気番号の帯（.bpMap）は 2026-08-06 のユーザー決定で削除した。理由は race.js の
+   renderBigPay のコメント（読み取れない／レースごとの情報がほとんど無い）。 */
 @media(max-width:420px){
   .race20 .bpC .lb{font-size:11px}
   .race20 .bpC .pv{font-size:16px}
@@ -1530,7 +1527,9 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
 .race20 .aspine .mkb.m-jir{font-size:9px;min-width:0;padding:0 2px;letter-spacing:-.02em}
 .race20 .abody{flex:1 1 auto;min-width:0;padding:4px 5px 5px}
 /* 1行目＝この馬の今日。左に性齢・斤量・騎手・脚質、右端に総合点とオッズ */
-.race20 .ahead{display:flex;align-items:center;gap:5px;font-size:10.5px;color:var(--sub);
+/* 2026-08-06（111-spec）: 左に自分の印の列（28px）が増えたぶん、gap を 5px → 4px に詰めた。
+   3桁オッズの馬（130.4倍など）だけ 375px 幅で右端の人気が欠けていたため */
+.race20 .ahead{display:flex;align-items:center;gap:4px;font-size:10.5px;color:var(--sub);
   white-space:nowrap;border-bottom:1px dotted var(--rule);padding-bottom:3px;margin-bottom:3px}
 .race20 .ahead .pa{font-weight:700;color:var(--text)}
 .race20 .ahead .pk{font-variant-numeric:tabular-nums}
@@ -1722,7 +1721,10 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
 /* 106-spec §5.1: 性齢・斤量は幅を固定して、脚質バーが全馬で縦に揃うようにする */
 .race20 .ahead .pa{display:inline-block;width:2.3em;flex:none}
 .race20 .ahead .pk{display:inline-block;width:2.4em;flex:none;text-align:right}
-.race20 .ahead .pj{display:inline-block;width:4em;flex:none}
+/* 2026-08-06（111-spec）: 騎手だけ縮められるようにした（flex:none → 0 1 4em）。
+   行が入りきらないとき、右端のオッズ・人気が欠けるのではなく騎手名が「…」で詰まる。
+   幅に余裕がある通常時は 4em のままなので、いまの見た目は変わらない */
+.race20 .ahead .pj{display:inline-block;flex:0 1 4em;width:auto;min-width:0}
 
 /* コーナー通過順位が枠からはみ出ないよう折り返す（馬群のかたまりは割らない） */
 .race20 .rv-ctbl td.rv-seq{white-space:normal}
@@ -1828,6 +1830,121 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
   background:var(--sub-bg2);color:var(--sub);flex:none;line-height:1.5}
 .race20 .sc.none{font-weight:400;color:var(--cap);background:none;padding:0}
 .race20 .vrun .l3 .sc{background:none;padding:0;color:var(--sub);font-weight:400}
+
+/* ============================================================
+   111-spec: 自分の印（印のマスを押す → 下からシートが上がる）
+   接頭辞は mm-（my mark）。**左端＝自分の印（白地・押せる）／その右＝AIの印（灰地・
+   押せない）** という列の分け方を、札（戦績5走）と1行（印を付ける）の両方で守る。
+   ============================================================ */
+
+/* ── 表示の切り替え（印を付ける ／ 戦績5走）＋いま付いている印の要約 ── */
+.race20 .mm-bar{display:flex;align-items:center;gap:8px;margin:8px 0 0;flex-wrap:wrap}
+.race20 .mm-seg{display:inline-flex;border:1px solid var(--rule-strong);border-radius:6px;
+  overflow:hidden;background:#fff;flex:none}
+.race20 .mm-seg button{border:0;background:#fff;font:inherit;font-size:12px;font-weight:700;
+  color:var(--sub);padding:6px 12px;cursor:pointer;line-height:1.3;
+  border-right:1px solid var(--rule)}
+.race20 .mm-seg button:last-child{border-right:0}
+.race20 .mm-seg button.on{background:var(--navy);color:#fff}
+.race20 .mm-sum{font-size:11.5px;color:var(--sub);flex:1 1 auto;min-width:0;
+  font-variant-numeric:tabular-nums}
+.race20 .mm-sum b{color:var(--navy);font-weight:700;margin-left:5px}
+.race20 .mm-sum .e{color:var(--cap)}
+.race20 .mm-save{font-size:10px;color:var(--cap);flex:none}
+
+/* ── 印のマス（札・1行の共通部品） ── */
+/* 幅は柱（.aspine）と同じ28px。札の本文（.abody）から取る幅を最小限にするため。
+   32pxにすると 375px 幅で1行目（.ahead）が3桁オッズの馬だけ8px はみ出して人気が欠ける */
+.race20 .mm-my{flex:none;width:28px;display:flex;align-items:center;justify-content:center;
+  border:0;border-right:1px solid var(--rule);background:#fff;font:inherit;cursor:pointer;
+  padding:0;color:var(--cap)}
+.race20 .mm-my .v{display:flex;align-items:center;justify-content:center;width:24px;height:24px;
+  border:1px solid var(--rule);border-radius:5px;font-size:16px;font-weight:700;line-height:1;
+  background:#fff}
+.race20 .mm-my.set .v{border-color:var(--navy);background:#F4F8FC}
+.race20 .mm-my .v.e{font-size:10px;font-weight:400;color:#C4C4BF}
+/* 印のランク色は馬名の文字色と同じ濃淡（--mk-*）を使う。AI印の塗りチップ（.mkb）とは
+   作りを変えて、同じ◎でもどちらの印かが形で分かるようにする */
+.race20 .mm-my.m1 .v{color:var(--mk-hon)} .race20 .mm-my.m2 .v{color:var(--mk-tai)}
+.race20 .mm-my.m3 .v{color:var(--mk-tan)} .race20 .mm-my.m4 .v{color:var(--mk-oku)}
+.race20 .mm-my.m5 .v{color:var(--orange)}
+/* 札は縦に長いので、マスは上端に寄せて柱の印と高さをそろえる。
+   トッピングの色は .aspine に付くので、自分の印の列は白のまま残る */
+.race20 .acard .mm-my{align-items:flex-start;padding-top:4px}
+/* 取消馬は札でも1行でも同じ見え方（押せない灰色のマス）にする。
+   札だけ非表示にすると、同じ列なのに欠けている行がある状態になる */
+.race20 .mm-my:disabled{cursor:default}
+.race20 .mm-my:disabled .v{background:var(--sub-bg);color:#C4C4BF}
+
+/* ── 「印を付ける」モードの一覧（1頭1行・高さ40px固定） ── */
+.race20 .mm-list{margin-top:8px;max-width:760px;border:1px solid var(--rule-strong);
+  border-radius:7px;overflow:hidden;background:#fff}
+.race20 .mm-list.off,.race20 .shlist.off{display:none}
+.race20 .mm-hd{display:flex;align-items:center;gap:5px;padding:4px 6px;background:var(--sub-bg2);
+  font-size:9.5px;color:var(--cap);font-weight:700;border-bottom:1px solid var(--rule-strong)}
+.race20 .mm-hd .h-my{width:28px;text-align:center;flex:none}
+.race20 .mm-hd .h-ai{width:30px;text-align:center;flex:none}
+.race20 .mm-hd .h-nm{flex:1 1 auto}
+.race20 .mm-hd .h-tot{width:62px;text-align:center;flex:none}
+.race20 .mm-hd .h-od{width:54px;text-align:right;flex:none}
+.race20 .mm-row{display:flex;align-items:stretch;border-bottom:1px solid var(--rule);
+  background:#fff;min-height:40px}
+.race20 .mm-row:last-child{border-bottom:0}
+.race20 .mm-row.pred{background:#F4F8FC}
+.race20 .mm-row.scr{color:var(--cap)}
+.race20 .mm-ai{flex:none;width:30px;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:1px;background:var(--sub-bg);border-right:1px solid var(--sep)}
+.race20 .mm-ai .none{font-size:9px;color:#C4C4BF}
+.race20 .mm-ai .mkb{margin-right:0}
+/* AI印が「能力印＋穴」の2段（.mkstack）になる馬は、素のままだと縦48pxあって
+   その行だけ高さが40→49pxに膨らむ。1行の一覧の中でだけ詰める
+   （札の柱・他ページの .mkstack には触らない） */
+.race20 .mm-ai .mkstack{display:flex;flex-direction:column;align-items:center;gap:1px}
+.race20 .mm-ai .mkstack .mkb{font-size:10.5px;line-height:14px;padding:0 4px;min-width:15px}
+.race20 .mm-ai .mkstack .mkb.sub{font-size:8.5px;line-height:11px;padding:0 3px;min-width:0}
+.race20 .mm-c{flex:1 1 auto;min-width:0;display:flex;align-items:center;gap:5px;padding:0 5px}
+.race20 .mm-c .nm{flex:1 1 auto;min-width:0;font-size:12.5px;font-weight:700;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+.race20 .mm-c .tot{flex:none;width:62px;display:flex;align-items:center;justify-content:flex-end;
+  gap:3px;font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums}
+.race20 .mm-c .tot .grade{min-width:22px;font-size:10.5px;padding:1px 3px}
+/* 3桁オッズ（130.4倍）で「倍」が折り返すとその行だけ高くなるので、幅を確保して折り返さない */
+.race20 .mm-c .od{flex:none;width:54px;text-align:right;font-size:12.5px;font-weight:700;
+  font-variant-numeric:tabular-nums;line-height:1.15;white-space:nowrap}
+.race20 .mm-c .od i{font-style:normal;font-size:9px;font-weight:400;color:var(--cap);margin-left:1px}
+.race20 .mm-c .od .pp{display:block;font-size:9.5px;font-weight:400;color:var(--cap)}
+.race20 .mm-c .od.hot .pp{color:var(--cap)}
+.race20 .mm-hint{max-width:760px;font-size:10.5px;color:var(--cap);margin-top:6px;line-height:1.6}
+.race20 .mm-list.off + .mm-hint{display:none}
+
+/* ── ボトムシート ── */
+.mm-shade{position:fixed;inset:0;background:rgba(0,0,0,.28);opacity:0;pointer-events:none;
+  transition:opacity .16s;z-index:60}
+.mm-shade.on{opacity:1;pointer-events:auto}
+.mm-sheet{position:fixed;left:0;right:0;bottom:0;z-index:61;background:#fff;
+  border-top:1px solid var(--rule-strong);border-radius:12px 12px 0 0;
+  box-shadow:0 -4px 18px rgba(0,0,0,.22);padding:9px 12px calc(14px + env(safe-area-inset-bottom));
+  transform:translateY(105%);transition:transform .18s ease-out;max-width:760px;margin:0 auto}
+.mm-sheet.on{transform:translateY(0)}
+.mm-sheet .grip{width:36px;height:4px;border-radius:2px;background:var(--rule);margin:0 auto 8px}
+.mm-sheet .sh{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text);
+  margin-bottom:9px;padding-bottom:8px;border-bottom:1px solid var(--rule)}
+.mm-sheet .sh .cur{margin-left:auto;font-size:10.5px;color:var(--cap);font-weight:400}
+.mm-sheet .sh .cur i{font-style:normal;font-size:15px;font-weight:700;color:var(--navy);
+  margin-left:3px;vertical-align:-2px}
+.mm-sheet .mks{display:flex;gap:6px}
+.mm-sheet .mks button{flex:1;height:52px;border:1px solid var(--rule);background:#fff;
+  border-radius:8px;font:inherit;font-size:22px;font-weight:700;color:var(--text);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;line-height:1}
+.mm-sheet .mks button.on{border-color:var(--navy);background:#F4F8FC;color:var(--navy);
+  box-shadow:inset 0 0 0 1px var(--navy)}
+.mm-sheet .mks button.x{font-size:15px;font-weight:400;color:var(--sub)}
+.mm-sheet .subs{display:flex;gap:6px;margin-top:7px}
+.mm-sheet .subs button{flex:1;height:32px;border:1px solid var(--rule);background:#fff;
+  border-radius:6px;font:inherit;font-size:11.5px;color:var(--sub);cursor:pointer}
+.mm-sheet .subs button:disabled{opacity:.38;cursor:default}
+.mm-sheet .msg{font-size:11px;color:var(--cap);margin-top:7px;min-height:17px;line-height:1.5}
+.mm-sheet .msg b{color:var(--text)}
 
 /* ============================================================
    105-spec §5.3: 買える／消せるの10項目チップ（2段・○×だけ表示）
@@ -2200,16 +2317,21 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
 .race20 .outlook .ocap{font-size:10px;color:var(--cap);line-height:1.7;margin-top:5px}
 
 /* ── §5 脚質 ── */
+/* 塗りで判定を言わない（2026-08-06）。旧版は全コース平均との差でカードを赤・緑に塗って
+   いたが、そのコースでの複勝率が4脚質のうち上位でも赤くなり、脚質そのものが弱いと読めた。
+   カードは4つとも同じ地色にし、高い・低いは文言と符号だけで言う。89-spec（荒れ度）で
+   「良し悪しを含意させないため緑・赤は使わない」と決めたのと同じ扱いにそろえる。 */
 .race20 .rank2{margin-top:4px}
 .race20 .rk2{padding:8px 9px 9px;border-radius:5px;margin-bottom:5px;
-  background:var(--jbg,#F1F1EE)}
-.race20 .rk2.top{box-shadow:inset 0 0 0 2px var(--jbar,#B4B4AC)}
+  background:var(--sub-bg);border:1px solid var(--rule)}
+.race20 .rk2.top{box-shadow:inset 0 0 0 2px #B4B4AC}
 .race20 .rk2 .r1{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}
 .race20 .rk2 .r1 .st{font-size:14px;font-weight:800}
 .race20 .rk2 .r1 .cnt{font-size:10.5px;color:var(--cap)}
-.race20 .rk2 .r1 .jd{font-size:11px;font-weight:700;color:var(--jfg,var(--cap))}
+.race20 .rk2 .r1 .jd{font-size:11px;font-weight:700;color:var(--sub)}
+.race20 .rk2 .r1 .jd i{font-style:normal;font-size:9px;color:var(--navy);margin-right:2px}
 .race20 .rk2 .r1 .dt{margin-left:auto;font-size:13px;font-weight:800;
-  color:var(--jfg,var(--cap));font-variant-numeric:tabular-nums}
+  color:var(--text);font-variant-numeric:tabular-nums}
 /* 3列×2行の小さな表。行見出しがあるので、何と比べているかが本文なしで分かる */
 .race20 table.rt3{width:100%;border-collapse:collapse;margin:6px 0 2px;
   font-variant-numeric:tabular-nums;background:none}
@@ -2220,8 +2342,6 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
 .race20 table.rt3 th.l{text-align:left;font-size:10px;color:var(--cap);font-weight:400;
   width:5.6em}
 .race20 table.rt3 tr.cur td{font-size:13.5px;font-weight:800;color:var(--text);padding-top:4px}
-.race20 table.rt3 tr.cur td.up{color:#0C5C2D}
-.race20 table.rt3 tr.cur td.dn{color:#A32B1F}
 .race20 table.rt3 tr.avg td{font-size:11px;color:var(--cap);font-weight:400}
 .race20 .rk2 .hs{display:flex;flex-wrap:wrap;gap:1px 0;margin-top:6px}
 .race20 .rk2 .hs .pz{display:inline-flex;flex-direction:column;align-items:center;width:26px}
@@ -2229,11 +2349,8 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
 .race20 .rk2 .hs .pz.jirai .hn{box-shadow:0 0 0 2px var(--live)}
 .race20 .rk2 .hs .pz.nige .hn{box-shadow:0 0 0 2px var(--orange)}
 .race20 .rk2 .hs .none{font-size:11px;color:var(--cap)}
-.race20 .rk2.p2{--jbg:#CBE5D6;--jfg:#0C5C2D;--jbar:#2E7D4F}
-.race20 .rk2.p1{--jbg:#E7F3EA;--jfg:#276B43;--jbar:#5FA07A}
-.race20 .rk2.z0{--jbg:#F1F1EE;--jfg:#6E6E68;--jbar:#B4B4AC}
-.race20 .rk2.m1{--jbg:#FBE9E9;--jfg:#A83232;--jbar:#D08A8A}
-.race20 .rk2.m2{--jbg:#F6D5D5;--jfg:#A32B1F;--jbar:#C05B4B}
+/* 判定クラス（p2/p1/z0/m1/m2）は JS 側で付いたまま残すが、色は当てない。
+   文言（.jd）と符号（.dt）が判定を言う。塗り分けを復活させないこと */
 
 /* ── §7 逃げ候補・先行圧（メーター） ── */
 .race20 .mt{margin-top:5px}

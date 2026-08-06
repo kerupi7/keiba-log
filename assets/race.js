@@ -1322,33 +1322,18 @@ function renderUpset20(upset, bigpayHtml) {
   `;
 }
 
-// 3連単100万超えの射程（103-sanrentan-1m-spec.md §3・案A）。bigpay が無ければ何も出さない
-// （§3.5 の縮退）。文言(percent/ratio_line)は keiba_build_analysis.py が確定済み。
-// 帯(band_lo〜band_hi)・頭数(field_size)もそのまま転記されたものをここでは組み立てるだけ。
-// 凡例・注記は一切出さない（§3.4・ユーザー指示）。帯に人気番号が入るので番号列が説明を兼ねる。
-function renderBigPay(bigpay, horses) {
+// 3連単100万超え（103-sanrentan-1m-spec.md §3）。bigpay が無ければ何も出さない（§3.5 の縮退）。
+// 文言(percent/ratio_line)は keiba_build_analysis.py が確定済み。ここでは組み立てるだけ。
+//
+// 【2026-08-06・ユーザー決定】人気番号の帯（.bpMap）は**やめた**。理由は2つ。
+//  1. 何を表しているか画面から読み取れなかった。§3.4 で凡例を出さない決まりにしていて、
+//     「番号列そのものが説明を兼ねる」という前提だったが、それが成り立っていなかった
+//  2. 薄い帯（人気4位〜min(14,頭数)位）は**ほぼ全レースで同じ形**で、頭数によって右端が
+//     変わるだけ。レースごとの情報がほとんど無い。しかも密度は1.12＝全馬を無選別に囲った
+//     場合(1.00)より1割濃いだけで、絞り込みとして弱い（§2.5 の★）
+// band_lo / band_hi / field_size はデータ契約（§4.2）に残るが、ここでは描画しない。
+function renderBigPay(bigpay) {
   if (!bigpay || !bigpay.field_size) return '';
-  const fs = bigpay.field_size;
-  // §3.5: 頭数7以下は帯を出さず1行のみ（人気4位以上が3頭に満たず帯の意味がないため）
-  let map = '';
-  if (fs >= 8) {
-    const finishByPop = {};
-    (horses || []).forEach((h) => {
-      if (h.finish != null && h.finish <= 3 && h.popularity != null) {
-        finishByPop[h.popularity] = true;
-      }
-    });
-    const cells = [];
-    for (let i = 1; i <= fs; i += 1) {
-      // came（確定後に実際に3着以内へ来た人気）は band より優先。§4.2: build_bigpay は
-      // レース確定前にしか呼ばれないためサイト側で site.horses[].finish/popularity から出す
-      const came = !!finishByPop[i];
-      const inBand = i >= bigpay.band_lo && i <= bigpay.band_hi;
-      const cls = came ? ' class="came"' : (inBand ? ' class="band"' : '');
-      cells.push(`<i${cls}>${i}</i>`);
-    }
-    map = `<div class="bpMap">${cells.join('')}</div>`;
-  }
   return `
     <div class="bpC${bigpay.highlight ? ' on' : ''}">
       <div class="r1">
@@ -1356,7 +1341,6 @@ function renderBigPay(bigpay, horses) {
         <span class="pv">${escapeHtml(bigpay.percent)}<small>%</small></span>
         <span class="rt">${escapeHtml(bigpay.ratio_line)}</span>
       </div>
-      ${map}
     </div>
   `;
 }
@@ -1422,7 +1406,7 @@ function renderHeader20(site) {
 // 先に組み立てて renderUpset20 に渡す。荒れ度が無いレースは 3連単100万だけを単独で出す。
 function renderMitate20(site) {
   const p = site.prediction;
-  const bp = renderBigPay(p.bigpay, site.horses);
+  const bp = renderBigPay(p.bigpay);
   return renderUpset20(p.upset, bp) || bp;
 }
 
@@ -1974,10 +1958,207 @@ function spineHtml(h) {
   </button>`;
 }
 
+// ============================================================
+// 111-spec: 自分の印（印のマスを押す → 下からシートが上がる）
+//
+// AIの印（柱の ◎○▲△・穴・地雷）とは列を分ける。**左端が自分の印で押せる、
+// その右の柱がAIの印で押せない。** 出馬表は「印を付ける」（1頭1行・全頭が1画面に
+// 入る）と「戦績5走」（従来の札）を切り替えられる。既定は従来どおり戦績5走。
+//
+// クラスの接頭辞は mm-（my mark）。印のマス自体は札・1行の両方で同じ mmCell を使う。
+// 重複ルール: ◎○▲は1頭まで（別の馬に付けると前の馬から自動で外れる）／△☆は複数可。
+// 保存: localStorage の mymark:{race_id}。端末をまたぐ同期はしない。
+// ============================================================
+const MM_MARKS = ['◎', '○', '▲', '△', '☆'];
+const MM_CLS = { '◎': 'm1', '○': 'm2', '▲': 'm3', '△': 'm4', '☆': 'm5' };
+const MM_SINGLE = new Set(['◎', '○', '▲']);   // 1頭までの印
+const MM = { key: '', marks: {}, hist: [], target: null, by: {}, sheet: null, shade: null };
+
+function mmLoad(raceId) {
+  MM.key = `mymark:${raceId}`;
+  try { MM.marks = JSON.parse(localStorage.getItem(MM.key)) || {}; } catch (e) { MM.marks = {}; }
+}
+// localStorage が使えない環境（プライベートブラウズ等）でも印は付く。保存されないだけ。
+function mmSave() {
+  try { localStorage.setItem(MM.key, JSON.stringify(MM.marks)); } catch (e) { /* 保存しないだけ */ }
+}
+function mmSnap() {
+  MM.hist.push(JSON.stringify(MM.marks));
+  if (MM.hist.length > 40) MM.hist.shift();
+}
+// 戻り値: ◎○▲を移したときに「印が外れた側の馬番」。移していなければ null
+function mmSet(n, mk) {
+  mmSnap();
+  let moved = null;
+  if (mk === null) { delete MM.marks[n]; mmSave(); return null; }
+  if (MM_SINGLE.has(mk)) {
+    for (const k of Object.keys(MM.marks)) {
+      if (MM.marks[k] === mk && String(k) !== String(n)) { delete MM.marks[k]; moved = k; }
+    }
+  }
+  MM.marks[n] = mk;
+  mmSave();
+  return moved;
+}
+
+// 印のマス。中身（記号・色）は mmPaint がまとめて書き込むので、ここでは空の器だけ作る
+function mmCell(h) {
+  return `<button type="button" class="mm-my" data-my="${h.number}"${h.scratched ? ' disabled' : ''}>`
+    + '<span class="v e">—</span></button>';
+}
+
+// 「印を付ける」モードの1行。札から戦績5走を落とし、AIの点数・評価を残したもの
+function mmRow(h) {
+  if (h.scratched) {
+    return `<div class="mm-row scr" data-n="${h.number}">${mmCell(h)}
+      <span class="mm-ai"><span class="none">—</span></span>
+      <span class="mm-c">${umaBox(h.number, h.gate, 'sm')}<span class="nm">${escapeHtml(h.name)}</span>
+        <span class="tot">（取消）</span><span class="od">—</span></span></div>`;
+  }
+  return `<div class="mm-row${h.ability_mark ? ' pred' : ''}" data-n="${h.number}">${mmCell(h)}
+    <span class="mm-ai">${markBadge20(h) || '<span class="none">—</span>'}</span>
+    <span class="mm-c">${umaBox(h.number, h.gate, 'sm')}<span class="nm">${escapeHtml(h.name)}</span>
+      <span class="tot">${fmtNum(h.total, 1)}<i class="grade ${gradeClass(h.grade)}">${gradeDisp(h.grade)}</i></span>
+      <span class="od${oddsHotClass(h.odds)}">${h.odds != null ? h.odds.toFixed(1) : '—'}<i>倍</i>
+        <span class="pp">${h.popularity ?? '—'}人</span></span></span></div>`;
+}
+
+function mmBar() {
+  return `<div class="mm-bar">
+    <span class="mm-seg">
+      <button type="button" data-view="mark">印を付ける</button>
+      <button type="button" data-view="runs" class="on">戦績5走</button>
+    </span>
+    <span class="mm-sum"></span>
+    <span class="mm-save">この端末に自動保存</span>
+  </div>`;
+}
+
+function mmList(site) {
+  const rows = [...site.horses].sort((a, b) => a.number - b.number).map(mmRow).join('');
+  return `<div class="mm-list off">
+      <div class="mm-hd"><span class="h-my">自分</span><span class="h-ai">AI</span>
+        <span class="h-nm">馬</span><span class="h-tot">点数・評価</span><span class="h-od">オッズ</span></div>
+      ${rows}
+    </div>
+    <div class="mm-hint">印のマスを押すと下から選べます。◎○▲は1頭まで（別の馬に付けると前の馬から外れます）、△☆は何頭でも。</div>`;
+}
+
+// 印のマスと要約行を、いまの MM.marks に合わせて塗り直す
+function mmPaint() {
+  document.querySelectorAll('.race20 [data-my]').forEach((b) => {
+    const mk = MM.marks[b.dataset.my];
+    const v = b.querySelector('.v');
+    b.className = 'mm-my' + (mk ? ` set ${MM_CLS[mk]}` : '');
+    v.className = mk ? 'v' : 'v e';
+    v.textContent = mk || '—';
+  });
+  const sum = document.querySelector('.race20 .mm-sum');
+  if (!sum) return;
+  const by = {};
+  Object.entries(MM.marks).forEach(([n, mk]) => { (by[mk] = by[mk] || []).push(Number(n)); });
+  const parts = MM_MARKS.filter((mk) => by[mk])
+    .map((mk) => `<b>${mk}</b>${by[mk].sort((a, b) => a - b).join('・')}`);
+  sum.innerHTML = parts.length
+    ? `自分の印　${parts.join('　')}`
+    : '<span class="e">自分の印はまだありません</span>';
+}
+
+function mmOpenSheet(n, note) {
+  const h = MM.by[n];
+  if (!h || h.scratched) return;
+  MM.target = String(n);
+  const cur = MM.marks[MM.target];
+  MM.sheet.querySelector('.sh').innerHTML =
+    `${umaBox(h.number, h.gate, 'sm')}<b>${escapeHtml(h.name)}</b>`
+    + `<span class="cur">${cur ? `いまの印<i>${cur}</i>` : '印なし'}</span>`;
+  MM.sheet.querySelectorAll('.mks button').forEach((b) => {
+    b.classList.toggle('on', !!cur && b.dataset.mk === cur);
+  });
+  MM.sheet.querySelector('[data-mmundo]').disabled = !MM.hist.length;
+  MM.sheet.querySelector('.msg').innerHTML = note || '';
+  MM.sheet.classList.add('on');
+  MM.shade.classList.add('on');
+}
+
+// シートは .race20 の外（body直下）に置く。position:fixed を親の影響から切り離すため
+function setupMyMarks(site) {
+  const root = document.querySelector('.race20');
+  if (!root || !root.querySelector('.mm-list')) return;
+
+  site.horses.forEach((h) => { MM.by[String(h.number)] = h; });
+  mmLoad(site.race.race_id);
+
+  const shade = document.createElement('div');
+  shade.className = 'mm-shade';
+  const sheet = document.createElement('div');
+  sheet.className = 'mm-sheet';
+  // data-mmclose / data-mmundo と mm を付けているのは、馬名ポップアップの
+  // [data-close] とセレクタがぶつからないようにするため
+  sheet.innerHTML = `<div class="grip"></div><div class="sh"></div>
+    <div class="mks">${MM_MARKS.map((m) => `<button type="button" data-mk="${m}">${m}</button>`).join('')}
+      <button type="button" class="x" data-mk="">消</button></div>
+    <div class="subs"><button type="button" data-mmundo>元に戻す</button>
+      <button type="button" data-mmclose>閉じる</button></div>
+    <div class="msg"></div>`;
+  document.body.appendChild(shade);
+  document.body.appendChild(sheet);
+  MM.sheet = sheet;
+  MM.shade = shade;
+
+  const close = () => { sheet.classList.remove('on'); shade.classList.remove('on'); MM.target = null; };
+  shade.addEventListener('click', close);
+  sheet.querySelector('[data-mmclose]').addEventListener('click', close);
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
+
+  sheet.querySelectorAll('.mks button').forEach((b) => b.addEventListener('click', () => {
+    if (MM.target == null) return;
+    const n = MM.target;
+    const mk = b.dataset.mk || null;
+    const moved = mmSet(n, mk);
+    mmPaint();
+    const msg = sheet.querySelector('.msg');
+    if (!mk) msg.innerHTML = `<b>${n}番</b>の印を消しました`;
+    else if (moved) msg.innerHTML = `<b>${moved}番</b>の${mk}を外して<b>${n}番</b>へ移しました（${mk}は1頭まで）`;
+    else msg.innerHTML = `<b>${n}番</b>に <b>${mk}</b> を付けました`;
+    setTimeout(close, 240);
+  }));
+  sheet.querySelector('[data-mmundo]').addEventListener('click', () => {
+    const s = MM.hist.pop();
+    if (!s) return;
+    MM.marks = JSON.parse(s);
+    mmSave();
+    mmPaint();
+    mmOpenSheet(MM.target, '1つ前に戻しました');
+  });
+
+  // 印のマスは capture で拾って止める。札のマスは柱（馬名ポップアップ）の隣にあるので、
+  // ここで止めないと同じクリックでポップアップまで開いてしまう
+  root.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-my]');
+    if (!b || b.disabled) return;
+    e.preventDefault();
+    e.stopPropagation();
+    mmOpenSheet(b.dataset.my);
+  }, true);
+
+  root.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-view]');
+    if (!b) return;
+    const toMark = b.dataset.view === 'mark';
+    root.querySelectorAll('[data-view]').forEach((x) => x.classList.toggle('on', x === b));
+    root.querySelector('.shlist').classList.toggle('off', toMark);
+    root.querySelector('.mm-list').classList.toggle('off', !toMark);
+  });
+
+  mmPaint();
+}
+
 // 106-spec §3: 1頭1枚の札
 function shutubaCard(h) {
   if (h.scratched) {
     return `<article class="acard scratched" data-h="${h.number}">
+      ${mmCell(h)}
       <div class="aspine plain">${umaBox(h.number, h.gate, 'sm')}<span class="vname">${escapeHtml(h.name)}</span></div>
       <div class="abody"><div class="ahead">（取消）</div></div>
     </article>`;
@@ -1986,6 +2167,7 @@ function shutubaCard(h) {
   const bw = bwDisplay(h);
   const rot = h.rotation ? `<span class="rot">${escapeHtml(h.rotation)}</span>` : '';
   return `<article class="acard${h.ability_mark ? ' pred' : ''}" data-h="${h.number}">
+    ${mmCell(h)}
     ${spineHtml(h)}
     <div class="abody">
       <div class="ahead">
@@ -2011,12 +2193,14 @@ function renderShutuba20(site) {
   return `
     <div class="secthead">出馬表<span class="cnt">全${site.race.field_size}頭・馬番順</span></div>
     <div class="shctl"></div>
+    ${mmBar()}
     <div class="shlist">${cards}</div>
+    ${mmList(site)}
     ${popups}
   `;
 }
 
-function setupShutuba20() {
+function setupShutuba20(site) {
   const root = document.querySelector('.race20');
   if (!root) return;
 
@@ -2045,6 +2229,8 @@ function setupShutuba20() {
   });
   bg.addEventListener('click', closePopup);
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closePopup(); });
+
+  setupMyMarks(site);   // 111-spec: 自分の印
 }
 
 
@@ -2759,6 +2945,16 @@ function renderBaba20(site) {
 }
 
 // §5 脚質 ────────────────────────────────────────────────
+// 判定の文言（2026-08-06）。旧「効きにくい／効く」は、そのコースでの複勝率が4脚質のうち
+// 上位でも「その脚質がダメ」と読めてしまうので、何と比べて高い・低いのかを文言に入れる。
+// 公開済みレースの JSON には旧文言が焼き込まれているため、保存された label ではなく
+// cls（m2/m1/z0/p1/p2）から引き直す。過去のレースもこの表示になる。
+const LEG_WORD = {
+  m2: ['▼', '全コース平均より低い'], m1: ['▼', '全コース平均よりやや低い'],
+  z0: ['＝', '全コース平均なみ'],
+  p1: ['▲', '全コース平均よりやや高い'], p2: ['▲', '全コース平均より高い'],
+};
+
 function renderLeg20(site) {
   const p = site.prediction;
   const disp = (p.display || {}).leg;
@@ -2776,16 +2972,17 @@ function renderLeg20(site) {
       || '<span class="none">—</span>';
     const cells = [['win_rate', d.baseline.win_rate], ['rentai_rate', d.baseline.rentai_rate],
                    ['fukusho_rate', d.baseline.fukusho_rate]];
-    const cur = cells.map(([k, b]) => {
+    // 「このコース」の数字には色を付けない。高い・低いは判定の文言1か所だけで言う
+    const cur = cells.map(([k]) => {
       const v = parseFloat(String(lb[k] || '').replace('%', ''));
-      const cls = isNaN(v) ? '' : (v > b ? 'up' : v < b ? 'dn' : '');
-      return `<td class="${cls}">${isNaN(v) ? '—' : v.toFixed(1) + '%'}</td>`;
+      return `<td>${isNaN(v) ? '—' : v.toFixed(1) + '%'}</td>`;
     }).join('');
     const avg = cells.map(([, b]) => `<td>${b.toFixed(1)}%</td>`).join('');
+    const [ar, word] = LEG_WORD[d.cls] || LEG_WORD.z0;
     return `<div class="rk2 ${d.cls}${d.delta === best ? ' top' : ''}">
       <div class="r1"><span class="st">${escapeHtml(d.style)}</span>
         <span class="cnt">${hs.length}頭</span>
-        <span class="jd">${escapeHtml(d.label)}</span>
+        <span class="jd"><i>${ar}</i>${escapeHtml(word)}</span>
         <span class="dt">${d.delta > 0 ? '+' : ''}${d.delta.toFixed(1)}pt</span></div>
       <table class="rt3"><thead><tr><th class="l"></th>
         <th>勝率</th><th>連対</th><th>複勝</th></tr></thead>
@@ -3319,7 +3516,7 @@ async function main() {
   const simCtl = setupOddsMasterPanel(site, oddsAll);
   setupAkinatorPanel(site, oddsAll, simCtl);
   setupOddsMasterTabs();
-  if (is20) setupShutuba20();
+  if (is20) setupShutuba20(site);
   if (is20) setupTopping(site);   // 102-spec: トッピング（データが無ければ何もしない）
   if (is20) setupUpset20();
   // 109-spec T6: コースタブのクリック配線（読み込み自体はタブが最初に開かれた時・setupTabs20内）
