@@ -1969,10 +1969,13 @@ function spineHtml(h) {
 // 重複ルール: ◎○▲は1頭まで（別の馬に付けると前の馬から自動で外れる）／△☆は複数可。
 // 保存: localStorage の mymark:{race_id}。端末をまたぐ同期はしない。
 // ============================================================
-const MM_MARKS = ['◎', '○', '▲', '△', '☆'];
-const MM_CLS = { '◎': 'm1', '○': 'm2', '▲': 'm3', '△': 'm4', '☆': 'm5' };
+// 消（＝この馬は切る）と ー（＝見たうえで印なし）も印のひとつとして扱う。
+// 印を取り消すのは「いま付いている印をもう一度押す」（2026-08-06 ユーザー決定で
+// 「元に戻す」「閉じる」のボタンを外したため、消しゴム専用のボタンは持たない）。
+const MM_MARKS = ['◎', '○', '▲', '△', '☆', '消', 'ー'];
+const MM_CLS = { '◎': 'm1', '○': 'm2', '▲': 'm3', '△': 'm4', '☆': 'm5', '消': 'm6', 'ー': 'm7' };
 const MM_SINGLE = new Set(['◎', '○', '▲']);   // 1頭までの印
-const MM = { key: '', marks: {}, hist: [], target: null, by: {}, sheet: null, shade: null };
+const MM = { key: '', marks: {}, target: null, by: {}, sheet: null, shade: null };
 
 function mmLoad(raceId) {
   MM.key = `mymark:${raceId}`;
@@ -1982,23 +1985,16 @@ function mmLoad(raceId) {
 function mmSave() {
   try { localStorage.setItem(MM.key, JSON.stringify(MM.marks)); } catch (e) { /* 保存しないだけ */ }
 }
-function mmSnap() {
-  MM.hist.push(JSON.stringify(MM.marks));
-  if (MM.hist.length > 40) MM.hist.shift();
-}
-// 戻り値: ◎○▲を移したときに「印が外れた側の馬番」。移していなければ null
+// 同じ印をもう一度押したら外す（＝印なしに戻す）。それが唯一の取り消し方法
 function mmSet(n, mk) {
-  mmSnap();
-  let moved = null;
-  if (mk === null) { delete MM.marks[n]; mmSave(); return null; }
+  if (mk === null || MM.marks[n] === mk) { delete MM.marks[n]; mmSave(); return; }
   if (MM_SINGLE.has(mk)) {
     for (const k of Object.keys(MM.marks)) {
-      if (MM.marks[k] === mk && String(k) !== String(n)) { delete MM.marks[k]; moved = k; }
+      if (MM.marks[k] === mk && String(k) !== String(n)) delete MM.marks[k];
     }
   }
   MM.marks[n] = mk;
   mmSave();
-  return moved;
 }
 
 // 印のマス。中身（記号・色）は mmPaint がまとめて書き込むので、ここでは空の器だけ作る
@@ -2039,10 +2035,11 @@ function mmList(site) {
   const rows = [...site.horses].sort((a, b) => a.number - b.number).map(mmRow).join('');
   return `<div class="mm-list">
       <div class="mm-hd"><span class="h-my">自分</span><span class="h-ai">AI</span>
-        <span class="h-nm">馬</span><span class="h-tot">点数・評価</span><span class="h-od">オッズ</span></div>
+        <span class="h-c"><span class="h-nm">馬</span><span class="h-tot">点数・評価</span>
+          <span class="h-od">オッズ</span></span></div>
       ${rows}
     </div>
-    <div class="mm-hint">印のマスを押すと下から選べます。◎○▲は1頭まで（別の馬に付けると前の馬から外れます）、△☆は何頭でも。</div>`;
+    <div class="mm-hint">印のマスを押すと下から選べます。◎○▲は1頭まで（別の馬に付けると前の馬から外れます）、△☆消ーは何頭でも。同じ印をもう一度押すと外れます。</div>`;
 }
 
 // 印のマスと要約行を、いまの MM.marks に合わせて塗り直す
@@ -2076,7 +2073,6 @@ function mmOpenSheet(n) {
   MM.sheet.querySelectorAll('.mks button').forEach((b) => {
     b.classList.toggle('on', !!cur && b.dataset.mk === cur);
   });
-  MM.sheet.querySelector('[data-mmundo]').disabled = !MM.hist.length;
   MM.sheet.classList.add('on');
   MM.shade.classList.add('on');
 }
@@ -2093,13 +2089,10 @@ function setupMyMarks(site) {
   shade.className = 'mm-shade';
   const sheet = document.createElement('div');
   sheet.className = 'mm-sheet';
-  // data-mmclose / data-mmundo と mm を付けているのは、馬名ポップアップの
-  // [data-close] とセレクタがぶつからないようにするため
+  // 2026-08-06 ユーザー決定: 「元に戻す」「閉じる」のボタンは置かない。
+  // 閉じ方は 印を押す／背景タップ／Esc の3つ
   sheet.innerHTML = `<div class="grip"></div><div class="sh"></div>
-    <div class="mks">${MM_MARKS.map((m) => `<button type="button" data-mk="${m}">${m}</button>`).join('')}
-      <button type="button" class="x" data-mk="">消</button></div>
-    <div class="subs"><button type="button" data-mmundo>元に戻す</button>
-      <button type="button" data-mmclose>閉じる</button></div>`;
+    <div class="mks">${MM_MARKS.map((m) => `<button type="button" class="${MM_CLS[m]}" data-mk="${m}">${m}</button>`).join('')}</div>`;
   document.body.appendChild(shade);
   document.body.appendChild(sheet);
   MM.sheet = sheet;
@@ -2107,25 +2100,16 @@ function setupMyMarks(site) {
 
   const close = () => { sheet.classList.remove('on'); shade.classList.remove('on'); MM.target = null; };
   shade.addEventListener('click', close);
-  sheet.querySelector('[data-mmclose]').addEventListener('click', close);
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
 
   // 押した瞬間に閉じる。結果の説明文は出さない（1テンポ遅れて操作感が落ちるため。
   // 何が起きたかは、印のマスと上の要約行が即座に変わることで分かる）
   sheet.querySelectorAll('.mks button').forEach((b) => b.addEventListener('click', () => {
     if (MM.target == null) return;
-    mmSet(MM.target, b.dataset.mk || null);
+    mmSet(MM.target, b.dataset.mk);
     mmPaint();
     close();
   }));
-  sheet.querySelector('[data-mmundo]').addEventListener('click', () => {
-    const s = MM.hist.pop();
-    if (!s) return;
-    MM.marks = JSON.parse(s);
-    mmSave();
-    mmPaint();
-    mmOpenSheet(MM.target);
-  });
 
   // 印のマスは capture で拾って止める。同じ .race20 に馬名ポップアップの click が
   // 付いているので、拾ったクリックはそこへ流さない

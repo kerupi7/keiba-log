@@ -1861,6 +1861,10 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
 .race20 .mm-my.m1 .v{color:var(--mk-hon)} .race20 .mm-my.m2 .v{color:var(--mk-tai)}
 .race20 .mm-my.m3 .v{color:var(--mk-tan)} .race20 .mm-my.m4 .v{color:var(--mk-oku)}
 .race20 .mm-my.m5 .v{color:var(--orange)}
+/* 消（切る）と ー（見たうえで印なし）。◎〜☆と違って「買う」側の印ではないので、
+   濃淡のランプから外して灰色にする。消は漢字なので1文字ぶん小さくする */
+.race20 .mm-my.m6 .v{color:var(--cap);font-size:12px}
+.race20 .mm-my.m7 .v{color:var(--cap)}
 /* 取消馬は押せない灰色のマスにする（2026-08-06: 印を付けられるのは
    「印を付ける」モードだけ。従来の札には印の列を出さない） */
 .race20 .mm-my:disabled{cursor:default}
@@ -1870,12 +1874,15 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
 .race20 .mm-list{margin-top:8px;max-width:760px;border:1px solid var(--rule-strong);
   border-radius:7px;overflow:hidden;background:#fff}
 .race20 .mm-list.off,.race20 .shlist.off{display:none}
-.race20 .mm-hd{display:flex;align-items:center;gap:5px;padding:4px 6px;background:var(--sub-bg2);
+/* 見出しは行（.mm-row）とまったく同じ組み方にする。以前は見出しだけ padding と gap を
+   持っていて、「自分」「AI」「馬」が列より右へずれ、点数・オッズは値の真上に来ていなかった */
+.race20 .mm-hd{display:flex;align-items:center;padding:4px 0;background:var(--sub-bg2);
   font-size:9.5px;color:var(--cap);font-weight:700;border-bottom:1px solid var(--rule-strong)}
 .race20 .mm-hd .h-my{width:32px;text-align:center;flex:none}
 .race20 .mm-hd .h-ai{width:30px;text-align:center;flex:none}
-.race20 .mm-hd .h-nm{flex:1 1 auto}
-.race20 .mm-hd .h-tot{width:62px;text-align:center;flex:none}
+.race20 .mm-hd .h-c{flex:1 1 auto;min-width:0;display:flex;align-items:center;gap:5px;padding:0 5px}
+.race20 .mm-hd .h-nm{flex:1 1 auto;min-width:0}
+.race20 .mm-hd .h-tot{width:62px;text-align:right;flex:none}
 .race20 .mm-hd .h-od{width:54px;text-align:right;flex:none}
 .race20 .mm-row{display:flex;align-items:stretch;border-bottom:1px solid var(--rule);
   background:#fff;min-height:40px}
@@ -1922,17 +1929,19 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
 .mm-sheet .sh .cur{margin-left:auto;font-size:10.5px;color:var(--cap);font-weight:400}
 .mm-sheet .sh .cur i{font-style:normal;font-size:15px;font-weight:700;color:var(--navy);
   margin-left:3px;vertical-align:-2px}
-.mm-sheet .mks{display:flex;gap:6px}
-.mm-sheet .mks button{flex:1;height:52px;border:1px solid var(--rule);background:#fff;
-  border-radius:8px;font:inherit;font-size:22px;font-weight:700;color:var(--text);cursor:pointer;
+/* 7つ（◎○▲△☆消ー）。375px でも1列に収まるよう gap は5px */
+.mm-sheet .mks{display:flex;gap:5px}
+.mm-sheet .mks button{flex:1;min-width:0;height:52px;border:1px solid var(--rule);background:#fff;
+  border-radius:8px;font:inherit;font-size:21px;font-weight:700;color:var(--text);cursor:pointer;
   display:flex;align-items:center;justify-content:center;line-height:1}
-.mm-sheet .mks button.on{border-color:var(--navy);background:#F4F8FC;color:var(--navy);
+.mm-sheet .mks button.on{border-color:var(--navy);background:#F4F8FC;
   box-shadow:inset 0 0 0 1px var(--navy)}
-.mm-sheet .mks button.x{font-size:15px;font-weight:400;color:var(--sub)}
-.mm-sheet .subs{display:flex;gap:6px;margin-top:7px}
-.mm-sheet .subs button{flex:1;height:32px;border:1px solid var(--rule);background:#fff;
-  border-radius:6px;font:inherit;font-size:11.5px;color:var(--sub);cursor:pointer}
-.mm-sheet .subs button:disabled{opacity:.38;cursor:default}
+/* シートのボタンも一覧のマスと同じ色にする（押す前に何色の印か分かるように） */
+.mm-sheet .mks button.m1{color:var(--mk-hon)} .mm-sheet .mks button.m2{color:var(--mk-tai)}
+.mm-sheet .mks button.m3{color:var(--mk-tan)} .mm-sheet .mks button.m4{color:var(--mk-oku)}
+.mm-sheet .mks button.m5{color:var(--orange)}
+.mm-sheet .mks button.m6{color:var(--cap);font-size:16px}
+.mm-sheet .mks button.m7{color:var(--cap)}
 
 /* ============================================================
    105-spec §5.3: 買える／消せるの10項目チップ（2段・○×だけ表示）
