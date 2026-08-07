@@ -9,13 +9,16 @@ const {
   CLASSES, GOINGS, ENTITIES,
   tier, renderFilterRow, renderKpis, renderLapSection, renderPaceTrend,
   tableHead, tableRow, rankedMap, renderTable,
-  popTierKey, renderPopTiles, parsePrev, prevLabelHtml,
+  parsePrev, prevLabelHtml,
 } = CourseCore;
 
-const STYLE_ORDER = ['逃', '先', '差', '追'];
 const ENT_KEY = { jockey: 'jockey', sire: 'sire', trainer: 'trainer', damsire: 'damsire' };
-// §4.6: 次元ごとに文言を変える（騎乗／産駒の出走／管理馬の出走／母父としての出走）
-const ENT_MISS_TEXT = {
+// 2026-08-07改訂: 下半分の表は「前走コース＋人物・血統4次元」の5枚をボタンで切り替える。
+// 脚質別・枠順別（展開タブに同じ話がある）と人気別は廃止した。
+const DIMS = [['prev', '前走コース'], ...ENTITIES];
+// §4.6: 次元ごとに文言を変える（前走／騎乗／産駒の出走／管理馬の出走／母父としての出走）
+const MISS_TEXT = {
+  prev: 'このコースでの前走データが少なく行なし',
   jockey: 'このコースでの騎乗が1度も無く行なし',
   sire: 'このコースでの産駒の出走が無く行なし',
   trainer: 'このコースでの管理馬の出走が無く行なし',
@@ -43,7 +46,7 @@ function missRow(miss, word) {
 const state = {
   loaded: false, loading: false,
   data: null, index: null,
-  filterKey: 'all', pace: 'all', ent: 'jockey', sort: {},
+  filterKey: 'all', pace: 'all', ent: 'prev', sort: {},
 };
 
 // §3.4: コース見出し（renderDetailの戻りリンク＋.cheadをタブ用に差し替えたもの）
@@ -145,76 +148,40 @@ function renderPanel(site) {
     ${railOptions.length ? renderFilterRow('仮柵', 'rail', railOptions, data, state.filterKey) : ''}
   </div>`;
 
-  // ── 脚質別成績（§4.2: 逃→先→差→追の固定順・馬番を貼る） ──
-  const byStyle = {};
-  const styleMiss = [];
-  horses.forEach((h) => {
-    if (STYLE_ORDER.includes(h.running_style) && f.style[h.running_style]) {
-      (byStyle[h.running_style] = byStyle[h.running_style] || []).push(h);
-    } else {
-      styleMiss.push(h);
-    }
-  });
-  const styleEntries = STYLE_ORDER.filter((k) => f.style[k]).map((k) => [k, f.style[k]]);
-  const styleTbl = renderTable('tblCTStyle', styleEntries,
-    (k) => `<span class="bn">${escapeHtml(k)}<i>${(byStyle[k] || []).length}頭</i></span><span class="bl">${badges(byStyle[k] || [])}</span>`,
-    state.sort, lowTier);
-
-  // ── 枠順別成績（§4.2: 1枠→8枠の固定順・馬番は貼らない。頭数だけ） ──
-  const byGate = {};
-  const gateMiss = [];
-  horses.forEach((h) => {
-    const k = String(h.gate);
-    if (h.gate >= 1 && h.gate <= 8 && f.gate[k]) {
-      (byGate[k] = byGate[k] || []).push(h);
-    } else {
-      gateMiss.push(h);
-    }
-  });
-  const gateEntries = Object.entries(f.gate).sort((a, b) => +a[0] - +b[0]);
-  const gateTbl = renderTable('tblCTGate', gateEntries,
-    (k) => `<span class="bn">${wakuBox(+k, 'sm')}枠<i>${(byGate[k] || []).length}頭</i></span>`,
-    state.sort, lowTier);
-
-  // ── 人気別成績（§4.4: 3層タイル＋11行表。人気はh.popularity。11番人気以降はまとめ） ──
-  const popKeyOf = (h) => (h.popularity == null ? null : (h.popularity <= 10 ? String(h.popularity) : '11+'));
-  const byPop = {};
-  const popMiss = [];
-  horses.forEach((h) => {
-    const k = popKeyOf(h);
-    if (k && f.pop[k]) { (byPop[k] = byPop[k] || []).push(h); } else popMiss.push(h);
-  });
-  const popEntries = Object.entries(f.pop)
-    .sort((a, b) => (a[0] === '11+' ? 99 : +a[0]) - (b[0] === '11+' ? 99 : +b[0]));
-  const popTbl = renderTable('tblCTPop', popEntries,
-    (k) => `<span class="bn">${k === '11+' ? '11番人気〜' : `${k}番人気`}</span><span class="bl">${badges(byPop[k] || [])}</span>`,
-    state.sort, lowTier, { rowCls: popTierKey });
-
-  // ── 前走コース別成績 ──
+  // ── 出走馬を重ねる表（前走コース＋人物・血統4次元をボタンで切り替える） ──
+  // 前走コースは data/courses/{cid}.json、人物・血統は site.course_entities と出どころが違うが、
+  // 「今日の◯頭に当たる行だけを出す」形は同じなので1つの切替にまとめる（2026-08-07改訂）。
   const { tbl: prevTbl, miss: prevMiss } = buildPrevTable(f, data, horses, lowTier);
-
-  // ── 人物・血統別成績（§4.5） ──
   const ce = ((site.course_entities.filters || {})[state.filterKey]) || {};
-  const dims = ENTITIES.map(([d]) => d);
-  const covByDim = {};
+  const covByDim = { prev: n - prevMiss.length };
   const groupByDim = {};
-  dims.forEach((d) => {
+  ENTITIES.forEach(([d]) => {
     const g = entityGroup(ce, d, horses);
     groupByDim[d] = g;
     covByDim[d] = n - g.miss.length;
   });
-  // 選択中の次元が0/nでタブを押せない状態になっていたら、押せる次元へ自動で戻す
-  const activeDim = covByDim[state.ent] > 0 ? state.ent : (dims.find((d) => covByDim[d] > 0) || state.ent);
-  const { table: entTable, hit: entHit, miss: entMiss } = groupByDim[activeDim];
-  const entKeys = Object.keys(entHit).sort((a, b) => entTable[b][3] - entTable[a][3]);
-  const entEntries = entKeys.map((k) => [k, entTable[k]]);
-  const entTbl = renderTable('tblCTEnt', entEntries,
-    (k) => `<span class="bn">${escapeHtml(k)}</span><span class="bl">${badges(entHit[k])}</span>`,
-    state.sort, lowTier);
-  const entTabsHtml = ENTITIES.map(([d, label]) =>
+  // 選択中の次元が0/nでボタンを押せない状態になっていたら、押せる次元へ自動で戻す
+  const dimKeys = DIMS.map(([d]) => d);
+  const activeDim = covByDim[state.ent] > 0 ? state.ent : (dimKeys.find((d) => covByDim[d] > 0) || state.ent);
+
+  let dimTbl;
+  let dimMiss;
+  if (activeDim === 'prev') {
+    dimTbl = prevTbl;
+    dimMiss = prevMiss;
+  } else {
+    const { table: entTable, hit: entHit, miss: entMiss } = groupByDim[activeDim];
+    const entKeys = Object.keys(entHit).sort((a, b) => entTable[b][3] - entTable[a][3]);
+    // 表のIDは4次元で共有する（並べ替えの状態を騎手↔種牡馬で持ち越す。前走だけ別ID）
+    dimTbl = renderTable('tblCTEnt', entKeys.map((k) => [k, entTable[k]]),
+      (k) => `<span class="bn">${escapeHtml(k)}</span><span class="bl">${badges(entHit[k])}</span>`,
+      state.sort, lowTier);
+    dimMiss = entMiss;
+  }
+  const entTabsHtml = DIMS.map(([d, label]) =>
     `<button type="button" data-ct-ent="${d}" class="${d === activeDim ? 'active' : ''}"`
     + `${covByDim[d] === 0 ? ' disabled' : ''}>${escapeHtml(label)} ${covByDim[d]}/${n}</button>`).join('');
-  const activeLabel = ENTITIES.find((e) => e[0] === activeDim)[1];
+  const activeLabel = DIMS.find((e) => e[0] === activeDim)[1];
 
   return `
     ${renderChead(data, index, cid, state.filterKey)}
@@ -228,23 +195,10 @@ function renderPanel(site) {
     <div class="notebox">左端の馬番が、その行に当てはまる今日の出走馬です。
     数字はコースの過去データそのもので、<b>その馬の成績ではありません</b>。
     上のフィルタを変えると、この下の表も同じ条件で入れ替わります。</div>
-    <div class="eyebrow">脚質別成績<span class="ctab-dup">展開タブにも同じ話</span></div>
-    ${styleTbl}
-    ${missRow(styleMiss, '脚質データがなく行なし')}
-    <div class="eyebrow">枠順別成績<span class="ctab-dup">展開タブにも同じ話</span></div>
-    ${gateTbl}
-    ${missRow(gateMiss, '枠データがなく行なし')}
-    <div class="eyebrow">人気別成績</div>
-    ${renderPopTiles(f.pop, lowTier)}
-    ${popTbl}
-    ${missRow(popMiss, '人気（オッズ）が未確定で行なし')}
-    <div class="eyebrow">前走コース別成績<span class="note">${n - prevMiss.length}/${n}頭</span></div>
-    ${prevTbl}
-    ${missRow(prevMiss, 'このコースでの前走データが少なく行なし')}
-    <div class="eyebrow">人物・血統別成績<span class="note">${escapeHtml(activeLabel)} ${covByDim[activeDim]}/${n}頭</span></div>
-    <div class="enttabs">${entTabsHtml}</div>
-    ${entTbl}
-    ${missRow(entMiss, ENT_MISS_TEXT[activeDim])}
+    <div class="eyebrow">${escapeHtml(activeLabel)}別成績<span class="note">${covByDim[activeDim]}/${n}頭</span></div>
+    <div class="enttabs ct5">${entTabsHtml}</div>
+    ${dimTbl}
+    ${missRow(dimMiss, MISS_TEXT[activeDim])}
     <div class="notebox">
       勝率・連対率・複勝率は該当区分の全出走馬ベース。単回収・複回収は単勝／複勝100円購入時の回収率（100%＝収支トントン）。
       <b>走数30未満の行は率をグレー表示</b>しています。
