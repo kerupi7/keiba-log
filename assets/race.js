@@ -692,6 +692,11 @@ function setupFinishOrder() {
 // 黙って諦める仕様）、隠れたパネルの中で走らせると固定2列がズレるため。
 // JS がここまで到達しなかった場合は .tabs-ready が付かず、従来どおり縦一列で
 // 全ブロックが読める状態に留まる（＝タブ化の失敗で情報が消えることはない）。
+// 買い目タブのアキネーターを描き直す入口。setupAkinatorPanel が自分の rerender を入れる。
+// 出馬表タブで自分の印を付けてから買い目タブへ来ると、アキネーターは前に描いたままなので、
+// タブを開いた時に描き直して印を読み直させる（state は保つので、進んだところは戻らない）
+let akRefresh = null;
+
 function setupTabs20(site) {
   const root = document.querySelector('#race-content .race20');
   if (!root) return;
@@ -712,6 +717,8 @@ function setupTabs20(site) {
     if (key === 'kaiko') setupFinishOrder();
     // 109-spec §3.1: コースタブは最初に開いた時だけ data/courses/*.json を読む（遅延読み込み）
     if (key === 'course' && window.CourseTab) window.CourseTab.onShow(site);
+    // 111-spec: 出馬表で付けた印をアキネーターにも出すため、開くたびに描き直す
+    if (key === 'kaime' && akRefresh) akRefresh();
     if (pushHash) history.replaceState(null, '', `${location.pathname}${location.search}#tab=${key}`);
   };
 
@@ -1242,6 +1249,10 @@ function setupAkinatorPanel(site, oddsAll, simCtl) {
       if (goBtn && !goBtn.disabled) goBtn.click();
     }
   });
+
+  // 買い目タブを開いた時に自分の印を読み直させる（setupTabs20 から呼ぶ）。
+  // 文字入力中の再描画はここに含めない（タブ切替でしか呼ばれない）
+  akRefresh = rerender;
 
   rerender();
 }
@@ -2057,7 +2068,7 @@ function mmList(site) {
           <span class="h-od">オッズ</span></span></div>
       ${rows}
     </div>
-    <div class="mm-hint">印のマスを押すと下から選べます。◎○▲は1頭まで（別の馬に付けると前の馬から外れます）、△☆消は何頭でも。<b>印が付いたマスを押すと、その印が消えます。</b></div>`;
+    <div class="mm-hint">印のマスを押すと下から選べます。◎○▲は1頭まで（別の馬に付けると前の馬から外れます）、△☆消は何頭でも。<b>いま付いている印をシートでもう一度押すと、その印が消えます。</b></div>`;
 }
 
 // 印のマスと要約行を、いまの MM.marks に合わせて塗り直す
@@ -2150,9 +2161,9 @@ function setupMyMarks(site) {
     if (!b || b.disabled) return;
     e.preventDefault();
     e.stopPropagation();
-    // 印が付いている馬のマスは、押した時点で消す（シートは開かない）。
-    // 2026-08-07 ユーザー決定。付け替えは「消す → もう一度押してシート → 選ぶ」の2段になる
-    if (MM.marks[b.dataset.my]) { mmSet(b.dataset.my, null); mmPaint(); return; }
+    // 印が付いているマスも、付いていないマスと同じようにシートを開く。
+    // 消すのはシートで「いま付いている印をもう一度押す」（2026-08-07 ユーザー決定で
+    // 一押し即消しを取りやめ、付け替えを1回の操作に戻した）
     mmOpenSheet(b.dataset.my);
   }, true);
 

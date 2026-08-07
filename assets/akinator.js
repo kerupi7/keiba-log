@@ -915,6 +915,29 @@
     if (nextQuestion(ctx, S) === null) S.done = true;
   }
 
+  // ===== 111-spec: 出馬表で自分が付けた印を、アキネーターの馬にも出す（2026-08-07） =====
+  // 印の正本は出馬表側（race.js の MM ＝ localStorage の mymark:{race_id}）。ここでは**読むだけ**で、
+  // 質問の分岐にも確率にも買い方の採点にも一切入れない。107 §2.2 で外したのは Ans. の結論
+  // （AIの印・評価・確率）であって、自分で付けた印は自分の答えなので出してよい。
+  // render() のたびに読み直す（出馬表タブで付け替えてから買い目タブへ来る動きに追いつくため）。
+  var MY_CLS = { '◎': 'm1', '○': 'm2', '▲': 'm3', '△': 'm4', '☆': 'm5', '消': 'm6' };
+  var MY_MARKS = {};
+  function loadMyMarks(ctx) {
+    MY_MARKS = {};
+    try {
+      var id = ctx && ctx.site && ctx.site.race ? ctx.site.race.race_id : null;
+      if (!id || typeof localStorage === 'undefined') return;
+      var o = JSON.parse(localStorage.getItem('mymark:' + id)) || {};
+      // 知らない印（廃止した ー・壊れた値）は出さない。読み捨ては出馬表側 mmLoad の仕事
+      Object.keys(o).forEach(function (k) { if (MY_CLS[o[k]]) MY_MARKS[String(k)] = o[k]; });
+    } catch (e) { MY_MARKS = {}; }
+  }
+  // 印が無い馬は何も出さない（枠だけ残すと、印を付けていないレースで列がまるごと空になる）
+  function myMk(n) {
+    var mk = MY_MARKS[String(n)];
+    return mk ? '<span class="ak-my ' + MY_CLS[mk] + '">' + mk + '</span>' : '';
+  }
+
   // ===== T3: 馬選択UI =====
   function maxProb(ctx) {
     var m = 0;
@@ -939,12 +962,13 @@
     if (isAxis) cls.push('axisrow');
     if (landmine) cls.push('landmine');
     var pickAttr = opts.pickAttr || 'data-ak-pick';
-    // 107 §2.2: 質問中は Ans. の結論を出さない。印・評価・確率はすべて外す
+    // 107 §2.2: 質問中は Ans. の結論を出さない。AIの印・評価・確率はすべて外す
+    // （自分で付けた印 myMk だけは出す。111-spec・2026-08-07）
     var tailHtml = isAxis ? '<span class="axischip">軸</span>' : ('<span class="chk' + (opts.radio ? ' radio' : '') + '"></span>');
     var subline = [h.sex_age, h.jockey, h.running_style].filter(Boolean).join(' ');
     return '<button type="button" class="' + cls.join(' ') + '" ' + pickAttr + '="' + h.number + '"' + (isAxis ? ' disabled' : '') + '>'
       + umaBox(h.number, h.gate)
-      + '<span class="nmwrap"><span class="nm">' + escapeHtml(h.name) + '</span>'
+      + '<span class="nmwrap"><span class="nm">' + myMk(h.number) + escapeHtml(h.name) + '</span>'
       + '<span class="meta">'
       + '<span class="od">' + (h.odds != null ? h.odds.toFixed(1) + '倍' : '—') + '</span>'
       + '<span class="pop">' + (h.popularity ? h.popularity + '番人気' : '') + '</span>'
@@ -1467,6 +1491,7 @@
     var stack = done.filter(function (x) { return S.ceil[x] && S.ceil[x] !== 'unknown'; }).map(function (x) {
       var lab = S.ceil[x] === 'out' ? '切る' : '残す';
       return '<span class="ak-st-row">' + umaBox(x, ctx.BY[x] ? ctx.BY[x].gate : undefined, 'sm')
+        + myMk(x)
         + '<span class="ak-st-tag ' + (S.ceil[x] === 'out' ? 'out' : 'keep') + '">' + lab + '</span>'
         + (S.memo[x] ? ('<span class="ak-st-m">─ ' + escapeHtml(S.memo[x]) + '</span>') : '') + '</span>';
     }).join('');
@@ -1478,7 +1503,8 @@
       + keptCount(ctx, S) + '</b>頭</span></div>'
       + '<div class="ak-dots">' + dots + '</div>'
       + '<div class="ak-card"><div class="ak-q">'
-      + '<div class="ak-hh">' + umaBox(n, h.gate, 'md') + '<span class="nm">' + escapeHtml(h.name) + '</span>'
+      + '<div class="ak-hh">' + umaBox(n, h.gate, 'md') + myMk(n)
+      + '<span class="nm">' + escapeHtml(h.name) + '</span>'
       + '<span class="pop">' + (h.popularity || '—') + '番人気 ' + (h.odds != null ? h.odds + '倍' : '—') + '</span></div>'
       + '<div class="s">' + escapeHtml([h.sex_age, h.jockey, h.running_style, h.gate + '枠'].filter(Boolean).join(' / '))
       + '</div>'
@@ -1511,7 +1537,7 @@
         return '<button type="button" class="ak-seg' + (S.ceil[n] === x[0] ? ' on' : '')
           + '" data-ak-ceil="' + n + ':' + x[0] + '">' + x[1] + '</button>';
       }).join('');
-      return '<div class="ak-cl"><div class="ak-hh">' + umaBox(n, h.gate, 'sm')
+      return '<div class="ak-cl"><div class="ak-hh">' + umaBox(n, h.gate, 'sm') + myMk(n)
         + '<span class="nm">' + escapeHtml(h.name) + '</span>'
         + '<span class="pop">' + (h.popularity || '—') + '番人気 ' + (h.odds != null ? h.odds + '倍' : '—') + '</span>'
         + '</div>'
@@ -1527,7 +1553,7 @@
       else if (ks.length === 2) need = '<div class="ak-need">もう1頭決まると、3連複・3連単が組めます。</div>';
       var list = S.pendOpen ? ('<div class="ak-pd-list">' + unks.map(function (n) {
         var h = ctx.BY[n];
-        return '<div class="ak-pd-row">' + umaBox(n, h.gate, 'sm')
+        return '<div class="ak-pd-row">' + umaBox(n, h.gate, 'sm') + myMk(n)
           + '<span class="nm">' + escapeHtml(h.name) + '</span>'
           + '<span class="pop">' + (h.popularity || '—') + '番人気 ' + (h.odds != null ? h.odds + '倍' : '—') + '</span>'
           + '<span class="bt"><button type="button" data-ak-pend="' + n + ':keep">残す</button>'
@@ -1570,6 +1596,7 @@
     var unk = order.filter(function (n) { return S.ceil[n] === 'unknown'; }).length;
     var rows = shown.map(function (n) {
       return '<div class="row">' + umaBox(n, ctx.BY[n] ? ctx.BY[n].gate : undefined, 'sm')
+        + myMk(n)
         + '<span class="ak-st-tag ' + (S.ceil[n] === 'out' ? 'out' : 'keep') + '">' + CEIL_LABEL[S.ceil[n]] + '</span>'
         + (S.memo[n] ? ('<span class="ak-st-m">─ ' + escapeHtml(S.memo[n]) + '</span>') : '') + '</div>';
     }).join('');
@@ -1588,6 +1615,7 @@
   }
 
   function render(ctx, S) {
+    loadMyMarks(ctx);   // 111-spec: 描くたびに出馬表の印を読み直す
     if (S.phase !== 'cut' && S.phase !== 'ceil') { deriveLegacy(ctx, S); ORDER_ECHO = orderEcho(ctx, S); }
     var body;
     if (S.phase === 'cut') {
