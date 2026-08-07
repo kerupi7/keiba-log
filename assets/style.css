@@ -1801,6 +1801,13 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
   flex:none;text-align:right}
 .race20 .vrun .l1 .nm.hd{width:3.3em}
 .race20 .vrun .l1 .nm.pp{width:2.7em}
+/* 115-spec: その走の枠番・馬番。頭数の左に置き、頭数・人気と同じく幅を決めて縦に揃える。
+   枠番が出せない走は「15番」だけになるので、右寄せにして馬番の桁を縦にそろえる。
+   幅4.0em＝40px は、いちばん長い「8枠18番」の実測37.8px（10px・iPhone縦）に合わせた最小値。
+   広く取るとその分だけレース名が短くなるので、余らせない */
+.race20 .vrun .l1 .wkn{flex:none;width:4em;text-align:right;color:var(--sub);
+  font-variant-numeric:tabular-nums}
+.race20 .vrun .l1 .wkn b{font-weight:400;color:var(--text)}
 /* 2行目は「条件・タイム・通過順・上がり・騎手・斤量・馬体重」の7列。走ごとに
    桁数や箱の有無で幅が変わると縦に揃わないので、騎手以外は幅を決める。
    余りは騎手が受け持つ（＝騎手の書き出しも結果的に揃う） */

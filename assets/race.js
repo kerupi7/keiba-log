@@ -1854,6 +1854,22 @@ function runNameSpan(raceName) {
 //
 // 着順は 2026-08-05 に行の先頭へ移し、箱を 19×16px→26×21px（文字10.5→14px）に拡げた。
 // 左端で全走そろうので、5走ぶんの着順が縦一列に読める（新聞の着順柱と同じ読み方）。
+//
+// 115-spec: その走を何枠何番から走ったかを1行目（頭数の左）に出す。頭数の隣に置くと
+// 「15頭 7枠15番」と続けて読めて、大外だったのかが1行で分かる（mockup-115 案B）。
+// 枠色のボックスにせず文字で書くのは、色だけでは何枠か言えないため。
+// 代償は1行目のレース名で、375px幅・18頭の実測で81走中39走が「…」になる。
+// 切れた名前は馬名ポップアップの全戦績の表に全文が出る（mockup-52 案Bで決めた通り）。
+function runWakuText(p) {
+  // 旧い publish 済みページは馬番が `gate` という名前で入っている（中身は同じ）
+  const uma = p.umaban ?? p.gate;
+  if (uma == null) return '<span class="wkn">—</span>';
+  const n = escapeHtml(String(uma));
+  if (!p.waku) return `<span class="wkn" title="${n}番（枠番は出せない走）"><b>${n}</b>番</span>`;
+  const w = escapeHtml(String(p.waku));
+  return `<span class="wkn" title="${w}枠${n}番">${w}枠<b>${n}</b>番</span>`;
+}
+
 function runLine3(p, label) {
   const cond = `${escapeHtml(surfShort(p.surface))}${escapeHtml(p.distance || '')}${escapeHtml(goingShort(p.condition))}`;
   const bw = p.body_weight != null ? String(p.body_weight) : '—';
@@ -1866,7 +1882,7 @@ function runLine3(p, label) {
   const notes = runNoteTags(p.note_labels);
   const noteTitle = notes && p.note_text ? ` title="${escapeHtml(p.note_text)}"` : '';
   return `<div class="vrun${runBandClass(p)}"><span class="vtab">${escapeHtml(label)}</span><div class="vrb">
-    <div class="l1">${shutubaFinBox(p.finish)}<span class="dt">${shutubaMd(p.date)}</span><span class="tk">${escapeHtml(p.track || '')}</span>${classBadge(p.grade, p.race_name)}${runNameSpan(p.race_name)}<span class="nm hd">${escapeHtml(p.runners ?? '—')}頭</span><span class="nm pp">${escapeHtml(p.popularity ?? '—')}人</span></div>
+    <div class="l1">${shutubaFinBox(p.finish)}<span class="dt">${shutubaMd(p.date)}</span><span class="tk">${escapeHtml(p.track || '')}</span>${classBadge(p.grade, p.race_name)}${runNameSpan(p.race_name)}${runWakuText(p)}<span class="nm hd">${escapeHtml(p.runners ?? '—')}頭</span><span class="nm pp">${escapeHtml(p.popularity ?? '—')}人</span></div>
     <div class="l2"><span class="cd">${cond}</span>${rankSpan(p.time ?? '—', p.time_grade || '', timeTitle, 'tm')}${cornersHtml(p.corners)}${rankSpan(p.last_3f ?? '—', rankCls, agTitle)}<span class="jk">${escapeHtml(p.jockey ?? '—')}</span><span class="kg">${kg}</span><span class="bw">${bw}</span></div>
     <div class="l3"${noteTitle}>${scenarioHtml(p.scenario)}<span class="wn">${escapeHtml(p.winner || '')}</span><span class="mg">(${marginText(p)})</span>${notes}</div>
   </div></div>`;
