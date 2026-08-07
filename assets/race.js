@@ -2022,16 +2022,20 @@ function mmCell(h) {
 }
 
 // 「印を付ける」モードの1行。札から戦績5走を落とし、AIの点数・評価を残したもの
+// 111-spec §3.6: 馬名は押せる（札の柱と同じ馬名ポップアップが開く）。戦績5走を落とした
+// モードなので、戦績を見る道がここに無いと「印を付ける」から戻らないと確かめられない。
+// ポップアップ（#pop-N）は renderShutuba20 が出走馬ぶん出しており、モードによらず同じものを開く。
 function mmRow(h) {
   if (h.scratched) {
+    // 取消馬にはポップアップそのものが無い（renderShutuba20 が live だけ作る）ので押せない
     return `<div class="mm-row scr" data-n="${h.number}">${mmCell(h)}
       <span class="mm-ai"><span class="none">—</span></span>
-      <span class="mm-c">${umaBox(h.number, h.gate, 'sm')}<span class="nm">${escapeHtml(h.name)}</span>
+      <span class="mm-c">${umaBox(h.number, h.gate, 'sm')}<span class="nm"><span class="t">${escapeHtml(h.name)}</span></span>
         <span class="tot">（取消）</span><span class="od">—</span></span></div>`;
   }
   return `<div class="mm-row${h.ability_mark ? ' pred' : ''}" data-n="${h.number}">${mmCell(h)}
     <span class="mm-ai">${markBadge20(h) || '<span class="none">—</span>'}</span>
-    <span class="mm-c">${umaBox(h.number, h.gate, 'sm')}<span class="nm">${escapeHtml(h.name)}</span>
+    <span class="mm-c">${umaBox(h.number, h.gate, 'sm')}<button type="button" class="nm" data-pop="${h.number}"><span class="t">${escapeHtml(h.name)}</span><i class="apop">▸</i></button>
       <span class="tot">${fmtNum(h.total, 1)}<i class="grade ${gradeClass(h.grade)}">${gradeDisp(h.grade)}</i></span>
       <span class="od${oddsHotClass(h.odds)}">${h.odds != null ? h.odds.toFixed(1) : '—'}<i>倍</i>
         <span class="pp">${h.popularity ?? '—'}人</span></span></span></div>`;
@@ -2068,7 +2072,7 @@ function mmList(site) {
           <span class="h-od">オッズ</span></span></div>
       ${rows}
     </div>
-    <div class="mm-hint">印のマスを押すと下から選べます。◎○▲は1頭まで（別の馬に付けると前の馬から外れます）、△☆消は何頭でも。<b>いま付いている印をシートでもう一度押すと、その印が消えます。</b></div>`;
+    <div class="mm-hint">印のマスを押すと下から選べます。◎○▲は1頭まで（別の馬に付けると前の馬から外れます）、△☆消は何頭でも。<b>いま付いている印をシートでもう一度押すと、その印が消えます。</b><br><b>馬名を押すと、その馬の通算成績と全戦績が開きます。</b></div>`;
 }
 
 // 印のマスと要約行を、いまの MM.marks に合わせて塗り直す
@@ -3726,6 +3730,14 @@ function tpRefresh() {
     for (let i = 1; i <= 10; i += 1) card.classList.remove(`tp${i}`);
     const s = steps[Number(card.dataset.h)];
     if (s) card.classList.add(`tp${s}`);
+  });
+  // 111-spec §3.7: 「印を付ける」モードの1行にも同じ色を付ける。札は柱（.aspine）が
+  // 色を持つが、1行には柱が無いので .mm-c（馬番・馬名・点数・オッズ）を塗る。
+  // 拾う先は data-h ではなく data-n（.mm-row 側の属性名）。段（tp1〜tp10）は札と同じ steps。
+  root.querySelectorAll('.mm-row').forEach((row) => {
+    for (let i = 1; i <= 10; i += 1) row.classList.remove(`tp${i}`);
+    const s = steps[Number(row.dataset.n)];
+    if (s) row.classList.add(`tp${s}`);
   });
   const byNumber = {};
   (site.horses || []).forEach((h) => { byNumber[h.number] = h; });

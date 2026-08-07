@@ -1940,8 +1940,17 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
 .race20 .mm-ai .mkstack .mkb{font-size:10.5px;line-height:14px;padding:0 4px;min-width:15px}
 .race20 .mm-ai .mkstack .mkb.sub{font-size:8.5px;line-height:11px;padding:0 3px;min-width:0}
 .race20 .mm-c{flex:1 1 auto;min-width:0;display:flex;align-items:center;gap:5px;padding:0 5px}
-.race20 .mm-c .nm{flex:1 1 auto;min-width:0;font-size:12.5px;font-weight:700;overflow:hidden;
-  text-overflow:ellipsis;white-space:nowrap}
+/* 111-spec §3.6: 馬名は押せる（馬名ポップアップを開く）。押しどころを稼ぐため
+   align-self:stretch で行の高さ（40px）いっぱいに広げる。行の高さ自体は変えない。
+   はみ出しの「…」は button ではなく中の .t に付ける（横の ▸ を残すため） */
+.race20 .mm-c .nm{flex:1 1 auto;min-width:0;display:flex;align-items:center;gap:3px;
+  align-self:stretch;border:0;background:transparent;padding:0;margin:0;font:inherit;
+  font-size:12.5px;font-weight:700;color:inherit;text-align:left;cursor:pointer}
+.race20 .mm-c .nm .t{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.race20 .mm-c .nm .apop{flex:none;font-style:normal;font-size:9px;color:var(--cta);opacity:.7}
+.race20 .mm-c .nm:hover .t{text-decoration:underline}
+/* 取消馬は span のまま（ポップアップが無い）。押せる見た目にしない */
+.race20 .mm-row.scr .nm{cursor:default}
 .race20 .mm-c .tot{flex:none;width:62px;display:flex;align-items:center;justify-content:flex-end;
   gap:3px;font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums}
 .race20 .mm-c .tot .grade{min-width:22px;font-size:10.5px;padding:1px 3px}
@@ -2042,6 +2051,23 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
 .race20 .acard.tp8 .aspine{background:var(--tp8)}
 .race20 .acard.tp9 .aspine{background:var(--tp9)}
 .race20 .acard.tp10 .aspine{background:var(--tp10)}
+
+/* 111-spec §3.7: 「印を付ける」モードの1行にも同じ10色を反映する。
+   1行には柱（.aspine）が無いので、塗るのは .mm-c（馬番・馬名・点数・オッズ）。
+   自分の印（白地）とAIの印（灰地）の2列は自前の背景を持っているので塗らない
+   ＝111-spec §3.1 の「左端が自分・その右がAI」の列の分け方は色が乗っても崩れない。
+   .mm-row.pred（能力印の薄い青）より後に書いてあるので、色を乗せている間は
+   こちらが勝つ（能力印そのものはAIの列のチップで読める）。 */
+.race20 .mm-row.tp1 .mm-c{background:var(--tp1)}
+.race20 .mm-row.tp2 .mm-c{background:var(--tp2)}
+.race20 .mm-row.tp3 .mm-c{background:var(--tp3)}
+.race20 .mm-row.tp4 .mm-c{background:var(--tp4)}
+.race20 .mm-row.tp5 .mm-c{background:var(--tp5)}
+.race20 .mm-row.tp6 .mm-c{background:var(--tp6)}
+.race20 .mm-row.tp7 .mm-c{background:var(--tp7)}
+.race20 .mm-row.tp8 .mm-c{background:var(--tp8)}
+.race20 .mm-row.tp9 .mm-c{background:var(--tp9)}
+.race20 .mm-row.tp10 .mm-c{background:var(--tp10)}
 
 /* 操作盤（.shctl の空いている左側に入る） */
 .race20 .tpctl{flex:1 1 100%;margin:0 0 6px}
