@@ -1903,6 +1903,30 @@ function runsBlock(h) {
   return `<div class="aruns">${html}</div>`;
 }
 
+// 111-spec §3.8: 覆いが出ている間、後ろのページを動かさない。
+//
+// `overflow:hidden` だけでは iOS Safari で背後が指で動く（動かないのはPCのマウスだけ）。
+// body を position:fixed にして、いま見ていた縦位置を top のマイナス値で保つ。
+// 閉じたら外して同じ位置へ戻す＝閉じた瞬間にページが先頭へ飛ばない。
+// 数を数えるのは、覆いが2つ重なった時に片方を閉じただけで解けないようにするため。
+const PGLOCK = { n: 0, y: 0 };
+function lockPageScroll() {
+  if (PGLOCK.n === 0) {
+    PGLOCK.y = window.scrollY || window.pageYOffset || 0;
+    document.body.classList.add('noscroll');
+    document.body.style.top = `-${PGLOCK.y}px`;
+  }
+  PGLOCK.n += 1;
+}
+function unlockPageScroll() {
+  if (PGLOCK.n === 0) return;
+  PGLOCK.n -= 1;
+  if (PGLOCK.n > 0) return;
+  document.body.classList.remove('noscroll');
+  document.body.style.top = '';
+  window.scrollTo(0, PGLOCK.y);
+}
+
 // §5.5: 馬名ポップアップ ― 通算成績・コース適性・レース戦績（全部）
 function careerLine(h) {
   const runs = (h.past_runs || []).concat(h.career_runs || []);
@@ -2103,6 +2127,10 @@ function mmPaint() {
 function mmOpenSheet(n) {
   const h = MM.by[n];
   if (!h || h.scratched) return;
+  // シートもポップアップと同じ覆いなので、開いている間はページを止める（111-spec §3.8）。
+  // 開いているシートをもう一度開くことはない（背景の覆いがマスを塞ぐ）が、
+  // 二重に数えないように、いま閉じている時だけ数える
+  if (!MM.sheet.classList.contains('on')) lockPageScroll();
   MM.target = String(n);
   const cur = MM.marks[MM.target];
   MM.sheet.querySelector('.sh').innerHTML =
@@ -2136,7 +2164,13 @@ function setupMyMarks(site) {
   MM.sheet = sheet;
   MM.shade = shade;
 
-  const close = () => { sheet.classList.remove('on'); shade.classList.remove('on'); MM.target = null; };
+  const close = () => {
+    if (!sheet.classList.contains('on')) return;   // 開いていない時の Esc では何もしない
+    sheet.classList.remove('on');
+    shade.classList.remove('on');
+    MM.target = null;
+    unlockPageScroll();                            // 111-spec §3.8
+  };
   shade.addEventListener('click', close);
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
 
@@ -2242,15 +2276,18 @@ function setupShutuba20(site) {
   root.appendChild(bg);
   let openPopup = null;
   const closePopup = () => {
-    if (openPopup) { openPopup.classList.remove('on'); openPopup = null; }
+    if (!openPopup) return;             // 開いていない時の Esc・[data-close] では何もしない
+    openPopup.classList.remove('on');
+    openPopup = null;
     bg.classList.remove('on');
+    unlockPageScroll();                 // 111-spec §3.8
   };
   root.addEventListener('click', (e) => {
     const nb = e.target.closest('[data-pop]');
     if (nb) {
       closePopup();
       const p = root.querySelector(`#pop-${nb.dataset.pop}`);
-      if (p) { p.classList.add('on'); bg.classList.add('on'); openPopup = p; }
+      if (p) { p.classList.add('on'); bg.classList.add('on'); openPopup = p; lockPageScroll(); }
       return;
     }
     if (e.target.closest('[data-close]')) closePopup();
