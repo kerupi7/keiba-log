@@ -1320,7 +1320,7 @@ function renderUpset20(upset, bigpayHtml) {
           <div class="lb">${escapeHtml(upset.label_name)}</div>
           <div class="tx">${escapeHtml(sel.card)}</div>
         </div>
-        <div class="r"><span class="big">${sel.percent}</span><span class="pc">%</span></div>
+        <div class="r"><span class="big">${sel.percent}</span><span class="pcs">%</span></div>
       </div>
       <div class="rows">${rows}</div>
       ${avg}${th}

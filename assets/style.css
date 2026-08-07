@@ -248,7 +248,12 @@ details.subfold>summary .sc{margin-left:auto;color:var(--navy);
   font-size:12px;color:var(--cap);line-height:1.6}
 
 /* ===== 3. TOP ===== */
-.roi{padding:12px 0 14px;border-bottom:1px solid var(--rule)}
+/* セレクタは必ず `div.roi` と書く（`.roi` だけにしない）。
+   `roi` はコースタブの表の単回収・複勝回収の列（`<td class="roi">`）でも使っており、
+   `.roi{padding:12px 0 14px}` と書くとその2列だけ余白が他の列と変わる。
+   実際に 2026-08-07 まで効いており、単回収・複回収の左右の余白が 5px → 0px、
+   上下が 6px → 12px/14px になって、その2列だけ列の幅と行の高さが揃っていなかった。 */
+div.roi{padding:12px 0 14px;border-bottom:1px solid var(--rule)}
 .roi .lab{font-size:13px;font-weight:700;color:var(--sub)}
 .roi .num{font-size:44px;font-weight:700;line-height:1.1;font-variant-numeric:tabular-nums;margin:2px 0}
 .roi .num.pos{color:var(--hit)} .roi .num.neg{color:var(--live)}
@@ -522,7 +527,11 @@ details.fold.om-fold>summary .cnt{color:#fff;opacity:.85;font-size:11px}
 .race20 .up2 .hd .tx{font-size:11.5px;color:var(--sub);line-height:1.5}
 .race20 .up2 .hd .r{display:flex;align-items:baseline;white-space:nowrap}
 .race20 .up2 .hd .big{font-size:40px;font-weight:700;line-height:.92;letter-spacing:-.02em}
-.race20 .up2 .hd .pc{font-size:15px;font-weight:700;margin-left:2px}
+/* クラス名は `pcs`（percent sign）。`pc` にしてはいけない。
+   `.race20 .pc` は展開タブのペースカードの枠（`border:1px solid`＋`border-radius:6px`）で、
+   こちらは border を書いていないため、%の1文字が**枠で囲われて**表示されていた
+   （2026-08-07 まで。`margin-bottom:7px` も一緒にもらって縦位置もずれていた）。 */
+.race20 .up2 .hd .pcs{font-size:15px;font-weight:700;margin-left:2px}
 /* 見出しの色は見立てクラスの文字色。大きい%は「見立てクラスの確率」であって最大値ではない
    （しきい値で決まるため。理由は .th の1行が説明する） */
 .race20 .up2 .hd.k-kata{color:var(--up-kata-t)}
@@ -845,15 +854,24 @@ details.fold.om-fold>summary .cnt{color:#fff;opacity:.85;font-size:11px}
   border:1px solid #C9C9C4;background:#fff;color:var(--sub);cursor:pointer}
 .race20 .accctl button:hover{background:var(--sub-bg2)}
 
-/* 採点表 */
-.race20 .dim{width:100%;font-size:12px;margin-top:2px;border-collapse:collapse}
-.race20 .dim td{padding:5px 4px;border-bottom:1px solid var(--rule);vertical-align:top;text-align:left;white-space:normal}
-.race20 .dim td.item{width:64px;font-weight:700;white-space:nowrap;color:var(--text)}
-.race20 .dim td.pt{width:24px;text-align:right;font-variant-numeric:tabular-nums;color:var(--sub);font-weight:700}
+/* 採点表。
+   セレクタは必ず `table.dim` と書く（`.dim` だけにしない）。
+   `dim`（＝薄く出す）はコースタブの `<tr class="dim">` でも使っており、
+   `.race20 .dim td` と書くとコースの表の行まで巻き込む。
+   実際に 2026-08-07 まで巻き込んでおり、コースの表の走数・勝率・回収率が
+   **上位3行だけ右揃え・残りは左揃え**になって、列が縦に揃っていなかった
+   （`text-align:left` と `white-space:normal` がそのまま効いていた）。 */
+.race20 table.dim{width:100%;font-size:12px;margin-top:2px;border-collapse:collapse}
+.race20 table.dim td{padding:5px 4px;border-bottom:1px solid var(--rule);vertical-align:top;text-align:left;white-space:normal}
+.race20 table.dim td.item{width:64px;font-weight:700;white-space:nowrap;color:var(--text)}
+.race20 table.dim td.pt{width:24px;text-align:right;font-variant-numeric:tabular-nums;color:var(--sub);font-weight:700}
 .race20 .fac{display:block;line-height:1.55}
 .race20 .fac.p{color:var(--hit)} .race20 .fac.m{color:var(--live)} .race20 .fac.z{color:var(--cap)}
-.race20 .dim tr.tot td{border-bottom:none;font-weight:700;padding-top:6px}
-.race20 .dim tr.tot .pt{color:var(--navy)}
+.race20 table.dim tr.tot td{border-bottom:none;font-weight:700;padding-top:6px}
+.race20 table.dim tr.tot .pt{color:var(--navy)}
+/* アキネーターの「金額を入れてください」も `<span class="dim">` で、上の採点表の
+   `font-size:12px` を偶然もらっていた。scope を絞った分をここで元どおりにする */
+.ak-wrap span.dim{font-size:12px}
 
 /* 買い目合計（tfoot。太線1本で表を閉じる。mockup-28 案1） */
 .race20 .betstbl tfoot td{border-top:2px solid var(--rule-strong);border-bottom:none;
