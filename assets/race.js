@@ -894,7 +894,7 @@ function renderAllHorsesTable(site) {
           <td>${h.rank ?? '—'}</td>
           <td>${umaBox(h.number, h.gate)}</td>
           <td class="name ${markNameClass(h.ability_mark)}">${markSlot(h.ability_mark)}${escapeHtml(h.name)}${extraChips}</td>
-          <td>${fmtNum(h.total, 1)}</td>
+          <td>${fmtNum(dispScore(h), 1)}</td>
           <td>${h.odds ?? '—'}</td>
           <td>${h.popularity ?? '—'}</td>
           <td class="conf">${h.confidence ?? '—'}</td>
@@ -1047,7 +1047,7 @@ function renderHorsesFold(site) {
     const blocksHtml = blocks.map((b) => {
       const h = byNumber[b.number];
       const heading = h
-        ? `${markBadge(h.ability_mark)}${umaBox(b.number, h.gate, 'sm')} ${escapeHtml(b.name)} <span class="meta">${escapeHtml(b.meta)}</span><span class="sc">${fmtNum(h.total, 1)} / ${h.popularity ?? '—'}人気</span>`
+        ? `${markBadge(h.ability_mark)}${umaBox(b.number, h.gate, 'sm')} ${escapeHtml(b.name)} <span class="meta">${escapeHtml(b.meta)}</span><span class="sc">${fmtNum(dispScore(h), 1)} / ${h.popularity ?? '—'}人気</span>`
         : escapeHtml(b.name);
       const bodyHtml = `<div class="prose">${renderMarkdown(b.body)}</div>`;
       if (v11) {
@@ -1530,6 +1530,19 @@ function courseRecordTable(h) {
 // 過去5走は表で出す（2026-07-28 ユーザー確認）。列は
 // 日付／場・条件／レース／クラス／着／タイム／上り／頭数・人気／差／通過／騎手・斤量。
 // 幅の狭い画面では横スクロールになるので、その旨を下に出す。
+// 過去走のAI評価（handoff_2026-08-17_prev-grade.md 決定#2/#5/#7）。
+// その走を「今の計算（w-2.0）」で採点し直した評価。保存済みの評価は閾値表が3世代
+// 混ざっていて、旧A+の複勝率44.2%が現行B+の42.0%と同じ意味になるため使えない。
+// 出すのは評価の文字だけ。採点順位（ai_rank）はデータには持たせるが表示しない。
+// 引けない走は理由で表記を分ける（地方／対象外＝障害／それ以外は「—」）。
+function aiGradeCell(p) {
+  if (p.ai_grade) {
+    return `<span class="sim-grade ${gradeClass(p.ai_grade)}">${escapeHtml(gradeDisp(p.ai_grade))}</span>`;
+  }
+  const miss = { local: '地方', jump: '対象外' }[p.ai_miss] || '—';
+  return `<span class="aix">${miss}</span>`;
+}
+
 function pastRunRow(p) {
   const rankCls = { 1: 'f1', 2: 'f2', 3: 'f3' }[p.last3f_rank] || '';
   const agTitle = p.last3f_rank ? `このレースの上がり${p.last3f_rank}位` : '';
@@ -1548,6 +1561,7 @@ function pastRunRow(p) {
     <td class="l">${escapeHtml(p.track ?? '')}<span class="mut"> ${escapeHtml(p.surface ?? '')}${escapeHtml(p.distance ?? '')}${escapeHtml(p.condition ?? '')}</span></td>
     <td class="l pname">${escapeHtml(stripClassSuffix(p.race_name))}</td>
     <td>${classBadge(p.grade, p.race_name)}</td>
+    <td class="aicol">${aiGradeCell(p)}</td>
     <td>${shutubaFinBox(p.finish)}</td>
     <td>${timeCell}</td>
     <td>${medalSpan(p.last_3f ?? '—', p.last_3f ? rankCls : '', agTitle)}</td>
@@ -1565,7 +1579,7 @@ function pastRunsTable(h) {
     <div class="ptwrap">
       <table class="pastt">
         <thead><tr><th class="l">日付</th><th class="l">場・条件</th><th class="l">レース</th>
-          <th>クラス</th><th>着</th><th>タイム</th><th>上り</th><th>頭数・人気</th><th>差</th>
+          <th>クラス</th><th>AI</th><th>着</th><th>タイム</th><th>上り</th><th>頭数・人気</th><th>差</th>
           <th class="l">通過</th><th class="l">騎手・斤量</th></tr></thead>
         <tbody>${runs.map(pastRunRow).join('')}</tbody>
       </table>
@@ -1581,7 +1595,7 @@ function careerRunsBlock(h) {
     <div class="ptwrap">
       <table class="pastt">
         <thead><tr><th class="l">日付</th><th class="l">場・条件</th><th class="l">レース</th>
-          <th>クラス</th><th>着</th><th>タイム</th><th>上り</th><th>頭数・人気</th><th>差</th>
+          <th>クラス</th><th>AI</th><th>着</th><th>タイム</th><th>上り</th><th>頭数・人気</th><th>差</th>
           <th class="l">通過</th><th class="l">騎手・斤量</th></tr></thead>
         <tbody>${rest.map(pastRunRow).join('')}</tbody>
       </table>
@@ -1602,27 +1616,13 @@ function prevNoteBlock(h) {
     <span class="rv-psrc">${src}</span>${so}</div>`;
 }
 
-function factorsTable(h) {
-  const factors = h.factors || [];
-  if (!factors.length) return '';
-  const rows = factors.map((f) => {
-    const items = (f.items || []).length
-      ? f.items.map((it) => {
-          if (it.sign === '+') return `<div class="fac p">＋ ${escapeHtml(it.label)}</div>`;
-          if (it.sign === '-') return `<div class="fac m">− ${escapeHtml(it.label)}</div>`;
-          return `<div class="fac z">・ ${escapeHtml(it.label)}</div>`;
-        }).join('')
-      : '<div class="fac z">・ 標準</div>';
-    return `<tr><td class="item">${escapeHtml(f.label)}</td><td class="pt">${f.score}</td><td>${items}</td></tr>`;
-  }).join('');
-  return `<table class="dim">${rows}
-    <tr class="tot"><td class="item">総合</td><td class="pt">${fmtNum(h.total, 1)}</td>
-      <td><span class="grade ${gradeClass(h.grade)}">${gradeDisp(h.grade)}</span></td></tr>
-  </table>`;
-}
+// 2026-08-12: ①〜⑧の点数を縦に並べ最後に総合点を出す `factorsTable(h)` を削除した。
+// 出馬表の点数を win-1 の換算点（win_score）に替えたため、8観点の点数を足しても
+// 画面の総合点にならず、残しておくと食い違いの元になる（ユーザー判断）。
+// なお削除時点でこの関数はどこからも呼ばれておらず、画面には出ていなかった。
+// 各項目の○×（item_marks / itemDots）は点数ではなく実データの理由文なので残す。
 
 // 97-spec §9（案A-1）: 診断欄。買える理由／消せる理由を2列に分け、見出しを塗る。
-// 旧データ（diagnosis を持たないレース）では、従来の factors 表に落とす。
 function diagRow(r) {
   const sub = r.sub ? `<span class="dsub">${escapeHtml(r.sub)}</span>` : '';
   return `<li><span class="dtag">${escapeHtml(r.dim)}</span>${escapeHtml(r.head)}${sub}</li>`;
@@ -1637,7 +1637,7 @@ function diagCol(rows, cls, title, mark) {
 
 function diagnosisBlock(h) {
   const d = h.diagnosis;
-  if (!d) return factorsTable(h);   // 旧データはそのまま従来表示
+  if (!d) return '';   // 旧データ（diagnosis なし）は何も出さない
   return `<div class="dcols">
     ${diagCol(d.plus, 'p', '買える理由', '＋')}
     ${diagCol(d.minus, 'm', '消せる理由', '−')}
@@ -1751,6 +1751,19 @@ function itemDots(h) {
     const cls = m.mark === '○' ? 'd-o' : 'd-x';
     return `<span class="idot ${cls}">${escapeHtml(m.label)}<i>${m.mark}</i></span>`;
   }).join('');
+}
+
+// 6マス適性（handoff_2026-08-17_pace-fit.md）。**出すのは「向かない」側だけ。**
+// 上位側は実測で中位より複勝率が低く（7番人気以下で −1.3pt・−3.8σ）、絞り込みを
+// 18通り試しても人気3帯すべてでプラスになる条件が無かったため、良い側の印は作らない。
+// 見た目は「消せる理由」チップ（.idot.d-x）と同じにする＝専用のCSSを足さない。
+function paceFitChip(h) {
+  const pf = h.pace_fit;
+  if (!pf || pf.flag !== 'poor') return '';
+  const sec = Math.abs(pf.value).toFixed(2);
+  return `<span class="idot d-x" title="今日の想定ペースで走ったときの平均着差が、`
+    + `この馬の通算平均より${sec}秒悪い（ペースの分かる過去${pf.runs}走から）。`
+    + `予測が当たるかは未検証です">展開が向かない<i>×</i></span>`;
 }
 
 // 106-spec §5.4: 札から追い出した理由文。ポップアップの中で全文を読ませる。
@@ -1882,7 +1895,7 @@ function runLine3(p, label) {
   const notes = runNoteTags(p.note_labels);
   const noteTitle = notes && p.note_text ? ` title="${escapeHtml(p.note_text)}"` : '';
   return `<div class="vrun${runBandClass(p)}"><span class="vtab">${escapeHtml(label)}</span><div class="vrb">
-    <div class="l1">${shutubaFinBox(p.finish)}<span class="dt">${shutubaMd(p.date)}</span><span class="tk">${escapeHtml(p.track || '')}</span>${classBadge(p.grade, p.race_name)}${runNameSpan(p.race_name)}${runWakuText(p)}<span class="nm hd">${escapeHtml(p.runners ?? '—')}頭</span><span class="nm pp">${escapeHtml(p.popularity ?? '—')}人</span></div>
+    <div class="l1">${shutubaFinBox(p.finish)}<span class="dt">${shutubaMd(p.date)}</span><span class="tk">${escapeHtml(p.track || '')}</span>${classBadge(p.grade, p.race_name)}<span class="aicol">${aiGradeCell(p)}</span>${runNameSpan(p.race_name)}${runWakuText(p)}<span class="nm hd">${escapeHtml(p.runners ?? '—')}頭</span><span class="nm pp">${escapeHtml(p.popularity ?? '—')}人</span></div>
     <div class="l2"><span class="cd">${cond}</span>${rankSpan(p.time ?? '—', p.time_grade || '', timeTitle, 'tm')}${cornersHtml(p.corners)}${rankSpan(p.last_3f ?? '—', rankCls, agTitle)}<span class="jk">${escapeHtml(p.jockey ?? '—')}</span><span class="kg">${kg}</span><span class="bw">${bw}</span></div>
     <div class="l3"${noteTitle}>${scenarioHtml(p.scenario)}<span class="wn">${escapeHtml(p.winner || '')}</span><span class="mg">(${marginText(p)})</span>${notes}</div>
   </div></div>`;
@@ -1964,7 +1977,7 @@ function popupRunsTable(h) {
     <div class="ptwrap">
       <table class="pastt">
         <thead><tr><th class="l">日付</th><th class="l">場・条件</th><th class="l">レース</th>
-          <th>クラス</th><th>着</th><th>タイム</th><th>上り</th><th>頭数・人気</th><th>差</th>
+          <th>クラス</th><th>AI</th><th>着</th><th>タイム</th><th>上り</th><th>頭数・人気</th><th>差</th>
           <th class="l">通過</th><th class="l">騎手・斤量</th></tr></thead>
         <tbody>${runs.map(pastRunRow).join('')}</tbody>
       </table>
@@ -2076,7 +2089,7 @@ function mmRow(h) {
   return `<div class="mm-row${h.ability_mark ? ' pred' : ''}" data-n="${h.number}">${mmCell(h)}
     <span class="mm-ai">${markBadge20(h) || '<span class="none">—</span>'}</span>
     <span class="mm-c">${umaBox(h.number, h.gate, 'sm')}<button type="button" class="nm" data-pop="${h.number}"><span class="t">${escapeHtml(h.name)}</span><i class="apop">▸</i></button>
-      <span class="tot">${fmtNum(h.total, 1)}<i class="grade ${gradeClass(h.grade)}">${gradeDisp(h.grade)}</i></span>
+      <span class="tot">${fmtNum(dispScore(h), 1)}<i class="grade ${gradeClass(dispGrade(h))}">${gradeDisp(dispGrade(h))}</i></span>
       <span class="od${oddsHotClass(h.odds)}">${h.odds != null ? h.odds.toFixed(1) : '—'}<i>倍</i>
         <span class="pp">${h.popularity ?? '—'}人</span></span></span></div>`;
 }
@@ -2250,10 +2263,10 @@ function shutubaCard(h) {
       <div class="ahead">
         <span class="pa">${escapeHtml(h.sex_age ?? '')}</span><span class="pk">${kg}</span>
         <span class="pj">${escapeHtml(h.jockey && h.jockey !== 'N/A' ? h.jockey : '—')}</span>${legBar(h.running_style)}
-        <span class="tot">${fmtNum(h.total, 1)}<i class="grade ${gradeClass(h.grade)}">${gradeDisp(h.grade)}</i></span>
+        <span class="tot">${fmtNum(dispScore(h), 1)}<i class="grade ${gradeClass(dispGrade(h))}">${gradeDisp(dispGrade(h))}</i></span>
         <span class="od${oddsHotClass(h.odds)}">${h.odds != null ? h.odds.toFixed(1) : '—'}<i>倍</i><i>${h.popularity ?? '—'}人</i></span>
       </div>
-      <div class="asub">${bw}${rot}${itemDots(h)}</div>
+      <div class="asub">${bw}${rot}${itemDots(h)}${paceFitChip(h)}</div>
       ${mmInline(h)}
       ${runsBlock(h)}
     </div>

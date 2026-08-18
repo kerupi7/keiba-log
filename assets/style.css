@@ -1649,6 +1649,19 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
 /* パネル内は折り返す指定にしているが、馬柱の表だけは1行に保つ（横スクロールで見る） */
 .race20 table.pastt td,.race20 table.pastt th,.race20 table.pastt span{white-space:nowrap}
 
+/* 過去走のAI評価（12列目・handoff_2026-08-17_prev-grade.md 決定#7）。
+   バッジの色は出馬表の評価（.sim-grade.g-*）をそのまま流用し、表の行高に収まるよう
+   一段小さくする。評価が引けない走は同じ幅の淡い文字（地方／対象外／—）で埋める。 */
+.race20 table.pastt td.aicol{white-space:nowrap}
+.race20 table.pastt .sim-grade{min-width:20px;font-size:10px;padding:0 3px}
+.race20 table.pastt .aix{display:inline-block;min-width:22px;font-size:10px;color:var(--cap)}
+
+/* 戦績5走の札（.aruns）にも同じ評価を出す。表は馬名ポップアップの中だけなので、
+   ここに出さないと主表示から評価が見えない。位置はクラスの右＝表の12列目と同じ順。 */
+.race20 .aruns .l1 .aicol{margin:0 2px 0 1px}
+.race20 .aruns .l1 .sim-grade{min-width:18px;font-size:9.5px;padding:0 3px;vertical-align:middle}
+.race20 .aruns .l1 .aix{display:inline-block;font-size:9.5px;color:var(--cap)}
+
 /* コース適性（実績） */
 .race20 .crh{font-size:11px;font-weight:700;color:var(--navy);margin:9px 0 3px}
 .race20 .crn{font-size:10.5px;color:var(--live);margin:0 0 3px}

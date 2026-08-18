@@ -129,6 +129,20 @@ function gradeDisp(grade) {
   return grade ? grade.replace('+', '＋') : '';
 }
 
+// 出馬表に出す点数と評価（2026-08-12）。勝率モデル win-1 の p_win を点数に換算した
+// win_score を使う。それまでは8観点の合計（total）を出していたが、印は p_win 順に付くので
+// 点数の並びと印の並びが食い違って見えていた（例: 点数1位の馬に○、3位の馬に◎）。
+// 8観点は勝率を当てる係としては win-1 に負けている（決着済み171レース実測・
+// 対数損失 2.2302 vs 2.0881）ため、表示を勝率側へ寄せた。
+// win_score を持たないのは 2026-08-12 より前に公開したレースだけで、その場合は
+// 従来どおり total と grade を出す（過去公開分は作り直さない）。
+function dispScore(h) {
+  return h.win_score ?? h.total;
+}
+function dispGrade(h) {
+  return h.win_score != null ? h.win_grade : h.grade;
+}
+
 // 45-spec §3.2: 馬番の枠色ボックス（JRA標準色）。gate(1..8)→wk1..wk8。範囲外はプレーン数字にフォールバック
 function frameClass(gate) {
   return (gate >= 1 && gate <= 8) ? `wk${gate}` : '';
