@@ -1848,14 +1848,12 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
    59px足りない。折り返さないとレース名が幅0になって消える（「湯浜特別」のような
    特別戦では名前が主役なので、消すと読めなくなる）。
    折り返すのは幅460px未満だけで、PC・タブレットの見た目は変わらない。 */
-/* 枠番・頭数・人気は3つで1つのまとまり（.nmg）。バラバラに折り返すと、走ごとに
-   どれが上の行に残るかが変わって見た目が揃わない。まとめておけば「3つとも上の行」か
-   「3つとも下の行」の2通りしか起きない。PCでは .rnm の flex:1 が右へ押すので位置は不変 */
-.race20 .vrun .l1 .nmg{display:flex;gap:3px;flex:none;margin-left:auto;align-items:center}
-@media (max-width:459px){
-  .race20 .vrun .vrb>.l1{flex-wrap:wrap;row-gap:0}
-  .race20 .vrun .l1 .rnm{flex:1 1 auto;min-width:4.5em}
-}
+/* 枠番・頭数・人気（.nmg）は3行目の右端に置く（2026-08-18 ユーザー決定）。
+   1行目に置くと iPhone縦（親幅286px）で必要幅296pxに10px足りず、折り返して
+   「レース名の右」と「数字群の左」に穴が2つできていた。3行目は空きが30〜188pxあり、
+   たいていの走は1行に収まる（回顧メモが3つ付く走だけ2行になる。実測15本中3本）。
+   1つのまとまりにしてあるのは、バラバラに折り返すと走ごとに位置が変わるため。 */
+.race20 .vrun .l3 .nmg{display:flex;gap:3px;flex:none;margin-left:auto;align-items:center}
 .race20 .vrun .l1 .nm{color:var(--sub);font-variant-numeric:tabular-nums;
   flex:none;text-align:right}
 .race20 .vrun .l1 .nm.hd{width:3.3em}
