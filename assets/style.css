@@ -1675,8 +1675,11 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
 .race20 .lv-c{color:#7E7E74;background:#F2F2EF}   /* 灰 */
 .race20 .lv-d{color:#B4B4AC;background:#FAFAF8}   /* 薄灰 */
 
-/* 札の中では着順のすぐ右に置き、区切り線で日付から離す（①の置き場所）。 */
-.race20 .aruns .l1 .lv{margin:0 8px 0 4px;padding-right:9px;border-right:1px solid #E4E4DE}
+/* 札の中では着順のすぐ右に置く（①の置き場所）。
+   区切り線は入れない。iPhone縦（幅375px）だと1行目の親幅が286pxしかなく、
+   子の必要幅の合計346pxに対して60px足りない。区切り線の余白17pxは、
+   同じ幅をレース名に回したほうが読める（2026-08-18 実測して差し替え）。 */
+.race20 .aruns .l1 .lv{margin:0 4px}
 .race20 .aruns .l1 .aicol::before{content:"AI";font-size:8px;font-weight:700;color:var(--cap);
   margin-right:2px;vertical-align:middle}
 
@@ -1834,6 +1837,25 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
 /* 着順は行の先頭。1桁と2桁で箱の幅が変わると左右にずれるので幅を決めて止める。
    2026-08-05: 19×16px・文字10.5px → 26×21px・文字14px（面積1.8倍）に拡げた */
 .race20 .vrun .l1 .fb{flex:none;width:26px;height:21px;min-width:0;padding:0;font-size:14px}
+/* バッジ類は幅が足りなくても縮ませない。縮むと中の文字が切れる
+   （2026-08-18: iPhone縦で「未勝利」が「未勝禾」・「Lv B」が「Lv 」になっていた）。
+   足りない分はレース名（.rnm）だけが引き受け、入らなければ「…」で丸める。 */
+.race20 .vrun .l1 .fb,.race20 .vrun .l1 .lv,.race20 .vrun .l1 .cb,
+.race20 .vrun .l1 .aicol,.race20 .vrun .l1 .dt,.race20 .vrun .l1 .tk{flex:none}
+/* 1行目だけ列間を1px詰める。9か所あるので9px戻る（レース名1文字ぶん） */
+.race20 .vrun .vrb>.l1{gap:3px}
+/* 狭い画面では1行目を折り返す。iPhone縦（親幅286px）に対して必要幅は345pxあり、
+   59px足りない。折り返さないとレース名が幅0になって消える（「湯浜特別」のような
+   特別戦では名前が主役なので、消すと読めなくなる）。
+   折り返すのは幅460px未満だけで、PC・タブレットの見た目は変わらない。 */
+/* 枠番・頭数・人気は3つで1つのまとまり（.nmg）。バラバラに折り返すと、走ごとに
+   どれが上の行に残るかが変わって見た目が揃わない。まとめておけば「3つとも上の行」か
+   「3つとも下の行」の2通りしか起きない。PCでは .rnm の flex:1 が右へ押すので位置は不変 */
+.race20 .vrun .l1 .nmg{display:flex;gap:3px;flex:none;margin-left:auto;align-items:center}
+@media (max-width:459px){
+  .race20 .vrun .vrb>.l1{flex-wrap:wrap;row-gap:0}
+  .race20 .vrun .l1 .rnm{flex:1 1 auto;min-width:4.5em}
+}
 .race20 .vrun .l1 .nm{color:var(--sub);font-variant-numeric:tabular-nums;
   flex:none;text-align:right}
 .race20 .vrun .l1 .nm.hd{width:3.3em}
