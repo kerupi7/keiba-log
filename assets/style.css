@@ -1656,13 +1656,29 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
 .race20 table.pastt .sim-grade{min-width:20px;font-size:10px;padding:0 3px}
 .race20 table.pastt .aix{display:inline-block;min-width:22px;font-size:10px;color:var(--cap)}
 
-/* 過去走のレースレベル（handoff_2026-08-17_race-level.md 決定#3）。クラス列に同居させる。
-   AI評価（塗りつぶしのバッジ）と見分けるため、こちらは**枠線だけ**の別色にする。 */
-.race20 .lv{display:inline-block;min-width:14px;margin-left:3px;padding:0 2px;border-radius:3px;
+/* 過去走のレースレベル（handoff_2026-08-17_race-level.md 決定#3）。
+   AI評価と見分けるため4つを重ねる（2026-08-18 ユーザー決定・モックで比較のうえ）:
+     ①置き場所  レベルは「着順の右」／AI評価は「クラスの右」
+     ②見出し    レベルは `Lv`／AI評価は `AI`
+     ③形        レベルは枠線＋淡い地色／AI評価は塗りつぶし
+     ④色の系統  レベルは 金→赤→青→灰／AI評価は 緑→青→灰→桃
+   旧版は紫1色の明るさ違いで、S・A・B が画面上でほぼ同じに見えていた。
+   ①〜④のうち④だけは衝突が残る（実測: 1着×Lv S が1.6%・Lv B×AI B＋/B が5.4%）。
+   形と見出しで区別できるので許容している。 */
+.race20 .lv{display:inline-block;min-width:14px;padding:0 4px;border-radius:3px;
   border:1px solid currentColor;font-size:9px;font-weight:800;line-height:13px;text-align:center;
-  vertical-align:middle;background:#fff}
-.race20 .lv-s{color:#4B2E83} .race20 .lv-a{color:#6B46C1} .race20 .lv-b{color:#8B7BB8}
-.race20 .lv-c{color:#A9A2B8} .race20 .lv-d{color:#C0BCC8}
+  vertical-align:middle;background:#fff;margin-left:3px}
+.race20 .lv i{font-style:normal;font-size:8px;font-weight:600;margin-right:2px;opacity:.75}
+.race20 .lv-s{color:#A57C00;background:#FFF8E1}   /* ゴールド */
+.race20 .lv-a{color:#C0272D;background:#FDEDEC}   /* 赤 */
+.race20 .lv-b{color:#1F5FA8;background:#EAF2FB}   /* ブルー */
+.race20 .lv-c{color:#7E7E74;background:#F2F2EF}   /* 灰 */
+.race20 .lv-d{color:#B4B4AC;background:#FAFAF8}   /* 薄灰 */
+
+/* 札の中では着順のすぐ右に置き、区切り線で日付から離す（①の置き場所）。 */
+.race20 .aruns .l1 .lv{margin:0 8px 0 4px;padding-right:9px;border-right:1px solid #E4E4DE}
+.race20 .aruns .l1 .aicol::before{content:"AI";font-size:8px;font-weight:700;color:var(--cap);
+  margin-right:2px;vertical-align:middle}
 
 /* 戦績5走の札（.aruns）にも同じ評価を出す。表は馬名ポップアップの中だけなので、
    ここに出さないと主表示から評価が見えない。位置はクラスの右＝表の12列目と同じ順。 */

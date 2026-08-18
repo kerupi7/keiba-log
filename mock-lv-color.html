@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ja"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>レースレベルの色 3案 — Ans. モック</title>
+<link rel="stylesheet" href="assets/style.css?v=20260818b">
+<style>
+.wrap{max-width:1100px;margin:0 auto;padding:14px}
+h1{font-size:18px;color:var(--navy);margin:0 0 6px}
+.lead{font-size:12.5px;color:var(--sub);line-height:1.8;margin-bottom:12px}
+.lead b{color:var(--text)}
+.bar{position:sticky;top:0;z-index:5;background:#fff;border-bottom:1px solid #E4E4DE;
+  padding:8px 0;margin-bottom:10px;display:flex;gap:6px;flex-wrap:wrap}
+.bar button{font-size:12.5px;padding:5px 12px;border:1px solid var(--rule);background:#fff;
+  border-radius:4px;cursor:pointer;color:var(--text)}
+.bar button.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+.desc{font-size:12.5px;color:var(--sub);line-height:1.8;background:#F7F8FA;
+  border-left:3px solid var(--navy);padding:9px 13px;margin:0 0 10px}
+.desc b{color:var(--text)}
+.desc .pm{color:var(--live)}
+.sw{display:flex;align-items:center;gap:14px;font-size:12px;color:var(--sub);
+  border:1px solid var(--rule);border-radius:5px;padding:9px 13px;margin:0 0 12px;flex-wrap:wrap}
+.sw .ttl{font-weight:700;color:var(--text)}
+.sw .pair{display:flex;align-items:center;gap:3px}
+.stage{margin-top:4px}
+.acard{margin-bottom:10px}
+
+/* ── 共通: 案3「Lv」＋ レベルを着順の右へ ── */
+.opt .aruns .l1,.sw .row{display:flex;align-items:center}
+.opt .aruns .l1 > *{order:5}
+.opt .aruns .l1 .fb{order:1}
+.opt .aruns .l1 .lv{order:2;margin:0 8px 0 4px}
+.opt .aruns .l1 .dt{order:3}
+.opt .aruns .l1 .aicol{margin-left:5px}
+.opt .aruns .l1 .aicol::before{content:"AI";font-size:8px;font-weight:700;color:var(--cap);
+  margin-right:2px;vertical-align:middle}
+.opt .lv::before,.sw .lv::before{content:"Lv";font-size:8px;font-weight:600;margin-right:2px;
+  opacity:.75}
+.opt .lv,.sw .lv{min-width:0;padding:0 4px;letter-spacing:0}
+
+/* ── 案1: 紫の塗り階段（今の系統を残す）───────────── */
+.c1 .lv{border:0;color:#fff;font-weight:800}
+.c1 .lv-s{background:#3B1E6E} .c1 .lv-a{background:#6D28D9}
+.c1 .lv-b{background:#9F7AEA} .c1 .lv-c{background:#CFC9DC;color:#4A4458}
+.c1 .lv-d{background:#EDEBF2;color:#8B8698}
+
+/* ── 案2: 暖色5色の枠線（AI評価と系統ごと分ける）──── */
+.c2 .lv{background:#fff;font-weight:800}
+.c2 .lv-s{color:#B3261E} .c2 .lv-a{color:#DB6B0B} .c2 .lv-b{color:#B08308}
+.c2 .lv-c{color:#93938A} .c2 .lv-d{color:#C3C3BB}
+
+/* ── 案3: 色は3群だけ（5段の区別は文字に任せる）──── */
+.c3 .lv{border:0;font-weight:800}
+.c3 .lv-s,.c3 .lv-a{background:#3B1E6E;color:#fff}
+.c3 .lv-b{background:#CFC9DC;color:#3B1E6E}
+.c3 .lv-c,.c3 .lv-d{background:#F1F1EE;color:#8A8A80}
+</style></head>
+<body class="race20">
+<div class="wrap">
+<h1>レースレベルの色 — 3案</h1>
+<div class="lead">
+題材は <b>2026-08-16 新潟1R 3歳未勝利</b> の3頭。表示は実データです。<br>
+配置と見出しは決定ぶん（<b>レベルを着順の右へ</b>・見出しは <b>Lv</b>）を当ててあります。変えるのは<b>色だけ</b>。<br>
+公開169レースの過去走9,565本で <b>S 19.7%／A 20.4%／B 21.8%／C 19.6%／D 18.5%</b> と
+<b>5段はほぼ均等に出る</b>ので、5段すべてが見分けられる必要があります。
+</div>
+<div class="bar">
+  <button data-opt="now">いまの色（比較用）</button>
+  <button data-opt="c1" class="on">案1：紫の塗り階段</button>
+  <button data-opt="c2">案2：暖色5色の枠線</button>
+  <button data-opt="c3">案3：色は3群だけ</button>
+</div>
+<div class="sw" id="sw"></div>
+<div class="desc" id="desc"></div>
+<div class="stage" id="stage"></div>
+</div>
+<script>
+const CARDS_HTML = "<article class=\"acard\">\n  <div class=\"aspine\"><span class=\"hn wk2 sm\">2</span><span class=\"vname\">ルナティックブルー</span></div>\n  <div class=\"abody\">\n    <div class=\"ahead\"><span class=\"pa\">牝3</span><span class=\"pk\">55</span>\n      <span class=\"pj\">小沢</span>\n      <span class=\"tot\">58.1<i class=\"grade g-cp\">C＋</i></span>\n      <span class=\"od\">34.4<i>倍</i><i>8人</i></span></div>\n    <div class=\"aruns\"><div class=\"vrun\"><span class=\"vtab\">前走</span><div class=\"vrb\">\n    <div class=\"l1\"><span class=\"fb fx\">12</span><span class=\"dt\">07/25</span><span class=\"tk\">札幌</span><span class=\"cb c-mi\">未勝利</span><span class=\"lv lv-c\" title=\"レースの濃さ C（出走馬のその後180日・同じクラスの中での相対）\">C</span><span class=\"aicol\"><span class=\"sim-grade g-c\">C</span></span><span class=\"rnm\">3歳未勝利</span><span class=\"wkn\">7枠<b>11</b>番</span><span class=\"nm hd\">14頭</span><span class=\"nm pp\">5人</span></div>\n    <div class=\"l2\"><span class=\"cd\">芝1800良</span><span class=\"val tm\">1:49.7</span><span class=\"cor\"><i>5</i><i>4</i><i>5</i><i>8</i></span><span class=\"val\">36.8</span><span class=\"jk\">小沢大仁</span><span class=\"kg\">55</span><span class=\"bw\">432</span></div>\n    <div class=\"l3\"><span class=\"sc\">平均・後</span><span class=\"wn\">テンレディーゴー</span><span class=\"mg\">(1.8)</span></div>\n  </div></div><div class=\"vrun\"><span class=\"vtab\">2走前</span><div class=\"vrb\">\n    <div class=\"l1\"><span class=\"fb fx\">6</span><span class=\"dt\">07/05</span><span class=\"tk\">函館</span><span class=\"cb c-mi\">未勝利</span><span class=\"lv lv-s\" title=\"レースの濃さ S（出走馬のその後180日・同じクラスの中での相対）\">S</span><span class=\"aicol\"><span class=\"sim-grade g-c\">C</span></span><span class=\"rnm\">3歳未勝利</span><span class=\"wkn\">5枠<b>10</b>番</span><span class=\"nm hd\">16頭</span><span class=\"nm pp\">9人</span></div>\n    <div class=\"l2\"><span class=\"cd\">芝2000良</span><span class=\"val tm\">2:01.8</span><span class=\"cor\"><i>1</i><i>1</i><i>2</i><i>2</i></span><span class=\"val\">35.9</span><span class=\"jk\">小沢大仁</span><span class=\"kg\">55</span><span class=\"bw\">432</span></div>\n    <div class=\"l3\"><span class=\"sc\">スロー・前</span><span class=\"wn\">エイシンインアウト</span><span class=\"mg\">(0.4)</span></div>\n  </div></div><div class=\"vrun\"><span class=\"vtab\">3走前</span><div class=\"vrb\">\n    <div class=\"l1\"><span class=\"fb f3\">3</span><span class=\"dt\">06/20</span><span class=\"tk\">函館</span><span class=\"cb c-mi\">未勝利</span><span class=\"lv lv-s\" title=\"レースの濃さ S（出走馬のその後180日・同じクラスの中での相対）\">S</span><span class=\"aicol\"><span class=\"sim-grade g-d\">D</span></span><span class=\"rnm\">3歳未勝利</span><span class=\"wkn\">4枠<b>8</b>番</span><span class=\"nm hd\">16頭</span><span class=\"nm pp\">9人</span></div>\n    <div class=\"l2\"><span class=\"cd\">芝1800良</span><span class=\"val tm\">1:47.6</span><span class=\"cor\"><i>9</i><i>7</i><i>6</i><i>7</i></span><span class=\"val\">36.0</span><span class=\"jk\">小沢大仁</span><span class=\"kg\">55</span><span class=\"bw\">430</span></div>\n    <div class=\"l3\"><span class=\"sc\">平均・前</span><span class=\"wn\">ダーリンダーリン</span><span class=\"mg\">(0.4)</span><span class=\"nt nt-one\">出遅れ</span><span class=\"nt nt-one\">負けたが時計は速い</span><span class=\"nt nt-one\">時計の速いレース</span></div>\n  </div></div><div class=\"vrun\"><span class=\"vtab\">4走前</span><div class=\"vrb\">\n    <div class=\"l1\"><span class=\"fb fx\">5</span><span class=\"dt\">05/23</span><span class=\"tk\">京都</span><span class=\"cb c-mi\">未勝利</span><span class=\"lv lv-a\" title=\"レースの濃さ A（出走馬のその後180日・同じクラスの中での相対）\">A</span><span class=\"aicol\"><span class=\"sim-grade g-e\">E</span></span><span class=\"rnm\">3歳未勝利</span><span class=\"wkn\">8枠<b>17</b>番</span><span class=\"nm hd\">17頭</span><span class=\"nm pp\">12人</span></div>\n    <div class=\"l2\"><span class=\"cd\">芝1800良</span><span class=\"val tm\">1:46.8</span><span class=\"cor\"><i>11</i><i>13</i></span><span class=\"val\">35.5</span><span class=\"jk\">松若風馬</span><span class=\"kg\">55</span><span class=\"bw\">432</span></div>\n    <div class=\"l3\"><span class=\"sc\">平均・前</span><span class=\"wn\">エトワールブーケ</span><span class=\"mg\">(0.6)</span><span class=\"nt nt-one\">上がり最速</span><span class=\"nt nt-one\">負けたが時計は速い</span></div>\n  </div></div><div class=\"vrun\"><span class=\"vtab\">5走前</span><div class=\"vrb\">\n    <div class=\"l1\"><span class=\"fb fx\">12</span><span class=\"dt\">04/04</span><span class=\"tk\">阪神</span><span class=\"cb c-mi\">未勝利</span><span class=\"lv lv-b\" title=\"レースの濃さ B（出走馬のその後180日・同じクラスの中での相対）\">B</span><span class=\"aicol\"><span class=\"sim-grade g-e\">E</span></span><span class=\"rnm\">3歳未勝利</span><span class=\"wkn\">8枠<b>17</b>番</span><span class=\"nm hd\">18頭</span><span class=\"nm pp\">18人</span></div>\n    <div class=\"l2\"><span class=\"cd\">芝1400良</span><span class=\"val tm\">1:23.0</span><span class=\"cor\"><i>14</i><i>15</i></span><span class=\"val\">35.0</span><span class=\"jk\">小沢大仁</span><span class=\"kg\">55</span><span class=\"bw\">436</span></div>\n    <div class=\"l3\"><span class=\"sc\">平均・前</span><span class=\"wn\">マイティキングダム</span><span class=\"mg\">(1.4)</span><span class=\"nt nt-one\">出遅れ</span></div>\n  </div></div></div>\n  </div></article>\n<article class=\"acard\">\n  <div class=\"aspine\"><span class=\"hn wk4 sm\">5</span><span class=\"vname\">ルージュリヴィエラ</span></div>\n  <div class=\"abody\">\n    <div class=\"ahead\"><span class=\"pa\">牝3</span><span class=\"pk\">55</span>\n      <span class=\"pj\">横山和</span>\n      <span class=\"tot\">65.1<i class=\"grade g-a\">A</i></span>\n      <span class=\"od\">2.7<i>倍</i><i>1人</i></span></div>\n    <div class=\"aruns\"><div class=\"vrun\"><span class=\"vtab\">前走</span><div class=\"vrb\">\n    <div class=\"l1\"><span class=\"fb f2\">2</span><span class=\"dt\">07/19</span><span class=\"tk\">函館</span><span class=\"cb c-mi\">未勝利</span><span class=\"lv lv-d\" title=\"レースの濃さ D（出走馬のその後180日・同じクラスの中での相対）\">D</span><span class=\"aicol\"><span class=\"sim-grade g-b\">B</span></span><span class=\"rnm\">3歳未勝利</span><span class=\"wkn\">3枠<b>3</b>番</span><span class=\"nm hd\">14頭</span><span class=\"nm pp\">4人</span></div>\n    <div class=\"l2\"><span class=\"cd\">ダート1700不</span><span class=\"val tm\">1:44.5</span><span class=\"cor\"><i>3</i><i>3</i><i>3</i><i>3</i></span><span class=\"val\">38.2</span><span class=\"jk\">横山和生</span><span class=\"kg\">55</span><span class=\"bw\">402</span></div>\n    <div class=\"l3\"><span class=\"sc\">ハイ・後</span><span class=\"wn\">ブレイズランナー</span><span class=\"mg\">(0.0)</span><span class=\"nt nt-one\">負けたが時計は速い</span></div>\n  </div></div><div class=\"vrun\"><span class=\"vtab\">2走前</span><div class=\"vrb\">\n    <div class=\"l1\"><span class=\"fb f2\">2</span><span class=\"dt\">07/04</span><span class=\"tk\">函館</span><span class=\"cb c-mi\">未勝利</span><span class=\"lv lv-s\" title=\"レースの濃さ S（出走馬のその後180日・同じクラスの中での相対）\">S</span><span class=\"aicol\"><span class=\"sim-grade g-cp\">C＋</span></span><span class=\"rnm\">3歳未勝利</span><span class=\"wkn\">5枠<b>6</b>番</span><span class=\"nm hd\">11頭</span><span class=\"nm pp\">8人</span></div>\n    <div class=\"l2\"><span class=\"cd\">ダート1700良</span><span class=\"val tm\">1:46.8</span><span class=\"cor\"><i>6</i><i>6</i><i>6</i><i>4</i></span><span class=\"val\">38.3</span><span class=\"jk\">横山和生</span><span class=\"kg\">55</span><span class=\"bw\">410</span></div>\n    <div class=\"l3\"><span class=\"sc\">ハイ・後</span><span class=\"wn\">ギンケイ</span><span class=\"mg\">(0.1)</span></div>\n  </div></div><div class=\"vrun\"><span class=\"vtab\">3走前</span><div class=\"vrb\">\n    <div class=\"l1\"><span class=\"fb fx\">8</span><span class=\"dt\">05/24</span><span class=\"tk\">東京</span><span class=\"cb c-mi\">未勝利</span><span class=\"lv lv-s\" title=\"レースの濃さ S（出走馬のその後180日・同じクラスの中での相対）\">S</span><span class=\"aicol\"><span class=\"sim-grade g-d\">D</span></span><span class=\"rnm\">3歳未勝利</span><span class=\"wkn\">4枠<b>7</b>番</span><span class=\"nm hd\">16頭</span><span class=\"nm pp\">8人</span></div>\n    <div class=\"l2\"><span class=\"cd\">ダート1400稍</span><span class=\"val tm\">1:26.0</span><span class=\"cor\"><i>11</i><i>10</i></span><span class=\"val\">37.6</span><span class=\"jk\">ディー</span><span class=\"kg\">55</span><span class=\"bw\">412</span></div>\n    <div class=\"l3\"><span class=\"sc\">ハイ・前</span><span class=\"wn\">オテンバプリンセス</span><span class=\"mg\">(0.6)</span></div>\n  </div></div><div class=\"vrun\"><span class=\"vtab\">4走前</span><div class=\"vrb\">\n    <div class=\"l1\"><span class=\"fb fx\">6</span><span class=\"dt\">04/26</span><span class=\"tk\">東京</span><span class=\"cb c-mi\">未勝利</span><span class=\"lv lv-a\" title=\"レースの濃さ A（出走馬のその後180日・同じクラスの中での相対）\">A</span><span class=\"aicol\"><span class=\"sim-grade g-d\">D</span></span><span class=\"rnm\">3歳未勝利</span><span class=\"wkn\">1枠<b>2</b>番</span><span class=\"nm hd\">15頭</span><span class=\"nm pp\">4人</span></div>\n    <div class=\"l2\"><span class=\"cd\">ダート1400稍</span><span class=\"val tm\">1:27.2</span><span class=\"cor\"><i>4</i><i>4</i></span><span class=\"val\">37.8</span><span class=\"jk\">ディー</span><span class=\"kg\">55</span><span class=\"bw\">400</span></div>\n    <div class=\"l3\"><span class=\"sc\">平均・前</span><span class=\"wn\">ケイツープラ</span><span class=\"mg\">(1.2)</span></div>\n  </div></div><div class=\"vrun\"><span class=\"vtab\">5走前</span><div class=\"vrb\">\n    <div class=\"l1\"><span class=\"fb fx\">6</span><span class=\"dt\">02/07</span><span class=\"tk\">東京</span><span class=\"cb c-mi\">未勝利</span><span class=\"lv lv-a\" title=\"レースの濃さ A（出走馬のその後180日・同じクラスの中での相対）\">A</span><span class=\"aicol\"><span class=\"sim-grade g-c\">C</span></span><span class=\"rnm\">3歳未勝利</span><span class=\"wkn\">4枠<b>7</b>番</span><span class=\"nm hd\">16頭</span><span class=\"nm pp\">2人</span></div>\n    <div class=\"l2\"><span class=\"cd\">ダート1400良</span><span class=\"val tm\">1:27.9</span><span class=\"cor\"><i>8</i><i>8</i></span><span class=\"val\">38.4</span><span class=\"jk\">横山和生</span><span class=\"kg\">55</span><span class=\"bw\">408</span></div>\n    <div class=\"l3\"><span class=\"sc\">平均・前</span><span class=\"wn\">チームユートピア</span><span class=\"mg\">(1.2)</span></div>\n  </div></div></div>\n  </div></article>\n<article class=\"acard\">\n  <div class=\"aspine\"><span class=\"hn wk6 sm\">9</span><span class=\"vname\">アリディプラチノ</span></div>\n  <div class=\"abody\">\n    <div class=\"ahead\"><span class=\"pa\">牝3</span><span class=\"pk\">52</span>\n      <span class=\"pj\">大久保</span>\n      <span class=\"tot\">55.6<i class=\"grade g-d\">D</i></span>\n      <span class=\"od\">149.3<i>倍</i><i>12人</i></span></div>\n    <div class=\"aruns\"><div class=\"vrun\"><span class=\"vtab\">前走</span><div class=\"vrb\">\n    <div class=\"l1\"><span class=\"fb fx\">11</span><span class=\"dt\">07/26</span><span class=\"tk\">中京</span><span class=\"cb c-mi\">未勝利</span><span class=\"lv lv-d\" title=\"レースの濃さ D（出走馬のその後180日・同じクラスの中での相対）\">D</span><span class=\"aicol\"><span class=\"sim-grade g-d\">D</span></span><span class=\"rnm\">3歳未勝利</span><span class=\"wkn\">7枠<b>13</b>番</span><span class=\"nm hd\">15頭</span><span class=\"nm pp\">12人</span></div>\n    <div class=\"l2\"><span class=\"cd\">芝1200良</span><span class=\"val tm\">1:09.0</span><span class=\"cor\"><i>10</i><i>11</i></span><span class=\"val\">34.2</span><span class=\"jk\">川端海翼</span><span class=\"kg\">52</span><span class=\"bw\">430</span></div>\n    <div class=\"l3\"><span class=\"sc\">平均・後</span><span class=\"wn\">ベルセクレト</span><span class=\"mg\">(1.2)</span></div>\n  </div></div><div class=\"vrun\"><span class=\"vtab\">2走前</span><div class=\"vrb\">\n    <div class=\"l1\"><span class=\"fb fx\">8</span><span class=\"dt\">07/12</span><span class=\"tk\">小倉</span><span class=\"cb c-mi\">未勝利</span><span class=\"lv lv-b\" title=\"レースの濃さ B（出走馬のその後180日・同じクラスの中での相対）\">B</span><span class=\"aicol\"><span class=\"sim-grade g-e\">E</span></span><span class=\"rnm\">3歳未勝利</span><span class=\"wkn\">2枠<b>3</b>番</span><span class=\"nm hd\">17頭</span><span class=\"nm pp\">13人</span></div>\n    <div class=\"l2\"><span class=\"cd\">芝1200良</span><span class=\"val tm\">1:09.1</span><span class=\"cor\"><i>8</i><i>9</i></span><span class=\"val\">35.5</span><span class=\"jk\">国分優作</span><span class=\"kg\">55</span><span class=\"bw\">426</span></div>\n    <div class=\"l3\"><span class=\"sc\">ハイ・前</span><span class=\"wn\">ホーリーステップ</span><span class=\"mg\">(1.0)</span></div>\n  </div></div><div class=\"vrun\"><span class=\"vtab\">3走前</span><div class=\"vrb\">\n    <div class=\"l1\"><span class=\"fb fx\">9</span><span class=\"dt\">05/24</span><span class=\"tk\">京都</span><span class=\"cb c-mi\">未勝利</span><span class=\"lv lv-c\" title=\"レースの濃さ C（出走馬のその後180日・同じクラスの中での相対）\">C</span><span class=\"aicol\"><span class=\"sim-grade g-d\">D</span></span><span class=\"rnm\">3歳未勝利</span><span class=\"wkn\">4枠<b>8</b>番</span><span class=\"nm hd\">15頭</span><span class=\"nm pp\">8人</span></div>\n    <div class=\"l2\"><span class=\"cd\">ダート1800良</span><span class=\"val tm\">1:56.5</span><span class=\"cor\"><i>9</i><i>9</i><i>7</i><i>7</i></span><span class=\"val\">40.4</span><span class=\"jk\">国分優作</span><span class=\"kg\">55</span><span class=\"bw\">424</span></div>\n    <div class=\"l3\"><span class=\"sc\">ハイ・前</span><span class=\"wn\">オヤツノジカン</span><span class=\"mg\">(2.1)</span></div>\n  </div></div><div class=\"vrun\"><span class=\"vtab\">4走前</span><div class=\"vrb\">\n    <div class=\"l1\"><span class=\"fb fx\">8</span><span class=\"dt\">05/02</span><span class=\"tk\">新潟</span><span class=\"cb c-mi\">未勝利</span><span class=\"lv lv-b\" title=\"レースの濃さ B（出走馬のその後180日・同じクラスの中での相対）\">B</span><span class=\"aicol\"><span class=\"sim-grade g-d\">D</span></span><span class=\"rnm\">3歳未勝利</span><span class=\"wkn\">2枠<b>2</b>番</span><span class=\"nm hd\">15頭</span><span class=\"nm pp\">8人</span></div>\n    <div class=\"l2\"><span class=\"cd\">ダート1200不</span><span class=\"val tm\">1:13.6</span><span class=\"cor\"><i>5</i><i>6</i></span><span class=\"val\">39.3</span><span class=\"jk\">大久保友</span><span class=\"kg\">52</span><span class=\"bw\">422</span></div>\n    <div class=\"l3\"><span class=\"sc\">ハイ・前</span><span class=\"wn\">アンバサダネージュ</span><span class=\"mg\">(1.7)</span></div>\n  </div></div><div class=\"vrun\"><span class=\"vtab\">5走前</span><div class=\"vrb\">\n    <div class=\"l1\"><span class=\"fb fx\">9</span><span class=\"dt\">03/08</span><span class=\"tk\">阪神</span><span class=\"cb c-mi\">未勝利</span><span class=\"lv lv-c\" title=\"レースの濃さ C（出走馬のその後180日・同じクラスの中での相対）\">C</span><span class=\"aicol\"><span class=\"sim-grade g-d\">D</span></span><span class=\"rnm\">3歳未勝利</span><span class=\"wkn\">1枠<b>2</b>番</span><span class=\"nm hd\">16頭</span><span class=\"nm pp\">5人</span></div>\n    <div class=\"l2\"><span class=\"cd\">ダート1200良</span><span class=\"val tm\">1:14.8</span><span class=\"cor\"><i>13</i><i>11</i></span><span class=\"val\">37.3</span><span class=\"jk\">国分優作</span><span class=\"kg\">55</span><span class=\"bw\">412</span></div>\n    <div class=\"l3\"><span class=\"sc\">ハイ・前</span><span class=\"wn\">アームズレジェンド</span><span class=\"mg\">(0.9)</span><span class=\"nt nt-one\">出遅れ</span></div>\n  </div></div></div>\n  </div></article>";
+const AI = '<span class="sim-grade g-s">S</span><span class="sim-grade g-a">A</span>'
+         + '<span class="sim-grade g-bp">B＋</span><span class="sim-grade g-c">C</span>'
+         + '<span class="sim-grade g-e">E</span>';
+const LVS = ['s','a','b','c','d'].map((g) =>
+  `<span class="lv lv-${g}">${g.toUpperCase()}</span>`).join('');
+const DESC = {
+  now: '<b>いまの色。</b>紫1色の明るさ違いで5段。'
+     + '<span class="pm">S・A・B が近く、C・D も見分けが付かない。</span>',
+  c1: '<b>案1：紫の塗り階段。</b>いまの紫を残したまま、全段を塗りつぶしにして明るさの差を広げる。'
+    + '<br>・今の見た目からの<b>変化がいちばん小さい</b>'
+    + '<br>・上3段は白文字、下2段は濃い文字にして読めるようにしている'
+    + '<br>・<span class="pm">短所</span>：AI評価も塗りつぶしなので、'
+    + '<b>塗りバッジが2つ</b>になる（離れているので混ざらない想定）',
+  c2: '<b>案2：暖色5色の枠線。</b>赤→橙→黄土→灰→薄灰。'
+    + '<br>・AI評価は<b>緑〜青〜灰〜桃</b>なので、<b>系統ごと分かれる</b>'
+    + '<br>・枠線のままなので、塗りバッジはAI評価だけになる'
+    + '<br>・<span class="pm">短所</span>：赤が「危険・良くない」と読まれる可能性がある',
+  c3: '<b>案3：色は3群だけ。</b>S/A＝濃紫、B＝薄紫、C/D＝灰。5段の区別は<b>文字に任せる</b>。'
+    + '<br>・色数が減るぶん、<b>ひと目で「強い／普通／弱い」</b>が入る'
+    + '<br>・<span class="pm">短所</span>：SとA、CとDは<b>色では区別できない</b>。'
+    + '5段がほぼ均等に出る以上、情報を落としている'
+};
+function render(opt) {
+  const cls = (opt === 'now' ? 'opt' : 'opt ' + opt);
+  const stage = document.getElementById('stage');
+  stage.className = 'stage ' + cls;
+  stage.innerHTML = CARDS_HTML;
+  document.getElementById('sw').className = 'sw ' + cls;
+  document.getElementById('sw').innerHTML =
+    `<span class="ttl">レースレベル</span><span class="row">${LVS}</span>`
+    + `<span class="ttl">AI評価（変えない）</span><span class="row">${AI}</span>`;
+  document.getElementById('desc').innerHTML = DESC[opt];
+  document.querySelectorAll('.bar button').forEach((b) => {
+    b.classList.toggle('on', b.dataset.opt === opt);
+  });
+}
+document.querySelectorAll('.bar button').forEach((b) => {
+  b.addEventListener('click', () => render(b.dataset.opt));
+});
+render('c1');
+</script>
+</body></html>

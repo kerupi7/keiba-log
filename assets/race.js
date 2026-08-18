@@ -1552,8 +1552,10 @@ function aiGradeCell(p) {
 // 同じ語を2つ並べると読みにくいため。
 function levelBadge(p) {
   if (!p.level_grade) return '';
-  const t = 'レースの濃さ ' + p.level_grade + '（出走馬のその後180日・同じクラスの中での相対）';
-  return `<span class="lv lv-${p.level_grade.toLowerCase()}" title="${escapeHtml(t)}">${escapeHtml(p.level_grade)}</span>`;
+  const t = 'レースレベル ' + p.level_grade + '（出走馬のその後180日・同じクラスの中での相対）';
+  // 見出しの「Lv」を中に入れる（2026-08-18 ユーザー決定）。AI評価と同じ大きさの1文字が
+  // 2つ並ぶと、どちらが何か画面から分からなかったため。
+  return `<span class="lv lv-${p.level_grade.toLowerCase()}" title="${escapeHtml(t)}"><i>Lv</i>${escapeHtml(p.level_grade)}</span>`;
 }
 
 function pastRunRow(p) {
@@ -1908,7 +1910,7 @@ function runLine3(p, label) {
   const notes = runNoteTags(p.note_labels);
   const noteTitle = notes && p.note_text ? ` title="${escapeHtml(p.note_text)}"` : '';
   return `<div class="vrun${runBandClass(p)}"><span class="vtab">${escapeHtml(label)}</span><div class="vrb">
-    <div class="l1">${shutubaFinBox(p.finish)}<span class="dt">${shutubaMd(p.date)}</span><span class="tk">${escapeHtml(p.track || '')}</span>${classBadge(p.grade, p.race_name)}${levelBadge(p)}<span class="aicol">${aiGradeCell(p)}</span>${runNameSpan(p.race_name)}${runWakuText(p)}<span class="nm hd">${escapeHtml(p.runners ?? '—')}頭</span><span class="nm pp">${escapeHtml(p.popularity ?? '—')}人</span></div>
+    <div class="l1">${shutubaFinBox(p.finish)}${levelBadge(p)}<span class="dt">${shutubaMd(p.date)}</span><span class="tk">${escapeHtml(p.track || '')}</span>${classBadge(p.grade, p.race_name)}<span class="aicol">${aiGradeCell(p)}</span>${runNameSpan(p.race_name)}${runWakuText(p)}<span class="nm hd">${escapeHtml(p.runners ?? '—')}頭</span><span class="nm pp">${escapeHtml(p.popularity ?? '—')}人</span></div>
     <div class="l2"><span class="cd">${cond}</span>${rankSpan(p.time ?? '—', p.time_grade || '', timeTitle, 'tm')}${cornersHtml(p.corners)}${rankSpan(p.last_3f ?? '—', rankCls, agTitle)}<span class="jk">${escapeHtml(p.jockey ?? '—')}</span><span class="kg">${kg}</span><span class="bw">${bw}</span></div>
     <div class="l3"${noteTitle}>${scenarioHtml(p.scenario)}<span class="wn">${escapeHtml(p.winner || '')}</span><span class="mg">(${marginText(p)})</span>${notes}</div>
   </div></div>`;
