@@ -1543,6 +1543,19 @@ function aiGradeCell(p) {
   return `<span class="aix">${miss}</span>`;
 }
 
+// 過去走のレースレベル（handoff_2026-08-17_race-level.md 決定#2/#3）。
+// そのレースの出走馬が「その後180日で3着以内に何回入ったか」を、同じクラスの中で
+// 相対にして5段（S/A/B/C/D）にしたもの。AI評価（隣の列）が「予想の時点でどう見えたか」
+// なのに対し、こちらは「終わってみて中身が濃かったか」。プラス付きの段は作らない
+// （AI列が A+/B+/C+ を持つので、プラスの有無で見分ける）。
+// レベルが出ない走はここでは何も出さない。理由（地方／対象外／—）は隣のAI列が出しており、
+// 同じ語を2つ並べると読みにくいため。
+function levelBadge(p) {
+  if (!p.level_grade) return '';
+  const t = 'レースの濃さ ' + p.level_grade + '（出走馬のその後180日・同じクラスの中での相対）';
+  return `<span class="lv lv-${p.level_grade.toLowerCase()}" title="${escapeHtml(t)}">${escapeHtml(p.level_grade)}</span>`;
+}
+
 function pastRunRow(p) {
   const rankCls = { 1: 'f1', 2: 'f2', 3: 'f3' }[p.last3f_rank] || '';
   const agTitle = p.last3f_rank ? `このレースの上がり${p.last3f_rank}位` : '';
@@ -1560,7 +1573,7 @@ function pastRunRow(p) {
     <td class="l">${shutubaMd(p.date)}</td>
     <td class="l">${escapeHtml(p.track ?? '')}<span class="mut"> ${escapeHtml(p.surface ?? '')}${escapeHtml(p.distance ?? '')}${escapeHtml(p.condition ?? '')}</span></td>
     <td class="l pname">${escapeHtml(stripClassSuffix(p.race_name))}</td>
-    <td>${classBadge(p.grade, p.race_name)}</td>
+    <td>${classBadge(p.grade, p.race_name)}${levelBadge(p)}</td>
     <td class="aicol">${aiGradeCell(p)}</td>
     <td>${shutubaFinBox(p.finish)}</td>
     <td>${timeCell}</td>
@@ -1895,7 +1908,7 @@ function runLine3(p, label) {
   const notes = runNoteTags(p.note_labels);
   const noteTitle = notes && p.note_text ? ` title="${escapeHtml(p.note_text)}"` : '';
   return `<div class="vrun${runBandClass(p)}"><span class="vtab">${escapeHtml(label)}</span><div class="vrb">
-    <div class="l1">${shutubaFinBox(p.finish)}<span class="dt">${shutubaMd(p.date)}</span><span class="tk">${escapeHtml(p.track || '')}</span>${classBadge(p.grade, p.race_name)}<span class="aicol">${aiGradeCell(p)}</span>${runNameSpan(p.race_name)}${runWakuText(p)}<span class="nm hd">${escapeHtml(p.runners ?? '—')}頭</span><span class="nm pp">${escapeHtml(p.popularity ?? '—')}人</span></div>
+    <div class="l1">${shutubaFinBox(p.finish)}<span class="dt">${shutubaMd(p.date)}</span><span class="tk">${escapeHtml(p.track || '')}</span>${classBadge(p.grade, p.race_name)}${levelBadge(p)}<span class="aicol">${aiGradeCell(p)}</span>${runNameSpan(p.race_name)}${runWakuText(p)}<span class="nm hd">${escapeHtml(p.runners ?? '—')}頭</span><span class="nm pp">${escapeHtml(p.popularity ?? '—')}人</span></div>
     <div class="l2"><span class="cd">${cond}</span>${rankSpan(p.time ?? '—', p.time_grade || '', timeTitle, 'tm')}${cornersHtml(p.corners)}${rankSpan(p.last_3f ?? '—', rankCls, agTitle)}<span class="jk">${escapeHtml(p.jockey ?? '—')}</span><span class="kg">${kg}</span><span class="bw">${bw}</span></div>
     <div class="l3"${noteTitle}>${scenarioHtml(p.scenario)}<span class="wn">${escapeHtml(p.winner || '')}</span><span class="mg">(${marginText(p)})</span>${notes}</div>
   </div></div>`;
