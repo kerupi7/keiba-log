@@ -161,6 +161,17 @@ function upsetChipHtml(upset) {
   return `<span class="uchip ${cls}">${escapeHtml(upset.name)}</span>`;
 }
 
+// メンバーレベル（handoff_2026-08-19_member-level.md）。出走馬が走ってきたレースの濃さを
+// 同じクラス・同じ年齢条件の中の相対で S〜D にしたもの。詳細ページの見立てと同じ値。
+// 無いレース（新馬・2歳戦・旧データ）は空文字＝行の見た目が一切変わらない。
+// 荒れ度の札が塗りつぶしなので、こちらは枠線にして一目で別物と分かるようにする。
+function memberChipHtml(grade) {
+  if (!grade) return '';
+  return `<span class="mchip g-${escapeHtml(grade.toLowerCase())}" `
+    + `title="メンバーレベル ${escapeHtml(grade)}（出走馬が走ってきたレースの濃さ）">`
+    + `メンバー${escapeHtml(grade)}</span>`;
+}
+
 function renderRaceRow(race) {
   const rnClass = race.status === 'prediction' ? 'up' : 'fin';
   let metaSurface;
@@ -203,7 +214,7 @@ function renderRaceRow(race) {
     <a class="race pred" href="race.html?id=${race.race_id}">
       <div class="rn ${rnClass}">${race.race_number}R</div>
       <div class="rmain">
-        <div class="rname">${escapeHtml(race.race_name)}${badge}${upsetChipHtml(race.upset)}</div>
+        <div class="rname">${escapeHtml(race.race_name)}${badge}${memberChipHtml(race.member)}${upsetChipHtml(race.upset)}</div>
         <div class="rmeta">${meta}</div>
         ${pickHtml}
       </div>
