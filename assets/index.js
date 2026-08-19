@@ -172,6 +172,14 @@ function memberChipHtml(grade) {
     + `メンバー${escapeHtml(grade)}</span>`;
 }
 
+// 121-spec: WIN5の脚番号（1〜5）。番号ボックスの下に置く青い札。
+// 対象外のレース・win5.json が無かった過去分は空文字＝行の見た目が一切変わらない。
+function win5LabelHtml(win5) {
+  const leg = win5 && win5.leg;
+  if (!leg) return '';
+  return `<div class="w5" title="WIN5の${leg}レース目">WIN${leg}</div>`;
+}
+
 function renderRaceRow(race) {
   const rnClass = race.status === 'prediction' ? 'up' : 'fin';
   let metaSurface;
@@ -210,9 +218,14 @@ function renderRaceRow(race) {
     pickHtml = `<div class="rpick">${pillHtml('cancel', '中止')}</div>`;
   }
 
+  const w5 = win5LabelHtml(race.win5);
+  const rnHtml = w5
+    ? `<div class="rn ${rnClass} stack"><div class="num">${race.race_number}R</div>${w5}</div>`
+    : `<div class="rn ${rnClass}">${race.race_number}R</div>`;
+
   return `
     <a class="race pred" href="race.html?id=${race.race_id}">
-      <div class="rn ${rnClass}">${race.race_number}R</div>
+      ${rnHtml}
       <div class="rmain">
         <div class="rname">${escapeHtml(race.race_name)}${badge}${memberChipHtml(race.member)}${upsetChipHtml(race.upset)}</div>
         <div class="rmeta">${meta}</div>
