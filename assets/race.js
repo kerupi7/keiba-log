@@ -1412,9 +1412,13 @@ function renderHeader20(site) {
   `;
 }
 
-// 見立て。「買い目」タブの先頭に、荒れ度（110-spec）と3連単100万超え（103-spec）を出す。
+// 見立て。荒れ度（110-spec）と3連単100万超え（103-spec）を出す。
 // 3連単100万は荒れ度パネルの**中**（折りたたみの上）に入る（110-spec §2）ので、
 // 先に組み立てて renderUpset20 に渡す。荒れ度が無いレースは 3連単100万だけを単独で出す。
+//
+// 【2026-08-19・118-spec】置き場所を「買い目」タブの先頭から**「出馬表」タブの先頭**へ移した。
+// 荒れ度は買い方ではなくレース全体の傾向で、出馬表を見ている最中に必要な情報だったため。
+// 買い目タブからは消してある（同じものを2か所に出さない）。関数の中身は1文字も変えていない。
 function renderMitate20(site) {
   const p = site.prediction;
   const bp = renderBigPay(p.bigpay);
@@ -2468,10 +2472,10 @@ function buildRace20Html(site, oddsAll) {
       ${renderHeader20(site)}
       ${banner}
       <div class="tabbar" role="tablist">${bar}</div>
-      ${pane('shutuba', renderShutuba20(site))}
+      ${pane('shutuba', renderMitate20(site) + renderShutuba20(site))}
       ${pane('tenkai', renderOverview20(site))}
       ${site.course_entities ? pane('course', window.CourseTab.render(site)) : ''}
-      ${pane('kaime', renderMitate20(site) + renderBets20(site) + renderOddsMasterSection(site, oddsAll))}
+      ${pane('kaime', renderBets20(site) + renderOddsMasterSection(site, oddsAll))}
       ${pane('kaiko', renderVerification20(site))}
     </div>
   `;
