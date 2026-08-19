@@ -150,6 +150,17 @@ function renderLegend() {
   `;
 }
 
+// 荒れ度ラベル（119-spec）。manifest の upset は「選ばれたクラス1つ」だけ入っている。
+// 無いレース（旧データ）は空文字＝行の見た目が一切変わらない。
+// 色は詳細ページの荒れ度パネルと同じ3色（--up-*-t）。色だけに意味を持たせないよう文字も出す。
+const UPSET_CLS = { kata: 'u-kata', naka: 'u-naka', dai: 'u-dai' };
+
+function upsetChipHtml(upset) {
+  if (!upset || !upset.name) return '';
+  const cls = UPSET_CLS[upset.key] || 'u-naka';
+  return `<span class="uchip ${cls}">${escapeHtml(upset.name)}</span>`;
+}
+
 function renderRaceRow(race) {
   const rnClass = race.status === 'prediction' ? 'up' : 'fin';
   let metaSurface;
@@ -192,7 +203,7 @@ function renderRaceRow(race) {
     <a class="race pred" href="race.html?id=${race.race_id}">
       <div class="rn ${rnClass}">${race.race_number}R</div>
       <div class="rmain">
-        <div class="rname">${escapeHtml(race.race_name)}${badge}</div>
+        <div class="rname">${escapeHtml(race.race_name)}${badge}${upsetChipHtml(race.upset)}</div>
         <div class="rmeta">${meta}</div>
         ${pickHtml}
       </div>
