@@ -163,6 +163,39 @@ function renderGrades(grades) {
   `;
 }
 
+// 荒れ度ラベル別の平均配当（120-spec）。
+// 出しているのは「AIが大荒れと出したレースが、実際いくら付いたか」＝この予想の戦績。
+// 「実際に大荒れで決着したレース全体の平均」ではない（そちらは手元DBの話で桁が違う）。
+// upset を持たない古い manifest では何も描かない。
+const UPSET_ROW_CLS = { kata: 'u-kata', naka: 'u-naka', dai: 'u-dai' };
+
+function renderUpsetPayouts(upset) {
+  if (!upset || !(upset.rows || []).length) return '';
+  const rows = upset.rows.filter((r) => r.n > 0);
+  if (!rows.length) return '';
+  const types = upset.types || [];
+  const head = types.map((t) => `<th>${escapeHtml(t)}</th>`).join('');
+  const body = rows.map((r) => {
+    const cells = types.map((t) => {
+      const p = (r.payouts || {})[t];
+      if (!p) return '<td>—</td>';
+      return `<td><b>${fmtYen(p.avg)}</b><span class="med">中央 ${fmtYen(p.median)}</span></td>`;
+    }).join('');
+    return `<tr>
+      <td class="l"><span class="upl ${UPSET_ROW_CLS[r.key] || ''}">${escapeHtml(r.name)}</span>
+        <span class="note">${r.n}レース</span></td>${cells}</tr>`;
+  }).join('');
+  return `
+    <div class="eyebrow">荒れ度ラベル別の配当 <span class="note">100円買ったときに戻った額</span></div>
+    <table class="uptbl">
+      <thead><tr><th class="l">出したラベル</th>${head}</tr></thead>
+      <tbody>${body}</tbody>
+    </table>
+    <div class="scrollnote">この予想が各ラベルを出したレースの実績。「実際にそのクラスで決着したレース全体の平均」ではない。
+      3連単は1本の大穴で平均が跳ねるので、真ん中の額（中央）も併記している。</div>
+  `;
+}
+
 function renderPace(pace) {
   return `
     <div class="eyebrow">ペース予想の的中</div>
@@ -215,6 +248,7 @@ function renderStatsPage(stats) {
     ${renderMarkOdds(stats.marks.by_mark_odds)}
     ${renderGrades(stats.grades)}
     ${renderPace(stats.pace)}
+    ${renderUpsetPayouts(stats.upset)}
     ${renderCalibration(stats)}
     ${renderFoot(stats.n_final)}
   `;
