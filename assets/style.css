@@ -594,6 +594,27 @@ details.fold.om-fold>summary .cnt{color:#fff;opacity:.85;font-size:11px}
 
 /* 折りたたみ。中身は「その決着になったレースの1着・2着の顔ぶれ」であって
    ラベルの的中率ではない（89-spec §2.6）。見出しの言い回しでそこを外さないこと */
+/* 今回のレースのメンバーレベル（handoff_2026-08-19_member-level.md 決定#3）。
+   画面には既に2系統の記号がある。3つ目を「裸のS〜D」で足すと取り違えるので、
+   ラベル「メンバー」＋**紫の1色軸の枠線**という第3の見た目にする。
+     過去5走のレベル(.lv)      … 金/赤/青/灰の**淡い塗り**
+     AI評価(.sim-grade)        … 緑〜赤の**濃い塗り＋白文字**
+     メンバーレベル(.mlv .gr)  … 紫の**枠線＋同色の文字・地は白** ← 新設 */
+.race20 .mlv{display:flex;align-items:center;gap:8px;margin-top:10px;padding-top:9px;
+  border-top:1px solid var(--rule)}
+/* ラベルとバッジは折り返さない。説明文だけが2行になる（幅の狭い端末で「メンバ／ー」と
+   割れていたため 2026-08-19 に flex:none と nowrap を追加） */
+.race20 .mlv .lb{flex:none;white-space:nowrap;font-size:12px;font-weight:700;
+  color:var(--sub);letter-spacing:.02em}
+.race20 .mlv .gr{display:inline-block;flex:none;min-width:22px;padding:1px 5px;border-radius:3px;
+  background:#fff;border:1.5px solid currentColor;font-size:13px;font-weight:800;
+  line-height:1.45;text-align:center}
+.race20 .mlv .gr.g-s{color:#5B2A87}
+.race20 .mlv .gr.g-a{color:#8156B0}
+.race20 .mlv .gr.g-b{color:#A07FBE}
+.race20 .mlv .gr.g-c{color:#7E7589}
+.race20 .mlv .gr.g-d{color:#9A93A4}
+.race20 .mlv .nt{font-size:10.5px;color:var(--cap);line-height:1.5}
 .race20 .up2fold{margin-top:12px;border-top:1px solid var(--rule);padding-top:8px}
 .race20 .up2fold summary{font-size:11px;color:var(--link);cursor:pointer;list-style:none}
 .race20 .up2fold summary::-webkit-details-marker{display:none}

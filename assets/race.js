@@ -1422,7 +1422,30 @@ function renderHeader20(site) {
 function renderMitate20(site) {
   const p = site.prediction;
   const bp = renderBigPay(p.bigpay);
-  return renderUpset20(p.upset, bp) || bp;
+  const mb = renderMemberLevel(p);
+  return (renderUpset20(p.upset, bp) || bp) + mb;
+}
+
+// 今回のレースのメンバーレベル（handoff_2026-08-19_member-level.md 決定#3/#4・v2.1）。
+// 出走各馬の直近3走のレースレベルを「その走のクラスの中での順位」に直して平均し、
+// 同じクラス×年齢条件（2歳／3歳限定／古馬）の中で5等分した段。
+// 生の値のまま平均した初版は、オープンで「S＝格下から上がってきた顔ぶれ」を指していたので
+// 作り直した（2026-08-19 の関門）。2歳戦は歪みが残ったため publish 側で出していない。
+// 過去5走の Lv 列（.lv・そのレースが終わってみて濃かったか）とは**別の物差し**なので、
+// 「メンバー」とラベルを付け、色も別に用意する（.mlv）。
+// 新馬・2歳戦・段の基準が無いレースは publish がキーごと出さないので、ここでは何も描かない。
+function renderMemberLevel(p) {
+  if (!p || !p.member_grade) return '';
+  const t = 'メンバーレベル ' + p.member_grade
+    + '（出走' + (p.member_horses || 0) + '頭の直近3走を、その走のクラスの中での順位に'
+    + '直して平均。同じクラス・同じ年齢条件の中での相対）';
+  return `
+    <div class="mlv" title="${escapeHtml(t)}">
+      <span class="lb">メンバー</span>
+      <span class="gr g-${p.member_grade.toLowerCase()}">${escapeHtml(p.member_grade)}</span>
+      <span class="nt">出走馬が走ってきたレースの濃さ（同じクラス・年齢の中）</span>
+    </div>
+  `;
 }
 
 // ===== 97-spec: 出馬表（馬柱）=====
