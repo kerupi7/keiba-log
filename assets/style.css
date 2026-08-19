@@ -38,6 +38,13 @@
   --up-kata-t:#003E70;   /* 堅い   (10.9:1) 塗りと同じ値でよい */
   --up-naka-t:#35617F;   /* 中荒れ  (6.6:1) 塗り#6E8CA6は3.5:1で不足 */
   --up-dai-t:#63798A;    /* 大荒れ  (4.5:1) 塗り#B7C6D3は1.75:1で論外 */
+  /* 一覧の札（119-spec）だけは色相で分ける。89-spec の「濃淡だけ」を一覧に限って改めた。
+     理由: 小さい札3種を並べると濃淡の差が読み取れなかった（2026-08-19 ユーザー決定）。
+     緑（芝・的中）・赤（不的中・地雷）・橙（ダート）は別の意味で使用中なので避けている。
+     カッコ内は白抜き文字のコントラスト比（本文は4.5以上が必要） */
+  --up-chip-kata:#003E70;  /* 堅い   (10.9:1) */
+  --up-chip-naka:#5B4B9E;  /* 中荒れ  (7.0:1) 青紫 */
+  --up-chip-dai:#A32267;   /* 大荒れ  (7.1:1) 赤紫 */
 
   /* 3連単100万超え（103-spec）。荒れ度と同じく色相の濃淡だけ。緑・赤は使わない。
      人気番号の帯は 2026-08-06 に廃止したので --bp-band は削除した（--bp-off は別用途で生存中） */
@@ -299,10 +306,10 @@ div.roi{padding:12px 0 14px;border-bottom:1px solid var(--rule)}
 /* 119-spec: 一覧の行に出す荒れ度ラベル。レース名の行の右端に置く。
    詳細ページの荒れ度パネルと同じ3色（--up-*-t）を使い、色だけでなく文字でも区別できる。 */
 .rname .uchip{margin-left:auto;flex:none;font-size:11.5px;font-weight:700;line-height:1;
-  padding:4px 7px;border-radius:3px;border:1px solid currentColor;letter-spacing:.02em}
-.rname .uchip.u-kata{color:var(--up-kata-t)}
-.rname .uchip.u-naka{color:var(--up-naka-t)}
-.rname .uchip.u-dai{color:var(--up-dai-t)}
+  padding:4px 7px;border-radius:3px;color:#fff;letter-spacing:.02em}
+.rname .uchip.u-kata{background:var(--up-chip-kata)}
+.rname .uchip.u-naka{background:var(--up-chip-naka)}
+.rname .uchip.u-dai{background:var(--up-chip-dai)}
 .rmeta{font-size:13px;color:var(--cap);margin-top:3px;font-variant-numeric:tabular-nums}
 .rmeta .t{color:var(--turf);font-weight:700}
 .rmeta .d{color:var(--dirt);font-weight:700}

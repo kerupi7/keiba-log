@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>荒れ度ラベルの色分け案 — mock</title>
+<link rel="stylesheet" href="assets/style.css?v=20260819b">
+<style>
+  body{background:#fff}
+  .wrap{max-width:420px;margin:0 auto;padding:16px 14px 60px}
+  h2{font-size:15px;margin:26px 0 4px;padding-bottom:5px;border-bottom:2px solid #333}
+  .note{font-size:12px;color:#757575;margin:0 0 8px;line-height:1.6}
+  .list{margin-bottom:6px}
+
+  /* 案A: 塗り・同じ色相の濃淡だけ（89-spec の決まりを守る） */
+  .list.a .rname .uchip{border:0;color:#fff}
+  .list.a .rname .u-kata{background:#003E70}
+  .list.a .rname .u-naka{background:#35617F}
+  .list.a .rname .u-dai{background:#63798A}
+
+  /* 案B: 塗り・色相を変える（紺 → 青紫 → 赤紫）。緑・赤・橙は既に別の意味で使用中なので避けた */
+  .list.b .rname .uchip{border:0;color:#fff}
+  .list.b .rname .u-kata{background:#003E70}
+  .list.b .rname .u-naka{background:#5B4B9E}
+  .list.b .rname .u-dai{background:#A32267}
+
+  /* 案C: 薄い塗り＋濃い文字（サイトの他のチップと同じ作り）・色相は案Bと同じ */
+  .list.c .rname .uchip{border:0}
+  .list.c .rname .u-kata{background:#E4EDF5;color:#003E70}
+  .list.c .rname .u-naka{background:#ECE9F7;color:#4B3D89}
+  .list.c .rname .u-dai{background:#F9E6EF;color:#8E1D59}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div style="font-size:19px;font-weight:700">荒れ度ラベルの色分け案</div>
+  <p class="note">同じ4行を4通りで出しています。行の中身は本番と同じ作り。</p>
+
+  <h2>現状（公開中）</h2>
+  <p class="note">枠線＋文字色だけ。3つとも同系の青で、並ぶと差が読み取りにくい。</p>
+  <div class="list now" id="l0"></div>
+
+  <h2>案A　塗りにする（色は今のまま）</h2>
+  <p class="note">89-spec の「同じ色相の濃淡だけ・緑と赤は使わない」を守る。塗るぶん今より目立つが、3つの差は濃さだけ。</p>
+  <div class="list a" id="l1"></div>
+
+  <h2>案B　色相を変える（紺 → 青紫 → 赤紫）</h2>
+  <p class="note">一目で区別できる。ただし 89-spec の「濃淡だけ」を改めることになる。緑（芝・的中）・赤（不的中・地雷）・橙（ダート）は既に別の意味なので避けた。</p>
+  <div class="list b" id="l2"></div>
+
+  <h2>案C　薄い塗り＋濃い文字（色相は案Bと同じ）</h2>
+  <p class="note">サイトの他のチップ（過小・達成など）と同じ作り。案Bより主張が弱く、レース名を邪魔しない。</p>
+  <div class="list c" id="l3"></div>
+</div>
+
+<script>
+const ROWS = [
+  {r:1, name:'3歳未勝利',      g:null,   s:'ダ', d:1700, f:14, t:'10:00', k:'naka', kn:'中荒れ'},
+  {r:3, name:'3歳以上1勝クラス', g:null,   s:'芝', d:1800, f:14, t:'11:00', k:'kata', kn:'堅い'},
+  {r:7, name:'中京記念',        g:'GIII', s:'芝', d:1600, f:16, t:'15:35', k:'dai',  kn:'大荒れ'},
+  {r:9, name:'長久手特別',      g:null,   s:'芝', d:2000, f:12, t:'16:10', k:'naka', kn:'中荒れ'},
+];
+function rowHtml(x){
+  const surf = x.s === '芝'
+    ? `<span class="t">芝${x.d}m</span>` : `<span class="d">ダ${x.d}m</span>`;
+  const badge = x.g ? ` <span class="gbadge">${x.g}</span>` : '';
+  return `<a class="race pred" href="#">
+    <div class="rn fin">${x.r}R</div>
+    <div class="rmain">
+      <div class="rname">${x.name}${badge}<span class="uchip u-${x.k}">${x.kn}</span></div>
+      <div class="rmeta">${surf} ・ ${x.f}頭 ・ ${x.t}</div>
+      <div class="rpick"><span class="pill pass">見送り</span></div>
+    </div>
+  </a>`;
+}
+const html = ROWS.map(rowHtml).join('');
+for (const id of ['l0','l1','l2','l3']) document.getElementById(id).innerHTML = html;
+</script>
+</body>
+</html>
