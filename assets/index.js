@@ -158,7 +158,10 @@ const UPSET_CLS = { kata: 'u-kata', naka: 'u-naka', dai: 'u-dai' };
 function upsetChipHtml(upset) {
   if (!upset || !upset.name) return '';
   const cls = UPSET_CLS[upset.key] || 'u-naka';
-  return `<span class="uchip ${cls}">${escapeHtml(upset.name)}</span>`;
+  // percent は「そのクラスになる見込み」。無い旧データではラベル名だけ出す
+  const pct = upset.percent == null ? ''
+    : `<span class="pv">${upset.percent}<small>%</small></span>`;
+  return `<span class="uchip ${cls}">${escapeHtml(upset.name)}${pct}</span>`;
 }
 
 // メンバーレベル（handoff_2026-08-19_member-level.md）。出走馬が走ってきたレースの濃さを
