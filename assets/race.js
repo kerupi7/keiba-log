@@ -3372,8 +3372,10 @@ function renderOverview20(site) {
     `);
   }
 
-  // (d-2) 今日の馬場（当日バイアス）
-  // 上の帯がコースの過去平均なのに対し、こちらは「今日ここまでに終わったレース」だけを見る。
+  // (d-2) 今週の馬場（当日バイアス）
+  // 上の帯がコースの過去平均なのに対し、こちらは「今週この競馬場で終わったレース」を見る。
+  // 2026-08-19 に当日ぶんだけ→今週ぶん（前の開催日＋当日の先行レース）へ広げた。
+  // 日曜5Rの芝で3→10レースに増える。土曜は前の開催日が6日前なので当日ぶんだけのまま。
   // 2026-07-27の検証で、内外の偏りは実在する（同じ日の別の競馬場を予測子にすると
   // ゼロになる＝競馬場ごとの現象）ことを確認済み。ただし効果は採点に足す基準の1/5で、
   // 予想の当たり具合は作り方2通り・物差し2通りとも改善しなかったため点数には入れない。
@@ -3406,18 +3408,22 @@ function renderOverview20(site) {
       </tr>`;
 
     const biasNote = !hasBias ? '' :
-      `数字は3着内に入った割合（内＝1〜4枠 / 外＝5〜8枠）。前が残ったレース ${p.day_bias.front_wins || 0}`
+      `数字は今週このコースで3着内に入った割合（内＝1〜4枠 / 外＝5〜8枠）。前が残ったレース ${p.day_bias.front_wins || 0}`
       + ` / 差しが決まったレース ${p.day_bias.rear_wins || 0}`
       + (p.day_bias.pace_label ? `／ ペースは${escapeHtml(p.day_bias.pace_label)}` : '') + '。';
     const ttNote = !tt ? '' :
       `時計はこのレースと同じ馬場（芝／ダート）の勝ちタイムを、コース・クラス・馬場状態・時期で補正した残差です`
       + `（当日${tt.today_races}R＋前日${tt.prev_races}R）。マイナスほど速い馬場。`;
-    const scope = tt
-      ? `当日＋前日の${tt.n_races}レース`
-      : `ここまで${p.day_bias.n_races}レース`;
+    // 母数の言い方。内外は今週ぶん（前の開催日＋当日）、時計は当日＋直前の1開催日で
+    // 範囲が違うので、両方あるときは内外の母数を出して時計は下の注記で断る。
+    const scope = hasBias
+      ? (p.day_bias.prev_races
+        ? `今週${p.day_bias.n_races}レース（前日まで${p.day_bias.prev_races}＋本日${p.day_bias.today_races}）`
+        : `本日ここまで${p.day_bias.n_races}レース`)
+      : `当日＋前日の${tt.n_races}レース`;
 
     sections.push(`
-      <div class="biaslabel"><b>今日の馬場</b>
+      <div class="biaslabel"><b>今週の馬場</b>
         <span class="scope">${escapeHtml(scope)}</span></div>
       <table class="daybias"><tbody>${rows}${ttRow}</tbody></table>
       <div class="striplegend">${biasNote}${ttNote}
