@@ -15,6 +15,7 @@ function renderHeader(activePage) {
     <a class="logo" href="index.html">Ans<span class="g">.</span></a>
     <nav>
       <a href="index.html" class="${activePage === 'index' ? 'active' : ''}">TOP</a>
+      <a href="win5.html" class="${activePage === 'win5' ? 'active' : ''}">WIN5</a>
       <a href="stats.html" class="${activePage === 'stats' ? 'active' : ''}">成績</a>
       <a href="courses.html" class="${activePage === 'courses' ? 'active' : ''}">コースデータ</a>
     </nav>
