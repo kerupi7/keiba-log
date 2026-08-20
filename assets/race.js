@@ -555,6 +555,7 @@ const ABILITY_CLS = { '◎': 'm-hon', '○': 'm-tai', '▲': 'm-tan', '△': 'm-
 // 出馬表の印列（markBadge20）と同じ並べ方。能力印を持つ穴馬は穴を下に積む
 function foMark(h) {
   if (h.bet_mark === '地雷') return '<span class="mkb m-jir">地雷</span>';
+  if (h.keshi) return '<span class="mkb m-kes">消</span>';   // mark-2.7（markBadge20 と同順）
   const ana = isAna(h) ? '<span class="mkb m-ana sub">穴</span>' : '';
   if (h.ability_mark) {
     const badge = `<span class="mkb ${ABILITY_CLS[h.ability_mark] || ''}">${escapeHtml(h.ability_mark)}</span>`;
@@ -586,7 +587,7 @@ const FO_COLS = [
   { label: '着', cls: 'fo-c1 num', cell: (h) => (h.finish != null ? h.finish : escapeHtml(h.finish_text || '—')) },
   // 枠番の列は持たない。枠の情報は馬番ボックスの色（frameClass）で示す。
   { label: '馬番', cls: 'fo-c2 num', cell: (h) => umaBox(h.number, h.gate, 'sm') },
-  { label: '印', cls: 'fo-mk', has: (h) => !!h.ability_mark || h.bet_mark === '地雷' || isAna(h), cell: foMark },
+  { label: '印', cls: 'fo-mk', has: (h) => !!h.ability_mark || h.bet_mark === '地雷' || isAna(h) || !!h.keshi, cell: foMark },
   { label: '馬名', cls: 'fo-nm', cell: (h) => escapeHtml(h.name) },
   { label: '性齢', cls: 'num sub', has: (h) => !!h.sex_age, cell: (h) => escapeHtml(h.sex_age || '—') },
   { label: '斤量', cls: 'num sub', has: (h) => h.weight_carried != null,
@@ -1769,6 +1770,10 @@ function isAna(h) {
 // 馬名列を削ることになるので採らない。積んでも行の高さは変わらない（実測48pxで同じ）。
 function markBadge20(h) {
   if (h.bet_mark === '地雷') return '<span class="mkb m-jir">地雷</span>';
+  // 消し（mark-2.7）: 3着以内の見込みが3%未満。◎○▲△と同じ場所・同じ大きさで色だけ灰。
+  // 地雷の下に置くのは、地雷だけが理由の文（markWhyBlock）を持っていて情報量が多いため。
+  // 実データ166レースでは消しと地雷・穴・能力印が同時に立った例は1頭も無い。
+  if (h.keshi) return '<span class="mkb m-kes">消</span>';
   const ana = isAna(h) ? '<span class="mkb m-ana sub">穴</span>' : '';
   if (h.ability_mark) {
     const badge = `<span class="mkb ${ABILITY_CLS[h.ability_mark]}">${h.ability_mark}</span>`;
