@@ -306,21 +306,18 @@ function renderVerificationSection(site) {
     let markCell = '—';
     let cls = '';
     if (h) {
-      if (h.bet_mark === '地雷') {
+      // mark-2.5（2026-08-19）で地雷と能力印は同居する。両方あるときは「◎/地雷」の形で
+      // 並べ、能力印が当たっている側を優先して o 色にする（地雷を外したことは併記で分かる）。
+      const jirai = h.bet_mark === '地雷';
+      const base = v11
+        ? (h.ability_mark || '') + (h.role ? '/' + h.role : '')
+        : (h.ability_mark || '') + (h.bet_mark && h.bet_mark !== h.ability_mark && !jirai ? h.bet_mark : '');
+      if (base) {
+        markCell = base + (jirai ? '/地雷' : '');
+        cls = 'o';
+      } else if (jirai) {
         markCell = '地雷';
         cls = 'x';
-      } else if (v11) {
-        const marks = (h.ability_mark || '') + (h.role ? '/' + h.role : '');
-        if (marks) {
-          markCell = marks;
-          cls = 'o';
-        }
-      } else {
-        const marks = (h.ability_mark || '') + (h.bet_mark && h.bet_mark !== h.ability_mark && h.bet_mark !== '地雷' ? h.bet_mark : '');
-        if (marks) {
-          markCell = marks;
-          cls = 'o';
-        }
       }
     }
     const rowCls = idx === 0 ? ' class="top1"' : '';
@@ -552,15 +549,17 @@ const FO_TOP_N = 5;
 
 const ABILITY_CLS = { '◎': 'm-hon', '○': 'm-tai', '▲': 'm-tan', '△': 'm-oku' };
 
-// 出馬表の印列（markBadge20）と同じ並べ方。能力印を持つ穴馬は穴を下に積む
+// 出馬表の印列（markBadge20）と同じ並べ方。能力印を持つ地雷馬・穴馬は下に積む
 function foMark(h) {
-  if (h.bet_mark === '地雷') return '<span class="mkb m-jir">地雷</span>';
-  if (h.keshi) return '<span class="mkb m-kes">消</span>';   // mark-2.7（markBadge20 と同順）
-  const ana = isAna(h) ? '<span class="mkb m-ana sub">穴</span>' : '';
+  const sub = h.bet_mark === '地雷'
+    ? '<span class="mkb m-jir sub">地雷</span>'
+    : (isAna(h) ? '<span class="mkb m-ana sub">穴</span>' : '');
   if (h.ability_mark) {
     const badge = `<span class="mkb ${ABILITY_CLS[h.ability_mark] || ''}">${escapeHtml(h.ability_mark)}</span>`;
-    return ana ? `<span class="mkstack">${badge}${ana}</span>` : badge;
+    return sub ? `<span class="mkstack">${badge}${sub}</span>` : badge;
   }
+  if (h.bet_mark === '地雷') return '<span class="mkb m-jir">地雷</span>';
+  if (h.keshi) return '<span class="mkb m-kes">消</span>';   // mark-2.7（markBadge20 と同順）
   if (isAna(h)) return '<span class="mkb m-ana">穴</span>';
   return '';
 }
@@ -1764,21 +1763,24 @@ function isAna(h) {
   return h.bet_mark === '穴' || h.role === '穴';
 }
 
-// 印は 地雷 → 能力印(＋穴) → 穴 の順。地雷は能力印と排他（mark-2.4）だが、穴は
-// 「人気7位以下なのに走る」で能力印とは別基準なので同居する（2026-08-01 時点で42頭中10頭）。
-// 同居分は能力印の下に穴を小さく積んで併記する（mockup-38 案B）。横並びや列の拡幅は
-// 馬名列を削ることになるので採らない。積んでも行の高さは変わらない（実測48pxで同じ）。
+// 能力印があれば必ず上段に出す。下段には地雷か穴を小さく積む（mockup-38 案B）。
+// 2026-08-19（mark-2.5）で「地雷の馬には能力印を付けない」規則を廃止したので、地雷も
+// 穴と同じ扱いにする。地雷は人気6位以内・穴は7位以下で重ならないため、下段は必ず一方だけ。
+// 能力印が無いときだけ従来どおり 地雷 → 消 → 穴 の順で単独表示する。
+// 横並びや列の拡幅は馬名列を削ることになるので採らない。積んでも行の高さは変わらない
+// （実測48pxで同じ）。
 function markBadge20(h) {
-  if (h.bet_mark === '地雷') return '<span class="mkb m-jir">地雷</span>';
-  // 消し（mark-2.7）: 3着以内の見込みが3%未満。◎○▲△と同じ場所・同じ大きさで色だけ灰。
-  // 地雷の下に置くのは、地雷だけが理由の文（markWhyBlock）を持っていて情報量が多いため。
-  // 実データ166レースでは消しと地雷・穴・能力印が同時に立った例は1頭も無い。
-  if (h.keshi) return '<span class="mkb m-kes">消</span>';
-  const ana = isAna(h) ? '<span class="mkb m-ana sub">穴</span>' : '';
+  const sub = h.bet_mark === '地雷'
+    ? '<span class="mkb m-jir sub">地雷</span>'
+    : (isAna(h) ? '<span class="mkb m-ana sub">穴</span>' : '');
   if (h.ability_mark) {
     const badge = `<span class="mkb ${ABILITY_CLS[h.ability_mark]}">${h.ability_mark}</span>`;
-    return ana ? `<span class="mkstack">${badge}${ana}</span>` : badge;
+    return sub ? `<span class="mkstack">${badge}${sub}</span>` : badge;
   }
+  if (h.bet_mark === '地雷') return '<span class="mkb m-jir">地雷</span>';
+  // 消し（mark-2.7）: 3着以内の見込みが3%未満。◎○▲△と同じ場所・同じ大きさで色だけ灰。
+  // 実データ166レースでは消しと地雷・穴・能力印が同時に立った例は1頭も無い。
+  if (h.keshi) return '<span class="mkb m-kes">消</span>';
   if (isAna(h)) return '<span class="mkb m-ana">穴</span>';
   return '';
 }
