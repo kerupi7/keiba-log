@@ -1530,13 +1530,49 @@ function shutubaMd(dateText) {
 }
 
 // 過去5走の1行。上がりが1〜3位／タイムが基準より速い走を金・銀・銅にする（97-spec §3）。
-function courseRecordTable(h) {
+// ============================================================
+// 126-spec §3: コース適性の「今回のコース」に横帯を付ける
+//
+// rows は7行あり、**2行目が「今回の場×面×距離」**。並びを決めているのは publish 側
+// （keiba_shutuba_columns.py）で、ここは位置で決め打ちしている（126-spec §9-1 の未決）。
+//   0 全場{面} / 1 {今回の場}{面} / 2 {今回の場}{面}{今回の距離}
+//   3 全場{面}{距離-200} / 4 全場{面}{今回の距離} / 5 全場{面}{距離+200} / 6 重不{面}
+//
+// **これは当たりやすさの印ではない。**条件適性は予想の材料としては無効と実測済み
+// （64-condition-dimension-findings.md・7,493レース102,404頭で20通り以上の作り直しが全滅）。
+// 帯は「今日と同じ条件を走った実績がどこにあるか」を目で引くためのもので、
+// 採点・印・買い目には一切干渉しない。
+// ============================================================
+const CR_TODAY_ROW = 2;
+
+// 足切り（126-spec §3.2 条件A）: その行で「3着以内が1回以上」かつ「2走以上」。
+// レース内の他の馬は見ない（順位ではないので、他が弱くても通らない）。
+//
+// **「2走以上」は母数1走の実績で帯が出るのを防ぐための代理指標。**守りたいのは
+// 「1回走って1回来ただけの馬」と「何度も来ている馬」を同じ扱いにしないこと。
+// 衝突したら（2走以上に絞ると帯がほとんど出ないと分かったら）2走以上のほうを捨てる。
+// 実測（公開中215レース・2,979頭）: 該当11.8%・1レース平均1.63頭・帯が0本のレース38.6%。
+// 落とした案は「出走1回以上」（1R平均5.22頭）と「3着内1回以上」（同2.84頭・最大11頭）で、
+// どちらも付きすぎ（後者は1戦1勝の馬と5戦3勝の馬が同じ扱いになる）。
+function aptPass(h) {
+  const r = (((h || {}).course_record || {}).rows || [])[CR_TODAY_ROW];
+  if (!r || !r.counts) return false;
+  const c = r.counts;
+  return (c[0] + c[1] + c[2]) >= 1 && (c[0] + c[1] + c[2] + c[3]) >= 2;
+}
+
+// bare=true のときは見出し（.crh）と注記（.crn）を出さず表だけ返す。
+// 札と新聞の面では見出しを呼び出し側が出すため（126-spec §5）。
+function courseRecordTable(h, bare) {
   const cr = h.course_record;
   if (!cr || !cr.rows || !cr.rows.length) return '';
-  const rows = cr.rows.map((r) => {
-    const zero = r.counts.reduce((a, b) => a + b, 0) === 0 ? ' class="zero"' : '';
+  const band = aptPass(h);
+  const rows = cr.rows.map((r, i) => {
+    const cls = [];
+    if (r.counts.reduce((a, b) => a + b, 0) === 0) cls.push('zero');
+    if (band && i === CR_TODAY_ROW) cls.push('aptx');
     const tds = r.counts.map((v) => `<td class="${v === 0 ? 'c0' : ''}">${v}</td>`).join('');
-    return `<tr${zero}><td class="l">${escapeHtml(r.label)}</td>${tds}</tr>`;
+    return `<tr${cls.length ? ` class="${cls.join(' ')}"` : ''}><td class="l">${escapeHtml(r.label)}</td>${tds}</tr>`;
   }).join('');
   let note = '';
   if (!cr.central_starts) {
@@ -1544,14 +1580,23 @@ function courseRecordTable(h) {
   } else if (!cr.rows.some((r) => r.counts.reduce((a, b) => a + b, 0))) {
     note = `<div class="crn">この条件での出走なし（中央 ${cr.central_starts}走・地方 ${cr.local_starts}走）</div>`;
   }
+  const table = `<table class="crt">
+      <thead><tr><th class="l">条件</th><th>1着</th><th>2着</th><th>3着</th><th>着外</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+  if (bare) return table;
   return `
     <div class="crh">コース適性（中央のみ・全走）</div>
     ${note}
-    <table class="crt">
-      <thead><tr><th class="l">条件</th><th>1着</th><th>2着</th><th>3着</th><th>着外</th></tr></thead>
-      <tbody>${rows}</tbody>
-    </table>
+    ${table}
   `;
+}
+
+// 126-spec §5: 札と新聞の面に出すコース適性。見出しは自分で出す（表は bare で取る）
+function courseBlock(h) {
+  const t = courseRecordTable(h, true);
+  if (!t) return '';
+  return `<div class="acrow"><div class="lb">コース適性（中央のみ・全走）</div>${t}</div>`;
 }
 
 // 過去5走は表で出す（2026-07-28 ユーザー確認）。列は
@@ -2160,6 +2205,7 @@ function mmBar() {
     <span class="mm-seg">
       <button type="button" data-view="mark" class="on">印を付ける</button>
       <button type="button" data-view="runs">戦績5走</button>
+      <button type="button" data-view="paper">新聞</button>
     </span>
     <span class="mm-sum"></span>
     <span class="mm-save">この端末に自動保存</span>
@@ -2284,13 +2330,19 @@ function setupMyMarks(site) {
     mmOpenSheet(b.dataset.my);
   }, true);
 
+  // 126-spec §2.1: 「印を付ける／戦績5走／新聞」の3つ。既定は「印を付ける」のまま
   root.addEventListener('click', (e) => {
     const b = e.target.closest('[data-view]');
     if (!b) return;
-    const toMark = b.dataset.view === 'mark';
+    const v = b.dataset.view;
     root.querySelectorAll('[data-view]').forEach((x) => x.classList.toggle('on', x === b));
-    root.querySelector('.shlist').classList.toggle('off', toMark);
-    root.querySelector('.mm-list').classList.toggle('off', !toMark);
+    root.querySelector('.shlist').classList.toggle('off', v !== 'runs');
+    root.querySelector('.mm-list').classList.toggle('off', v !== 'mark');
+    const paper = root.querySelector('.shpaper');
+    if (paper) {
+      paper.classList.toggle('off', v !== 'paper');
+      if (v === 'paper') npSyncRail(root);   // 隠れている間は測れないので、出した直後に測る
+    }
   });
 
   mmPaint();
@@ -2317,10 +2369,102 @@ function shutubaCard(h) {
         <span class="od${oddsHotClass(h.odds)}">${h.odds != null ? h.odds.toFixed(1) : '—'}<i>倍</i><i>${h.popularity ?? '—'}人</i></span>
       </div>
       <div class="asub">${bw}${rot}${itemDots(h)}${paceFitChip(h)}</div>
+      ${courseBlock(h)}
       ${mmInline(h)}
       ${runsBlock(h)}
     </div>
   </article>`;
+}
+
+// ============================================================
+// 126-spec §4: 新聞（案A 馬柱）。1頭＝1本の柱を横に並べる。
+//
+// 札（.acard）が「1頭を縦に読む」ためのものなのに対し、こちらは
+// **隣の馬と同じ行を横に見比べる**ためのもの。106-spec §9 の未決#2がこれ。
+// 過去走の12項目は札と同じで、1つも減らしていない（並べ替えただけ）。
+// ============================================================
+
+// 過去走1走（横6行・12項目）。札の runLine3（横3行）を柱の幅154pxに組み替えたもの
+function npRun(p) {
+  const cond = `${surfShort(p.surface)}${escapeHtml(p.distance || '')}${goingShort(p.condition)}`;
+  const bw = p.body_weight != null ? String(p.body_weight) : '—';
+  const kg = p.weight != null ? escapeHtml(String(p.weight)) : '—';
+  const rankCls = { 1: 'f1', 2: 'f2', 3: 'f3' }[p.last3f_rank] || '';
+  const agTitle = p.last3f_rank ? `このレースの上がり${p.last3f_rank}位` : '上がり3F';
+  const timeTitle = p.time_grade
+    ? `基準比 ${p.time_resid > 0 ? '+' : ''}${p.time_resid}秒（当日の馬場差を補正後）・着差${marginText(p)}秒`
+    : (p.time_note || '');
+  // 回顧メモのタグは1本だけ。柱の幅154pxに2本入れると勝ち馬が押し出される。
+  // 全部は馬名ポップアップの回顧メモに出ている（126-spec §4.4）
+  const notes = runNoteTags((p.note_labels || []).slice(0, 1));
+  const noteTitle = notes && p.note_text ? ` title="${escapeHtml(p.note_text)}"` : '';
+  return `<div class="nprun${runBandClass(p)}">
+    <div class="r1">${shutubaFinBox(p.finish)}${levelBadge(p)}<span class="dt">${shutubaMd(p.date)}</span><span class="tk">${escapeHtml(p.track || '')}</span>${classBadge(p.grade, p.race_name)}</div>
+    <div class="r2"${noteTitle}>${runNameSpan(p.race_name)}${notes}</div>
+    <div class="r3"><span class="cd">${cond}</span><span class="nm hd">${escapeHtml(p.runners ?? '—')}頭</span>${runWakuText(p)}<span class="nm pp">${escapeHtml(p.popularity ?? '—')}人</span></div>
+    <div class="r4">${rankSpan(p.time ?? '—', p.time_grade || '', timeTitle, 'tm')}${cornersHtml(p.corners)}${rankSpan(p.last_3f ?? '—', rankCls, agTitle)}</div>
+    <div class="r5"><span class="jk">${escapeHtml(p.jockey ?? '—')}</span><span class="kg">${kg}</span><span class="bw">${bw}</span></div>
+    <div class="r6">${scenarioHtml(p.scenario)}<span class="mg">(${marginText(p)})</span><span class="wn">${escapeHtml(p.winner || '')}</span></div>
+  </div>`;
+}
+
+// 5枠ぶん。休養マス・空マスの入れ方は札と同じ（buildRunCells をそのまま使う）
+function npRunsCells(h) {
+  return buildRunCells(h.past_runs).map((c) => {
+    if (c.kind === 'run') return npRun(c.run);
+    if (c.kind === 'rest') {
+      return `<div class="nprun rest">${escapeHtml(restLabel(c.days))}<br>（${c.days}日）</div>`;
+    }
+    return '<div class="nprun empty"></div>';
+  }).join('');
+}
+
+// 柱1本。押しどころは頭（.nphead）で、押すと馬名ポップアップが開く（札の柱と同じ）
+function npCol(h) {
+  if (h.scratched) {
+    return `<article class="npcol scratched" data-h="${h.number}">
+      <div class="nphead"><div class="l1">${umaBox(h.number, h.gate, 'sm')}</div>
+        <div class="nm">${escapeHtml(h.name)}</div>
+        <div class="l3">（取消）</div></div>
+    </article>`;
+  }
+  const kg = h.weight_carried != null ? String(h.weight_carried).replace(/\.0$/, '') : '—';
+  return `<article class="npcol${h.ability_mark ? ' pred' : ''}" data-h="${h.number}">
+    <button type="button" class="nphead" data-pop="${h.number}">
+      <div class="l1">${markBadge20(h)}${umaBox(h.number, h.gate, 'sm')}</div>
+      <div class="nm">${escapeHtml(h.name)}</div>
+      <div class="l3">${escapeHtml(h.sex_age ?? '')}<span class="kg">${kg}</span>${escapeHtml(h.jockey && h.jockey !== 'N/A' ? h.jockey : '—')}${legBar(h.running_style)}</div>
+      <div class="l4"><span class="tot">${fmtNum(dispScore(h), 1)}<i class="grade ${gradeClass(dispGrade(h))}">${gradeDisp(dispGrade(h))}</i></span><span class="od${oddsHotClass(h.odds)}">${h.odds != null ? h.odds.toFixed(1) : '—'}<i>倍</i><i>${h.popularity ?? '—'}人</i></span></div>
+    </button>
+    <div class="npcr">${courseRecordTable(h, true)}</div>
+    ${npRunsCells(h)}
+  </article>`;
+}
+
+// 目盛り列（左端）。柱を横に送っても「いま何走前を見ているか」が残るよう貼り付ける
+function npRail() {
+  const labels = ['前走', '2走前', '3走前', '4走前', '5走前']
+    .map((t) => `<div class="rlb">${t}</div>`).join('');
+  return `<div class="nprail"><div class="rhd"></div><div class="rcr">適性</div>${labels}</div>`;
+}
+
+// 目盛り列の「適性」の高さは、実際に描かれたマスに合わせる（設計値を書かない）。
+// offsetHeight を使う。getBoundingClientRect はページを拡大表示していると拡大後の値を
+// 返すので、それを height に入れるともう一度拡大がかかる。
+// 隠れているあいだは高さが0で測れないため、表示に切り替えた直後にもう一度呼ぶ（§4.1）
+function npSyncRail(root) {
+  const wrap = root.querySelector('.shpaper');
+  if (!wrap) return;
+  const cell = wrap.querySelector('.npcr');
+  const rail = wrap.querySelector('.nprail .rcr');
+  if (!cell || !rail) return;
+  const h = cell.offsetHeight;
+  if (h > 0) rail.style.height = `${h}px`;
+}
+
+function renderPaper(site) {
+  const cols = [...site.horses].sort((a, b) => a.number - b.number).map(npCol).join('');
+  return `<div class="shpaper off"><div class="npgrid">${npRail()}${cols}</div></div>`;
 }
 
 function renderShutuba20(site) {
@@ -2336,6 +2480,7 @@ function renderShutuba20(site) {
     <div class="shctl"></div>
     ${mmBar()}
     <div class="shlist off">${cards}</div>
+    ${renderPaper(site)}
     ${mmList(site)}
     ${popups}
   `;
@@ -3848,7 +3993,8 @@ function tpRefresh() {
   const total = (site.horses || []).filter((h) => !h.scratched && h.topping).length;
   // 106-spec §6.1: 表組みをやめたので拾う先は tr.hrow ではなく札（.acard）。
   // data-h は同じ属性名を札にも付けてあるので、読み方は変えていない。
-  root.querySelectorAll('.acard').forEach((card) => {
+  // 126-spec §6.1: 新聞の柱（.npcol）にも同じ data-h を付けてあるので、まとめて拾う。
+  root.querySelectorAll('.acard, .npcol').forEach((card) => {
     for (let i = 1; i <= 10; i += 1) card.classList.remove(`tp${i}`);
     const s = steps[Number(card.dataset.h)];
     if (s) card.classList.add(`tp${s}`);

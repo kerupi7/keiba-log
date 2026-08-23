@@ -2705,3 +2705,128 @@ body.noscroll{position:fixed;width:100%;overflow:hidden}
 .w5box .pk .od{font-variant-numeric:tabular-nums;color:var(--cap);width:48px;
   text-align:right;flex:none}
 .w5box .none{font-size:11px;color:var(--cap);padding:1px 0 3px 4px}
+
+/* ════════════════════════════════════════════════════════════════
+   126-spec — 出馬表に「新聞」を足し、コース適性を面に出す（shutuba-4.0）
+   ════════════════════════════════════════════════════════════════ */
+
+/* ── §3 コース適性の帯 ──────────────────────────────────────
+   名前に注意: --tp1〜--tp10（トッピングの10段色・上の 2226行）と .top（3箇所）が
+   すでにある。同じ名前で書くと既存の色に上書きされるので apt 接頭辞で分けている。
+   色は紺だけ。緑は的中とプラスの回収率、赤は不的中と地雷で使用中なので、
+   そこに良し悪しの意味を足すと読み手が取り違える（89-spec の荒れ度と同じ判断）。 */
+:root{ --aptc:#003E70; --aptbg:#DDE8F2; }
+.race20 table.crt tr.aptx td,.race20 table.crt tr.aptx th{
+  background:var(--aptbg);border-top:1px solid var(--aptc);border-bottom:1px solid var(--aptc)}
+.race20 table.crt tr.aptx td{font-weight:700;color:var(--text)}
+.race20 table.crt tr.aptx td.l{box-shadow:inset var(--aptw,7px) 0 0 var(--aptc);color:var(--navy)}
+/* 0だけの行を薄くする .zero より帯を優先する（条件Aは3着内1回以上なので実際には
+   起きないが、条件を緩めたときのために残す） */
+.race20 table.crt tr.zero.aptx td{color:var(--text)}
+
+/* ── §5 札の中のコース適性 ────────────────────────────────── */
+.race20 .acrow{padding:4px 6px 0}
+.race20 .acrow .lb{font-size:9.5px;color:var(--cap)}
+.race20 .acrow table.crt{margin:2px 0 0;max-width:none}
+
+/* ── §4 新聞（馬柱・縦組み） ──────────────────────────────── */
+.race20 .shpaper{overflow-x:auto;overflow-y:hidden;margin-top:6px;
+  -webkit-overflow-scrolling:touch}
+.race20 .npgrid{display:flex;align-items:flex-start;font-size:11px;width:max-content;
+  --nph-head:96px;--nph-run:92px}
+/* 左端の目盛り列。柱を横に送っても残るよう貼り付ける */
+.race20 .nprail{position:sticky;left:0;z-index:3;flex:none;width:26px;
+  background:var(--sub-bg);border-right:1px solid var(--rule-strong)}
+.race20 .nprail .rhd{height:var(--nph-head);border-bottom:1px solid var(--rule-strong)}
+.race20 .nprail .rcr{border-bottom:1px solid var(--rule);display:flex;align-items:center;
+  justify-content:center;writing-mode:vertical-rl;font-size:10px;color:var(--navy);
+  letter-spacing:.04em;background:var(--sub-bg)}
+.race20 .nprail .rlb{height:var(--nph-run);border-bottom:1px solid var(--rule);
+  display:flex;align-items:center;justify-content:center;writing-mode:vertical-rl;
+  font-size:10px;color:var(--cap);letter-spacing:.04em}
+/* 柱1本。幅154pxは375pxの画面で2本以上が同時に見えるための代理指標で、
+   過去走の行がはみ出すなら幅のほうを広げる（126-spec §4.1） */
+.race20 .npcol{flex:none;width:154px;border-right:1px solid var(--rule)}
+.race20 .npcol.pred{background:var(--pred-row)}
+.race20 .npcol.scratched{opacity:.5}
+/* 柱の頭。ボタンなので見た目を素に戻してから組む */
+.race20 .npcol .nphead{display:flex;flex-direction:column;gap:2px;width:100%;
+  height:var(--nph-head);padding:5px 5px 4px;border:0;border-bottom:1px solid var(--rule-strong);
+  background:transparent;font:inherit;color:inherit;text-align:left;cursor:pointer;
+  -webkit-appearance:none;appearance:none}
+.race20 .npcol .nphead .l1{display:flex;align-items:center;gap:3px}
+.race20 .npcol .nphead .nm{font-size:12.5px;font-weight:700;line-height:1.25;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.race20 .npcol .nphead .l3{display:flex;align-items:center;gap:4px;color:var(--sub);font-size:10px}
+.race20 .npcol .nphead .l4{display:flex;align-items:baseline;justify-content:space-between;
+  margin-top:auto}
+.race20 .npcol .nphead .tot{font-weight:700;font-size:12px;font-variant-numeric:tabular-nums}
+.race20 .npcol .nphead .od{font-size:12px;font-weight:700;font-variant-numeric:tabular-nums}
+.race20 .npcol .nphead .od.hot{color:var(--live)}
+.race20 .npcol .nphead .od i{font-style:normal;font-weight:400;font-size:9.5px;
+  color:var(--cap);margin-left:2px}
+/* コース適性のマス（柱の頭と過去走のあいだ） */
+.race20 .npcol .npcr{padding:4px 5px;border-bottom:1px solid var(--rule);overflow:hidden;
+  background:var(--sub-bg)}
+.race20 .npcol .npcr table.crt{font-size:9px;width:100%;--aptw:5px}
+.race20 .npcol .npcr table.crt th,.race20 .npcol .npcr table.crt td{padding:0 1px}
+/* 過去走1走（横6行・12項目）。高さを固定しないと柱の背がそろわず、
+   隣の馬と同じ走を横に見比べられなくなる */
+.race20 .npcol .nprun{height:var(--nph-run);padding:3px 5px;line-height:1.35;
+  border-bottom:1px solid var(--rule);overflow:hidden}
+.race20 .npcol .nprun.pb-win{background:#FFF9E8;box-shadow:inset 3px 0 0 #C9A227}
+.race20 .npcol .nprun.pb-close{background:#F2F7FC;box-shadow:inset 3px 0 0 #6E8CA6}
+.race20 .npcol .nprun.rest{display:flex;align-items:center;justify-content:center;
+  text-align:center;color:var(--cap);background:var(--sub-bg2)}
+.race20 .npcol .nprun.empty{background:repeating-linear-gradient(45deg,#fff,#fff 5px,#FAFAFA 5px,#FAFAFA 10px)}
+.race20 .npcol .nprun>div{display:flex;align-items:center;gap:3px;white-space:nowrap}
+.race20 .npcol .nprun .r2,.race20 .npcol .nprun .r6{color:var(--sub)}
+.race20 .npcol .nprun .r3{gap:2px;font-size:10.5px}
+.race20 .npcol .nprun .rnm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.race20 .npcol .nprun .jk{max-width:4.4em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* 勝ち馬は行の最後で余りを受け取る＝入らない分は勝ち馬の名前が「…」で縮む。
+   展開と着差は縮ませない（縮むと意味が読めなくなる） */
+.race20 .npcol .nprun .wn{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;
+  white-space:nowrap;color:var(--cap)}
+.race20 .npcol .nprun .r6>.sc,.race20 .npcol .nprun .r6>.mg{flex:none}
+/* 回顧メモのタグはレース名の行の右端。名前のほうが縮む */
+.race20 .npcol .nprun .r2>.nt{flex:none;max-width:8.4em;overflow:hidden;text-overflow:ellipsis}
+.race20 .npcol .nprun .val{font-variant-numeric:tabular-nums}
+.race20 .npcol .nprun .fb{margin-right:1px}
+/* §6.1 トッピング: 札は柱（.aspine）を塗るが、新聞は柱の頭を塗る */
+.race20 .npcol.tp1 .nphead{background:var(--tp1)}
+.race20 .npcol.tp2 .nphead{background:var(--tp2)}
+.race20 .npcol.tp3 .nphead{background:var(--tp3)}
+.race20 .npcol.tp4 .nphead{background:var(--tp4)}
+.race20 .npcol.tp5 .nphead{background:var(--tp5)}
+.race20 .npcol.tp6 .nphead{background:var(--tp6)}
+.race20 .npcol.tp7 .nphead{background:var(--tp7)}
+.race20 .npcol.tp8 .nphead{background:var(--tp8)}
+.race20 .npcol.tp9 .nphead{background:var(--tp9)}
+.race20 .npcol.tp10 .nphead{background:var(--tp10)}
+
+/* ===== WIN5 配当逆算アキネーター（125-spec T5）。.ak-* は買い目アキネーターと共用 ===== */
+.w5p{margin:22px 0 0;border-top:1px solid var(--rule-strong);padding-top:16px}
+.w5p .w5ph{font-size:17px;font-weight:700;margin:0 0 4px}
+.w5p .w5plead{font-size:11.5px;color:var(--cap);line-height:1.7;margin:0 0 12px}
+.w5p .w5plead b{color:var(--text)}
+.w5p .ak-opt .obody .od{font-variant-numeric:tabular-nums}
+.w5p-res{border:1px solid var(--rule);border-radius:10px;overflow:hidden;margin-bottom:12px}
+.w5p-res .rh{display:flex;flex-direction:column;align-items:flex-start;gap:3px;text-align:left;
+  padding:11px 13px;border-bottom:1px solid var(--rule);background:var(--sub-bg)}
+.w5p-res .rh .rt{font-size:14px;font-weight:700}
+.w5p-res .rh .rn{font-size:11px;color:var(--cap);font-variant-numeric:tabular-nums}
+.w5p-res .legs{display:flex;flex-direction:column}
+.w5p-res .lg{display:flex;align-items:center;gap:10px;padding:9px 13px;border-bottom:1px solid var(--rule)}
+.w5p-res .lg:last-child{border-bottom:none}
+.w5p-res .lg .no{flex:none;font-size:10px;font-weight:700;color:#fff;background:var(--win5);
+  border-radius:4px;padding:3px 6px;letter-spacing:.03em}
+.w5p-res .lg .bl{flex:1;font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
+.w5p-res .lg .hd{flex:none;font-size:13px;font-weight:700;color:var(--cta);font-variant-numeric:tabular-nums}
+.w5p-res .lg .hd small{font-size:10.5px;color:var(--cap);font-weight:400;margin-left:2px}
+.w5p-res .rf{padding:10px 13px;background:var(--sub-bg);border-top:1px solid var(--rule);
+  font-size:11.5px;color:var(--sub);line-height:1.7}
+.w5p-res .rf b{color:var(--text);font-variant-numeric:tabular-nums}
+.w5p-res .rf .warn{color:var(--live);font-weight:700}
+.w5p .w5pfoot{font-size:11px;color:var(--cap);line-height:1.75;margin:12px 0 0}
+.w5p .w5pagain{margin-top:12px}
