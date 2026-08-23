@@ -2749,12 +2749,21 @@ body.noscroll{position:fixed;width:100%;overflow:hidden}
 .race20 .npcol{flex:none;width:154px;border-right:1px solid var(--rule)}
 .race20 .npcol.pred{background:var(--pred-row)}
 .race20 .npcol.scratched{opacity:.5}
-/* 柱の頭。ボタンなので見た目を素に戻してから組む */
-.race20 .npcol .nphead{display:flex;flex-direction:column;gap:2px;width:100%;
-  height:var(--nph-head);padding:5px 5px 4px;border:0;border-bottom:1px solid var(--rule-strong);
-  background:transparent;font:inherit;color:inherit;text-align:left;cursor:pointer;
-  -webkit-appearance:none;appearance:none}
+/* 柱の頭。押せるものが2つある（自分の印のマスと馬名）ので、頭ごとボタンにはできない */
+.race20 .npcol .nphead{display:flex;flex-direction:column;gap:2px;
+  height:var(--nph-head);padding:5px 5px 4px;border-bottom:1px solid var(--rule-strong)}
 .race20 .npcol .nphead .l1{display:flex;align-items:center;gap:3px}
+/* 自分の印のマス。一覧（.mm-list）の32×26pxは柱の頭を圧迫するので、ここだけ小さくする。
+   26pxは指で押せる下限の代理指標で、押しにくいと分かったらマスのほうを大きくして
+   柱の頭（96px）を伸ばす */
+.race20 .npcol .nphead .mm-my{width:24px;border-right:0;background:transparent}
+.race20 .npcol .nphead .mm-my .v{width:22px;height:22px;font-size:13px}
+/* 馬名だけがボタン（押すと馬名ポップアップ）。見た目は素に戻してから組む */
+.race20 .npcol .nphead .npname{display:flex;align-items:flex-start;gap:2px;width:100%;
+  padding:0;border:0;background:transparent;font:inherit;color:inherit;text-align:left;
+  cursor:pointer;-webkit-appearance:none;appearance:none}
+.race20 .npcol .nphead .npname .apop{font-style:normal;font-size:9px;color:var(--cap);flex:none;
+  margin-top:2px}
 .race20 .npcol .nphead .nm{font-size:12.5px;font-weight:700;line-height:1.25;
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .race20 .npcol .nphead .l3{display:flex;align-items:center;gap:4px;color:var(--sub);font-size:10px}

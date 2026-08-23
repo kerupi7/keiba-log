@@ -2429,13 +2429,16 @@ function npCol(h) {
     </article>`;
   }
   const kg = h.weight_carried != null ? String(h.weight_carried).replace(/\.0$/, '') : '—';
+  // 柱の頭。押せるものが2つある（自分の印のマスと馬名）ので、頭ごとボタンにはできない。
+  // 印は1マス（押すと下からシートが上がる）にした。札の7ボタン（mmInline）は
+  // 幅154pxだと1つ20pxを切って押しにくいため、一覧と同じシート方式にしている。
   return `<article class="npcol${h.ability_mark ? ' pred' : ''}" data-h="${h.number}">
-    <button type="button" class="nphead" data-pop="${h.number}">
-      <div class="l1">${markBadge20(h)}${umaBox(h.number, h.gate, 'sm')}</div>
-      <div class="nm">${escapeHtml(h.name)}</div>
+    <div class="nphead">
+      <div class="l1">${mmCell(h)}${markBadge20(h)}${umaBox(h.number, h.gate, 'sm')}</div>
+      <button type="button" class="npname" data-pop="${h.number}"><span class="nm">${escapeHtml(h.name)}</span><i class="apop">▸</i></button>
       <div class="l3">${escapeHtml(h.sex_age ?? '')}<span class="kg">${kg}</span>${escapeHtml(h.jockey && h.jockey !== 'N/A' ? h.jockey : '—')}${legBar(h.running_style)}</div>
       <div class="l4"><span class="tot">${fmtNum(dispScore(h), 1)}<i class="grade ${gradeClass(dispGrade(h))}">${gradeDisp(dispGrade(h))}</i></span><span class="od${oddsHotClass(h.odds)}">${h.odds != null ? h.odds.toFixed(1) : '—'}<i>倍</i><i>${h.popularity ?? '—'}人</i></span></div>
-    </button>
+    </div>
     <div class="npcr">${courseRecordTable(h, true)}</div>
     ${npRunsCells(h)}
   </article>`;
