@@ -1557,26 +1557,20 @@ function courseRecordTable(h) {
 // 過去5走は表で出す（2026-07-28 ユーザー確認）。列は
 // 日付／場・条件／レース／クラス／着／タイム／上り／頭数・人気／差／通過／騎手・斤量。
 // 幅の狭い画面では横スクロールになるので、その旨を下に出す。
-// 過去走のAI評価（handoff_2026-08-17_prev-grade.md 決定#2/#5/#7）。
-// その走を「今の計算（w-2.0）」で採点し直した評価。保存済みの評価は閾値表が3世代
-// 混ざっていて、旧A+の複勝率44.2%が現行B+の42.0%と同じ意味になるため使えない。
-// 出すのは評価の文字だけ。採点順位（ai_rank）はデータには持たせるが表示しない。
-// 引けない走は理由で表記を分ける（地方／対象外＝障害／それ以外は「—」）。
-function aiGradeCell(p) {
-  if (p.ai_grade) {
-    return `<span class="sim-grade ${gradeClass(p.ai_grade)}">${escapeHtml(gradeDisp(p.ai_grade))}</span>`;
-  }
-  const miss = { local: '地方', jump: '対象外' }[p.ai_miss] || '—';
-  return `<span class="aix">${miss}</span>`;
-}
+// 2026-08-23：過去走のAI評価は画面から全部消した（ユーザー指示）。
+// 戦績5走の札に続いて、馬名ポップアップの全戦績の表からもAI列を外し、
+// 描画していた aiGradeCell も消した（呼び出し元が無くなったため）。
+// 経緯と元の仕様は handoff_2026-08-17_prev-grade.md にある。
+// データ側の ai_grade / ai_miss / ai_rank は生成も配信も続いており、消したのは表示だけ。
+// なお出馬表の「今回のレースのAI評価」（race.js の dispGrade）は別物で、残っている。
 
 // 過去走のレースレベル（handoff_2026-08-17_race-level.md 決定#2/#3）。
 // そのレースの出走馬が「その後180日で3着以内に何回入ったか」を、同じクラスの中で
 // 相対にして5段（S/A/B/C/D）にしたもの。AI評価（隣の列）が「予想の時点でどう見えたか」
 // なのに対し、こちらは「終わってみて中身が濃かったか」。プラス付きの段は作らない
 // （AI列が A+/B+/C+ を持つので、プラスの有無で見分ける）。
-// レベルが出ない走はここでは何も出さない。理由（地方／対象外／—）は隣のAI列が出しており、
-// 同じ語を2つ並べると読みにくいため。
+// レベルが出ない走はここでは何も出さない（2026-08-23にAI列を消したので、
+// 理由を出していた隣の列も無くなった。理由は表には出ない）。
 function levelBadge(p) {
   if (!p.level_grade) return '';
   const t = 'レースレベル ' + p.level_grade + '（出走馬のその後180日・同じクラスの中での相対）';
@@ -1607,7 +1601,6 @@ function pastRunRow(p) {
     <td class="l">${escapeHtml(p.track ?? '')}<span class="mut"> ${escapeHtml(p.surface ?? '')}${escapeHtml(p.distance ?? '')}${escapeHtml(p.condition ?? '')}</span></td>
     <td class="l pname">${escapeHtml(stripClassSuffix(p.race_name))}</td>
     <td>${classBadge(p.grade, p.race_name)}${levelBadge(p)}</td>
-    <td class="aicol">${aiGradeCell(p)}</td>
     <td>${shutubaFinBox(p.finish)}</td>
     <td>${timeCell}</td>
     <td>${medalSpan(p.last_3f ?? '—', p.last_3f ? rankCls : '', agTitle)}</td>
@@ -1626,7 +1619,7 @@ function pastRunsTable(h) {
     <div class="ptwrap">
       <table class="pastt">
         <thead><tr><th class="l">日付</th><th class="l">場・条件</th><th class="l">レース</th>
-          <th>クラス</th><th>AI</th><th>着</th><th>タイム</th><th>上り</th><th>枠・馬番</th><th>頭数・人気</th><th>差</th>
+          <th>クラス</th><th>着</th><th>タイム</th><th>上り</th><th>枠・馬番</th><th>頭数・人気</th><th>差</th>
           <th class="l">通過</th><th class="l">騎手・斤量</th></tr></thead>
         <tbody>${runs.map(pastRunRow).join('')}</tbody>
       </table>
@@ -1642,7 +1635,7 @@ function careerRunsBlock(h) {
     <div class="ptwrap">
       <table class="pastt">
         <thead><tr><th class="l">日付</th><th class="l">場・条件</th><th class="l">レース</th>
-          <th>クラス</th><th>AI</th><th>着</th><th>タイム</th><th>上り</th><th>枠・馬番</th><th>頭数・人気</th><th>差</th>
+          <th>クラス</th><th>着</th><th>タイム</th><th>上り</th><th>枠・馬番</th><th>頭数・人気</th><th>差</th>
           <th class="l">通過</th><th class="l">騎手・斤量</th></tr></thead>
         <tbody>${rest.map(pastRunRow).join('')}</tbody>
       </table>
@@ -2034,7 +2027,7 @@ function popupRunsTable(h) {
     <div class="ptwrap">
       <table class="pastt">
         <thead><tr><th class="l">日付</th><th class="l">場・条件</th><th class="l">レース</th>
-          <th>クラス</th><th>AI</th><th>着</th><th>タイム</th><th>上り</th><th>枠・馬番</th><th>頭数・人気</th><th>差</th>
+          <th>クラス</th><th>着</th><th>タイム</th><th>上り</th><th>枠・馬番</th><th>頭数・人気</th><th>差</th>
           <th class="l">通過</th><th class="l">騎手・斤量</th></tr></thead>
         <tbody>${runs.map(pastRunRow).join('')}</tbody>
       </table>

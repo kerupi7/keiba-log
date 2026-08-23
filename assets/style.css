@@ -1742,11 +1742,9 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
 /* パネル内は折り返す指定にしているが、馬柱の表だけは1行に保つ（横スクロールで見る） */
 .race20 table.pastt td,.race20 table.pastt th,.race20 table.pastt span{white-space:nowrap}
 
-/* 過去走のAI評価（12列目・handoff_2026-08-17_prev-grade.md 決定#7）。
-   バッジの色は出馬表の評価（.sim-grade.g-*）をそのまま流用し、表の行高に収まるよう
-   一段小さくする。評価が引けない走は同じ幅の淡い文字（地方／対象外／—）で埋める。 */
-.race20 table.pastt td.aicol{white-space:nowrap}
-.race20 table.pastt .sim-grade{min-width:20px;font-size:10px;padding:0 3px}
+/* 2026-08-23：全戦績の表からAI列を消した（ユーザー指示）。ここには
+   td.aicol / .sim-grade / .aix の指定があったが、出す要素が無くなったので削除した。
+   元の仕様は handoff_2026-08-17_prev-grade.md 決定#7。 */
 /* 2026-08-23：全戦績の表に足した枠・馬番の列。札（.vrun .l3 .nmg）と同じ見た目に揃え、
    「枠」の字を薄く・馬番を地の色にして、数字2つのどちらが馬番か目で分かるようにする。
    枠番は公開済み215本・31,122走のうち24.3%（7,554走）で取れていない。その走は
@@ -1754,7 +1752,6 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
 .race20 table.pastt td.wkcol{white-space:nowrap}
 .race20 table.pastt .wkn{color:var(--sub)}
 .race20 table.pastt .wkn b{font-weight:700;color:var(--text)}
-.race20 table.pastt .aix{display:inline-block;min-width:22px;font-size:10px;color:var(--cap)}
 
 /* 過去走のレースレベル（handoff_2026-08-17_race-level.md 決定#3）。
    AI評価と見分けるため4つを重ねる（2026-08-18 ユーザー決定・モックで比較のうえ）:
@@ -1764,7 +1761,10 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
      ④色の系統  レベルは 金→赤→青→灰／AI評価は 緑→青→灰→桃
    旧版は紫1色の明るさ違いで、S・A・B が画面上でほぼ同じに見えていた。
    ①〜④のうち④だけは衝突が残る（実測: 1着×Lv S が1.6%・Lv B×AI B＋/B が5.4%）。
-   形と見出しで区別できるので許容している。 */
+   形と見出しで区別できるので許容している。
+   2026-08-23：AI評価の側を画面から消したため、この見分けは実際には要らなくなった。
+   Lvの見た目は変えていない（AI評価を戻す判断があったときに元の設計が読めるよう、
+   ①〜④の記録はそのまま残す）。 */
 .race20 .lv{display:inline-block;min-width:14px;padding:0 4px;border-radius:3px;
   border:1px solid currentColor;font-size:9px;font-weight:800;line-height:13px;text-align:center;
   vertical-align:middle;background:#fff;margin-left:3px}
