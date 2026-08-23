@@ -326,14 +326,35 @@ div.roi{padding:12px 0 14px;border-bottom:1px solid var(--rule)}
 .upl.u-kata{background:var(--up-chip-kata)}
 .upl.u-naka{background:var(--up-chip-naka)}
 .upl.u-dai{background:var(--up-chip-dai)}
-.rname .uchip{margin-left:auto;flex:none;font-size:11.5px;font-weight:700;line-height:1;
-  padding:4px 7px;border-radius:3px;color:#fff;letter-spacing:.02em}
-/* メンバーレベルの札。荒れ度の札の左に並ぶ。両方に margin-left:auto を付けてあるので、
-   片方しか無い行でも右端に付く。塗りつぶしの荒れ度と区別するため枠線＋同色の文字にする
-   （詳細ページの .mlv .gr と同じ紫の1色軸） */
-.rname .mchip{margin-left:auto;flex:none;font-size:11.5px;font-weight:700;line-height:1;
+/* 2026-08-23：メンバー札と荒れ度札を1つの箱（.rtags）にまとめ、横位置を全行で揃えた。
+
+   直す前：2つの札それぞれに margin-left:auto を付けていたため、flexbox が余白を2つの
+   auto に等分し、レース名が長い行ほどメンバー札が右へズレていた
+   （実測 1440px幅：3歳未勝利 631px / 3歳以上1勝クラス 666px ＝ 35px のズレ）。
+
+   直し方は2つ。
+   1) 箱ごと margin-left:auto で右端へ寄せる。auto が1つになるので等分が起きない。
+      札が2つで1個の折り返し単位になるため、幅が足りない画面でも2つ一緒に次の行へ落ちる
+      （札だけ auto を消す案は、モバイル375pxで荒れ度札が2行目の左端に落ちて崩れた）
+   2) 札の幅を固定する（メンバー70px・荒れ度82px）。荒れ度は「堅い」2文字と
+      「中荒れ・大荒れ」3文字で幅が違い、固定しないとメンバー札の左端が12px ズレる
+
+   82px は「中荒れ88%」（manifest 215件の最長）の実測81.4pxを丸めた代理指標。
+   守りたいのは左端が揃っていること。将来3桁%が出たら札が横に伸びてその行だけズレるので、
+   そのときは幅のほうを広げる（幅の数字ではなく、揃っている側を守る）。
+   70px は「メンバーS」の実測69.8px。S〜D で0.7pxの差が出るので固定して消している */
+.rname .rtags{margin-left:auto;flex:none;display:flex;align-items:center;gap:6px}
+.rname .uchip{flex:none;font-size:11.5px;font-weight:700;line-height:1;
+  padding:4px 7px;border-radius:3px;color:#fff;letter-spacing:.02em;
+  min-width:82px;text-align:center}
+/* メンバーレベルの札。荒れ度の札の左に並ぶ。塗りつぶしの荒れ度と区別するため
+   枠線＋同色の文字にする（詳細ページの .mlv .gr と同じ紫の1色軸） */
+.rname .mchip{flex:none;font-size:11.5px;font-weight:700;line-height:1;
   padding:3px 6px;border-radius:3px;background:#fff;border:1.5px solid currentColor;
-  letter-spacing:.02em;white-space:nowrap}
+  letter-spacing:.02em;white-space:nowrap;min-width:70px;text-align:center}
+/* 荒れ度が無い行（旧データ）でもメンバー札の左端が動かないよう、荒れ度の幅ぶんだけ空ける。
+   88px＝荒れ度82px＋箱の gap 6px。現データでは0件だが、出た瞬間に1行だけズレるのを防ぐ */
+.rname .rtags .mchip:last-child{margin-right:88px}
 .rname .mchip.g-s{color:#5B2A87}
 .rname .mchip.g-a{color:#8156B0}
 .rname .mchip.g-b{color:#A07FBE}
@@ -1726,6 +1747,13 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
    一段小さくする。評価が引けない走は同じ幅の淡い文字（地方／対象外／—）で埋める。 */
 .race20 table.pastt td.aicol{white-space:nowrap}
 .race20 table.pastt .sim-grade{min-width:20px;font-size:10px;padding:0 3px}
+/* 2026-08-23：全戦績の表に足した枠・馬番の列。札（.vrun .l3 .nmg）と同じ見た目に揃え、
+   「枠」の字を薄く・馬番を地の色にして、数字2つのどちらが馬番か目で分かるようにする。
+   枠番は公開済み215本・31,122走のうち24.3%（7,554走）で取れていない。その走は
+   runWakuText がそのまま「13番」だけ出す（表の側で分岐は足していない） */
+.race20 table.pastt td.wkcol{white-space:nowrap}
+.race20 table.pastt .wkn{color:var(--sub)}
+.race20 table.pastt .wkn b{font-weight:700;color:var(--text)}
 .race20 table.pastt .aix{display:inline-block;min-width:22px;font-size:10px;color:var(--cap)}
 
 /* 過去走のレースレベル（handoff_2026-08-17_race-level.md 決定#3）。
@@ -1752,14 +1780,10 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
    子の必要幅の合計346pxに対して60px足りない。区切り線の余白17pxは、
    同じ幅をレース名に回したほうが読める（2026-08-18 実測して差し替え）。 */
 .race20 .aruns .l1 .lv{margin:0 4px}
-.race20 .aruns .l1 .aicol::before{content:"AI";font-size:8px;font-weight:700;color:var(--cap);
-  margin-right:2px;vertical-align:middle}
 
-/* 戦績5走の札（.aruns）にも同じ評価を出す。表は馬名ポップアップの中だけなので、
-   ここに出さないと主表示から評価が見えない。位置はクラスの右＝表の12列目と同じ順。 */
-.race20 .aruns .l1 .aicol{margin:0 2px 0 1px}
-.race20 .aruns .l1 .sim-grade{min-width:18px;font-size:9.5px;padding:0 3px;vertical-align:middle}
-.race20 .aruns .l1 .aix{display:inline-block;font-size:9.5px;color:var(--cap)}
+/* 2026-08-23：戦績5走の札から過去走のAI評価を外した（ユーザー指示）。
+   .aicol / .aix / .sim-grade を .aruns .l1 に出す指定はここにあったが、
+   出す要素が無くなったので削除した。評価は馬名ポップアップの全戦績の表に残っている。 */
 
 /* コース適性（実績） */
 .race20 .crh{font-size:11px;font-weight:700;color:var(--navy);margin:9px 0 3px}
@@ -1913,8 +1937,8 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
    （2026-08-18: iPhone縦で「未勝利」が「未勝禾」・「Lv B」が「Lv 」になっていた）。
    足りない分はレース名（.rnm）だけが引き受け、入らなければ「…」で丸める。 */
 .race20 .vrun .l1 .fb,.race20 .vrun .l1 .lv,.race20 .vrun .l1 .cb,
-.race20 .vrun .l1 .aicol,.race20 .vrun .l1 .dt,.race20 .vrun .l1 .tk{flex:none}
-/* 1行目だけ列間を1px詰める。9か所あるので9px戻る（レース名1文字ぶん） */
+.race20 .vrun .l1 .dt,.race20 .vrun .l1 .tk{flex:none}
+/* 1行目だけ列間を1px詰める。AI評価を外した2026-08-23以降は8か所 */
 .race20 .vrun .vrb>.l1{gap:3px}
 /* 狭い画面では1行目を折り返す。iPhone縦（親幅286px）に対して必要幅は345pxあり、
    59px足りない。折り返さないとレース名が幅0になって消える（「湯浜特別」のような

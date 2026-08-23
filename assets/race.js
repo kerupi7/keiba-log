@@ -1585,6 +1585,10 @@ function levelBadge(p) {
   return `<span class="lv lv-${p.level_grade.toLowerCase()}" title="${escapeHtml(t)}"><i>Lv</i>${escapeHtml(p.level_grade)}</span>`;
 }
 
+// 2026-08-23：枠・馬番の列を「頭数・人気」の左に足した（ユーザー指示）。
+// 並びは札の3行目（.nmg）と同じ順にした。115-spec が「頭数の隣に置くと
+// 『16頭 7枠13番』と続けて読めて、大外だったのかが分かる」と決めた順に合わせている。
+// 表示は札と同じ runWakuText を使い回す（枠が取れない走は「13番」だけ出る）。
 function pastRunRow(p) {
   const rankCls = { 1: 'f1', 2: 'f2', 3: 'f3' }[p.last3f_rank] || '';
   const agTitle = p.last3f_rank ? `このレースの上がり${p.last3f_rank}位` : '';
@@ -1607,6 +1611,7 @@ function pastRunRow(p) {
     <td>${shutubaFinBox(p.finish)}</td>
     <td>${timeCell}</td>
     <td>${medalSpan(p.last_3f ?? '—', p.last_3f ? rankCls : '', agTitle)}</td>
+    <td class="wkcol">${runWakuText(p)}</td>
     <td>${escapeHtml(p.runners ?? '—')}頭${escapeHtml(p.popularity ?? '—')}人</td>
     <td>${margin}</td>
     <td class="l">${escapeHtml(p.corners ?? '')}</td>
@@ -1621,7 +1626,7 @@ function pastRunsTable(h) {
     <div class="ptwrap">
       <table class="pastt">
         <thead><tr><th class="l">日付</th><th class="l">場・条件</th><th class="l">レース</th>
-          <th>クラス</th><th>AI</th><th>着</th><th>タイム</th><th>上り</th><th>頭数・人気</th><th>差</th>
+          <th>クラス</th><th>AI</th><th>着</th><th>タイム</th><th>上り</th><th>枠・馬番</th><th>頭数・人気</th><th>差</th>
           <th class="l">通過</th><th class="l">騎手・斤量</th></tr></thead>
         <tbody>${runs.map(pastRunRow).join('')}</tbody>
       </table>
@@ -1637,7 +1642,7 @@ function careerRunsBlock(h) {
     <div class="ptwrap">
       <table class="pastt">
         <thead><tr><th class="l">日付</th><th class="l">場・条件</th><th class="l">レース</th>
-          <th>クラス</th><th>AI</th><th>着</th><th>タイム</th><th>上り</th><th>頭数・人気</th><th>差</th>
+          <th>クラス</th><th>AI</th><th>着</th><th>タイム</th><th>上り</th><th>枠・馬番</th><th>頭数・人気</th><th>差</th>
           <th class="l">通過</th><th class="l">騎手・斤量</th></tr></thead>
         <tbody>${rest.map(pastRunRow).join('')}</tbody>
       </table>
@@ -1932,6 +1937,9 @@ function runWakuText(p) {
   return `<span class="wkn" title="${w}枠${n}番">${w}枠<b>${n}</b>番</span>`;
 }
 
+// 2026-08-23：1行目から過去走のAI評価（`<span class="aicol">`）を外した（ユーザー指示）。
+// 評価そのものは馬名ポップアップの全戦績の表（popupRunsTable）に残っている。
+// データ側の ai_grade / ai_miss は生成も配信も続けており、消したのは戦績欄の表示だけ。
 function runLine3(p, label) {
   const cond = `${escapeHtml(surfShort(p.surface))}${escapeHtml(p.distance || '')}${escapeHtml(goingShort(p.condition))}`;
   const bw = p.body_weight != null ? String(p.body_weight) : '—';
@@ -1944,7 +1952,7 @@ function runLine3(p, label) {
   const notes = runNoteTags(p.note_labels);
   const noteTitle = notes && p.note_text ? ` title="${escapeHtml(p.note_text)}"` : '';
   return `<div class="vrun${runBandClass(p)}"><span class="vtab">${escapeHtml(label)}</span><div class="vrb">
-    <div class="l1">${shutubaFinBox(p.finish)}${levelBadge(p)}<span class="dt">${shutubaMd(p.date)}</span><span class="tk">${escapeHtml(p.track || '')}</span>${classBadge(p.grade, p.race_name)}<span class="aicol">${aiGradeCell(p)}</span>${runNameSpan(p.race_name)}</div>
+    <div class="l1">${shutubaFinBox(p.finish)}${levelBadge(p)}<span class="dt">${shutubaMd(p.date)}</span><span class="tk">${escapeHtml(p.track || '')}</span>${classBadge(p.grade, p.race_name)}${runNameSpan(p.race_name)}</div>
     <div class="l2"><span class="cd">${cond}</span>${rankSpan(p.time ?? '—', p.time_grade || '', timeTitle, 'tm')}${cornersHtml(p.corners)}${rankSpan(p.last_3f ?? '—', rankCls, agTitle)}<span class="jk">${escapeHtml(p.jockey ?? '—')}</span><span class="kg">${kg}</span><span class="bw">${bw}</span></div>
     <div class="l3"${noteTitle}>${scenarioHtml(p.scenario)}<span class="wn">${escapeHtml(p.winner || '')}</span><span class="mg">(${marginText(p)})</span>${notes}<span class="nmg">${runWakuText(p)}<span class="nm hd">${escapeHtml(p.runners ?? '—')}頭</span><span class="nm pp">${escapeHtml(p.popularity ?? '—')}人</span></span></div>
   </div></div>`;
@@ -2026,7 +2034,7 @@ function popupRunsTable(h) {
     <div class="ptwrap">
       <table class="pastt">
         <thead><tr><th class="l">日付</th><th class="l">場・条件</th><th class="l">レース</th>
-          <th>クラス</th><th>AI</th><th>着</th><th>タイム</th><th>上り</th><th>頭数・人気</th><th>差</th>
+          <th>クラス</th><th>AI</th><th>着</th><th>タイム</th><th>上り</th><th>枠・馬番</th><th>頭数・人気</th><th>差</th>
           <th class="l">通過</th><th class="l">騎手・斤量</th></tr></thead>
         <tbody>${runs.map(pastRunRow).join('')}</tbody>
       </table>

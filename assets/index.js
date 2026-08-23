@@ -193,6 +193,11 @@ function renderRaceRow(race) {
   }
   const meta = `${metaSurface} ・ ${race.field_size}頭 ・ ${race.post_time || '—'}`;
   const badge = race.grade ? ` <span class="gbadge">${escapeHtml(race.grade)}</span>` : '';
+  // メンバー札と荒れ度札は1つの箱に入れて右端へ寄せる。別々に右寄せすると横位置が
+  // 行ごとにズレ、幅が足りない画面では片方だけ次の行へ落ちる（style.css の .rtags 参照）
+  const mchip = memberChipHtml(race.member);
+  const uchip = upsetChipHtml(race.upset);
+  const tags = (mchip || uchip) ? `<span class="rtags">${mchip}${uchip}</span>` : '';
 
   let pickHtml = '';
   if (race.status === 'prediction') {
@@ -230,7 +235,7 @@ function renderRaceRow(race) {
     <a class="race pred" href="race.html?id=${race.race_id}">
       ${rnHtml}
       <div class="rmain">
-        <div class="rname">${escapeHtml(race.race_name)}${badge}${memberChipHtml(race.member)}${upsetChipHtml(race.upset)}</div>
+        <div class="rname">${escapeHtml(race.race_name)}${badge}${tags}</div>
         <div class="rmeta">${meta}</div>
         ${pickHtml}
       </div>
