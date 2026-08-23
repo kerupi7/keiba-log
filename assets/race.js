@@ -2384,6 +2384,24 @@ function shutubaCard(h) {
 // 過去走の12項目は札と同じで、1つも減らしていない（並べ替えただけ）。
 // ============================================================
 
+// 126-spec §4.4b: 柱では**条件戦の名前を出さない**（2026-08-24 決定）。
+// 「3歳未勝利」「4歳以上1勝クラス」は1行目のクラスバッジと同じことを書いており、
+// 過去5走13,244走のうち **71.7%** がこれに当たる。そのぶんの幅を回顧メモのタグに回す
+// （タグは31.0%が幅に入らず切れていた。「スローの流れを後方から」は11字ある）。
+// 名前とタグの取り合いが実際に起きるのは 983走＝7.4% だけで、そこは名前のほうが縮む。
+//
+// **「障害4歳以上未勝利」は消さない。**クラスバッジは「未勝利」までしか出さないので、
+// 消すと障害戦だったことが読めなくなる（過去5走に16走）。
+// 地方のクラス（C1 など）も同じ理由で残す。
+// 札（.vrun）と馬名ポップアップは今までどおり全部出す。
+const RUN_CLASS_ONLY = /^[0-9０-９]*歳?(以上)?(新馬|未勝利|[123]勝クラス)$/;
+
+function npRunName(raceName) {
+  const n = stripClassSuffix(raceName);
+  if (!n || RUN_CLASS_ONLY.test(n)) return '';
+  return `<span class="rnm" title="${escapeHtml(n)}">${escapeHtml(n)}</span>`;
+}
+
 // 過去走1走（横6行・12項目）。札の runLine3（横3行）を柱の幅154pxに組み替えたもの
 function npRun(p) {
   const cond = `${surfShort(p.surface)}${escapeHtml(p.distance || '')}${goingShort(p.condition)}`;
@@ -2400,7 +2418,7 @@ function npRun(p) {
   const noteTitle = notes && p.note_text ? ` title="${escapeHtml(p.note_text)}"` : '';
   return `<div class="nprun${runBandClass(p)}">
     <div class="r1">${shutubaFinBox(p.finish)}${levelBadge(p)}<span class="dt">${shutubaMd(p.date)}</span><span class="tk">${escapeHtml(p.track || '')}</span>${classBadge(p.grade, p.race_name)}</div>
-    <div class="r2"${noteTitle}>${runNameSpan(p.race_name)}${notes}</div>
+    <div class="r2"${noteTitle}>${npRunName(p.race_name)}${notes}</div>
     <div class="r3"><span class="cd">${cond}</span><span class="nm hd">${escapeHtml(p.runners ?? '—')}頭</span>${runWakuText(p)}<span class="nm pp">${escapeHtml(p.popularity ?? '—')}人</span></div>
     <div class="r4">${rankSpan(p.time ?? '—', p.time_grade || '', timeTitle, 'tm')}${cornersHtml(p.corners)}${rankSpan(p.last_3f ?? '—', rankCls, agTitle)}</div>
     <div class="r5"><span class="jk">${escapeHtml(p.jockey ?? '—')}</span><span class="kg">${kg}</span><span class="bw">${bw}</span></div>

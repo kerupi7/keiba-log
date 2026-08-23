@@ -2798,8 +2798,11 @@ body.noscroll{position:fixed;width:100%;overflow:hidden}
 .race20 .npcol .nprun .wn{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;
   white-space:nowrap;color:var(--cap)}
 .race20 .npcol .nprun .r6>.sc,.race20 .npcol .nprun .r6>.mg{flex:none}
-/* 回顧メモのタグはレース名の行の右端。名前のほうが縮む */
-.race20 .npcol .nprun .r2>.nt{flex:none;max-width:8.4em;overflow:hidden;text-overflow:ellipsis}
+/* 回顧メモのタグはレース名の行。幅の上限は付けない（8.4emの上限を付けていたときは
+   タグを出す3,611走のうち1,120走＝31.0%が切れていた）。名前（.rnm）が flex:1 なので
+   取り合いになったら名前のほうが先に縮み、それでも入らないときだけタグが縮む */
+.race20 .npcol .nprun .r2>.nt{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;
+  white-space:nowrap;padding:1px 4px}
 .race20 .npcol .nprun .val{font-variant-numeric:tabular-nums}
 .race20 .npcol .nprun .fb{margin-right:1px}
 /* §6.1 トッピング: 札は柱（.aspine）を塗るが、新聞は柱の頭を塗る */
@@ -2839,3 +2842,32 @@ body.noscroll{position:fixed;width:100%;overflow:hidden}
 .w5p-res .rf .warn{color:var(--live);font-weight:700}
 .w5p .w5pfoot{font-size:11px;color:var(--cap);line-height:1.75;margin:12px 0 0}
 .w5p .w5pagain{margin-top:12px}
+
+/* ===== 125-spec §13: 狙う帯をレースに割り当てて、馬番を主役に出す ===== */
+.w5p-res .w5leg{padding:10px 13px;border-bottom:1px solid var(--rule)}
+.w5p-res .w5leg:last-child{border-bottom:none}
+.w5p-res .w5leg .lgh{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:7px}
+.w5p-res .w5leg .lgh .no{flex:none;font-size:10px;font-weight:700;color:#fff;background:var(--win5);
+  border-radius:4px;padding:3px 6px;letter-spacing:.03em}
+.w5p-res .w5leg .lgh .rc{font-size:12px;font-weight:600;color:var(--text)}
+.w5p-res .w5leg .lgh .uchip{margin-left:auto;flex:none;font-size:10.5px;font-weight:700;
+  line-height:1;border-radius:9px;padding:3px 7px}
+.w5p-res .w5leg .band{display:flex;align-items:baseline;gap:7px;margin-bottom:7px;flex-wrap:wrap}
+.w5p-res .w5leg .band .bt{font-size:11px;font-weight:700;border-radius:4px;padding:2px 7px;
+  border:1px solid var(--rule);color:var(--sub);background:#fff;font-variant-numeric:tabular-nums}
+.w5p-res .w5leg .band .bt.bL{border-color:var(--up-kata);color:var(--up-kata)}
+.w5p-res .w5leg .band .bt.bM{border-color:var(--up-naka);color:#4d6b85}
+.w5p-res .w5leg .band .bt.bH{border-color:#9aa9b6;color:#6b7885}
+.w5p-res .w5leg .band .cap{font-size:12px;font-weight:700;color:var(--cta);
+  font-variant-numeric:tabular-nums}
+.w5p-res .w5leg .band .cap small{font-size:10.5px;font-weight:400;color:var(--cap)}
+/* 馬番の並び。ここが主役なので大きめに出す */
+.w5p-res .unums{display:flex;gap:7px;flex-wrap:wrap}
+.w5p-res .unum{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:44px;
+  padding:5px 4px 4px;border:1px solid var(--rule);border-radius:7px;background:#fff}
+.w5p-res .unum.on{border-color:var(--cta);background:#F2F8FD;box-shadow:inset 0 0 0 1px var(--cta)}
+.w5p-res .unum .hn{font-size:15px;min-width:26px;line-height:24px}
+.w5p-res .unum .od{font-size:10.5px;color:var(--cap);font-variant-numeric:tabular-nums}
+.w5p-res .unum.on .od{color:var(--cta);font-weight:700}
+.w5p-res .w5leg .none{font-size:11.5px;color:var(--live);font-weight:700}
+.w5p-res .w5leg .more{font-size:10.5px;color:var(--cap);margin-top:5px}
