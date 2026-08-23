@@ -2818,7 +2818,7 @@ body.noscroll{position:fixed;width:100%;overflow:hidden}
 .race20 .npcol.tp10 .nphead{background:var(--tp10)}
 
 /* ===== WIN5 配当逆算アキネーター（125-spec T5）。.ak-* は買い目アキネーターと共用 ===== */
-.w5p{margin:22px 0 0;border-top:1px solid var(--rule-strong);padding-top:16px}
+.w5p{margin:14px 0 0}
 .w5p .w5ph{font-size:17px;font-weight:700;margin:0 0 4px}
 .w5p .w5plead{font-size:11.5px;color:var(--cap);line-height:1.7;margin:0 0 12px}
 .w5p .w5plead b{color:var(--text)}
@@ -2849,9 +2849,14 @@ body.noscroll{position:fixed;width:100%;overflow:hidden}
 .w5p-res .w5leg .lgh{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:7px}
 .w5p-res .w5leg .lgh .no{flex:none;font-size:10px;font-weight:700;color:#fff;background:var(--win5);
   border-radius:4px;padding:3px 6px;letter-spacing:.03em}
-.w5p-res .w5leg .lgh .rc{font-size:12px;font-weight:600;color:var(--text)}
+.w5p-res .w5leg .lgh .w5rc{font-size:12px;font-weight:600;color:var(--text)}
 .w5p-res .w5leg .lgh .uchip{margin-left:auto;flex:none;font-size:10.5px;font-weight:700;
-  line-height:1;border-radius:9px;padding:3px 7px}
+  line-height:1;border-radius:9px;padding:4px 8px;color:#fff}
+.w5p-res .w5leg .lgh .uchip.u-kata{background:var(--up-chip-kata)}
+.w5p-res .w5leg .lgh .uchip.u-naka{background:var(--up-chip-naka)}
+.w5p-res .w5leg .lgh .uchip.u-dai{background:var(--up-chip-dai)}
+.w5p-res .w5leg .lgh .uchip .pv{margin-left:4px;font-variant-numeric:tabular-nums}
+.w5p-res .w5leg .lgh .uchip .pv small{font-size:9px;margin-left:1px}
 .w5p-res .w5leg .band{display:flex;align-items:baseline;gap:7px;margin-bottom:7px;flex-wrap:wrap}
 .w5p-res .w5leg .band .bt{font-size:11px;font-weight:700;border-radius:4px;padding:2px 7px;
   border:1px solid var(--rule);color:var(--sub);background:#fff;font-variant-numeric:tabular-nums}
@@ -2871,3 +2876,59 @@ body.noscroll{position:fixed;width:100%;overflow:hidden}
 .w5p-res .unum.on .od{color:var(--cta);font-weight:700}
 .w5p-res .w5leg .none{font-size:11.5px;color:var(--live);font-weight:700}
 .w5p-res .w5leg .more{font-size:10.5px;color:var(--cap);margin-top:5px}
+.w5p-res .rh .rt2{margin-left:9px;font-size:12px;font-weight:700;color:var(--cta);
+  font-variant-numeric:tabular-nums}
+.w5p .w5pmore{margin:0 0 12px}
+
+/* ===== 125-spec §16: 選んだ馬から見た配当の一覧 ===== */
+.w5hero{border:1px solid var(--rule);border-radius:10px;padding:14px 14px 12px;margin-bottom:12px;
+  background:var(--sub-bg)}
+.w5hero .lb{font-size:11.5px;color:var(--cap);font-weight:700}
+.w5hero .big{font-size:30px;font-weight:700;line-height:1.15;margin:2px 0 4px;
+  font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.w5hero .sub{font-size:11.5px;color:var(--sub);line-height:1.6}
+.w5hero .rng{display:flex;align-items:center;gap:8px;margin-top:10px;
+  font-size:11px;color:var(--cap);font-variant-numeric:tabular-nums}
+.w5hero .rng i{flex:1;height:3px;border-radius:2px;
+  background:linear-gradient(90deg,var(--up-kata),var(--up-dai))}
+/* 一覧。金額の安い順・金額が主役 */
+.w5cmbs{border:1px solid var(--rule);border-radius:10px;overflow:hidden;margin-bottom:12px}
+.w5cmb{padding:9px 13px;border-bottom:1px solid var(--rule)}
+.w5cmb:last-child{border-bottom:none}
+.w5cmb.top{background:#F5F9FD;box-shadow:inset 3px 0 0 var(--cta)}
+.w5cmb .l1{display:flex;align-items:center;gap:9px}
+.w5cmb .l1 .pay{flex:none;min-width:104px;font-size:17px;font-weight:700;
+  font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.w5cmb .l1 .w{flex:1;height:5px;border-radius:3px;background:var(--sub-bg2);overflow:hidden}
+.w5cmb .l1 .w i{display:block;height:100%;background:var(--up-naka)}
+.w5cmb.top .l1 .w i{background:var(--cta)}
+.w5cmb .l1 .wn{flex:none;font-size:11px;color:var(--cap);font-variant-numeric:tabular-nums}
+.w5cmb .l1 .wn small{font-size:9.5px}
+.w5cmb .l2{margin-top:3px;font-size:10.5px;color:var(--cap);line-height:1.5}
+.w5cmb .l2 .n{margin-left:6px}
+/* 2行目: 代表の1本を馬番でつなぐ */
+.w5cmb .l2{display:flex;align-items:center;gap:3px;flex-wrap:wrap;margin-top:6px}
+.w5cmb .l2 .ar{font-size:11px;color:var(--cap);margin:0 1px}
+.w5cmb .l2 .unum{display:flex;flex-direction:column;align-items:center;gap:1px;min-width:38px;
+  padding:3px 3px 2px;border:1px solid var(--rule);border-radius:6px;background:#fff}
+.w5cmb .l2 .unum .hn{font-size:13px;min-width:22px;line-height:20px}
+.w5cmb .l2 .unum .od{font-size:9.5px;color:var(--cap);font-variant-numeric:tabular-nums}
+.w5cmb .l2 .etc{margin-left:6px;font-size:10.5px;color:var(--cap);line-height:1.5;
+  font-variant-numeric:tabular-nums}
+.w5cmb .l2 .etc .n{margin-left:6px}
+/* 組み合わせの1本。行の中でも開いた一覧でも同じ見た目を使う */
+.w5combo{display:flex;align-items:center;gap:3px;flex-wrap:wrap}
+.w5combo.l2{margin-top:6px}
+.w5combo .ar{font-size:11px;color:var(--cap);margin:0 1px}
+.w5combo .unum{display:flex;flex-direction:column;align-items:center;gap:1px;min-width:38px;
+  padding:3px 3px 2px;border:1px solid var(--rule);border-radius:6px;background:#fff}
+.w5combo .unum .hn{font-size:13px;min-width:22px;line-height:20px}
+.w5combo .unum .od{font-size:9.5px;color:var(--cap);font-variant-numeric:tabular-nums}
+.w5cmb .etc{margin-top:5px;font-size:10.5px;color:var(--cap);line-height:1.6;
+  font-variant-numeric:tabular-nums}
+.w5cmb .etc .n{margin-left:8px}
+.w5cmb .etc .lnk{font-family:inherit;font-size:10.5px;font-weight:700;color:var(--link);
+  background:none;border:none;padding:0;cursor:pointer;text-decoration:underline}
+.w5combos{margin-top:8px;border-top:1px solid var(--rule);padding-top:8px;
+  display:flex;flex-direction:column;gap:6px}
+.w5combos .cut{font-size:10.5px;color:var(--cap)}
