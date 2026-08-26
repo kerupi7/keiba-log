@@ -18,7 +18,7 @@ function w5PickHtml(p) {
   return `<div class="pk">${umaBox(p.number, p.gate, 'sm')}`
     + `<span class="nm">${escapeHtml(p.name)}</span>${mark}${pop}`
     + `<span class="pp">${fmtPercent(p.prob)}</span>`
-    + `<span class="od">${p.odds.toFixed(1)}倍</span></div>`;
+    + `<span class="od${oddsHotClass(p.odds)}">${p.odds.toFixed(1)}倍</span></div>`;
 }
 
 // 0頭の帯も節ごと出す（122-spec §3 の決定4）。帯が空だったことが分かるようにするため。
@@ -413,7 +413,7 @@ function w5pLegCardHtml(lg, key, heads) {
     + inband.map(x => `<span class="unum${rec.has(x.number) ? ' on' : ''}">`
       + umaBox(x.number, x.gate, 'sm')
       + `<span class="nm">${escapeHtml(x.name || '')}</span>`
-      + `<span class="od">${x.odds.toFixed(1)}</span></span>`).join('')
+      + `<span class="od${oddsHotClass(x.odds)}">${x.odds.toFixed(1)}</span></span>`).join('')
     + '</div>';
   return h + '</div>';
 }
@@ -540,7 +540,8 @@ function w5pHorseRow(lg, i, h) {
   return `<button class="ak-h${on ? ' sel' : ''}" data-w5pleg="${i}" data-w5pnum="${h.number}">`
     + umaBox(h.number, h.gate, 'sm') + my
     + `<span class="nmwrap"><span class="nm">${escapeHtml(h.name)}</span>`
-    + `<span class="meta"><span class="od">${h.odds.toFixed(1)}倍</span>`
+    + `<span class="meta"><span class="od${oddsHotClass(h.odds)}">`
+    + `${h.odds.toFixed(1)}倍</span>`
     + `<span class="pop">${h.popularity == null ? '' : h.popularity + '番人気'}</span>`
     + `<span class="pop">${W5P_BAND[w5pBandOf(h.odds)]}</span></span></span>`
     + '<span class="chk"></span></button>';
@@ -769,7 +770,7 @@ function w5pComboRow(hs, cls) {
   return `<div class="w5combo${cls || ''}">`
     + hs.map((x, i) => (i ? '<span class="ar">→</span>' : '')
       + `<span class="unum">${umaBox(x.number, x.gate, 'sm')}`
-      + `<span class="od">${x.odds.toFixed(1)}</span></span>`).join('')
+      + `<span class="od${oddsHotClass(x.odds)}">${x.odds.toFixed(1)}</span></span>`).join('')
     + '</div>';
 }
 

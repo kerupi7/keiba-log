@@ -158,6 +158,16 @@ function wakuBox(frameNo, size) {
   return umaBox(frameNo, frameNo, size);
 }
 
+// 10倍を切ったら赤オッズ（新聞・netkeibaと同じ表記。2026-08-05 ユーザー指定）。
+// 境目は「10.0未満」で、9.9倍までが赤・10.0倍からは黒。
+// 2026-08-26に race.js から app.js へ移した（WIN5の画面でも同じ境目を使うため。
+// 境目が2か所にあるとずれる）
+const ODDS_HOT = 10;
+
+function oddsHotClass(odds) {
+  return (odds != null && odds < ODDS_HOT) ? ' hot' : '';
+}
+
 // 45-spec §3.4: 買い目・払戻の組番を枠色ボックス連結にする。順序券種（馬単/3連単）は→、他は-。
 // typeLabel には日本語ラベル（漢字/数字ゆれ両対応）またはローマ字を渡してよい。
 // byNumber は 馬番→horse の辞書（gate参照用）。枠連は combination が枠番そのものなので wakuBox。

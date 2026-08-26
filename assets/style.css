@@ -2912,6 +2912,15 @@ body.noscroll{position:fixed;width:100%;overflow:hidden}
 .w5p .w5btns{display:flex;align-items:center;gap:9px;padding:9px 13px}
 .w5p .w5btns .ak-btn{margin-left:auto}
 
+/* 10倍を切ったら赤オッズ（2026-08-05 ユーザー指定・出馬表と同じ境目）。
+   境目は「10.0未満」で、9.9倍までが赤・10.0倍からは黒。
+   下地の .od が色を持っているので、勝てるだけの数のクラスを並べている */
+.w5p .ak-h .meta .od.hot,
+.w5p-res .unum .od.hot,
+.w5p-res .unum.on .od.hot,
+.w5p .w5combo .unum .od.hot,
+.w5p .pk .od.hot{color:var(--live)}
+
 /* ===== 125-spec §16: 選んだ馬から見た配当の一覧 ===== */
 .w5hero{border:1px solid var(--rule);border-radius:10px;padding:14px 14px 12px;margin-bottom:12px;
   background:var(--sub-bg)}

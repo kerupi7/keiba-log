@@ -2100,13 +2100,8 @@ function popupBody(h) {
     </div>`;
 }
 
-// 10倍を切ったら赤オッズ（新聞・netkeibaと同じ表記。2026-08-05 ユーザー指定）。
-// 境目は「10.0未満」で、9.9倍までが赤・10.0倍からは黒。
-const ODDS_HOT = 10;
-
-function oddsHotClass(odds) {
-  return (odds != null && odds < ODDS_HOT) ? ' hot' : '';
-}
+// 赤オッズの境目（ODDS_HOT / oddsHotClass）は app.js に移した（2026-08-26）。
+// WIN5の画面でも同じ境目を使うため。
 
 // 106-spec §4: 柱（新聞の1頭ぶんの縦帯）。押すと馬名ポップアップが開く。
 // 押しどころを縦書きの馬名（幅13px）だけにすると狭すぎるので、柱ごとボタンにする。
