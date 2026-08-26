@@ -3594,7 +3594,8 @@ function renderOverview20(site) {
     `);
   }
 
-  // (d-2) 今週の馬場（当日バイアス）
+  // (d-2) 今週の馬場（3枚のカード。2026-08-26 に6列の表から差し替え）
+  // 仕様は shared/keiba/handoff_2026-08-26_week-trend-cards.md。
   // 上の帯がコースの過去平均なのに対し、こちらは「今週この競馬場で終わったレース」を見る。
   // 2026-08-19 に当日ぶんだけ→今週ぶん（前の開催日＋当日の先行レース）へ広げた。
   // 日曜5Rの芝で3→10レースに増える。土曜は前の開催日が6日前なので当日ぶんだけのまま。
@@ -3605,51 +3606,73 @@ function renderOverview20(site) {
   // 時計の傾向（time_trend）は勝ちタイムから出す別系統（2026-07-30までは芝だけ、
   // 以降はそのレースと同じ馬場種別）。内外の偏りより持続が
   // はっきりしている（同じ開催の連続日で相関+0.406 / その日の前半→後半で+0.512）。
-  // どちらか片方しか無い日もあるので、両方を同じ節にまとめて出し入れする。
-  const hasBias = Boolean(p.day_bias && p.day_bias.surfaces
-    && Object.keys(p.day_bias.surfaces).length);
+  // どれか1つしか無い日もあるので、カードは有るものだけ並べる。
+  // 「前と後ろ」は3着以内の馬を1頭ずつ振り分けた頭数（2026-08-26 追加）。それ以前は
+  // 「前が残ったレース N」という文をここに出していたが、あれは脚質ではなく
+  // **勝ち馬の馬番**が下から3分の1かどうかで決まっていた（front_wins / rear_wins）。
+  // 誤解を招く値なので表示から外した。キー自体は過去公開分に残っている。
+  const db = p.day_bias;
   const tt = p.time_trend;
-  if (hasBias || tt) {
-    const rows = !hasBias ? '' : Object.entries(p.day_bias.surfaces).map(([surf, s]) => {
-      const cls = s.label === '大きな偏りなし' ? 'flat' : 'lean';
-      return `<tr>
-        <td class="sf">${escapeHtml(surf)}</td>
-        <td class="pct">内 ${s.inner_pct.toFixed(1)}%</td>
-        <td class="pct">外 ${s.outer_pct.toFixed(1)}%</td>
-        <td class="diff ${s.diff >= 0 ? 'in' : 'out'}">${s.diff >= 0 ? '+' : ''}${s.diff.toFixed(1)}pt</td>
-        <td class="lab ${cls}">${escapeHtml(s.label)}</td>
-        <td class="n">${s.n_races}R</td>
-      </tr>`;
-    }).join('');
-    const ttRow = !tt ? '' : `<tr>
-        <td class="sf">時計</td>
-        <td class="pct" colspan="2">基準比 ${tt.value >= 0 ? '+' : ''}${tt.value.toFixed(2)}秒</td>
-        <td class="diff ${tt.value <= 0 ? 'in' : 'out'}">${tt.value <= 0 ? '速い' : '遅い'}</td>
-        <td class="lab lean">${escapeHtml(tt.label)}</td>
-        <td class="n">${tt.n_races}R</td>
-      </tr>`;
+  // そのレースと同じ馬場だけ見る。新しいデータは day_bias.surface が入っており
+  // 集計時点で絞ってある。2026-08-26より前に公開したぶんは芝とダートの両方が
+  // 入っているので、ここでそのレースの馬場を選ぶ（作り直しはしない）。
+  const raceSurf = String((site.race || {}).surface || '').startsWith('芝') ? '芝' : 'ダート';
+  const io2 = db && db.surfaces ? (db.surfaces[raceSurf] || null) : null;
+  const legs = (db && db.legs) || null;
+  if (io2 || legs || tt) {
+    const cards = [];
 
-    const biasNote = !hasBias ? '' :
-      `数字は今週このコースで3着内に入った割合（内＝1〜4枠 / 外＝5〜8枠）。前が残ったレース ${p.day_bias.front_wins || 0}`
-      + ` / 差しが決まったレース ${p.day_bias.rear_wins || 0}`
-      + (p.day_bias.pace_label ? `／ ペースは${escapeHtml(p.day_bias.pace_label)}` : '') + '。';
-    const ttNote = !tt ? '' :
-      `時計はこのレースと同じ馬場（芝／ダート）の勝ちタイムを、コース・クラス・馬場状態・時期で補正した残差です`
-      + `（当日${tt.today_races}R＋前日${tt.prev_races}R）。マイナスほど速い馬場。`;
-    // 母数の言い方。内外は今週ぶん（前の開催日＋当日）、時計は当日＋直前の1開催日で
-    // 範囲が違うので、両方あるときは内外の母数を出して時計は下の注記で断る。
-    const scope = hasBias
-      ? (p.day_bias.prev_races
-        ? `今週${p.day_bias.n_races}レース（前日まで${p.day_bias.prev_races}＋本日${p.day_bias.today_races}）`
-        : `本日ここまで${p.day_bias.n_races}レース`)
-      : `当日＋前日の${tt.n_races}レース`;
+    if (io2) {
+      const cls = io2.label === '大きな偏りなし' ? 'flat' : (io2.diff >= 0 ? 'in' : 'out');
+      const scope = db.surface
+        ? (db.prev_races
+          ? `今週${escapeHtml(raceSurf)}${db.n_races}レース（前日まで${db.prev_races}＋本日${db.today_races}）`
+          : `本日ここまで${escapeHtml(raceSurf)}${db.n_races}レース`)
+        : `今週${escapeHtml(raceSurf)}${io2.n_races}レース`;
+      cards.push(`<div class="tc">
+        <div class="tch">内と外</div>
+        <div class="tcv ${cls}">${escapeHtml(io2.label)}</div>
+        <div class="tcd">内 ${io2.inner_pct.toFixed(1)}% ／ 外 ${io2.outer_pct.toFixed(1)}%<span class="dl ${cls}">${io2.diff >= 0 ? '+' : ''}${io2.diff.toFixed(1)}pt</span></div>
+        <div class="tcn">${scope}</div>
+      </div>`);
+    }
 
+    if (legs) {
+      // 前＝直線に入った時点で先頭グループ（逃げ・先行）、後ろ＝差し・追込。
+      // 平年値62.2%は全期間の実測。頭数だけでは多いか少ないか分からないので必ず添える。
+      const lcls = !legs.label || legs.label === '大きな偏りなし'
+        ? 'flat' : (legs.label === '前が残りやすい' ? 'in' : 'out');
+      const head = legs.label || `前 ${legs.front}頭 ／ 後ろ ${legs.rear}頭`;
+      const sub = legs.label
+        ? `前 ${legs.front}頭 ／ 後ろ ${legs.rear}頭<span class="dl ${lcls}">前${legs.front_pct.toFixed(0)}%</span>`
+        : '母数が少なく傾向は出していません';
+      const miss = legs.no_data_races
+        ? `・道中の位置が取れず${legs.no_data_races}レース除外` : '';
+      cards.push(`<div class="tc">
+        <div class="tch">前と後ろ</div>
+        <div class="tcv ${lcls}">${escapeHtml(head)}</div>
+        <div class="tcd">${sub}</div>
+        <div class="tcn">3着以内${legs.total}頭・ふだんは前${legs.base_pct.toFixed(0)}%${miss}</div>
+      </div>`);
+    }
+
+    if (tt) {
+      const tcls = tt.value <= 0 ? 'in' : 'out';
+      cards.push(`<div class="tc">
+        <div class="tch">時計</div>
+        <div class="tcv ${tcls}">${tt.value <= 0 ? '速い' : '遅い'}</div>
+        <div class="tcd">基準比 ${tt.value >= 0 ? '+' : ''}${tt.value.toFixed(2)}秒<span class="dl">${escapeHtml(tt.label)}</span></div>
+        <div class="tcn">当日${tt.today_races}＋前日${tt.prev_races}レース</div>
+      </div>`);
+    }
+
+    // 注記は 2026-08-26 にユーザー指示で全文削除（「この注釈いらない」）。
+    // カードの見出し・数字・母数だけで読める形にする。「点数には入れていません」の
+    // 断りもこの時に一緒に消えている。
     sections.push(`
       <div class="biaslabel"><b>今週の馬場</b>
-        <span class="scope">${escapeHtml(scope)}</span></div>
-      <table class="daybias"><tbody>${rows}${ttRow}</tbody></table>
-      <div class="striplegend">${biasNote}${ttNote}
-        <b>${hasBias && tt ? 'どちらも点数には入れていません' : '点数には入れていません'}</b>。当たり具合を良くするほどの大きさは確認できていないためです。</div>
+        <span class="scope">${escapeHtml(raceSurf)}のレースの傾向</span></div>
+      <div class="trendcards">${cards.join('')}</div>
     `);
   }
 
