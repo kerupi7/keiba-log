@@ -1,0 +1,2581 @@
+<!doctype html><meta charset="utf-8"><title>展開が向かない</title>
+<style>
+:root{
+  /* テキスト3階調 */
+  --text:#333333;        /* 本文 */
+  --sub:#5C5C5C;         /* 補足 */
+  --cap:#757575;         /* キャプション・表ヘッダ */
+
+  /* ブランド・リンク */
+  --navy:#003E70;        /* ブランド・◎印・重賞バッジ・見出しアクセント・有利判定 */
+  --link:#326691;        /* 通常リンク */
+  --cta:#0068BC;         /* 発走前ピル・土曜色 */
+  --orange:#F58700;      /* 買い印★ */
+
+  /* セマンティック */
+  --hit:#0F7A3D;         /* 的中・プラス回収率・妙味（緑はこの用途専用） */
+  --live:#EB1400;        /* 不的中・マイナス・地雷・日曜色・不利判定 */
+  --upcoming:#003E70;    /* R箱: 発走前 */
+  --finished:#C8102E;    /* R箱: 終了（勝敗とは無関係） */
+
+  /* 馬場種別（netkeiba踏襲） */
+  --turf:#2f8f4e;        /* 芝 */
+  --dirt:#D97A00;        /* ダート */
+
+  /* 印のランク色（馬名の文字色に使う。濃→薄） */
+  --mk-hon:#003E70;      /* ◎ */
+  --mk-tai:#35617f;      /* ○ */
+  --mk-tan:#566b7a;      /* ▲ */
+  --mk-oku:#6f7883;      /* △ */
+  /* 印バッジの背景色（◎○▲△の塗りチップ） */
+  --mkb-hon:#003E70; --mkb-tai:#5C7A99; --mkb-tan:#8a97a3; --mkb-oku:#aab2b8;
+
+  /* 荒れ度（89-spec）。同じ色相の濃淡だけ。良し悪しを含意させないため緑・赤は使わない */
+  --up-kata:#003E70;     /* 堅い   = 濃い（人気に集中） */
+  --up-naka:#6E8CA6;     /* 中荒れ = 中間 */
+  --up-dai:#B7C6D3;      /* 大荒れ = 薄い（ばらける） */
+  --up-on-bg:#E8EFF5;    /* 該当クラスのカード背景 */
+  /* 荒れ度の**文字色**（110-spec §3）。塗りをそのまま文字に使うと読めないので分ける。
+     濃さの向きは塗りと同じ。カッコ内は白地でのコントラスト比（本文は4.5以上が必要） */
+  --up-kata-t:#003E70;   /* 堅い   (10.9:1) 塗りと同じ値でよい */
+  --up-naka-t:#35617F;   /* 中荒れ  (6.6:1) 塗り#6E8CA6は3.5:1で不足 */
+  --up-dai-t:#63798A;    /* 大荒れ  (4.5:1) 塗り#B7C6D3は1.75:1で論外 */
+
+  /* 3連単100万超え（103-spec）。荒れ度と同じく色相の濃淡だけ。緑・赤は使わない。
+     人気番号の帯は 2026-08-06 に廃止したので --bp-band は削除した（--bp-off は別用途で生存中） */
+  --bp-on:#003E70;       /* 発生率が高いレースの枠線 */
+  --bp-off:#EDEDEA;      /* 淡い塗り（他ブロックでも使用） */
+
+  /* 背景・罫線 */
+  --bg:#FFFFFF;
+  --sub-bg:#FAFAFA;      /* 薄背景（1着行など） */
+  --sub-bg2:#F1F1F0;     /* 濃いめ薄背景（バー土台・開催メタ） */
+  --rule:#E3E3E3;        /* 通常罫線 */
+  --rule-strong:#333333; /* 強罫線（ヘッダ下・表ヘッダ下・折り見出し） */
+  --sep:#EAEAE7;         /* 数値列を区切る縦罫線 */
+
+  /* チップ（過小/過剰/妥当・達成/未達/蓄積中） */
+  --chip-under-bg:#E7F3EA; --chip-under-fg:#0F6A34;   /* 過小=買い得（緑系） */
+  --chip-over-bg:#F0F0EE;  --chip-over-fg:#7a6a6a;    /* 過剰（グレー） */
+  --chip-fair-bg:#EEF1F5;  --chip-fair-fg:#4a5766;    /* 妥当（青グレー） */
+  --chip-ok-bg:#E7F3EA;    --chip-ok-fg:#0F6A34;      /* 達成 */
+  --chip-ng-bg:#FBE9E9;    --chip-ng-fg:#b23b3b;      /* 未達 */
+  --chip-acc-bg:#F0F0EE;   --chip-acc-fg:#7a7a72;     /* 蓄積中 */
+
+  /* その他の実値 */
+  --pred-row:#F4F8FC;    /* 印あり馬の行背景 */
+  --pred-race:#FCFCFB;   /* 予想済みレース行の背景 */
+  --ev-max-bg:#E7F3EA;   /* 期待値最大セルの背景 */
+  --cal-bar:#9db8cf;     /* 校正バー */
+  --win5:#1f6feb;        /* WIN5マーク（当面未使用） */
+  --green-row:#E3F4E8;   /* 45-spec: EV>1の買える馬・買い目の行背景 */
+
+  --font:-apple-system,"system-ui","Segoe UI",Roboto,Oxygen,Ubuntu,"Helvetica Neue",Arial,sans-serif;
+  --max-width:720px;
+}
+
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--text);
+  font-family:var(--font);line-height:1.5;letter-spacing:normal}
+a{color:var(--link);text-decoration:none}
+a:hover{text-decoration:underline}
+.container{max-width:var(--max-width);margin:0 auto;padding:0 14px 32px}
+
+/* ===== 2.1 ヘッダー ===== */
+.site-header{max-width:var(--max-width);margin:0 auto;display:flex;align-items:center;
+  justify-content:space-between;padding:11px 14px;border-bottom:2px solid var(--rule-strong)}
+.site-header .logo{font-family:"Hoefler Text","Hiragino Mincho ProN",Georgia,"Times New Roman",serif;
+  font-style:italic;font-size:27px;font-weight:600;letter-spacing:.01em;color:var(--text);line-height:1}
+.site-header .logo .g{color:var(--navy)}
+.site-header nav{display:flex;gap:14px;font-size:13px;font-weight:700}
+.site-header nav a{color:var(--link)}
+.site-header nav a.active{color:var(--text)}
+
+/* ===== 2.2 セクション見出し ===== */
+.eyebrow{font-size:14px;font-weight:700;color:var(--text);border-bottom:1px solid var(--rule);
+  padding:14px 0 6px;margin-bottom:2px;display:flex;align-items:baseline;justify-content:space-between}
+.eyebrow .note{font-size:12px;font-weight:400;color:var(--cap)}
+
+/* ===== 2.3 状態ピル ===== */
+.pill{display:inline-block;font-size:12px;font-weight:700;color:#fff;
+  padding:2px 9px;border-radius:16px;vertical-align:middle;white-space:nowrap}
+.pill.pre{background:var(--cta)}      /* 発走前 */
+.pill.hit{background:var(--hit)}      /* 的中 */
+.pill.miss{background:#8a8a8a}        /* 不的中・結果確定（グレー。赤はピルに使わない） */
+.pill.accum{background:var(--cap)}    /* データ蓄積中 */
+.pill.pass{background:#8a8a8a}        /* 見送り */
+.pill.cancel{background:#8a8a8a}      /* 中止 */
+
+/* ===== 2.4 テーブル作法 ===== */
+table{width:100%;border-collapse:collapse;font-size:13px;
+  font-variant-numeric:tabular-nums;margin-top:8px}
+th,td{padding:6px 5px;border-bottom:1px solid var(--rule);text-align:right;white-space:nowrap}
+th:first-child,td:first-child,th.l,td.l{text-align:left}
+thead th{color:var(--cap);font-weight:700;border-bottom:1px solid var(--rule-strong)}
+
+th.sep,td.sep{border-left:1px solid var(--sep);padding-left:7px}
+
+/* テキスト列の折り返し許可（横スクロール防止・数値列は nowrap のまま） */
+td.wrap,th.wrap{white-space:normal}
+
+td.cell-hl{background:var(--ev-max-bg)}
+
+td.x{color:var(--live);font-weight:700}   /* ✕・不的中 */
+td.o{color:var(--hit);font-weight:700}    /* ✓・的中 */
+.value-pos{color:var(--hit);font-weight:700}
+.value-neg{color:var(--live)}
+
+td.name{text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  font-feature-settings:"palt" 1;letter-spacing:-0.01em}
+table.fixed{table-layout:fixed}
+
+tr.pred td{background:var(--pred-row)}
+tr.top1 td{background:var(--sub-bg)}
+tr.scratched td{color:var(--cap);opacity:.6}
+
+/* ===== 2.4 チップ ===== */
+.chip{display:inline-block;font-size:11px;font-weight:700;padding:1px 7px;
+  border-radius:2px;white-space:nowrap}
+.chip.under{background:var(--chip-under-bg);color:var(--chip-under-fg)}
+.chip.over{background:var(--chip-over-bg);color:var(--chip-over-fg)}
+.chip.fair{background:var(--chip-fair-bg);color:var(--chip-fair-fg)}
+.chip.ok{background:var(--chip-ok-bg);color:var(--chip-ok-fg)}
+.chip.ng{background:var(--chip-ng-bg);color:var(--chip-ng-fg)}
+.chip.acc{background:var(--chip-acc-bg);color:var(--chip-acc-fg)}
+
+/* ===== 2.5 グレード・クラスバッジ ===== */
+.gbadge{font-size:11px;font-weight:700;color:#fff;background:var(--navy);border-radius:12px;padding:1px 8px}
+.cbadge{font-size:11px;font-weight:700;color:#555;background:#E1E1DE;border-radius:12px;padding:1px 8px}
+
+/* ===== 2.6 印バッジ・印色の馬名 ===== */
+.mkb{display:inline-block;min-width:17px;text-align:center;font-weight:700;color:#fff;
+  border-radius:2px;font-size:12px;padding:1px 5px;margin-right:3px}
+.mkb.m-hon{background:var(--mkb-hon)} .mkb.m-tai{background:var(--mkb-tai)}
+.mkb.m-tan{background:var(--mkb-tan)} .mkb.m-oku{background:var(--mkb-oku)}
+
+/* 馬名セル先頭の印スロット。印なしの行も同じ幅を確保し、馬番・馬名の左端を全行で揃える */
+.mkslot{display:inline-block;width:17px;text-align:center;font-weight:700;
+  margin-right:2px;vertical-align:middle}
+
+td.n-hon{color:var(--mk-hon);font-weight:700} td.n-tai{color:var(--mk-tai);font-weight:700}
+td.n-tan{color:var(--mk-tan);font-weight:700} td.n-oku{color:var(--mk-oku);font-weight:700}
+
+.star{color:var(--orange);font-weight:700}
+.mine{color:var(--live);font-weight:700}
+
+/* ===== 2.6c 45-spec §3.2: 馬番の枠色ボックス（JRA標準色）。修正B(手動シミュレーター)と共有 ===== */
+.hn{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;
+  border-radius:4px;font-weight:700;font-size:12.5px;vertical-align:middle;
+  font-variant-numeric:tabular-nums;flex:none}
+.hn.sm{width:18px;height:18px;font-size:11px;border-radius:3px}
+.hn.plain{background:none;color:var(--text)}
+.hn.wk1{background:#fff;color:#000;border:1.5px solid #333}
+.hn.wk2{background:#000;color:#fff}
+.hn.wk3{background:#e60012;color:#fff}
+.hn.wk4{background:#0068c8;color:#fff}
+.hn.wk5{background:#ffd900;color:#000}
+.hn.wk6{background:#009944;color:#fff}
+.hn.wk7{background:#f39800;color:#fff}
+.hn.wk8{background:#e85298;color:#fff}
+.cbsep{color:var(--cap);font-weight:700;margin:0 2px}
+
+/* ===== 2.6b mark-2.0: 役割チップ・地雷チップ・市場評価チップ ===== */
+.chip-role{display:inline-block;font-size:10px;font-weight:700;color:#fff;
+  border-radius:2px;padding:0 5px;margin-right:3px;vertical-align:middle}
+.chip-role.r-axis{background:var(--navy)}
+.chip-role.r-aite{background:var(--mkb-tai)}
+.chip-role.r-ana{background:var(--orange)}
+.chip-mine{display:inline-block;font-size:10px;font-weight:700;color:#fff;
+  background:var(--live);border-radius:2px;padding:0 5px;margin-right:3px;vertical-align:middle}
+.mchip{display:inline-block;font-size:10px;font-weight:700;padding:0 5px;
+  border-radius:2px;margin-left:3px;vertical-align:middle}
+.mchip.good{background:var(--chip-under-bg);color:var(--hit)}
+.mchip.over{background:#FBE9E9;color:var(--live)}
+.mchip.fair{background:var(--chip-fair-bg);color:var(--chip-fair-fg)}
+
+.verdicts{margin-top:8px;font-size:13px;line-height:1.8}
+.verdict-line{margin-bottom:2px}
+
+/* ===== 2.7 折りたたみ ===== */
+details.fold{border-bottom:1px solid var(--rule)}
+details.fold:first-of-type{border-top:1px solid var(--rule)}
+details.fold>summary{display:flex;align-items:center;gap:8px;padding:13px 2px;
+  font-size:15px;font-weight:700;color:var(--text);cursor:pointer;list-style:none}
+details.fold>summary::-webkit-details-marker{display:none}
+details.fold>summary .tri::before{content:"▸";color:var(--navy);font-size:12px}
+details.fold[open]>summary .tri::before{content:"▾"}
+details.fold[open]>summary{font-size:16px;border-bottom:2px solid var(--rule-strong);padding-bottom:8px}
+details.fold>summary .cnt{margin-left:auto;font-size:12px;font-weight:400;color:var(--cap)}
+.fold-body{padding:0 0 14px}
+
+details.subfold{border-bottom:1px solid var(--rule)}
+details.subfold>summary{display:flex;align-items:center;gap:8px;padding:11px 2px;
+  font-size:14px;font-weight:700;cursor:pointer;list-style:none}
+details.subfold>summary::-webkit-details-marker{display:none}
+details.subfold>summary .tri::before{content:"▸";color:var(--navy);font-size:11px}
+details.subfold[open]>summary .tri::before{content:"▾"}
+details.subfold>summary .sc{margin-left:auto;color:var(--navy);
+  font-variant-numeric:tabular-nums;font-weight:400;font-size:12px}
+
+.fold-intro{font-size:13px;color:var(--cap);padding:14px 0 2px}
+
+/* ===== 2.8 prose ===== */
+.prose{font-size:14px;line-height:1.75;color:var(--text);margin-top:8px;overflow-x:auto}
+.prose h3,.prose h4{font-size:14px;font-weight:700;margin:14px 0 4px}
+.prose p{margin:6px 0}
+.prose ul{margin:6px 0;padding-left:20px}
+.prose strong{color:var(--text)}
+.prose blockquote{margin:6px 0;padding:2px 0 2px 10px;border-left:3px solid var(--rule);
+  color:var(--cap);font-size:12px}
+.prose table{margin:8px 0}
+.prose th,.prose td{white-space:normal;text-align:left}
+.prose th[align="right"],.prose td[align="right"]{text-align:right;white-space:nowrap;
+  font-variant-numeric:tabular-nums}
+.prose th[align="center"],.prose td[align="center"]{text-align:center}
+
+/* ===== 2.9 校正バー ===== */
+.cal .row{display:flex;align-items:center;gap:8px;margin:6px 0;font-size:12px}
+.cal .band{width:76px;color:var(--sub);font-variant-numeric:tabular-nums}
+.cal .track{flex:1;height:16px;background:var(--sub-bg2);border-radius:2px;position:relative}
+.cal .act{height:100%;background:var(--cal-bar);border-radius:2px}
+.cal .pred{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--cap)}
+
+/* ===== 2.10 注意書き・エラー・空状態 ===== */
+.scrollnote{font-size:11px;color:var(--cap);margin-top:4px}
+.alert{background:#FBE9E9;border:1px solid #EFC7C7;color:#b23b3b;border-radius:2px;
+  padding:10px 12px;font-size:13px;margin:12px 0}
+.error-box{color:var(--live);padding:24px 0}
+.empty-state{color:var(--cap);padding:24px 0;text-align:center}
+.foot{margin-top:16px;padding-top:10px;border-top:1px solid var(--rule);
+  font-size:12px;color:var(--cap);line-height:1.6}
+
+/* ===== 3. TOP ===== */
+/* セレクタは必ず `div.roi` と書く（`.roi` だけにしない）。
+   `roi` はコースタブの表の単回収・複勝回収の列（`<td class="roi">`）でも使っており、
+   `.roi{padding:12px 0 14px}` と書くとその2列だけ余白が他の列と変わる。
+   実際に 2026-08-07 まで効いており、単回収・複回収の左右の余白が 5px → 0px、
+   上下が 6px → 12px/14px になって、その2列だけ列の幅と行の高さが揃っていなかった。 */
+div.roi{padding:12px 0 14px;border-bottom:1px solid var(--rule)}
+.roi .lab{font-size:13px;font-weight:700;color:var(--sub)}
+.roi .num{font-size:44px;font-weight:700;line-height:1.1;font-variant-numeric:tabular-nums;margin:2px 0}
+.roi .num.pos{color:var(--hit)} .roi .num.neg{color:var(--live)}
+.roi .sub{font-size:15px;color:var(--sub);font-variant-numeric:tabular-nums}
+.roi .accum-line{margin-top:8px;font-size:12px;color:var(--cap)}
+.mini{display:flex;gap:18px;margin-top:12px}
+.mini .k{color:var(--cap);font-size:12px}
+.mini .v{font-weight:700;font-size:16px;font-variant-numeric:tabular-nums}
+
+.datetabs{display:flex;align-items:center;gap:6px;padding:10px 0 8px}
+.datetabs .arw{color:var(--cap);font-size:18px;padding:0 4px;cursor:pointer;user-select:none}
+.datetabs .arw.disabled{opacity:.3;cursor:default}
+.datetabs .dt{flex:1;text-align:center;font-size:16px;font-weight:700;color:var(--cap);
+  padding:6px 0 8px;position:relative;cursor:pointer;font-variant-numeric:tabular-nums}
+.datetabs .dt .sun{color:var(--live)}
+.datetabs .dt .sat{color:var(--cta)}
+.datetabs .dt.active{color:var(--text)}
+.datetabs .dt.active:after{content:"";position:absolute;left:12%;right:12%;bottom:0;
+  height:3px;background:var(--navy);border-radius:2px}
+
+.tracks{display:flex;gap:8px;padding:4px 0 10px}
+.trk{flex:1;text-align:center;min-width:0;font-size:14px;font-weight:700;padding:7px 0;
+  border-radius:20px;border:1px solid #C9C9C4;color:var(--sub);background:#fff;
+  cursor:pointer;user-select:none}
+.trk.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+
+.legend{display:flex;gap:14px;font-size:12px;color:var(--cap);padding:8px 2px 2px;align-items:center}
+.legend .sw{display:inline-block;width:22px;height:16px;border-radius:2px;vertical-align:-3px;margin-right:4px}
+
+.race{display:flex;gap:10px;padding:11px 2px 11px 0;border-bottom:1px solid var(--rule);
+  text-decoration:none;color:var(--text);align-items:flex-start}
+.race:hover{text-decoration:none}
+.race.pred{border-left:3px solid var(--navy);padding-left:8px;margin-left:-8px;background:var(--pred-race)}
+.race.muted{pointer-events:none}
+.race.muted .rn,.race.muted .rname,.race.muted .rmeta{opacity:.55}
+.rn{flex:0 0 44px;height:44px;border-radius:3px;color:#fff;font-weight:700;
+  display:flex;align-items:center;justify-content:center;font-size:15px;line-height:1;
+  font-variant-numeric:tabular-nums}
+.rn.fin{background:var(--finished)}
+.rn.up{background:var(--upcoming)}
+.rmain{flex:1;min-width:0}
+.rname{font-size:17px;font-weight:700;line-height:1.3;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.rmeta{font-size:13px;color:var(--cap);margin-top:3px;font-variant-numeric:tabular-nums}
+.rmeta .t{color:var(--turf);font-weight:700}
+.rmeta .d{color:var(--dirt);font-weight:700}
+.rmeta .win5{color:var(--win5);font-weight:700;font-style:italic;margin-left:4px}
+.rpick{margin-top:7px;font-size:14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.rpick .pk{color:var(--text);font-weight:700}
+.rpick .amt{font-weight:700;font-variant-numeric:tabular-nums;margin-left:auto}
+.rpick .amt.miss{color:var(--live)}
+.rpick .amt.hit{color:var(--hit)}
+
+/* ===== 4. レース詳細 ===== */
+.back-link{font-size:13px;color:var(--link);display:inline-block;padding:12px 0 4px}
+
+.dtitle{font-size:24px;font-weight:700;line-height:1.35;padding-top:2px}
+.dtitle .grade{color:var(--navy);font-size:15px;margin-left:5px}
+.dtitle .pill{margin-left:6px}
+.dmeta{font-size:13px;color:var(--sub);margin-top:4px;font-variant-numeric:tabular-nums}
+.dmeta .row2{color:var(--cap);font-size:12px;margin-top:2px}
+
+.concl{border-top:2px solid var(--rule-strong);margin-top:12px;padding-top:12px}
+.concl .h{font-size:14px;font-weight:700;margin-bottom:6px}
+.concl p{font-size:15px;line-height:1.7;color:var(--text);margin:0}
+.concl .kv{font-size:13px;color:var(--sub);margin-top:8px}
+.marks{margin-top:10px;font-size:15px}
+.marks-row{line-height:1.9}
+.buyline{margin-top:6px;font-size:15px}
+.buyline .lead{font-weight:700;color:var(--sub);margin-right:6px}
+
+.total{font-size:15px;font-weight:700;margin-top:8px}
+.total .miss{color:var(--live)} .total .hit{color:var(--hit)}
+
+.markcell{font-weight:700}
+.kv{font-size:13px;color:var(--sub);margin-top:8px}
+
+.conf{font-size:12px;color:var(--cap)}
+
+.horse{border-bottom:1px solid var(--rule);padding-bottom:10px;margin-top:10px}
+.horse .hh{display:flex;align-items:baseline;gap:6px;font-size:15px;font-weight:700}
+.horse .hh .meta{font-size:12px;font-weight:400;color:var(--cap)}
+.horse .hh .sc{margin-left:auto;font-variant-numeric:tabular-nums;color:var(--navy)}
+.horse .prose td,.subfold .prose td{white-space:normal}
+.horse .prose td:nth-child(2),.horse .prose td:nth-child(3),
+.subfold .prose td:nth-child(2),.subfold .prose td:nth-child(3){
+  text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.horse .prose td:first-child,.subfold .prose td:first-child{font-weight:700;white-space:nowrap}
+
+.rev ul{list-style:none;padding-left:2px;margin-top:8px}
+.rev li{font-size:13px;line-height:1.7;padding:6px 0 6px 16px;position:relative;
+  border-bottom:1px solid var(--rule)}
+.rev li:before{content:"▪";position:absolute;left:0;color:var(--navy)}
+
+/* ===== 5. 成績 ===== */
+.mkcol{font-weight:700}
+#stats-content .note{font-size:11px;font-weight:400;color:var(--cap);margin-left:4px}
+#stats-content tr.mkgroup td{background:var(--rule);padding-top:8px;padding-bottom:4px}
+.pace-line{font-size:15px;margin-top:8px}
+.pace-line b{font-size:20px}
+.pace-line span{color:var(--sub);font-size:13px}
+
+/* ===== 7. レスポンシブ ===== */
+@media (max-width:480px){
+  .container{padding:0 12px 28px}
+}
+
+/* ===== 8. 買い目シミュレーター（17-odds-master-spec.md §6。T4: B.手動 / T5: A.おすすめ） ===== */
+
+/* 見出しを navy バーにして「買い目」と対等な別ブロックに見せる（mockup-28 案3）。
+   細い1px罫線どうしでは買い目の表との境目が読めなかったため、区切りを線の太さでなく
+   帯の有無で伝える。borderは帯が担うので消す。折りたたみの開閉挙動は変えない。 */
+details.fold.om-fold{border-top:none;border-bottom:none}
+details.fold.om-fold>summary{margin-top:16px;padding:8px 11px;border-radius:3px;
+  background:var(--navy);color:#fff;font-size:15px}
+details.fold.om-fold[open]>summary{font-size:15px;border-bottom:none;padding-bottom:8px}
+details.fold.om-fold>summary .tri::before{color:#fff}
+details.fold.om-fold>summary .cnt{color:#fff;opacity:.85;font-size:11px}
+
+.om-tabs{display:grid;grid-template-columns:1fr 1fr;gap:0;margin:12px 0 0;
+  border-bottom:2px solid var(--rule)}
+.om-tab{font-size:13px;font-weight:700;padding:10px 6px;border:none;background:none;
+  color:var(--cap);cursor:pointer;font-family:inherit;border-bottom:2px solid transparent;margin-bottom:-2px}
+.om-tab.active{color:var(--cta);border-bottom-color:var(--cta)}
+.om-pane{padding-top:2px}
+.om-pane[hidden]{display:none}
+.om-subhead{font-size:13px;font-weight:700;color:var(--sub);margin:12px 0 8px}
+.om-subhead:first-child{margin-top:2px}
+.om-note{font-size:12px;color:var(--cap);margin:4px 0 6px}
+.om-more{font-size:12px;color:var(--cap);margin-top:6px}
+
+.chip.buy{background:var(--chip-under-bg);color:var(--chip-under-fg)}
+.chip.pass{background:var(--chip-over-bg);color:var(--chip-over-fg)}
+.chip.lowp{background:var(--chip-acc-bg);color:var(--chip-acc-fg);margin-left:4px}
+
+.om-empty{font-size:13px;color:var(--cap);padding:14px 0}
+
+/* ===== 8b. 手動シミュレーター IPAT型UI（45-spec §2。Block B専用。Aは上のom-table/om-comboを共用） ===== */
+.sim-types{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}
+.sim-type{font-size:12.5px;font-weight:700;padding:8px 2px;border-radius:7px;
+  border:1px solid #C9C9C4;background:#fff;color:var(--text);cursor:pointer;text-align:center}
+.sim-type.wide2{grid-column:span 2}
+.sim-type.active{background:var(--cta);color:#fff;border-color:var(--cta)}
+.sim-type:disabled{opacity:.4;cursor:not-allowed}
+
+.sim-methods{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.sim-method{flex:1;min-width:88px;font-size:12.5px;font-weight:700;padding:8px 4px;
+  border-radius:7px;border:1px solid #C9C9C4;background:#fff;color:var(--text);cursor:pointer}
+.sim-method.active{background:var(--cta);color:#fff;border-color:var(--cta)}
+.sim-method.sub{flex:none;min-width:72px}
+
+.sim-axispos{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px}
+.sim-axispos button{font-size:12px;font-weight:700;padding:6px 9px;border-radius:6px;
+  border:1px solid #C9C9C4;background:#fff;color:var(--text);cursor:pointer}
+.sim-axispos button.active{background:var(--cta);color:#fff;border-color:var(--cta)}
+.sim-multi{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;margin:8px 2px 0}
+.sim-multi input{width:16px;height:16px}
+
+.sim-band{color:#fff;font-weight:700;font-size:14px;padding:7px 10px;border-radius:6px 6px 0 0;margin-top:10px}
+.sim-band.tansho{background:#4657b8}.sim-band.wakuren{background:#009944}
+.sim-band.umaren{background:#8b5fbf}.sim-band.wide{background:#4bb3b3}
+.sim-band.umatan{background:#e59300}.sim-band.sanrenpuku{background:#4aa3d6}
+.sim-band.sanrentan{background:#e57d1e}
+
+.sim-sel{width:100%;border-collapse:collapse;font-size:12.5px}
+.sim-sel th{background:var(--sub-bg2);color:var(--cap);font-size:10.5px;font-weight:700;
+  padding:5px 2px;border-bottom:1px solid var(--rule);text-align:center}
+.sim-sel th.l{text-align:left}
+.sim-sel td{border-bottom:1px solid var(--rule);padding:6px 2px;text-align:center;vertical-align:middle}
+.sim-sel td.l{text-align:left;padding-left:4px}
+.sim-sel tr.green td{background:var(--green-row)}
+/* 45-spec §2.8: 印は既存の色トークンを流用（.n-honなどの命名は使わず新規スコープ） */
+.sim-mk{font-weight:700;font-size:12px;min-width:13px;display:inline-block;text-align:center}
+.sim-mk.hon{color:var(--mk-hon)}.sim-mk.tai{color:var(--mk-tai)}
+.sim-mk.tan{color:var(--mk-tan)}.sim-mk.oku{color:var(--mk-oku)}
+.sim-mk.none{color:#ccc}
+/* 45-spec §2.8: 評価バッジは既存.race20 .gradeと同色だが、Block Bは1.xページでは.race20外に
+   出るためスコープなしで複製（.race20 .gradeは変更しない） */
+.sim-grade{display:inline-block;min-width:22px;text-align:center;font-weight:700;
+  font-size:10.5px;border-radius:3px;padding:1px 4px;color:#fff}
+.sim-grade.g-s{background:#0B5E2E} .sim-grade.g-ap{background:#0F7A3D} .sim-grade.g-a{background:#2f8f4e}
+.sim-grade.g-bp{background:#5a9bd4} .sim-grade.g-b{background:#8aadc9}
+.sim-grade.g-cp{background:#b0b0a8} .sim-grade.g-c{background:#c2c2ba}
+.sim-grade.g-d{background:#d8b48a} .sim-grade.g-e{background:#d89a9a}
+.sim-hname{font-weight:700;font-size:12.5px;line-height:1.25}
+.sim-hodds{font-size:10.5px;color:var(--cap)}
+.sim-hodds .hot{color:var(--live);font-weight:700}
+.sim-hmeta{font-size:10px;color:var(--sub)}
+.sim-gflag{display:inline-block;font-size:9.5px;font-weight:700;color:var(--hit);
+  border:1px solid var(--hit);border-radius:3px;padding:0 4px;margin-left:3px}
+.sim-pick{width:22px;height:22px;border:1.5px solid #bbb;border-radius:5px;background:#fff;
+  cursor:pointer;display:inline-flex;align-items:center;justify-content:center;
+  font-size:13px;color:transparent}
+.sim-pick.on{background:var(--cta);border-color:var(--cta);color:#fff}
+.sim-pick.on::after{content:"✓"}
+.sim-pick.radio{border-radius:50%}
+.sim-pick.radio.on{background:var(--navy);border-color:var(--navy)}
+.sim-pick.radio.on::after{content:"";width:8px;height:8px;border-radius:50%;background:#fff}
+.sim-pick:disabled{opacity:.35;cursor:not-allowed}
+
+.sim-summary{display:flex;justify-content:center;gap:12px;font-size:13px;font-weight:700;padding:10px 0 4px}
+.sim-summary b{color:var(--cta)}
+.sim-confirm{border:1px solid var(--rule);border-radius:8px;margin-top:6px;overflow:hidden}
+.sim-confirm .ch{background:var(--sub-bg);font-size:12px;font-weight:700;padding:7px 9px;
+  border-bottom:1px solid var(--rule);display:flex;justify-content:space-between}
+.sim-confirm .ch .rng{color:var(--cap);font-weight:600}
+.sim-combo{display:flex;flex-direction:column;gap:3px;padding:8px 9px;border-bottom:1px solid var(--rule)}
+.sim-combo:last-child{border-bottom:none}
+.sim-combo.buy{background:var(--green-row)}
+.sim-combo .seq{display:flex;align-items:center;gap:2px;flex-wrap:wrap}
+.sim-combo .seq .hn{margin-right:1px}
+.sim-combo .abbr{font-size:10px;color:var(--cap);margin-right:2px}
+.sim-combo .nums{display:flex;gap:12px;font-size:11px;color:var(--cap);flex-wrap:wrap}
+.sim-combo .nums b{color:var(--text);font-variant-numeric:tabular-nums}
+.sim-more{font-size:12px;color:var(--cap);margin-top:6px;padding:0 2px}
+.om-table{margin-top:4px;font-size:12px}
+.om-table th,.om-table td{padding:6px 3px}
+/* 買い目セルは1段固定（折り返さない）。列幅は勝率・判定を外して広げた分で吸収する */
+.om-table td.om-combo{white-space:nowrap}
+/* 期待値プラス（判定「買い」の代替）は緑で強調 */
+.om-table td .om-ev-plus{color:var(--hit);font-weight:700}
+/* 表内の印バッジはコンパクト化（固定列幅に収めるため） */
+.om-table .mkb{min-width:0;padding:0 3px;margin-right:1px;font-size:11px}
+
+.om-footnote{font-size:11px;color:var(--cap);line-height:1.7;margin-top:14px;
+  padding-top:8px;border-top:1px solid var(--rule)}
+.om-footnote div{margin-bottom:2px}
+
+/* 9. race 2.0 (.race20スコープ) */
+
+/* navyバー見出し */
+.race20 .secthead{display:flex;align-items:center;gap:8px;margin-top:16px;padding:8px 11px;
+  background:var(--navy);color:#fff;font-size:15px;font-weight:700;border-radius:3px}
+.race20 .secthead .cnt{margin-left:auto;font-size:11px;font-weight:400;opacity:.85}
+
+/* レースヘッダ（タブより上に固定で出る帯）。
+   下の罫線はタブバー側が引くのでここでは引かない（2本並ぶため・2026-08-03） */
+.race20 .rhead{padding:14px 2px 8px}
+.race20 .rhead .cls{font-size:12px;color:var(--cap);font-weight:700}
+.race20 .rhead .ttl{font-size:17px;font-weight:700;margin:2px 0 4px}
+.race20 .rhead .cond{font-size:12.5px;color:var(--sub)}
+.race20 .rhead .pt{font-size:11px;color:var(--cap);margin-top:6px}
+
+/* 4タブ（2026-08-03）。情報は減らさず置き場所だけ分ける。
+   .tabs-ready は race.js が setup 群を全部終えてから付ける。付くまでは全パネルが
+   縦一列で出たまま＝JSが途中で落ちても全ブロックが読める（フォールバック）。 */
+.race20 .tabbar{display:flex;position:sticky;top:0;z-index:30;background:var(--bg);
+  border-bottom:2px solid var(--rule-strong)}
+.race20 .tabbar .t20{flex:1;min-width:0;border:0;background:none;font:inherit;
+  padding:11px 2px 9px;font-size:13px;font-weight:700;color:var(--cap);cursor:pointer;
+  border-bottom:3px solid transparent;margin-bottom:-2px;white-space:nowrap;
+  display:flex;align-items:center;justify-content:center;gap:2px}
+.race20 .tabbar .t20.on{color:var(--navy);border-bottom-color:var(--navy)}
+.race20 .tabbar .t20:focus-visible{outline:2px solid var(--cta);outline-offset:-2px}
+/* 結果が出ているレースの「回顧」だけに付く印。色だけに意味を持たせないよう、
+   タブ本体の文字（回顧）は常に出す */
+.race20 .tabbar .t20 .dot{width:6px;height:6px;border-radius:50%;background:var(--live);
+  align-self:flex-start;margin-top:1px;flex:0 0 auto}
+.race20.tabs-ready .tabpane{display:none}
+.race20.tabs-ready .tabpane.on{display:block}
+/* タブ直下の紺バー見出しは上マージンを詰める（縦一列時の16pxはタブ内では空きすぎる） */
+.race20 .tabpane>.secthead:first-child{margin-top:8px}
+
+/* 荒れ度ラベル（110-upset-display-v2-spec.md・案2「1クラス1行」）。
+   見出し（クラス名＋一言＋大きい%）＋3行（名前・帯・%）＋平均の1行＋しきい値の1行。
+   色は同じ色相の濃淡だけ＝緑(--hit)・赤(--live)は使わない。良し悪しを含意させないため
+   （見送り推奨と読まれないこと。89-spec §3.1）。濃い=人気に集中、薄い=ばらける。
+   色だけに意味を持たせない＝どの行にもクラス名の文字が必ず出る。 */
+.race20 .up2{margin-top:11px;font-variant-numeric:tabular-nums}
+.race20 .up2 .hd{display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
+.race20 .up2 .hd .lb{font-size:17px;font-weight:700;letter-spacing:.02em;line-height:1.3}
+.race20 .up2 .hd .tx{font-size:11.5px;color:var(--sub);line-height:1.5}
+.race20 .up2 .hd .r{display:flex;align-items:baseline;white-space:nowrap}
+.race20 .up2 .hd .big{font-size:40px;font-weight:700;line-height:.92;letter-spacing:-.02em}
+/* クラス名は `pcs`（percent sign）。`pc` にしてはいけない。
+   `.race20 .pc` は展開タブのペースカードの枠（`border:1px solid`＋`border-radius:6px`）で、
+   こちらは border を書いていないため、%の1文字が**枠で囲われて**表示されていた
+   （2026-08-07 まで。`margin-bottom:7px` も一緒にもらって縦位置もずれていた）。 */
+.race20 .up2 .hd .pcs{font-size:15px;font-weight:700;margin-left:2px}
+/* 見出しの色は見立てクラスの文字色。大きい%は「見立てクラスの確率」であって最大値ではない
+   （しきい値で決まるため。理由は .th の1行が説明する） */
+.race20 .up2 .hd.k-kata{color:var(--up-kata-t)}
+.race20 .up2 .hd.k-naka{color:var(--up-naka-t)}
+.race20 .up2 .hd.k-dai{color:var(--up-dai-t)}
+
+/* 3行。並びは 堅い→中荒れ→大荒れ で固定（確率順に並べ替えない）。
+   .hit=モデルの見立て（不動・左の紺アクセント） / .viewing=いま折りたたみに出している
+   クラス（タップで動く）。2つは別物なので見た目も分ける */
+.race20 .up2 .rows{margin-top:12px}
+.race20 .up2 .row{display:flex;align-items:center;gap:9px;width:100%;padding:5px 0 5px 8px;
+  background:none;border:0;font:inherit;color:inherit;cursor:pointer;text-align:left;
+  -webkit-appearance:none;appearance:none}
+.race20 .up2 .row+.row{border-top:1px solid var(--rule)}
+.race20 .up2 .row:focus-visible{outline:2px solid var(--cta);outline-offset:-2px}
+.race20 .up2 .row.hit{box-shadow:inset 3px 0 0 var(--navy)}
+.race20 .up2 .row.viewing .nm{text-decoration:underline;text-underline-offset:3px}
+.race20 .up2 .row .nm{width:44px;flex:none;font-size:12px;font-weight:700}
+.race20 .up2 .row .track{flex:1;height:10px;border-radius:3px;background:var(--sub-bg2);
+  display:block}
+.race20 .up2 .row .fill{display:block;height:100%;border-radius:3px;min-width:3px}
+.race20 .up2 .row .pv{width:46px;flex:none;text-align:right;font-size:15px;font-weight:700}
+.race20 .up2 .row .pv small{font-size:10px;margin-left:1px}
+.race20 .up2 .row.hit .pv{font-size:18px}
+/* 文字は文字色（--up-*-t）、帯の塗りは既存の --up-*（89-spec のまま） */
+.race20 .up2 .row.c0 .nm,.race20 .up2 .row.c0 .pv{color:var(--up-kata-t)}
+.race20 .up2 .row.c1 .nm,.race20 .up2 .row.c1 .pv{color:var(--up-naka-t)}
+.race20 .up2 .row.c2 .nm,.race20 .up2 .row.c2 .pv{color:var(--up-dai-t)}
+.race20 .up2 .row.c0 .fill{background:var(--up-kata)}
+.race20 .up2 .row.c1 .fill{background:var(--up-naka)}
+.race20 .up2 .row.c2 .fill{background:var(--up-dai)}
+
+/* 全レース平均との差（110-spec §4.2）としきい値の1行（同 §4.1）。
+   古いレースには両方とも無い＝その行だけ出ない */
+.race20 .up2 .avg{font-size:10.5px;color:var(--cap);text-align:right;margin-top:6px}
+.race20 .up2 .th{font-size:10.5px;color:var(--cap);line-height:1.6;margin-top:8px;
+  padding-top:8px;border-top:1px solid var(--rule)}
+
+/* 折りたたみ。中身は「その決着になったレースの1着・2着の顔ぶれ」であって
+   ラベルの的中率ではない（89-spec §2.6）。見出しの言い回しでそこを外さないこと */
+.race20 .up2fold{margin-top:12px;border-top:1px solid var(--rule);padding-top:8px}
+.race20 .up2fold summary{font-size:11px;color:var(--link);cursor:pointer;list-style:none}
+.race20 .up2fold summary::-webkit-details-marker{display:none}
+.race20 .up2fold summary::before{content:"▸ ";color:var(--cap)}
+.race20 .up2fold[open] summary::before{content:"▾ "}
+.race20 .up2fold summary .sname{font-weight:700}
+.race20 .up2tend{display:none;width:100%;border-collapse:collapse;margin-top:6px}
+.race20 .up2tend.show{display:table}
+.race20 .up2tend th{font-size:11.5px;font-weight:400;color:var(--sub);text-align:left;
+  padding:4px 0;border-bottom:1px solid var(--rule)}
+.race20 .up2tend td{font-size:12px;font-weight:700;color:var(--text);text-align:right;
+  font-variant-numeric:tabular-nums;padding:4px 0;border-bottom:1px solid var(--rule);
+  width:4.5em}
+.race20 .up2tend tr:last-child th,.race20 .up2tend tr:last-child td{border-bottom:none}
+@media(max-width:420px){
+  .race20 .up2 .hd .big{font-size:34px}
+  .race20 .up2 .row .nm{width:40px}
+  .race20 .up2 .row .pv{width:42px;font-size:14px}
+  .race20 .up2 .row.hit .pv{font-size:17px}
+}
+
+/* 3連単100万超え（103-sanrentan-1m-spec.md §3.3・案A）。荒れ度パネルの直下に1行＋帯。
+   .on は表示確率が highlight_threshold(4.0%) 以上のときだけ（keiba_build_analysis.pyが判定）。
+   凡例・注記は出さない（§3.4）。帯に人気番号が入るので番号列そのものが軸の説明を兼ねる。 */
+.race20 .bpC{margin-top:9px;border:1px solid var(--rule);border-radius:4px;padding:7px 9px 8px}
+.race20 .bpC.on{border-color:var(--bp-on);background:var(--up-on-bg)}
+.race20 .bpC .r1{display:flex;align-items:center;gap:8px}
+.race20 .bpC .lb{font-size:11.5px;font-weight:700;color:var(--sub);white-space:nowrap}
+.race20 .bpC.on .lb{color:var(--navy)}
+.race20 .bpC .pv{font-size:17px;font-weight:700;font-variant-numeric:tabular-nums;
+  color:var(--text);white-space:nowrap}
+.race20 .bpC.on .pv{color:var(--navy)}
+.race20 .bpC .pv small{font-size:11px;margin-left:1px}
+.race20 .bpC .rt{font-size:11px;color:var(--cap);white-space:nowrap;margin-left:auto}
+/* 人気番号の帯（.bpMap）は 2026-08-06 のユーザー決定で削除した。理由は race.js の
+   renderBigPay のコメント（読み取れない／レースごとの情報がほとんど無い）。 */
+@media(max-width:420px){
+  .race20 .bpC .lb{font-size:11px}
+  .race20 .bpC .pv{font-size:16px}
+  .race20 .bpC .rt{font-size:10px}
+}
+
+/* 印リスト（.mkb本体は既存流用。穴・地雷の2色のみ新設） */
+.race20 .marks{margin-top:9px;display:flex;flex-direction:column;gap:1px}
+.race20 .marks .mrow{display:flex;align-items:center;gap:7px;font-size:14px;padding:5px 2px;border-bottom:1px solid var(--rule)}
+.race20 .marks .no{color:var(--cap);font-variant-numeric:tabular-nums;min-width:18px;text-align:right}
+.race20 .marks .nm{font-weight:700}
+.race20 .mkb.m-ana{background:var(--orange)}
+.race20 .mkb.m-jir{background:var(--live)}
+
+/* 全頭評価の印列（mkc）。既存にないため新設 */
+.race20 td.mkc{text-align:center;font-weight:700}
+.race20 .mk-hon{color:var(--navy)} .race20 .mk-tai{color:#35617f}
+.race20 .mk-tan{color:#566b7a} .race20 .mk-oku{color:#7a828c}
+
+/* 評価バッジ（h.grade専用。site.race.gradeの.gbadgeとは別物） */
+.race20 .grade{display:inline-block;min-width:26px;text-align:center;font-weight:700;font-size:12px;border-radius:3px;padding:1px 4px;color:#fff}
+.race20 .g-s{background:#0B5E2E} .race20 .g-ap{background:#0F7A3D} .race20 .g-a{background:#2f8f4e}
+.race20 .g-bp{background:#5a9bd4} .race20 .g-b{background:#8aadc9}
+.race20 .g-cp{background:#b0b0a8} .race20 .g-c{background:#c2c2ba}
+.race20 .g-d{background:#d8b48a} .race20 .g-e{background:#d89a9a}
+
+/* 基本情報 */
+.race20 .info1{margin-top:10px}
+.race20 .info1 .irow{font-size:13px;color:var(--sub);padding:4px 0;border-bottom:1px dotted var(--rule)}
+.race20 .info1 .irow b{color:var(--text);display:inline-block;min-width:44px}
+
+/* 馬場踏み込み */
+.race20 .babadetail{margin-top:10px;background:#F4F8FC;border-left:3px solid var(--navy);padding:8px 10px;border-radius:2px;font-size:12.5px;line-height:1.6}
+.race20 .babadetail .l1 b{color:var(--navy)}
+.race20 .babadetail .arw{color:var(--hit);font-weight:700}
+.race20 .babadetail .num{color:var(--cap)}
+.race20 .babadetail .l2{margin-top:6px;border-top:1px solid #dbe6f0;padding-top:6px}
+.race20 .babadetail .l2 .h{color:var(--navy);font-weight:700;display:block;margin-bottom:3px}
+.race20 .babadetail .l2 .fav{display:block;padding:2px 0}
+.race20 .babadetail .l2 .fav .nm{font-weight:700;color:var(--text)}
+.race20 .babadetail .l2 .fav .rs{color:var(--cap);font-size:12px}
+/* 実測値の明細（クッション値・前回比・平年比・含水率）。2026-08-01追加 */
+.race20 .babadetail .l3{margin-top:6px;border-top:1px solid #dbe6f0;padding-top:6px}
+.race20 .babadetail .mrow{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px;padding:1px 0}
+.race20 .babadetail .mrow.sub{padding-left:12px;font-size:12px;color:var(--cap)}
+.race20 .babadetail .mrow.sub::before{content:"└";color:#9fb4c8;margin-right:2px}
+.race20 .babadetail .mrow .k{color:var(--navy);font-weight:700;min-width:6.5em}
+.race20 .babadetail .mrow.sub .k{color:var(--cap);font-weight:400}
+.race20 .babadetail .mrow .v{font-weight:700;color:var(--text);font-variant-numeric:tabular-nums}
+.race20 .babadetail .mrow.sub .v{font-weight:400}
+.race20 .babadetail .mrow .t{color:var(--cap);font-size:11.5px}
+.race20 .babadetail .mrow .n{color:#9fb4c8;font-size:11px}
+.race20 .babadetail .mrow .w{color:var(--text)}
+.race20 .babadetail .mrow .d{font-weight:700;font-variant-numeric:tabular-nums}
+.race20 .babadetail .mrow .d.up{color:#A83232}
+.race20 .babadetail .mrow .d.down{color:#2E6DA4}
+.race20 .babadetail .mrow .d.flat{color:#8a8a84}
+.race20 .babadetail .stale{background:#FBE9E9;color:#A83232;font-size:11px;padding:0 5px;border-radius:2px}
+
+/* 脚質傾向・逃げ候補（見出し.subhは(c)(e)(f)で共有） */
+.race20 .subh{font-size:13px;font-weight:700;margin:14px 0 2px;color:var(--navy)}
+.race20 .kg td{text-align:right}
+.race20 .kg td.l,.race20 .kg th.l{text-align:left}
+.race20 .jw{font-weight:700}
+.race20 .jw.good{color:var(--navy)} .race20 .jw.bad{color:#b23b3b} .race20 .jw.vbad{color:var(--live)}
+
+/* 脚質の判定5段階（内外バイアスの帯と同じ発散スケール）。
+   --jbg=面 / --jfg=文字 / --jbar=罫。マップのレーンと脚質傾向の判定ピルで共有する */
+.race20 .j-p2{--jbg:#CBE5D6; --jfg:#0C5C2D; --jbar:#2E7D4F}
+.race20 .j-p1{--jbg:#E7F3EA; --jfg:#276B43; --jbar:#5FA07A}
+.race20 .j-z0{--jbg:#F1F1EE; --jfg:#6E6E68; --jbar:#B4B4AC}
+.race20 .j-m1{--jbg:#FBE9E9; --jfg:#A83232; --jbar:#D08A8A}
+.race20 .j-m2{--jbg:#F6D5D5; --jfg:#A32B1F; --jbar:#C05B4B}
+/* 脚質傾向の数値セル（列内の順位で塗る）。判定ピルとは別スケールなので凡例で断る */
+.race20 .kg.heat td.hv{border-radius:0}
+.race20 .kg.heat td.hv.h2{background:#CBE5D6;color:#0C5C2D;font-weight:700}
+.race20 .kg.heat td.hv.h1{background:#E7F3EA;color:#276B43}
+.race20 .kg.heat td.hv.h0{background:#F7F7F5}
+.race20 .kg.heat td.hv.hm1{background:#FBE9E9;color:#A83232}
+.race20 .kg.heat td.hv.hm2{background:#F6D5D5;color:#A32B1F;font-weight:700}
+.race20 .kg.heat .jpill{display:inline-block;font-size:11.5px;font-weight:700;border-radius:3px;
+  padding:1px 7px;background:var(--jbg);color:var(--jfg)}
+
+/* 脚質マップ（4レーン・脚質傾向の各行に出走馬を並べる） */
+.race20 .pacemap{margin-top:5px;border-top:1px solid var(--rule)}
+.race20 .pacemap .lane{display:flex;align-items:flex-start;gap:8px;padding:8px 6px;
+  border-bottom:1px solid var(--rule);
+  border-left:3px solid var(--jbar,transparent);background:var(--jbg,transparent)}
+.race20 .pacemap .lb{width:118px;flex:none}
+.race20 .pacemap .lb .nm{font-size:13px;font-weight:700}
+.race20 .pacemap .lb .rt{font-size:10.5px;color:var(--cap);white-space:nowrap;
+  letter-spacing:-0.02em;font-variant-numeric:tabular-nums}
+/* レーンの面が判定色なので、バッジは白地＋判定色の枠線で抜く */
+.race20 .pacemap .lb .jw{display:inline-block;font-size:10px;font-weight:700;
+  border-radius:2px;padding:0 5px;margin-top:3px;
+  background:#fff;color:var(--jfg,var(--cap));box-shadow:inset 0 0 0 1px var(--jbar,var(--rule))}
+.race20 .pacemap .horses{display:flex;flex-wrap:wrap;gap:2px 0;flex:1;min-width:0}
+.race20 .pacemap .horses .none{font-size:11px;color:var(--cap);align-self:center}
+.race20 .pacemap .num{font-size:11px;color:var(--cap);align-self:center;flex:none;width:26px;text-align:right}
+.race20 .pacemap .pz{display:inline-flex;flex-direction:column;align-items:center;width:26px;margin:0 1px}
+.race20 .pacemap .pz .mk{height:12px;line-height:12px;font-size:11px;font-weight:700}
+.race20 .pacemap .pz .mk.n-hon{color:var(--mk-hon)} .race20 .pacemap .pz .mk.n-tai{color:var(--mk-tai)}
+.race20 .pacemap .pz .mk.n-tan{color:var(--mk-tan)} .race20 .pacemap .pz .mk.n-oku{color:var(--mk-oku)}
+.race20 .pacemap .pz.jirai .hn{box-shadow:0 0 0 2px var(--live)}
+.race20 .pacemap .pz.nige .hn{box-shadow:0 0 0 2px var(--orange)}
+.race20 .pmlegend{font-size:11px;color:var(--cap);line-height:1.7;margin-top:5px}
+.race20 .pmlegend .sw{display:inline-block;width:9px;height:9px;border-radius:2px;
+  vertical-align:middle;margin:0 3px 0 2px}
+.race20 .pmlegend .sw.nige{background:var(--orange)}
+.race20 .pmlegend .sw.jirai{background:var(--live)}
+
+/* このコースの枠順成績（旧「内外バイアス」。当日の馬場ではなく過去平均） */
+.race20 .biaslabel{font-size:12.5px;color:var(--sub);margin:9px 0 5px}
+.race20 .biaslabel b{color:var(--text)}
+/* 内外が混在するコースで、どちらの数字を見ているかを示すチップ */
+.race20 .biaslabel .scope{display:inline-block;margin-left:6px;padding:1px 6px;
+  border-radius:3px;background:rgba(127,127,127,.14);font-size:11.5px}
+
+/* 今日の馬場（当日バイアス）。上の帯と違い、その日の先行レースだけを見た数字 */
+.race20 table.daybias{border-collapse:collapse;width:100%;font-size:12.5px;margin:2px 0 4px}
+.race20 table.daybias td{padding:5px 8px;border-bottom:1px solid var(--line);
+  font-variant-numeric:tabular-nums;white-space:nowrap}
+.race20 table.daybias tr:last-child td{border-bottom:0}
+.race20 table.daybias .sf{font-weight:700;width:3.5em}
+.race20 table.daybias .pct{color:var(--sub)}
+.race20 table.daybias .diff{font-weight:700;text-align:right}
+.race20 table.daybias .diff.in{color:#0F7A3D}
+.race20 table.daybias .diff.out{color:#B3352F}
+.race20 table.daybias .lab.flat{color:var(--sub)}
+.race20 table.daybias .lab.lean{font-weight:700}
+.race20 table.daybias .n{color:var(--sub);text-align:right}
+/* 枠の識別＝馬番と同じJRA枠色バッジ / 有利不利＝セル背景の濃淡（緑=有利・赤=不利）。並びは枠順のまま */
+.race20 .strip{display:flex;gap:3px;padding:2px 0}
+.race20 .strip .cell{flex:1;min-width:0;border-radius:4px;padding:6px 0 7px;
+  display:flex;flex-direction:column;align-items:center;gap:3px}
+.race20 .strip .cell .v{font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.2}
+/* 5段階（b1=有利 … b5=不利）。背景の濃淡と数値の色を揃える */
+.race20 .strip .cell.hb1{background:#DCEDE2} .race20 .strip .v.b1{color:#0F7A3D}
+.race20 .strip .cell.hb2{background:#EDF5EF} .race20 .strip .v.b2{color:#3E8A5C}
+.race20 .strip .cell.hb3{background:#F1F1EE} .race20 .strip .v.b3{color:var(--cap)}
+.race20 .strip .cell.hb4{background:#FAEDED} .race20 .strip .v.b4{color:#B05656}
+.race20 .strip .cell.hb5{background:#F6DADA} .race20 .strip .v.b5{color:#D14545}
+/* 走数不足で比率が出せない枠。空欄で消さず、判定なしと分かる薄いセルで残す */
+.race20 .strip .cell.hnd{background:repeating-linear-gradient(45deg,#F4F4F2,#F4F4F2 4px,#EDEDEA 4px,#EDEDEA 8px)}
+.race20 .strip .v.nd{color:var(--cap);opacity:.7}
+.race20 .striplegend{font-size:10.5px;color:var(--cap);margin-top:5px}
+
+/* 先行圧 */
+.race20 .statline{margin-top:8px;padding:7px 10px;background:var(--sub-bg2);border-radius:2px;font-size:12.5px;color:var(--sub)}
+.race20 .statline b{color:var(--text)}
+.race20 .statline .big{font-size:16px;font-weight:700;color:var(--navy);margin:0 3px}
+.race20 .statline .note{display:block;margin-top:3px;font-size:11.5px;color:var(--cap)}
+
+/* 展開シナリオ */
+.race20 .scn{border-left:3px solid var(--navy);padding:7px 0 7px 10px;margin:9px 0}
+.race20 .scn.sub{border-color:#9db2c8} .race20 .scn.etc{border-color:#c9c9c4}
+.race20 .scn .hd{font-size:13.5px;font-weight:700}
+.race20 .scn .hd .p{color:var(--navy);margin-left:4px}
+/* 90-pass-time-display-spec: 通過タイム秒。確率より弱いウェイト（グレー・小さいフォント・非太字） */
+.race20 .scn .hd .passtime{display:inline-block;margin-left:8px;font-size:11px;
+  font-weight:400;color:var(--cap);white-space:nowrap;vertical-align:middle}
+.race20 .scn .fav{margin-top:5px;font-size:12.5px;color:var(--text)}
+.race20 .scn .tag{display:inline-block;font-size:11px;font-weight:700;background:var(--navy);color:#fff;border-radius:2px;padding:1px 6px;margin-right:6px}
+.race20 .scn.sub .tag{background:#5C7A99} .race20 .scn.etc .tag{background:#9a9a94}
+.race20 .scn .fav .nm{font-weight:700}
+
+/* 83-pace-scenario-integration-spec.md 追補: 本命/対抗バッジ・末脚ピル・otherの畳み表示 */
+.race20 .rolebadge{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.06em;
+  padding:1px 7px;border-radius:2px;margin-right:8px;vertical-align:middle}
+.race20 .rolebadge.hon{background:var(--navy);color:#fff}
+.race20 .rolebadge.tai{background:#fff;color:#5C7A99;border:1px solid #9db2c8}
+.race20 .scn.etc.folded{opacity:.62}
+.race20 .scn.etc.folded .hd{font-weight:600;color:var(--cap)}
+/* 末脚ティア（抜群/上位/並/見劣り/不明）。2026-07-27に◎○の記号表示から言葉4段へ変更。
+   段ごとに色を変えるのは、3頭を横に並べたとき速い順が色でも読めるようにするため。 */
+.race20 .kick{display:inline-block;font-size:10px;font-weight:700;
+  border:1px solid #b6dcc4;background:#EDF6F0;color:var(--hit);border-radius:3px;padding:0 4px;
+  margin-left:5px;line-height:15px;vertical-align:middle;white-space:nowrap}
+.race20 .kick.k-top{background:#E7F3EA;color:#0F6A34;border-color:#b6dcc4}
+.race20 .kick.k-high{background:#EDF4F9;color:#2b5f86;border-color:#bcd4e6}
+.race20 .kick.k-mid{background:#F2F2F0;color:#6b6b64;border-color:#dcdcd6}
+.race20 .kick.k-low{background:#FAF1E6;color:#96651b;border-color:#e6d3b4}
+.race20 .kick.k-na{background:#F7F7F5;color:#9a9a94;border:1px dashed #d5d5cf}
+.race20 .kicklegend{margin-top:11px;font-size:11px;color:var(--cap);line-height:2}
+.race20 .kicklegend .kick{margin-left:0;margin-right:4px}
+.race20 .foldnote{font-size:11px;color:var(--cap);margin-top:3px;padding-left:10px}
+.race20 .reco{display:flex;flex-wrap:wrap;gap:5px 16px;font-size:12.5px;margin-top:3px}
+.race20 .reco .nm{font-weight:700;white-space:nowrap}
+
+/* 93-pace-scenario-6cell-spec.md §6-0-1: 展開シナリオ6マス化（案22・主役カード）。
+   旧.scn/.rolebadge（3ブロック）はscenario_gridの無い過去公開分にそのまま残す（§7）。 */
+.race20 .bdg{display:inline-block;font-size:9.5px;font-weight:800;letter-spacing:.06em;
+  padding:1px 6px;border-radius:3px;line-height:1.6;vertical-align:middle}
+.race20 .bdg.b1{background:var(--navy);color:#fff}
+.race20 .bdg.b2{background:#fff;color:#5C7A99;box-shadow:inset 0 0 0 1px #9db2c8}
+.race20 .bdg.b3{background:#EDEDE8;color:#84847c}
+
+/* 本命マス（主役カード）。色は既存の.rolebadge.honと同じnavyグラデーション */
+.race20 .c22{border-radius:8px;background:linear-gradient(180deg,#00365F 0%,#003E70 100%);
+  color:#fff;padding:14px 14px 12px;margin-top:8px}
+.race20 .c22 .top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.race20 .c22 .ttl{font-size:15px;font-weight:800;letter-spacing:.01em}
+.race20 .c22 .v{margin-left:auto;font-size:24px;font-weight:800;letter-spacing:-.02em;line-height:1}
+.race20 .c22 .v small{font-size:11px;margin-left:1px;opacity:.8}
+.race20 .c22 .sub{font-size:11px;color:rgba(255,255,255,.72);margin-top:4px}
+.race20 .c22 .hl{font-size:10.5px;font-weight:800;letter-spacing:.06em;color:rgba(255,255,255,.72);
+  margin:12px 0 5px}
+.race20 .c22 .list{display:flex;flex-direction:column;gap:5px}
+.race20 .c22 .it{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.09);
+  border-radius:6px;padding:5px 8px}
+.race20 .c22 .it .nm{font-size:12.5px;font-weight:700;flex:1;min-width:0;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap;color:#fff}
+.race20 .c22 .it .st{font-size:10.5px;color:rgba(255,255,255,.66);flex:none}
+.race20 .c22 .it .mk{font-size:12px;font-weight:800;flex:none;width:14px;text-align:center;color:#fff}
+
+/* 残り5マス（1行ずつ）。強弱は行の背景色と文字色だけで付け、opacityで行ごと薄くしない（§6-1） */
+.race20 .o22{margin-top:10px}
+.race20 .o22 .r{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:7px;
+  background:var(--sub-bg2);margin-bottom:5px}
+.race20 .o22 .r.on{background:#E8EFF6}
+.race20 .o22 .r .lb{font-size:12px;font-weight:700;flex:none;width:112px}
+.race20 .o22 .r .hs{display:flex;flex-wrap:wrap;align-items:center;gap:1px 0;flex:1;min-width:0}
+.race20 .o22 .r .more{font-size:10px;color:var(--cap);margin-left:3px}
+.race20 .o22 .r .vv{font-size:14px;font-weight:800;flex:none;font-variant-numeric:tabular-nums}
+.race20 .o22 .r.dim{background:#FAFAF8}
+.race20 .o22 .r.dim .lb{color:#8b8b84;font-weight:600}
+.race20 .o22 .r.dim .vv{color:#8b8b84;font-weight:600}
+
+/* アコーディオン（開閉はカスタムJS＋.openクラス。mockupのhidden属性方式は不使用） */
+.race20 .acc{margin-top:9px}
+.race20 .acchead{display:flex;align-items:center;gap:8px;padding:10px 8px;border:1px solid var(--rule);border-radius:4px;margin-top:6px;
+  font-size:14px;font-weight:700;cursor:pointer;background:var(--sub-bg);user-select:none}
+.race20 .acchead .no{color:var(--cap);font-variant-numeric:tabular-nums;min-width:20px;text-align:right}
+.race20 .acchead .gr{font-size:11px;font-weight:700;color:#fff;border-radius:3px;padding:1px 4px;margin-left:2px}
+.race20 .acchead .sc{margin-left:auto;color:var(--navy);font-variant-numeric:tabular-nums;font-weight:400;font-size:12.5px}
+.race20 .acchead .tri{color:var(--navy);font-size:12px;width:12px;text-align:center}
+.race20 .accbody{border:1px solid var(--rule);border-top:none;border-radius:0 0 4px 4px;padding:0 10px 8px;margin-top:-4px;
+  overflow:hidden;max-height:0;transition:max-height .25s ease}
+.race20 .accbody.open{max-height:900px}
+
+/* 個別評価アコーディオンの一括開閉ボタン（新規・mockupに無い） */
+.race20 .accctl{display:flex;gap:10px;margin:8px 0 2px}
+.race20 .accctl button{font-size:12px;font-weight:700;padding:4px 10px;border-radius:14px;
+  border:1px solid #C9C9C4;background:#fff;color:var(--sub);cursor:pointer}
+.race20 .accctl button:hover{background:var(--sub-bg2)}
+
+/* 採点表。
+   セレクタは必ず `table.dim` と書く（`.dim` だけにしない）。
+   `dim`（＝薄く出す）はコースタブの `<tr class="dim">` でも使っており、
+   `.race20 .dim td` と書くとコースの表の行まで巻き込む。
+   実際に 2026-08-07 まで巻き込んでおり、コースの表の走数・勝率・回収率が
+   **上位3行だけ右揃え・残りは左揃え**になって、列が縦に揃っていなかった
+   （`text-align:left` と `white-space:normal` がそのまま効いていた）。 */
+.race20 table.dim{width:100%;font-size:12px;margin-top:2px;border-collapse:collapse}
+.race20 table.dim td{padding:5px 4px;border-bottom:1px solid var(--rule);vertical-align:top;text-align:left;white-space:normal}
+.race20 table.dim td.item{width:64px;font-weight:700;white-space:nowrap;color:var(--text)}
+.race20 table.dim td.pt{width:24px;text-align:right;font-variant-numeric:tabular-nums;color:var(--sub);font-weight:700}
+.race20 .fac{display:block;line-height:1.55}
+.race20 .fac.p{color:var(--hit)} .race20 .fac.m{color:var(--live)} .race20 .fac.z{color:var(--cap)}
+.race20 table.dim tr.tot td{border-bottom:none;font-weight:700;padding-top:6px}
+.race20 table.dim tr.tot .pt{color:var(--navy)}
+/* アキネーターの「金額を入れてください」も `<span class="dim">` で、上の採点表の
+   `font-size:12px` を偶然もらっていた。scope を絞った分をここで元どおりにする */
+.ak-wrap span.dim{font-size:12px}
+
+/* 買い目合計（tfoot。太線1本で表を閉じる。mockup-28 案1） */
+.race20 .betstbl tfoot td{border-top:2px solid var(--rule-strong);border-bottom:none;
+  background:var(--sub-bg);font-weight:700;padding-top:8px;padding-bottom:8px}
+
+/* 答え合わせ: 成績タイル ＋「予想 → 結果」リスト（グループは濃紺の帯と左の色線で区切る） */
+.race20 .vtiles{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:9px}
+.race20 .vtile{border:1px solid var(--rule);border-radius:6px;padding:8px 10px;background:#fff}
+.race20 .vtile.wide{grid-column:1 / -1}
+.race20 .vtile .cap{font-size:10.5px;color:var(--cap);font-weight:700}
+.race20 .vtile .val{font-size:15px;font-weight:700;margin-top:1px;font-variant-numeric:tabular-nums}
+.race20 .vtile .sub{font-size:11px;color:var(--cap);font-variant-numeric:tabular-nums}
+.race20 .vtile.hit{border-color:#0F7A3D;background:#F1F8F3} .race20 .vtile.hit .val{color:#0F6A34}
+.race20 .vtile.miss{border-color:#e2c2c2;background:#FCF5F5} .race20 .vtile.miss .val{color:#B4271F}
+
+.race20 .vlist{margin-top:10px;border:1px solid var(--rule);border-radius:6px;overflow:hidden}
+.race20 .vgh{display:flex;align-items:baseline;gap:3px;padding:5px 10px;
+  background:var(--navy);color:#fff;font-size:11.5px;font-weight:700}
+.race20 .vgh .s{font-weight:400;opacity:.85}
+.race20 .vcr{display:flex;align-items:center;gap:7px;padding:7px 10px;background:#fff;
+  border-bottom:1px solid var(--rule);border-left:3px solid transparent;font-size:12.5px}
+.race20 .vcr:last-child{border-bottom:0}
+/* 緑は「予想が当たった」意味だけに使う（結果グループは中立の白のまま） */
+.race20 .vcr.in{background:#F1F8F3} .race20 .vcr.in .re{color:#0F6A34}
+.race20 .vcr .yo{display:flex;align-items:center;gap:5px;flex:1;min-width:0}
+.race20 .vcr .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.race20 .vcr .arw{color:var(--cap);flex:none}
+.race20 .vcr .re{flex:none;width:52px;text-align:right;white-space:nowrap;
+  font-weight:700;font-variant-numeric:tabular-nums;color:var(--cap)}
+.race20 .vcr .note{flex:none;width:56px;text-align:right;font-size:11px;color:var(--cap);
+  font-variant-numeric:tabular-nums}
+.race20 .g-res .vcr{border-left-color:#c9d3dd}
+.race20 .g-res .vcr .re{color:var(--text)}
+.race20 .g-mark .vcr{border-left-color:var(--mkb-hon)}
+/* 地雷=赤・穴=橙。印バッジ（.m-jir / .m-ana）と同じ対応にして、2つの群を見分けられるようにする */
+.race20 .g-mine .vcr{border-left-color:var(--live)}
+.race20 .g-ana .vcr{border-left-color:var(--orange)}
+.race20 .jm{display:inline-block;flex:none;font-size:11px;font-weight:700;border-radius:2px;padding:0 5px}
+.race20 .jm.ok{background:#E7F3EA;color:#0F6A34} .race20 .jm.ng{background:#FDECEC;color:#B4271F}
+
+/* 10. course stats (.cstatsスコープ・60-course-data-spec.md) */
+
+.cstats .notebox{font-size:11.5px;color:var(--cap);margin-top:14px;padding:9px;
+  background:var(--sub-bg);border-radius:6px;line-height:1.65}
+
+/* --- 画面1: コース一覧 --- */
+/* 競馬場選択ボタン。TOPページの汎用.tracks/.trkとは別物なので独自クラスにする */
+.cstats .picklab{font-size:12.5px;font-weight:700;color:var(--sub);
+  padding:14px 2px 6px;display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.cstats .picklab .sub{font-size:11px;font-weight:400;color:var(--cap);
+  font-variant-numeric:tabular-nums;white-space:nowrap}
+.cstats .trackpick{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.cstats .trackpick button{padding:9px 2px;font-size:13px;font-weight:700;border:1px solid #C9C9C4;
+  background:#fff;border-radius:7px;color:var(--text);cursor:pointer}
+.cstats .trackpick button:hover:not(.active):not(:disabled){background:var(--sub-bg)}
+.cstats .trackpick button.active{background:var(--navy);border-color:var(--navy);color:#fff}
+.cstats .trackpick button:disabled{color:#c4c4c4;background:var(--sub-bg2);
+  border-color:var(--sub-bg2);cursor:not-allowed}
+.cstats .cgroup{margin-top:4px}
+.cstats .thead2{font-size:12.5px;font-weight:700;color:var(--sub);padding:10px 2px 4px}
+.cstats .crow{display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:10px 4px;border-bottom:1px solid var(--rule);text-decoration:none;color:var(--text)}
+.cstats .crow:hover{background:var(--sub-bg)}
+.cstats .crow .cl{display:flex;align-items:center;gap:8px;min-width:0}
+.cstats .sfc{display:inline-flex;align-items:center;justify-content:center;width:24px;height:19px;
+  border-radius:3px;font-size:10.5px;font-weight:700;flex:none;color:#fff}
+.cstats .sfc.turf{background:var(--turf)} .cstats .sfc.dirt{background:var(--dirt)}
+.cstats .cn{font-weight:700;font-size:14px}
+.cstats .carnd{margin-left:4px;padding:1px 4px;border-radius:3px;font-size:10.5px;font-weight:700;
+  background:#EEF3F8;color:#41607d;border:1px solid #D5E1EC;vertical-align:1px}
+.cstats .cm{font-size:11.5px;color:var(--cap);font-variant-numeric:tabular-nums}
+.cstats .arw{color:var(--cap);font-size:16px;flex:none}
+.cstats .ctier{font-size:10px;font-weight:700;padding:1px 5px;border-radius:3px;flex:none}
+.cstats .ctier.mid{background:#FFF1DC;color:#8a5a00;border:1px solid #F2D9A8}
+.cstats .ctier.low{background:#FBECEC;color:#9a3b3b;border:1px solid #E8C4C4}
+
+/* --- 画面2: コース詳細 --- */
+.cstats .chead{border-bottom:2px solid var(--rule-strong);padding-bottom:8px;margin-top:4px}
+.cstats .ctitle{font-size:19px;font-weight:700}
+.cstats .cmeta{font-size:11.5px;color:var(--cap);margin-top:2px;font-variant-numeric:tabular-nums}
+
+.cstats .filters{margin:12px 0 6px}
+.cstats .frow{display:flex;align-items:flex-start;gap:8px;margin-bottom:7px}
+.cstats .flab{font-size:11px;color:var(--cap);font-weight:700;padding-top:6px;width:34px;flex:none}
+.cstats .chips{display:flex;gap:5px;flex-wrap:wrap;flex:1}
+.cstats .chips button{padding:6px 11px;font-size:12.5px;border:1px solid var(--rule);background:#fff;
+  border-radius:6px;cursor:pointer;font-weight:600;color:var(--text)}
+.cstats .chips button.active{background:var(--cta);border-color:var(--cta);color:#fff}
+.cstats .chips button:disabled{color:#c4c4c4;background:var(--sub-bg2);cursor:not-allowed;border-color:var(--sub-bg2)}
+.cstats .chips button i{font-style:normal;font-size:9.5px;font-weight:600;opacity:.62;margin-left:4px;
+  font-variant-numeric:tabular-nums}
+.cstats .chips button.t-mid:not(.active){border-color:#F2D9A8}
+.cstats .chips button.t-low:not(.active){border-color:#E8C4C4;color:#9a6b6b}
+
+.cstats .warn{border-radius:5px;padding:8px 10px;font-size:11.5px;margin:8px 0 2px;line-height:1.55}
+.cstats .warn.mid{background:#FFF6E9;border:1px solid #F2D9A8;color:#8a5a00}
+.cstats .warn.low{background:#FBECEC;border:1px solid #E8C4C4;color:#9a3b3b}
+
+.cstats .kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:var(--rule);
+  border:1px solid var(--rule);margin-top:8px}
+.cstats .kpi{background:#fff;padding:9px 10px}
+.cstats .kpi .k{font-size:11px;color:var(--cap)}
+.cstats .kpi .v{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.25}
+.cstats .kpi .u{font-size:11.5px;color:var(--sub);font-weight:400;margin-left:2px}
+
+/* 平均ラップ */
+.cstats .lapbox{border:1px solid var(--rule);border-radius:6px;padding:10px;margin-top:6px}
+.cstats .lapsvg{width:100%;height:auto;display:block}
+.cstats .lapsvg .gl{stroke:var(--rule);stroke-width:1}
+.cstats .lapsvg .ax{font-size:8px;fill:var(--cap);text-anchor:end}
+.cstats .lapsvg .ax.l{text-anchor:start} .cstats .lapsvg .ax.r{text-anchor:end}
+.cstats .lapsvg .lapline{fill:none;stroke:var(--cta);stroke-width:1.8;stroke-linejoin:round}
+.cstats .lapsvg .lapref{fill:none;stroke:#B9C4CE;stroke-width:1.4;stroke-dasharray:3 2.5;stroke-linejoin:round}
+.cstats .lapsvg .dot{fill:var(--cta)}
+.cstats .lapsvg .dot.fast{fill:var(--hit)} .cstats .lapsvg .dot.slow{fill:var(--live)}
+.cstats .lappace{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:5px;margin-bottom:10px}
+.cstats .lappace button{padding:7px 2px;font-size:12px;border:1px solid var(--rule);background:#fff;
+  border-radius:6px;color:var(--text);cursor:pointer;font-weight:600}
+.cstats .lappace button i{font-style:normal;font-size:9.5px;font-weight:600;opacity:.6;margin-left:3px;
+  font-variant-numeric:tabular-nums}
+.cstats .lappace button:disabled{color:#c4c4c4;background:var(--sub-bg2);cursor:not-allowed;border-color:var(--sub-bg2)}
+.cstats .lappace button.active{color:#fff}
+.cstats .lappace button.p-all.active{background:var(--cta);border-color:var(--cta)}
+.cstats .lappace button.p-S.active{background:#6f9ecf;border-color:#6f9ecf}
+.cstats .lappace button.p-M.active{background:#8a8a82;border-color:#8a8a82}
+.cstats .lappace button.p-H.active{background:#d0603a;border-color:#d0603a}
+.cstats .lapstrip{display:flex;flex-wrap:wrap;align-items:baseline;gap:1px;margin-top:9px;
+  font-size:12px;font-variant-numeric:tabular-nums;line-height:1.7}
+.cstats .lapstrip em{color:#c8c8c4;font-style:normal;margin:0 1px}
+.cstats .lapstrip .lv{font-weight:600}
+.cstats .lapstrip .lv.fast{color:var(--hit)} .cstats .lapstrip .lv.slow{color:var(--live)}
+.cstats .lapstrip .lv.head{color:#a9a9a9;font-weight:400}
+.cstats .lapstrip .lv i{font-style:normal;font-size:8.5px;color:var(--cap);margin-left:1px}
+.cstats .lapkpi{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--rule);
+  border:1px solid var(--rule);margin-top:10px}
+.cstats .lapkpi>div{background:#fff;padding:6px 5px;text-align:center}
+.cstats .lapkpi .k{font-size:9.5px;color:var(--cap)}
+.cstats .lapkpi .v{font-size:15px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.3}
+.cstats .lapkpi .v .u{font-size:9.5px;font-weight:400;color:var(--sub);margin-left:1px}
+.cstats .lapkpi .u2{font-size:9px;color:var(--cap)}
+.cstats .lapkpi .approx{background:#FFFBF3}
+.cstats .lapkpi .approx .v{color:#8a5a00} .cstats .lapkpi .approx .u2{color:#8a5a00}
+.cstats .lapnote{font-size:10.5px;color:var(--cap);margin-top:8px;line-height:1.6}
+.cstats .lapnote:empty{display:none}
+
+/* ペース傾向 */
+.cstats .pacebox{border:1px solid var(--rule);border-radius:6px;padding:11px}
+.cstats .pacebar{display:flex;height:26px;border-radius:4px;overflow:hidden;font-size:11px;font-weight:700;color:#fff}
+.cstats .pacebar div{display:flex;align-items:center;justify-content:center;min-width:0;font-variant-numeric:tabular-nums}
+.cstats .pacebar .s{background:#6f9ecf} .cstats .pacebar .m{background:#8a8a82} .cstats .pacebar .h{background:#d0603a}
+.cstats .pacekey{display:flex;gap:14px;margin-top:8px;font-size:11px;color:var(--cap)}
+.cstats .pacekey i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:4px}
+.cstats .pacekey .sw.s{background:#6f9ecf} .cstats .pacekey .sw.m{background:#8a8a82} .cstats .pacekey .sw.h{background:#d0603a}
+.cstats .pacenote{font-size:12px;color:var(--sub);margin-top:8px;line-height:1.55;border-top:1px solid var(--rule);padding-top:8px}
+.cstats .pacenote b{color:var(--text)}
+
+/* 脚質・枠順・人気・人物テーブル共通（tableの基本罫線は既存table作法を流用） */
+.cstats .tblwrap{overflow-x:auto;margin-top:8px}
+.cstats table.st{margin-top:0}
+.cstats table.st td:first-child,.cstats table.st th:first-child{text-align:left;padding-left:7px}
+.cstats table.st tr.top td{background:#F4F8FC}
+/* 順位バッジのスロット（17px+右余白5px）。順位なしの行も同じ幅を確保し1列目の左端を揃える */
+.cstats .rkslot{display:inline-flex;width:22px;height:17px;vertical-align:1px;flex:none}
+.cstats .rk{display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;
+  border-radius:50%;font-size:10.5px;font-weight:700;margin-right:5px;vertical-align:1px;flex:none;color:#fff}
+.cstats .rk.r1{background:#B8860B} .cstats .rk.r2{background:#8C8C8C} .cstats .rk.r3{background:#A9702E}
+.cstats table.st tr.rank1 td{background:#FCF7E8} .cstats table.st tr.rank2 td{background:#F6F6F5} .cstats table.st tr.rank3 td{background:#FAF4EC}
+.cstats table.st tr.rank1 td:first-child{box-shadow:inset 3px 0 0 #B8860B}
+.cstats table.st tr.rank2 td:first-child{box-shadow:inset 3px 0 0 #8C8C8C}
+.cstats table.st tr.rank3 td:first-child{box-shadow:inset 3px 0 0 #A9702E}
+.cstats table.st th.sortable{cursor:pointer;-webkit-user-select:none;user-select:none}
+.cstats table.st th.sortable::after{content:"⇅";font-size:8.5px;opacity:.4;margin-left:2px}
+.cstats table.st th.sortable.on{color:var(--cta)}
+.cstats table.st th.sortable.on::after{content:"▼";font-size:7px;opacity:.9}
+.cstats table.st td.sorted{background:#F7FAFD}
+.cstats table.st tr.rank1 td.sorted{background:#FAF4E0} .cstats table.st tr.rank2 td.sorted{background:#F2F2F1} .cstats table.st tr.rank3 td.sorted{background:#F7F0E6}
+.cstats table.st td.roi{color:var(--cap)}   /* 単回収・複回収は常時無彩色（60-spec D5） */
+.cstats table.st td.thin{color:#a9a9a9}
+.cstats table.st tr.dim td:not(:first-child):not(:nth-child(2)){color:#a9a9a9}
+.cstats table.st tr.dim .bar{opacity:.2}
+.cstats table.st td.fk{position:relative}
+.cstats table.st .bar{position:absolute;right:3px;bottom:4px;height:3px;background:var(--cta);border-radius:2px;opacity:.5}
+
+/* 人気別の層タイル（本命／中穴／大穴）。層は順序尺度なので navy 1色の濃→淡だけで示す */
+.cstats .tier1{--tier:#003E70} .cstats .tier2{--tier:#6E8CA6} .cstats .tier3{--tier:#B9C6D2}
+.cstats .poptiles{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:8px 0 2px}
+.cstats .poptiles .tile{border:1px solid var(--rule);border-radius:7px;padding:9px 10px 10px;
+  border-left:4px solid var(--tier)}
+.cstats .poptiles .lb{font-size:10.5px;color:var(--cap);line-height:1.35}
+.cstats .poptiles .vv{font-size:21px;font-weight:700;font-variant-numeric:tabular-nums;margin-top:3px;line-height:1.05}
+.cstats .poptiles .vv span{font-size:11px;font-weight:600;color:var(--cap);margin-left:2px}
+.cstats .poptiles .sub{font-size:10.5px;color:var(--cap);margin-top:4px;line-height:1.5}
+.cstats .poptiles .track{height:4px;background:#ECF1F6;border-radius:2px;margin-top:6px}
+.cstats .poptiles .track i{display:block;height:100%;background:var(--tier);border-radius:0 2px 2px 0}
+.cstats .tilenote{font-size:10.5px;color:var(--cap);margin-top:6px;line-height:1.55}
+/* 人気表の行頭の帯は層専用にする（金銀銅は①②③バッジが担うので、帯とは競合させない） */
+.cstats table.st[data-tbl="tblPop"] tbody td:first-child{box-shadow:inset 3px 0 0 var(--tier)}
+
+/* 前走コース別（tblPrev）: 競馬場バッジ＋面タグ＋距離、同コース行の強調、その他行 */
+.cstats table.st .ptrk{display:inline-block;font-size:11px;font-weight:700;background:#EEF1F5;color:#41566a;
+  border-radius:4px;padding:1px 5px;margin-right:5px;vertical-align:1px}
+.cstats table.st .psfc{display:inline-flex;align-items:center;justify-content:center;width:17px;height:15px;
+  border-radius:3px;color:#fff;font-size:10px;font-weight:800;vertical-align:1px;margin-right:5px}
+.cstats table.st .psfc.turf{background:var(--turf)} .cstats table.st .psfc.dirt{background:var(--dirt)}
+.cstats table.st .pdist{font-weight:700}
+.cstats table.st .psame{margin-left:6px;font-size:10px;font-weight:700;background:var(--navy);color:#fff;
+  border-radius:4px;padding:1px 5px}
+.cstats table.st tr.prevsame td{background:#F1F6FB}
+.cstats table.st tr.prevsame td:first-child{box-shadow:inset 3px 0 0 var(--navy)}
+.cstats table.st tr.prevother td{color:var(--cap)}
+.cstats table.st .pother i{font-style:normal;font-size:10.5px;color:var(--cap);margin-left:6px}
+.cstats table.st .pspecial{color:var(--sub)}
+/* その他の折りたたみトグルと、開いたときの30未満内訳 */
+.cstats table.st tr.prevtoggle{cursor:pointer}
+.cstats table.st tr.prevtoggle:hover td{background:#EEF3F8}
+.cstats table.st tr.prevtoggle td:first-child{color:var(--link)}
+.cstats table.st .pcaret{font-style:normal;font-size:9px;color:var(--link);margin:0 4px}
+.cstats table.st tr.prevmore td:first-child{padding-left:16px}
+.cstats table.st tr.prevmore td:first-child::before{content:"└";color:var(--cap);margin-right:5px;font-size:10px}
+
+/* 人物・血統: 上位3件のカード */
+.cstats .entcards{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:9px 0 4px}
+.cstats .entcard{border:1px solid var(--rule);border-radius:7px;padding:9px;background:#fff}
+.cstats .entcard.c1{border-color:#E4CE94;background:#FDFAF2}
+.cstats .entcard .rkc{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;
+  border-radius:50%;font-size:10px;font-weight:700;color:#fff}
+.cstats .entcard .rkc.r1{background:#B8860B} .cstats .entcard .rkc.r2{background:#8C8C8C} .cstats .entcard .rkc.r3{background:#A9702E}
+/* 名前が1行の枚と2行の枚で数値の高さがずれないよう、名前欄は2行ぶんを確保する */
+.cstats .entcard .nm{font-size:12.5px;font-weight:700;margin:5px 0 1px;line-height:1.25;
+  word-break:break-word;min-height:2.5em}
+.cstats .entcard .runs,.cstats .entcard .lb{font-size:10.5px;color:var(--cap)}
+.cstats .entcard .lb{margin-top:6px}
+.cstats .entcard .big{font-size:21px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.15}
+.cstats .entcard .track{height:4px;background:#ECF1F6;border-radius:2px;margin-top:5px}
+.cstats .entcard .track i{display:block;height:100%;background:var(--cta);opacity:.5;border-radius:0 2px 2px 0}
+.cstats .entcard .croi{font-size:10.5px;color:var(--cap);margin-top:5px}
+.cstats .entcard .croi span{display:block;white-space:nowrap}
+
+/* 人物・血統タブ */
+.cstats .enttabs{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin:14px 0 9px}
+.cstats .enttabs button{padding:8px 2px;font-size:12.5px;border:1px solid var(--rule);background:#fff;
+  border-radius:6px;color:var(--text);cursor:pointer;font-weight:600}
+.cstats .enttabs button.active{background:var(--navy);border-color:var(--navy);color:#fff}
+/* コースタブは前走コースを足して5枚（109-spec 2026-08-07改訂）。375px幅を5列に割ると
+   「種牡馬 18/18」が入らないので3列2段にする。列を減らすのは折り返しを避けるための手段で、
+   目的は各ボタンのラベルと到達率を1行で読ませること。衝突したら段数のほうを増やす */
+.cstats .enttabs.ct5{grid-template-columns:repeat(3,1fr)}
+.cstats .entnote{font-size:10.5px;color:var(--cap);margin-top:7px;line-height:1.55}
+/* 種牡馬・母父は名前が長いが、折り返すと見栄えが悪いので常に1行。
+   幅は名前に合わせて自動で伸ばし、はみ出しは .tblwrap の横スクロールで吸収する。
+   最長は「マジェスティックウォリアー」等の13文字（12px×13＝約156px）。 */
+.cstats table.st[data-tbl="tblEnt"] td:first-child{font-size:12px}
+
+/* ===== 10.1 レース詳細「コース」タブ（109-course-tab-spec.md §6.3）
+   C案（フィルタ〜ペース傾向）はcourse stats(.cstats)をそのまま流用。ここは
+   B案（今日の出走馬を重ねる下半分）専用に新規追加したクラスだけ。値はmockup-78のもの。
+   .ctab-dup（展開タブと重複の印）は脚質別・枠順別の廃止に伴い2026-08-07に削除。 ===== */
+.cstats .ctab-flag{margin-top:16px;padding:6px 0;font-size:11px;font-weight:700;
+  color:#8a6a00;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule)}
+.cstats .ctab-flag b{font-weight:700}
+.cstats .ctab-miss{margin-top:8px;display:flex;gap:6px;align-items:flex-start;
+  background:var(--sub-bg);border-radius:4px;padding:7px 8px}
+.cstats .ctab-miss .bl{flex-wrap:wrap}
+.cstats .ctab-miss .mw{font-size:10.5px;color:var(--cap);line-height:1.6}
+/* 区分名(bn)を上・馬番(bl)を下の2段組み。逆にすると馬番が折り返した時に区分名と同じ行に見える。
+   bnはinline-blockにして既存の.rkslot（①②③の順位バッジ枠・常設）と同じ1行目に乗せる
+   （blockにすると.rkslotだけの空行が挟まり、V8の縦の長さが目算より伸びた実測差の主因だった）。
+   blはdisplay:flexで確実に2行目へ改行させ、min-widthで1行あたりの馬番バッジ数を確保する
+   （狙いが無いと表の自動レイアウトで1列目が極端に狭くなり、馬番が1個ずつ縦に折り返して伸びる）。 */
+.cstats table.st .bn{display:inline-block;font-size:11px;margin-bottom:2px}
+.cstats table.st .bn i{font-style:normal;font-size:9.5px;color:var(--cap);margin-left:4px}
+.cstats table.st .bl{display:flex;gap:2px;flex-wrap:wrap;min-width:84px}
+
+/* ===== 9. 買い目アキネーター（88-akinator-spec.md）。.ak-wrap配下に全スコープ ===== */
+.ak-wrap{margin-top:4px}
+
+/* ===== 9.1 常設バー（消す） ===== */
+.ak-wrap .ak-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  border:1px solid var(--rule);border-radius:8px;padding:8px 10px;margin-bottom:12px;background:#fff}
+.ak-wrap .ak-bar .lbl{font-size:12px;font-weight:700;color:var(--sub)}
+.ak-wrap .ak-bar .killed{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
+.ak-wrap .ak-bar .killnm{font-size:11px;font-weight:700;margin-right:6px}
+.ak-wrap .ak-bar .hint{font-size:10.5px;color:var(--cap)}
+.ak-wrap .ak-mini{font-size:11.5px;font-weight:700;padding:5px 9px;border-radius:6px;
+  border:1px solid #C9C9C4;background:#fff;color:var(--text);cursor:pointer;font-family:inherit}
+.ak-wrap .ak-mini.on{background:var(--live);border-color:var(--live);color:#fff}
+
+/* ===== 9.2 進行 ===== */
+.ak-wrap .ak-prog{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.ak-wrap .ak-step{font-size:11px;font-weight:700;color:var(--cta);letter-spacing:.04em}
+.ak-wrap .ak-cand{font-size:11px;color:var(--cap)}
+.ak-wrap .ak-cand b{color:var(--text);font-variant-numeric:tabular-nums}
+.ak-wrap .ak-dots{display:flex;gap:4px;margin:0 0 10px}
+.ak-wrap .ak-dots i{height:3px;flex:1;background:var(--rule);border-radius:2px}
+.ak-wrap .ak-dots i.on{background:var(--cta)}
+
+/* ===== 9.3 質問カード ===== */
+.ak-wrap .ak-card{border:1px solid var(--rule);border-radius:10px;overflow:hidden}
+.ak-wrap .ak-q{padding:13px 14px 11px;border-bottom:1px solid var(--rule)}
+.ak-wrap .ak-q .q{font-size:16px;font-weight:700;line-height:1.4}
+.ak-wrap .ak-q .s{font-size:11.5px;color:var(--cap);margin-top:4px;line-height:1.55}
+/* 残り枠カウンター（0/2頭）。上限を説明文に書く代わりに見出しの隣に置く。
+   未選択=灰 / 選択中=青枠 / 上限=青の塗り、の3段で「あと何頭選べるか」を示す */
+.ak-wrap .ak-q .qhead{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ak-wrap .qcount{flex:none;display:inline-flex;align-items:baseline;gap:1px;
+  font-variant-numeric:tabular-nums;border:1px solid var(--rule);border-radius:14px;
+  padding:2px 10px;background:#fff}
+.ak-wrap .qcount .cn{font-size:17px;font-weight:700;color:var(--cap);line-height:1}
+.ak-wrap .qcount .cs{font-size:12px;font-weight:700;color:var(--cap)}
+.ak-wrap .qcount.on{border-color:var(--cta);background:#EAF3FB}
+.ak-wrap .qcount.on .cn{color:var(--cta)}
+.ak-wrap .qcount.max{border-color:var(--cta);background:var(--cta)}
+.ak-wrap .qcount.max .cn,.ak-wrap .qcount.max .cs{color:#fff}
+
+/* 選択肢（テキスト型） */
+.ak-wrap .ak-opts{display:flex;flex-direction:column}
+.ak-wrap .ak-opt{display:flex;align-items:center;gap:10px;width:100%;text-align:left;
+  padding:12px 14px;border:none;border-bottom:1px solid var(--rule);background:#fff;cursor:pointer;font-family:inherit}
+.ak-wrap .ak-opt:last-child{border-bottom:none}
+.ak-wrap .ak-opt:hover{background:var(--pred-row)}
+.ak-wrap .ak-opt.skip{border-top:1px solid var(--rule)}
+.ak-wrap .ak-opt.skip .ol{font-weight:700;color:var(--sub)}
+.ak-wrap .ak-opt .obody{flex:1;min-width:0}
+.ak-wrap .ak-opt .ol{display:block;font-size:14px;font-weight:700;color:var(--text)}
+.ak-wrap .ak-opt .od{display:block;font-size:11px;color:var(--cap);margin-top:3px;line-height:1.5}
+.ak-wrap .ak-opt .oi{flex:none;width:20px;height:20px;border-radius:50%;border:1.5px solid var(--rule);
+  display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--cap)}
+
+/* ===== 9.4 馬選択リスト ===== */
+.ak-wrap .ak-hlist{max-height:none}
+.ak-wrap .ak-h{display:flex;align-items:center;gap:8px;width:100%;padding:8px 12px;
+  border:none;border-bottom:1px solid var(--rule);background:#fff;cursor:pointer;font-family:inherit;text-align:left}
+.ak-wrap .ak-h:last-child{border-bottom:none}
+.ak-wrap .ak-h:hover{background:var(--pred-row)}
+.ak-wrap .ak-h.sel{background:var(--green-row)}
+.ak-wrap .ak-h.killed{opacity:.38}
+.ak-wrap .ak-h.killed .nm{text-decoration:line-through}
+.ak-wrap .ak-h.axisrow{background:var(--pred-row);cursor:default}
+.ak-wrap .ak-h.landmine{box-shadow:inset 0 0 0 1.5px var(--live)}
+.ak-wrap .axischip{flex:none;font-size:10px;font-weight:700;color:#fff;background:var(--navy);
+  border-radius:4px;padding:3px 6px}
+.ak-wrap .ak-h .nmwrap{flex:1;min-width:0}
+.ak-wrap .ak-h .nm{font-size:13px;font-weight:700;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ak-wrap .ak-h .meta{font-size:10.5px;color:var(--cap);margin-top:1px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.ak-wrap .ak-h .meta .pop{font-variant-numeric:tabular-nums}
+.ak-wrap .ak-h .meta .od{color:var(--text);font-weight:700;font-variant-numeric:tabular-nums}
+.ak-wrap .ak-mk{font-weight:700;font-size:13px;width:14px;text-align:center;flex:none}
+.ak-wrap .ak-mk.hon{color:var(--mk-hon)}.ak-wrap .ak-mk.tai{color:var(--mk-tai)}
+.ak-wrap .ak-mk.tan{color:var(--mk-tan)}.ak-wrap .ak-mk.oku{color:var(--mk-oku)}
+.ak-wrap .ak-mk.none{color:#ddd}
+/* 111-spec（2026-08-07）: 出馬表で自分が付けた印。AIの印（.ak-mk。107 §2.2 で画面から外した）
+   とは別物なのでクラスを分け、出馬表の自分の印（.mm-my）と同じ「紺の枠＋薄青の地」で揃える */
+.ak-wrap .ak-my{flex:none;display:inline-flex;align-items:center;justify-content:center;
+  min-width:19px;height:19px;padding:0 2px;border:1px solid var(--navy);border-radius:4px;
+  background:#F4F8FC;font-size:12px;font-weight:700;line-height:1;vertical-align:middle}
+.ak-wrap .ak-my.m1{color:var(--mk-hon)} .ak-wrap .ak-my.m2{color:var(--mk-tai)}
+.ak-wrap .ak-my.m3{color:var(--mk-tan)} .ak-wrap .ak-my.m4{color:var(--mk-oku)}
+.ak-wrap .ak-my.m5{color:var(--orange)}
+.ak-wrap .ak-my.m6{color:var(--cap);font-size:10.5px}
+/* 馬名の中に入れる場合だけ、名前との間を空ける（行そのものが flex の場所は gap が効く） */
+.ak-wrap .ak-h .nm .ak-my{margin-right:4px}
+/* 第1段の見出しは馬名が16pxなので、印も1段大きく。baseline揃えの行なので上下は中央に置く */
+.ak-wrap .ak-hh .ak-my{min-width:22px;height:22px;font-size:14px;align-self:center}
+.ak-wrap .ak-hh .ak-my.m6{font-size:11.5px}
+.ak-wrap .ak-grade{display:inline-block;min-width:21px;text-align:center;font-weight:700;font-size:9.5px;
+  border-radius:3px;padding:1px 3px;color:#fff}
+.ak-wrap .ak-grade.g-s{background:#0B5E2E} .ak-wrap .ak-grade.g-ap{background:#0F7A3D} .ak-wrap .ak-grade.g-a{background:#2f8f4e}
+.ak-wrap .ak-grade.g-bp{background:#5a9bd4} .ak-wrap .ak-grade.g-b{background:#8aadc9}
+.ak-wrap .ak-grade.g-cp{background:#b0b0a8} .ak-wrap .ak-grade.g-c{background:#c2c2ba}
+.ak-wrap .ak-grade.g-d{background:#d8b48a} .ak-wrap .ak-grade.g-e{background:#d89a9a}
+.ak-wrap .ak-h .ak-pb{flex:none;width:64px}
+.ak-wrap .ak-h .ak-pb .v{font-size:10.5px;color:var(--cap);text-align:right;font-variant-numeric:tabular-nums}
+.ak-wrap .ak-h .ak-pb .bar{height:3px;background:var(--sub-bg2);border-radius:2px;margin-top:2px;overflow:hidden}
+.ak-wrap .ak-h .ak-pb .bar i{display:block;height:100%;background:var(--cta)}
+.ak-wrap .ak-h .chk{flex:none;width:22px;height:22px;border:1.5px solid #bbb;border-radius:5px;background:#fff;
+  display:flex;align-items:center;justify-content:center;font-size:13px;color:transparent}
+.ak-wrap .ak-h.sel .chk{background:var(--cta);border-color:var(--cta);color:#fff}
+.ak-wrap .ak-h.sel .chk::after{content:"✓"}
+.ak-wrap .ak-h .chk.radio{border-radius:50%}
+.ak-wrap .ak-h.sel .chk.radio{background:var(--navy);border-color:var(--navy);color:transparent}
+.ak-wrap .ak-h.sel .chk.radio::after{content:"";width:8px;height:8px;border-radius:50%;background:#fff}
+
+/* 入力型（予算） */
+.ak-wrap .ak-input{padding:14px}
+.ak-wrap .ak-input input{width:100%;font-family:inherit;font-size:20px;font-weight:700;
+  padding:12px 13px;border:1.5px solid var(--rule);border-radius:8px;color:var(--text);
+  font-variant-numeric:tabular-nums;background:#fff}
+.ak-wrap .ak-input input:focus{outline:none;border-color:var(--cta)}
+.ak-wrap .ak-input input::placeholder{font-size:14px;font-weight:400;color:#bbb}
+.ak-wrap .ak-input .parsed{font-size:12px;color:var(--sub);margin-top:9px;line-height:1.55}
+.ak-wrap .ak-input .parsed b{font-size:15px;color:var(--cta)}
+.ak-wrap .ak-input .parsed .dim{color:var(--cap)}
+
+/* フッタ操作・ボタン */
+.ak-wrap .ak-foot{display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--sub-bg);border-top:1px solid var(--rule)}
+.ak-wrap .ak-foot .picked{font-size:11.5px;color:var(--sub);flex:1;display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.ak-wrap .ak-foot .picked b{color:var(--text)}
+.ak-wrap .ak-btn{font-size:13px;font-weight:700;padding:9px 16px;border-radius:7px;border:1px solid var(--cta);
+  background:var(--cta);color:#fff;cursor:pointer;font-family:inherit}
+.ak-wrap .ak-btn:disabled{opacity:.35;cursor:not-allowed}
+.ak-wrap .ak-btn.ghost{background:#fff;color:var(--cta)}
+.ak-wrap .ak-btn.sm{font-size:11.5px;padding:6px 11px}
+.ak-wrap .ak-btn.gray{background:#fff;color:var(--sub);border-color:#C9C9C4}
+
+/* ===== 9.5 残り候補パネル（質問中・全券種一覧共用の折りたたみ） ===== */
+.ak-wrap details.ak-alive{margin-top:10px;border:1px solid var(--rule);border-radius:8px;overflow:hidden}
+.ak-wrap details.ak-alive>summary{list-style:none;cursor:pointer;font-size:12px;font-weight:700;color:var(--sub);
+  padding:9px 12px;background:var(--sub-bg);display:flex;justify-content:space-between}
+.ak-wrap details.ak-alive>summary::-webkit-details-marker{display:none}
+.ak-wrap details.ak-alive>summary::after{content:"▾";color:var(--cap)}
+.ak-wrap details.ak-alive[open]>summary::after{content:"▴"}
+.ak-wrap .alive-body{padding:10px 12px}
+.ak-wrap .alive-grp{font-size:10.5px;font-weight:700;color:var(--cap);margin:8px 0 5px}
+.ak-wrap .alive-grp:first-child{margin-top:0}
+.ak-wrap .alive-chips{display:flex;flex-wrap:wrap;gap:5px}
+.ak-wrap .achip{font-size:10.5px;font-weight:700;padding:3px 7px;border-radius:11px;
+  border:1px solid var(--rule);background:#fff;color:var(--text)}
+.ak-wrap .achip.dead{opacity:.3;text-decoration:line-through}
+
+/* ===== 9.6 結果カード ===== */
+.ak-wrap .res-head{font-size:15px;font-weight:700;margin:14px 0 3px}
+.ak-wrap .res-sub{font-size:11.5px;color:var(--cap);margin-bottom:12px;line-height:1.6}
+.ak-wrap .ak-empty{font-size:13px;color:var(--cap);padding:14px 0}
+.ak-wrap .rc{border:1px solid var(--rule);border-radius:10px;overflow:hidden;margin-bottom:14px}
+.ak-wrap .rc .band{color:#fff;padding:8px 12px;display:flex;align-items:center;gap:8px}
+.ak-wrap .rc .band .bl{flex:1;min-width:0}
+.ak-wrap .rc .band .fam{display:inline-block;font-size:10px;font-weight:700;background:rgba(255,255,255,.24);
+  padding:1px 7px;border-radius:10px;margin-bottom:3px}
+.ak-wrap .rc .band .ttl{display:block;font-size:18px;font-weight:700;line-height:1.2}
+.ak-wrap .rc .band .way{font-size:12px;font-weight:700;opacity:.88;margin-left:7px}
+.ak-wrap .rc .band .pts{margin-left:auto;font-size:11.5px;font-weight:700;text-align:right;line-height:1.35}
+.ak-wrap .rc .band .unit{font-size:10px;font-weight:700;opacity:.85}
+.ak-wrap .rc .band.b-tansho{background:#4657b8}.ak-wrap .rc .band.b-fukusho{background:#4657b8}
+.ak-wrap .rc .band.b-wakuren{background:#009944}.ak-wrap .rc .band.b-umaren{background:#8b5fbf}
+.ak-wrap .rc .band.b-wide{background:#4bb3b3}.ak-wrap .rc .band.b-umatan{background:#e59300}
+.ak-wrap .rc .band.b-sanrenpuku{background:#4aa3d6}.ak-wrap .rc .band.b-sanrentan{background:#e57d1e}
+.ak-wrap .rc .legs{border-bottom:1px solid var(--rule)}
+.ak-wrap .leg{padding:9px 12px;border-bottom:1px dashed var(--rule)}
+.ak-wrap .leg:last-child{border-bottom:none}
+.ak-wrap .leg.main{background:var(--pred-row)}
+.ak-wrap .leg .lh{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:5px}
+.ak-wrap .leg .lname{font-size:13px;font-weight:700}
+.ak-wrap .leg .lway{font-size:11px;font-weight:700;color:var(--sub);margin-left:4px}
+.ak-wrap .leg .lamt{margin-left:auto;font-size:11px;color:var(--cap);font-variant-numeric:tabular-nums;white-space:nowrap}
+.ak-wrap .leg .lamt b{color:var(--text);font-size:12.5px}
+.ak-wrap .mainchip{display:inline-block;font-size:9.5px;font-weight:700;color:#fff;background:var(--navy);
+  border-radius:3px;padding:1px 5px;margin-right:5px;vertical-align:1px}
+.ak-wrap .leg .lcombos{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center}
+.ak-wrap .leg .lnote{display:flex;flex-wrap:wrap;align-items:center;gap:2px;padding:3px 0}
+.ak-wrap .nsep{display:inline-block;width:4px}
+.ak-wrap .boxtag{font-size:9.5px;font-weight:700;color:var(--sub);border:1px solid var(--rule);
+  border-radius:3px;padding:1px 4px;margin-left:5px;background:#fff}
+.ak-wrap .leg .lmore{font-size:10.5px;color:var(--cap)}
+.ak-wrap .leg .ltrim{font-size:10px;color:var(--cap);margin-top:4px}
+.ak-wrap .leg .lpay{font-size:11px;color:var(--cap);margin-top:5px}
+.ak-wrap .leg .lpay b{color:var(--text);font-size:12px;font-variant-numeric:tabular-nums}
+.ak-wrap .slider{padding:10px 12px;border-bottom:1px solid var(--rule);background:var(--sub-bg)}
+.ak-wrap .slider .sl-lbl{display:flex;justify-content:space-between;font-size:10px;color:var(--cap);margin-bottom:4px}
+.ak-wrap .slider .sl-val{font-weight:700;color:var(--sub)}
+.ak-wrap .slider .sl-val b{color:var(--cta);font-size:12px;font-variant-numeric:tabular-nums}
+.ak-wrap .slider input[type=range]{width:100%;accent-color:var(--cta);margin:0}
+.ak-wrap .rc .cb{display:flex;align-items:center;gap:1px;padding:3px 6px;border:1px solid var(--rule);border-radius:6px;background:#fff}
+.ak-wrap .rc .cb .oz{font-size:10px;color:var(--cap);margin-left:4px;font-variant-numeric:tabular-nums}
+.ak-wrap .rc .stats{border-bottom:1px solid var(--rule)}
+.ak-wrap .rc .stats.two{display:grid;grid-template-columns:1fr 1fr;gap:0}
+.ak-wrap .rc .stats.two .st{padding:12px;border-right:1px solid var(--rule)}
+.ak-wrap .rc .stats.two .st:last-child{border-right:none}
+.ak-wrap .rc .stats.two .st .v{font-size:24px}
+.ak-wrap .rc .st .k{font-size:10.5px;color:var(--cap)}
+.ak-wrap .rc .st .v{font-size:17px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.25;margin-top:1px}
+.ak-wrap .rc .st .d{font-size:10.5px;color:var(--cap);margin-top:1px}
+.ak-wrap .rc .say{font-size:12.5px;line-height:1.55;padding:9px 12px;border-top:1px solid var(--rule);
+  border-bottom:1px solid var(--rule)}
+.ak-wrap .rc .say.warn{background:#FFF8E8}
+.ak-wrap .rc .say.ok{background:var(--chip-under-bg);color:var(--chip-under-fg)}
+.ak-wrap .rc .say b{font-weight:700}
+.ak-wrap details.more{border-bottom:1px solid var(--rule)}
+.ak-wrap details.more>summary{list-style:none;cursor:pointer;font-size:11px;color:var(--cap);
+  padding:7px 12px;display:flex;justify-content:space-between}
+.ak-wrap details.more>summary::-webkit-details-marker{display:none}
+.ak-wrap details.more>summary::after{content:"▾"}
+.ak-wrap details.more[open]>summary::after{content:"▴"}
+.ak-wrap .mb{padding:0 12px 10px;font-size:11.5px;color:var(--sub);line-height:1.7}
+.ak-wrap .mrow{display:flex;justify-content:space-between;border-bottom:1px dotted var(--rule);padding:3px 0}
+.ak-wrap .mrow b{color:var(--text);font-variant-numeric:tabular-nums}
+.ak-wrap .mcond{margin-top:7px;font-size:11.5px;color:var(--sub);line-height:1.6}
+.ak-wrap .rc .warn{font-size:11px;color:var(--sub);background:#FFF8E8;padding:8px 12px;border-bottom:1px solid var(--rule);line-height:1.55}
+.ak-wrap .rc .warn b{color:var(--live)}
+.ak-wrap .rc .ctrl{font-size:10.5px;color:var(--cap);padding:8px 12px;border-bottom:1px solid var(--rule);line-height:1.55;background:var(--sub-bg)}
+.ak-wrap .rc .ctrl b{color:var(--text)}
+.ak-wrap .rc .act{padding:9px 12px;display:flex;gap:8px}
+.ak-wrap .rc .act .ak-btn{white-space:nowrap;font-size:12px;padding:9px 8px;flex:1;min-width:0}
+.ak-wrap .alltbl{width:100%;border-collapse:collapse;font-size:11px}
+.ak-wrap .alltbl th{background:var(--sub-bg2);color:var(--cap);font-size:9.5px;font-weight:700;
+  padding:5px 3px;text-align:right;border-bottom:1px solid var(--rule);white-space:nowrap}
+.ak-wrap .alltbl td{padding:6px 3px;text-align:right;border-bottom:1px solid var(--rule);
+  font-variant-numeric:tabular-nums;white-space:nowrap}
+.ak-wrap .alltbl td.l{white-space:normal;font-weight:700;font-size:11px}
+.ak-wrap .alltbl tr.dim td{opacity:.42;font-weight:400}
+.ak-wrap .alltbl td.rz{font-size:9.5px;color:var(--cap);font-weight:400}
+.ak-wrap .alltbl .tr{font-size:9px;color:var(--cap)}
+.ak-wrap .pick3{display:inline-block;font-size:9px;font-weight:700;background:var(--cta);color:#fff;
+  border-radius:3px;padding:1px 4px;margin-right:4px;vertical-align:1px}
+.ak-wrap .allnote{font-size:10.5px;color:var(--cap);line-height:1.6;padding:9px 12px}
+.ak-wrap .note{font-size:11px;color:var(--cap);line-height:1.7;border:1px solid var(--rule);border-radius:8px;
+  padding:11px 13px;background:var(--sub-bg);margin-top:6px}
+.ak-wrap .note b{color:var(--sub)}
+.ak-wrap .restart{margin-top:16px;text-align:center}
+
+/* ===== 着順表（95-finish-order-spec.md・netkeiba互換）===== */
+.fo-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--rule);}
+.fo{border-collapse:separate;border-spacing:0;font-size:12.5px;white-space:nowrap;
+  min-width:100%;table-layout:auto;}
+.fo th,.fo td{padding:6px 8px;border-bottom:1px solid var(--rule);text-align:left;
+  background:var(--bg);}
+.fo thead th{font-size:11px;color:var(--cap);background:var(--sub-bg);font-weight:400;
+  text-align:center;border-bottom:1px solid var(--rule-strong);}
+.fo td.num,.fo th.num{text-align:center;font-variant-numeric:tabular-nums;}
+.fo td.sub{color:var(--sub);}
+.fo td.fo-nm{font-weight:700;}
+.fo td.fo-tm{font-weight:700;font-variant-numeric:tabular-nums;}
+.fo td.fo-mk{text-align:center;padding:5px 5px;}
+.fo tr.fo-win td{background:var(--sub-bg2);}
+/* 人気・上り3Fの金銀銅。勝率と同じ .ag を使い、狭い列に収まるよう幅だけ詰める */
+.race20 .fo .ag{min-width:0;padding:0 6px;font-size:12px;}
+/* 着・馬番は左に固定（横に振っても行を見失わないようにする）。枠番の列は持たず、
+   枠は馬番ボックスの色で示す。left に入れる値は左隣までの列幅の合計なので、
+   描画後に setupFinishOrder() が実測して --fo-l2 に入れる。
+   下の既定値はスクリプトが走る前の一瞬だけ使われる。 */
+.fo td.fo-c1,.fo th:nth-child(1){position:sticky;left:0;z-index:2;font-weight:700;}
+.fo td.fo-c2,.fo th:nth-child(2){position:sticky;left:var(--fo-l2,32px);z-index:2;font-weight:700;
+  box-shadow:1px 0 0 var(--rule);}
+.fo thead th:nth-child(-n+2){z-index:3;background:var(--sub-bg);}
+.fo tr.fo-win td.fo-c1,.fo tr.fo-win td.fo-c2{background:var(--sub-bg2);}
+details.fo-more{border-top:none;}
+details.fo-more>summary{font-size:13px;padding:10px 2px;}
+details.fo-more[open]>summary{font-size:13px;border-bottom:1px solid var(--rule);}
+details.fo-more .fold-body{padding-bottom:10px;}
+
+/* ===== レース回顧（91-race-review-spec.md）===== */
+.rv-lead{font-size:19px;font-weight:700;line-height:1.5;margin:0 0 10px;}
+.rv-facts{display:flex;gap:8px;flex-wrap:wrap;}
+.rv-fact{flex:1 1 128px;border:1px solid var(--rule);border-top:3px solid var(--navy);
+  padding:8px 10px;background:var(--sub-bg);}
+.rv-fact.bad{border-top-color:var(--live);}
+.rv-fl{font-size:11px;color:var(--cap);}
+.rv-fv{font-size:16px;font-weight:700;line-height:1.4;}
+.rv-fs{font-size:11px;color:var(--cap);}
+/* 勝ち時計の評価語（優秀／遅い等）。緑は的中専用なので色は使わず、太字だけで示す */
+.rv-fs b{color:var(--text);}
+.rv-nw{white-space:nowrap;}   /* 「1.3秒速い」を数字の途中で折らない */
+/* ラップの折れ線2本を1つのグラフに重ねる（紺＝今回／灰の破線＝コース平均）。
+   上にあるほど速いハロン。線だけSVG・文字は全部HTML。SVGに文字を置くと viewBox の幅が
+   画面幅に圧縮される分だけ文字も縮み、375pxで数値が実効5.2pxになって読めなかった
+   （2026-07-30実測）。線は preserveAspectRatio="none" で伸ばし、太さだけ一定に保つ。 */
+.rv-lap{margin-top:16px;}
+.rv-lgd{display:flex;flex-wrap:wrap;gap:4px 12px;margin-bottom:2px;}
+.rv-lgi{font-size:11px;color:var(--sub);display:inline-flex;align-items:center;}
+.rv-lgi::before{content:"";width:14px;height:0;border-top-width:2px;margin-right:4px;}
+.rv-lgi.now::before{border-top-style:solid;border-top-color:var(--navy);}
+.rv-lgi.avg::before{border-top-style:dashed;border-top-color:#9AA6B2;}
+.rv-lcw{position:relative;}
+.rv-lcs{position:absolute;inset:0;width:100%;height:100%;display:block;}
+.rv-lgr{stroke:var(--rule);stroke-width:1;vector-effect:non-scaling-stroke;}
+.rv-lln{fill:none;stroke-width:2;stroke-linejoin:round;vector-effect:non-scaling-stroke;}
+.rv-lln.now{stroke:var(--navy);}
+.rv-lln.avg{stroke:#9AA6B2;stroke-dasharray:5 3;}
+.rv-ldt{position:absolute;width:5px;height:5px;border-radius:50%;
+  transform:translate(-50%,-50%);}
+.rv-ldt.now{background:var(--navy);}
+.rv-ldt.avg{background:#9AA6B2;}
+/* 線の上に重なっても読めるように、白いにじみで縁取る */
+.rv-lvl{position:absolute;font-size:9.5px;line-height:1;color:var(--text);white-space:nowrap;
+  transform:translate(-50%,-50%);font-variant-numeric:tabular-nums;
+  text-shadow:0 0 3px var(--bg),0 0 3px var(--bg),0 0 2px var(--bg);}
+.rv-lvl.up{margin-top:-11px;}
+.rv-lvl.dn{margin-top:11px;}
+.rv-lap.dense .rv-lvl{font-size:8.5px;letter-spacing:-.4px;}
+.rv-lbax,.rv-ldf{display:flex;margin-top:3px;}
+.rv-lbax span,.rv-ldf span{flex:1 1 0;min-width:0;font-size:9.5px;text-align:center;
+  font-variant-numeric:tabular-nums;white-space:nowrap;}
+.rv-lbax span{color:var(--cap);}
+.rv-lbax span.off{color:var(--rule-strong);}
+.rv-ldf{border-top:1px solid var(--rule);padding-top:3px;}
+.rv-ldf span{color:var(--sub);}
+.rv-ldf.dense span{font-size:8.5px;letter-spacing:-.4px;}
+.rv-note{font-size:11.5px;color:var(--cap);margin-top:5px;}
+.rv-corner{margin-top:18px;border:1px solid var(--rule);padding:10px 12px;background:var(--sub-bg);}
+.rv-cap{font-size:11px;color:var(--cap);margin-bottom:4px;}
+.rv-ctbl{width:100%;border-collapse:collapse;}
+.rv-ctbl th{width:82px;font-size:11.5px;color:var(--cap);font-weight:400;border:none;
+  padding:3px 6px 3px 0;text-align:left;vertical-align:middle;}
+.rv-ctbl td{border:none;padding:4px 0;}
+.rv-seq{line-height:2.4;}
+.rv-grp{display:inline-block;white-space:nowrap;vertical-align:middle;}
+.rv-grp.multi{background:#E7ECF1;border-radius:11px;padding:2px 5px;}
+.rv-um{display:inline-block;}
+.rv-um.rv-top .uma{outline:2px solid var(--navy);outline-offset:1px;}
+.rv-gap{display:inline-block;height:1px;vertical-align:middle;}
+.rv-far{display:inline-block;width:1px;height:16px;background:#B9C4CD;
+  vertical-align:middle;margin-right:6px;}
+.rv-lead-mark,.rv-lead i{font-style:normal;}
+.rv-summ{font-size:13px;margin:14px 0 8px;} .rv-summ b{font-size:15px;}
+/* 印の的中サマリー。◎○▲△を横に並べ、3着以内だったものを緑で塗る。
+   緑は的中専用色で、真下の印カードの塗り分けと同じ意味に揃えている */
+.rv-msum{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  border:1px solid var(--rule);border-radius:10px;padding:11px 13px;margin:14px 0 8px;}
+.rv-sbs{display:flex;gap:6px;flex-wrap:wrap;}
+.rv-sb{min-width:34px;height:38px;border-radius:6px;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:1px;padding:0 4px;
+  border:1.5px solid var(--rule);background:#fff;}
+.rv-sb .m{font-size:14px;font-weight:700;color:var(--cap);line-height:1;}
+.rv-sb .f{font-size:9.5px;color:var(--cap);line-height:1;font-variant-numeric:tabular-nums;}
+.rv-sb.ok{border-color:var(--hit);background:#F2F9F4;}
+.rv-sb.ok .m{color:var(--hit);}
+.rv-sb.ok .f{color:var(--hit);font-weight:700;}
+.rv-sres{font-size:13px;font-weight:700;margin-left:auto;white-space:nowrap;}
+.rv-sres b{font-size:19px;color:var(--hit);font-variant-numeric:tabular-nums;}
+.rv-mcs{display:flex;flex-wrap:wrap;gap:8px;}
+.rv-mc{flex:1 1 200px;display:flex;align-items:center;gap:9px;border:1px solid var(--rule);
+  border-left:3px solid var(--cap);padding:8px 11px;background:var(--sub-bg);}
+.rv-mc.hit{border-left-color:var(--hit);background:#F2F9F4;}
+.rv-mc.lm{border-left-color:var(--live);}
+.rv-mc.lm.hit{border-left-color:var(--hit);}
+/* 穴は地雷の裏返し。成功（3着以内）で緑になる向きは他のカードと揃える */
+.rv-mc.ana{border-left-color:var(--orange);}
+.rv-mc.ana.hit{border-left-color:var(--hit);}
+.rv-mk{font-size:20px;font-weight:700;color:var(--navy);width:24px;text-align:center;}
+.rv-mk.sm{font-size:11px;color:var(--live);width:30px;}
+.rv-mk.sm.ana{color:var(--orange);}
+.rv-mb{flex:1;font-size:13px;line-height:1.45;}
+.rv-s{font-size:11px;color:var(--cap);}
+.rv-mf{font-size:20px;font-weight:700;}
+.rv-u{font-size:11px;font-weight:400;color:var(--cap);}
+.rv-betline{font-size:13px;margin-top:14px;padding:9px 11px;background:var(--sub-bg2);}
+.rv-ok{color:var(--hit);} .rv-ng{color:var(--live);}
+.rv-pay{width:100%;border-collapse:collapse;margin-top:14px;font-size:12.5px;}
+.rv-pay th{width:64px;color:var(--cap);font-weight:400;font-size:12px;
+  border-bottom:1px solid var(--rule);padding:5px 6px 5px 0;text-align:left;}
+.rv-pay td{border-bottom:1px solid var(--rule);padding:5px 0;line-height:2;}
+.rv-blk{margin-top:12px;border-left:3px solid var(--cap);padding:2px 0 2px 11px;}
+.rv-blk.up{border-left-color:var(--hit);} .rv-blk.down{border-left-color:var(--live);}
+.rv-bh{font-size:12px;font-weight:700;}
+.rv-blk ul{margin:2px 0 0;padding-left:0;list-style:none;font-size:13px;}
+.rv-blk li{margin:2px 0;}
+.rv-ls{color:var(--cap);font-size:11.5px;margin-left:8px;}
+.rv-nc{border-left:3px solid var(--navy);padding:8px 12px;margin-bottom:9px;background:var(--sub-bg);}
+.rv-nh{font-size:14px;} .rv-nh b{margin-right:6px;}
+.rv-nf{font-weight:700;margin-right:8px;} .rv-np{color:var(--cap);font-size:12px;}
+.rv-nb{font-size:13px;}
+.rv-so{font-size:12px;color:var(--sub);margin-top:5px;padding-left:13px;position:relative;}
+.rv-so::before{content:"→";position:absolute;left:0;color:var(--navy);}
+/* 前走メモ（出馬表の下段・91-race-review-spec.md T7）*/
+tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
+  font-size:12px;padding:7px 10px;}
+.rv-ptag{display:inline-block;background:var(--navy);color:#fff;font-size:10px;
+  padding:1px 6px;border-radius:2px;margin-right:6px;}
+.rv-chip{display:inline-block;background:#F0F0EE;color:#7a6a6a;font-size:11px;
+  border-radius:2px;padding:1px 7px;margin-right:4px;}
+.rv-ptx{color:var(--sub);}
+.rv-psrc{color:var(--cap);font-size:11px;margin-left:4px;}
+
+/* ============================================================
+   106-spec: 出馬表の縦スクロール化（1頭1枚の札・馬名は縦書きの柱）。
+   105-spec の1枚表（table.unified・幅1,214px固定）を置き換える。
+   横スクロールは0。PC・スマホとも同じ組み方で、札の幅だけ上限で止める。
+   ============================================================ */
+.race20 .shctl:empty{display:none}
+.race20 .shlist{margin-top:8px;max-width:760px}
+.race20 .acard{display:flex;border:1px solid var(--rule-strong);border-radius:7px;
+  overflow:hidden;background:#fff;margin-bottom:7px}
+/* 2026-08-05: 印付きの札だけ枠を薄い青 #B9CFE1 に変えていたのをやめ、枠は全札 #333 に統一した。
+   白との差が 印なし12.6 : 印あり1.6 で、**大事な馬の枠のほうが弱い**という逆転になっていた。
+   印が付いていることは背景の青（#F4F8FC）と柱の印で分かるので、枠に仕事をさせない。 */
+.race20 .acard.pred{background:#F4F8FC}
+.race20 .acard.scratched{color:var(--cap)}
+/* 柱（新聞の1頭ぶんの縦帯）。幅28px固定。JRAの馬名は最長9文字なので
+   13px×9＝117px、札の高さ（約340px）に必ず収まる＝縦書きは折り返さない */
+.race20 .aspine{flex:none;width:28px;background:var(--sub-bg);border-right:1px solid var(--rule);
+  display:flex;flex-direction:column;align-items:center;gap:3px;padding:4px 0 6px;
+  border-radius:0;font:inherit;color:inherit;cursor:pointer;text-align:center}
+.race20 .aspine.plain{cursor:default}
+.race20 .aspine .vname{writing-mode:vertical-rl;font-size:13px;font-weight:700;
+  letter-spacing:.01em;line-height:1;margin-top:2px}
+.race20 .aspine .apop{margin-top:auto;font-style:normal;font-size:10px;color:var(--cta);opacity:.7}
+.race20 .aspine:hover .vname{text-decoration:underline}
+.race20 .aspine .mkb{margin-right:0}
+.race20 .aspine .mkb.m-jir{font-size:9px;min-width:0;padding:0 2px;letter-spacing:-.02em}
+.race20 .abody{flex:1 1 auto;min-width:0;padding:4px 5px 5px}
+/* 1行目＝この馬の今日。左に性齢・斤量・騎手・脚質、右端に総合点とオッズ */
+.race20 .ahead{display:flex;align-items:center;gap:5px;font-size:10.5px;color:var(--sub);
+  white-space:nowrap;border-bottom:1px dotted var(--rule);padding-bottom:3px;margin-bottom:3px}
+.race20 .ahead .pa{font-weight:700;color:var(--text)}
+.race20 .ahead .pk{font-variant-numeric:tabular-nums}
+.race20 .ahead .pj{overflow:hidden;text-overflow:ellipsis;max-width:5em}
+.race20 .ahead .tot{margin-left:auto;flex:none;font-weight:700;font-size:12.5px;color:var(--text);
+  font-variant-numeric:tabular-nums;display:flex;align-items:center;gap:3px}
+.race20 .ahead .od{flex:none;font-weight:700;font-size:12.5px;color:var(--text);
+  font-variant-numeric:tabular-nums;display:flex;align-items:baseline;gap:2px}
+.race20 .ahead .od i{font-style:normal;font-size:9.5px;font-weight:400;color:var(--cap)}
+/* 10倍を切ったら赤オッズ（新聞・netkeibaと同じ表記）。数字だけ赤にし、
+   単位の「倍」と人気は灰色のまま＝どこが数字かが分かるようにする */
+.race20 .od.hot{color:var(--live)}
+.race20 .popup .phead .od.hot{color:var(--live);font-weight:700}
+.race20 .ahead .legbar{transform:scale(.85);transform-origin:left center;margin:0 -4px}
+/* 2行目＝馬体重・出走間隔・10項目の点。入らなければ折り返す */
+.race20 .asub{display:flex;align-items:center;flex-wrap:wrap;gap:0 5px;margin-bottom:3px}
+.race20 .asub:empty{display:none}
+.race20 .asub .pw,.race20 .asub .rot{font-size:9.5px;color:var(--cap);
+  font-variant-numeric:tabular-nums;white-space:nowrap}
+/* 106-spec §5.2: 10項目の点（項目名＋○×）。理由文はポップアップ側（§5.4）。
+   クラス名は .idot ―― .dot はタブバーの赤丸・ラップ図の点で使用済み */
+.race20 .idot{display:inline-flex;align-items:center;gap:1px;font-size:9.5px;line-height:1.5;
+  border-radius:3px;padding:0 4px;margin:0 3px 2px 0;background:var(--sub-bg2);color:var(--sub)}
+.race20 .idot i{font-style:normal;font-weight:700}
+.race20 .idot.d-o{background:var(--chip-ok-bg);color:var(--chip-ok-fg)}
+.race20 .idot.d-x{background:var(--chip-ng-bg);color:var(--chip-ng-fg)}
+.race20 .mut{color:var(--cap)}
+
+/* 地雷・穴の理由文（87-spec §3.2 / 94-spec §3.3）。印列のバッジは記号だけなので、
+   オッズとのズレを示す数字はここでしか読めない。左の色帯でどちらの印かを示す。
+   105-spec: 行タップのパネルは廃止したが、このブロックは馬名ポップアップ（§5.5）へ移設。 */
+.race20 .mkw{display:flex;align-items:flex-start;gap:6px;margin:0 0 7px;padding:6px 8px;
+  background:#fff;border:1px solid var(--rule);border-left:3px solid var(--cap);
+  border-radius:3px;font-size:11.5px;line-height:1.5}
+.race20 .mkw.jir{border-left-color:var(--live)}
+.race20 .mkw.ana{border-left-color:var(--orange)}
+.race20 .mkw .mkb{flex:none}
+
+/* クラスラベル（新馬〜G1／地方は別系統の色） */
+.race20 .cb{display:inline-block;min-width:26px;text-align:center;font-size:9.5px;font-weight:800;
+  color:#fff;border-radius:3px;padding:0 3px;letter-spacing:.02em}
+.race20 .cb.c-g1{background:#B3121E}.race20 .cb.c-g2{background:#1D5FA8}
+.race20 .cb.c-g3{background:#2E7D46}.race20 .cb.c-l{background:#6D4C9F}
+.race20 .cb.c-op{background:#C77A0A}.race20 .cb.c-w3{background:#4A6B8A}
+.race20 .cb.c-w2{background:#6E8CA6}.race20 .cb.c-w1{background:#93A9BC}
+.race20 .cb.c-mi{background:#9A9A92}.race20 .cb.c-shin{background:#BDBDB5}
+.race20 .cb.c-jpn1{background:#A3474F}.race20 .cb.c-jpn2{background:#46628A}
+.race20 .cb.c-jpn3{background:#4B7A5C}.race20 .cb.c-jusho{background:#7A6A55}
+
+/* 脚質バー */
+.race20 .legbar{display:inline-flex;align-items:center;gap:3px;padding-right:3px}
+.race20 .legcells{display:inline-flex;border:1px solid #9AA0A6;background:#fff;border-radius:2px;overflow:hidden}
+.race20 .legcells i{width:7px;height:15px;line-height:15px;font-style:normal;font-size:8px;
+  text-align:center;border-right:1px solid #DDE0E3;color:#B3121E}
+.race20 .legcells i:last-child{border-right:0}
+.race20 .legcells i.on{background:#FDE9EA;font-weight:800}
+.race20 .legbar .lbl{font-size:11px;font-weight:800;line-height:1}
+
+/* 金・銀・銅（勝率・タイム・上がり）。着順ボックスと同じ配色 */
+.race20 .ag{display:inline-block;min-width:34px;border-radius:3px;padding:0 3px;
+  font-weight:800;color:#fff}
+.race20 .ag.f1{background:#C8A200}.race20 .ag.f2{background:#9AA3AA}.race20 .ag.f3{background:#B0763A}
+/* 2026-08-05: 着順の箱に枠線を足した。4着以下の塗り #EDEDE8 は白いカードとの差が
+   1.17:1 しかなく、金銀銅（2.3〜3.8:1）だけが箱に見えて他は文字が浮いていた。
+   塗りは変えず輪郭だけを足すので、金銀銅の色の意味（1〜3着）はそのまま残る。
+   幅は * { box-sizing:border-box } で26×21pxのまま動かない。 */
+.race20 .fb{display:inline-flex;align-items:center;justify-content:center;min-width:17px;height:16px;
+  border-radius:3px;font-size:10.5px;font-weight:800;padding:0 3px;border:1px solid #B8B8B2}
+.race20 .fb.f1{background:#C8A200;color:#fff;border-color:#A88A00}
+.race20 .fb.f2{background:#9AA3AA;color:#fff;border-color:#838C93}
+.race20 .fb.f3{background:#B0763A;color:#fff;border-color:#94622F}
+.race20 .fb.fx,.race20 .fb.x{background:#EDEDE8;color:#4a4a44}
+
+/* 過去5走 */
+.race20 .ptwrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-top:4px}
+.race20 table.pastt{width:100%;min-width:560px;border-collapse:collapse;font-size:11px;
+  background:#fff;border:1px solid var(--rule)}
+.race20 table.pastt th{background:#EFF2F5;color:var(--navy);font-weight:700;padding:3px 4px;
+  border-bottom:1px solid var(--rule);white-space:nowrap}
+.race20 table.pastt td{padding:3px 4px;border-bottom:1px solid #F0F0EC;text-align:center;
+  font-variant-numeric:tabular-nums;white-space:nowrap}
+.race20 table.pastt th.l,.race20 table.pastt td.l{text-align:left}
+.race20 table.pastt td.pname{max-width:7.5em;overflow:hidden;text-overflow:ellipsis}
+/* パネル内は折り返す指定にしているが、馬柱の表だけは1行に保つ（横スクロールで見る） */
+.race20 table.pastt td,.race20 table.pastt th,.race20 table.pastt span{white-space:nowrap}
+
+/* コース適性（実績） */
+.race20 .crh{font-size:11px;font-weight:700;color:var(--navy);margin:9px 0 3px}
+.race20 .crn{font-size:10.5px;color:var(--live);margin:0 0 3px}
+.race20 table.crt{width:100%;max-width:420px;border-collapse:collapse;font-size:11px;
+  background:#fff;border:1px solid var(--rule)}
+.race20 table.crt th{background:#EFF2F5;color:var(--navy);font-weight:700;padding:3px 4px;
+  border-bottom:1px solid var(--rule)}
+.race20 table.crt td{padding:3px 4px;border-bottom:1px solid #F0F0EC;text-align:center;
+  font-variant-numeric:tabular-nums;font-weight:700}
+.race20 table.crt th.l,.race20 table.crt td.l{text-align:left;font-weight:400}
+.race20 table.crt td.c0{color:#C4C4BC;font-weight:400}
+.race20 table.crt tr.zero td{background:#FAFAF7;color:#B5B5AD}
+
+/* 前走メモ（91-spec T7・全頭評価の行から移設） */
+.race20 .pnote{margin:6px 0 2px;font-size:11.5px;line-height:1.7}
+
+/* 97-spec §9（案A-1）: 診断欄 — 見出しを塗って、間に仕切り線 */
+.race20 .dcols{display:grid;grid-template-columns:1fr 1fr;gap:0;background:#fff;
+  border:1px solid var(--rule);border-radius:6px;overflow:hidden;margin:0 0 8px}
+.race20 .dcol{padding:0 0 6px}
+.race20 .dcol.p{border-right:2px solid var(--rule)}
+.race20 .dch{font-size:12px;font-weight:800;color:#fff;padding:5px 9px;margin:0 0 4px;
+  display:flex;align-items:center;gap:5px}
+.race20 .dcol.p .dch{background:var(--hit)}
+.race20 .dcol.m .dch{background:#C22C2C}
+.race20 .dchm{font-weight:900}
+.race20 .dcnum{margin-left:auto;font-size:10.5px;font-weight:700;color:#fff;
+  background:rgba(255,255,255,.25);border-radius:8px;padding:0 6px}
+.race20 .dcol ul{margin:0;padding:0 9px;list-style:none}
+.race20 .dcol li{font-size:11.5px;line-height:1.65;padding:3px 0;
+  border-bottom:1px dotted var(--rule)}
+.race20 .dcol li:last-child{border-bottom:0}
+.race20 .dcol li.none{color:var(--cap)}
+.race20 .dtag{display:inline-block;font-size:9.5px;font-weight:700;color:var(--navy);
+  background:#E8EFF5;border-radius:2px;padding:0 4px;margin-right:5px;vertical-align:1px}
+.race20 .dsub{font-size:10.5px;color:var(--cap);margin-left:5px}
+@media(max-width:560px){
+  .race20 .dcols{grid-template-columns:1fr}
+  .race20 .dcol.p{border-right:0;border-bottom:2px solid var(--rule)}
+}
+
+/* 回顧メモ（この馬の蓄積） */
+.race20 .nblock{background:#fff;border-radius:6px;padding:8px 10px;margin:0 0 8px;
+  border-left:3px solid var(--orange)}
+.race20 .nblock .nh{font-size:12px;font-weight:800;color:#8a5a00;display:flex;
+  align-items:baseline;gap:8px}
+.race20 .nblock .ncnt{font-size:10.5px;color:var(--cap);font-weight:600}
+.race20 .nblock .nall{font-size:10px;color:var(--cap);font-weight:400}
+.race20 .nempty{font-size:11px;color:var(--cap);margin-top:4px}
+.race20 .ntags{display:flex;flex-wrap:wrap;gap:4px;margin:5px 0 6px}
+.race20 .nt{display:inline-block;font-size:10.5px;font-weight:700;border-radius:3px;padding:1px 6px}
+.race20 .nt b{margin-left:4px;font-size:10px}
+.race20 .nt.nt-bad{background:#FBEAEA;color:#A31217}
+.race20 .nt.nt-good{background:#E7F3EA;color:#0B5E2E}
+.race20 .nt.nt-mid{background:#EFEFEA;color:#5C5C5C}
+/* 過去走のマスのメモ（2026-08-05）。ここだけ1色に揃える。
+   ポップアップ側の回顧メモは上の3色のまま＝あちらは色が唯一の手掛かりなので残す */
+.race20 .nt.nt-one{background:#EFEFEA;color:#5C5C5C}
+.race20 .nrow{border-top:1px dotted var(--rule);padding:5px 0 3px}
+.race20 .nrow:first-of-type{border-top:0}
+.race20 .nmeta{font-size:10px;color:var(--cap)}
+.race20 .nmeta .nfin{margin-left:6px;font-weight:700;color:var(--sub)}
+.race20 .ntx{font-size:11.5px;line-height:1.65;overflow-wrap:anywhere;word-break:break-word}
+.race20 .nb{font-size:11px;color:var(--sub);padding-left:10px;
+  border-left:2px solid var(--rule);margin:3px 0 0;overflow-wrap:anywhere}
+.race20 .nfoot{font-size:10px;color:var(--cap);margin-top:5px}
+.race20 details.nfold{margin-top:6px}
+.race20 details.nfold>summary{font-size:11.5px;color:var(--cta);cursor:pointer;
+  font-weight:700;list-style:none;padding:4px 0}
+.race20 details.nfold>summary::-webkit-details-marker{display:none}
+.race20 details.nfold>summary::before{content:"▸ "}
+.race20 details.nfold[open]>summary::before{content:"▾ "}
+
+/* 97-spec §9.6: 全開閉ボタン・実績の全部表示（脚質の頭数バンドは撤去） */
+.race20 .shctl{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:8px 0 0}
+.race20 .arh{font-size:11px;font-weight:700;color:var(--navy);margin:8px 0 3px}
+.race20 details.arfold{margin-top:8px}
+.race20 details.arfold>summary{font-size:11.5px;color:var(--cta);cursor:pointer;
+  font-weight:700;list-style:none;padding:4px 0}
+.race20 details.arfold>summary::-webkit-details-marker{display:none}
+.race20 details.arfold>summary::before{content:"▸ "}
+.race20 details.arfold[open]>summary::before{content:"▾ "}
+
+/* 97-spec §9.7: 過去5走を2段に折って全部見せる（横スクロールをやめる） */
+.race20 .prh{font-size:11px;font-weight:700;color:var(--navy);margin:8px 0 3px}
+.race20 .pruns{background:#fff;border:1px solid var(--rule);border-radius:6px;overflow:hidden}
+.race20 .prun{padding:5px 8px;border-bottom:1px solid var(--rule)}
+.race20 .prun:last-child{border-bottom:0}
+.race20 .prun .p1{display:flex;align-items:center;gap:5px;flex-wrap:wrap;font-size:11.5px}
+.race20 .prun .p1 .pd{font-weight:700;font-variant-numeric:tabular-nums}
+.race20 .prun .p1 .pt{color:var(--sub);font-size:11px}
+.race20 .prun .p1 .pn{font-weight:700;flex:1;min-width:5em}
+.race20 .prun .p1 .pf{display:inline-flex;align-items:center;gap:3px;margin-left:auto}
+.race20 .prun .p1 .pf i{font-style:normal;font-size:10px;color:var(--cap)}
+.race20 .prun .p2{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:2px;
+  font-size:10.5px;color:var(--sub);font-variant-numeric:tabular-nums}
+.race20 .prun .p2 .pv{white-space:nowrap}
+
+/* 過去5走の表：狭い画面では横スクロールになるので、その旨を出す */
+.race20 .pthint{font-size:10px;color:var(--cap);margin:2px 0 0}
+@media(min-width:620px){.race20 .pthint{display:none}}
+
+/* 106-spec §5.1: 性齢・斤量は幅を固定して、脚質バーが全馬で縦に揃うようにする */
+.race20 .ahead .pa{display:inline-block;width:2.3em;flex:none}
+.race20 .ahead .pk{display:inline-block;width:2.4em;flex:none;text-align:right}
+.race20 .ahead .pj{display:inline-block;width:4em;flex:none}
+
+/* コーナー通過順位が枠からはみ出ないよう折り返す（馬群のかたまりは割らない） */
+.race20 .rv-ctbl td.rv-seq{white-space:normal}
+.race20 .rv-corner{overflow:hidden}
+
+/* 過去走の帯：勝ち＝金、僅差＝緑（芝0.4秒・ダート0.6秒以内。97-spec §9.9） */
+.race20 table.pastt tr.pb-win td{background:#FBEDC6}
+.race20 table.pastt tr.pb-win td:first-child{box-shadow:inset 4px 0 0 #C8A200}
+.race20 table.pastt tr.pb-close td{background:#DCEBFA}
+.race20 table.pastt tr.pb-close td:first-child{box-shadow:inset 4px 0 0 #3D7EBB}
+
+/* ============================================================
+   106-spec §5.3: 過去走1走（横3行）。105-spec の6行マス（幅168px固定）を、
+   画面幅を使い切る横3行に組み替えた。項目は12のままで1つも減らしていない。
+   ============================================================ */
+.race20 .vrun{display:flex;gap:0;border:1px solid var(--rule);border-radius:5px;background:#fff;
+  overflow:hidden;margin-bottom:3px}
+.race20 .vrun:last-child{margin-bottom:0}
+/* 走の見出し（前走・2走前…）は縦書き。横書きだと「3走前」で28px要るところが13pxで済む */
+.race20 .vrun .vtab{writing-mode:vertical-rl;flex:none;width:13px;font-size:9px;line-height:13px;
+  color:var(--cap);background:var(--sub-bg2);text-align:center;letter-spacing:.04em;
+  display:flex;align-items:center;justify-content:center}
+.race20 .vrun .vrb{flex:1 1 auto;min-width:0;padding:3px 5px;font-size:10px;line-height:1.55}
+.race20 .vrun .vrb>div{display:flex;gap:4px;align-items:center;white-space:nowrap}
+/* §5.2.2: 勝ち＝金／僅差で負け＝青。色は2つだけ。
+   2026-08-05: マスを面で塗るのをやめ、左端の見出し帯（もともと13px幅ある）だけを塗る。
+   帯を別に足すと本文の幅が削られて騎手名が切れるので、既にある帯を色の置き場所に使う。 */
+.race20 .vrun.pb-win{background:#fff;border-color:#E4D9B8}
+.race20 .vrun.pb-close{background:#fff;border-color:#DCE5EE}
+.race20 .vrun.pb-win .vtab{background:#C8A200;color:#fff}
+.race20 .vrun.pb-close .vtab{background:#5C7A99;color:#fff}
+.race20 .vrun .l1 .dt{color:var(--cap);font-variant-numeric:tabular-nums}
+.race20 .vrun .l1 .tk{font-weight:700}
+/* レース名は1行目の余った幅だけ使い、入らない分は「…」（mockup-52 案B）。
+   クラス名は .rnm ―― .rn は一覧のレース番号チップ（幅44px固定）で使用済み */
+.race20 .vrun .l1 .rnm{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;
+  white-space:nowrap;font-weight:700}
+/* 着順・頭数・人気は桁数がまちまちなので、幅を決めて縦に揃える。
+   決めないと「7人」と「16人」の差だけ着順の箱が左右にずれて読みにくい */
+/* 着順は行の先頭。1桁と2桁で箱の幅が変わると左右にずれるので幅を決めて止める。
+   2026-08-05: 19×16px・文字10.5px → 26×21px・文字14px（面積1.8倍）に拡げた */
+.race20 .vrun .l1 .fb{flex:none;width:26px;height:21px;min-width:0;padding:0;font-size:14px}
+.race20 .vrun .l1 .nm{color:var(--sub);font-variant-numeric:tabular-nums;
+  flex:none;text-align:right}
+.race20 .vrun .l1 .nm.hd{width:3.3em}
+.race20 .vrun .l1 .nm.pp{width:2.7em}
+/* 115-spec: その走の枠番・馬番。頭数の左に置き、頭数・人気と同じく幅を決めて縦に揃える。
+   枠番が出せない走は「15番」だけになるので、右寄せにして馬番の桁を縦にそろえる。
+   幅4.0em＝40px は、いちばん長い「8枠18番」の実測37.8px（10px・iPhone縦）に合わせた最小値。
+   広く取るとその分だけレース名が短くなるので、余らせない */
+.race20 .vrun .l1 .wkn{flex:none;width:4em;text-align:right;color:var(--sub);
+  font-variant-numeric:tabular-nums}
+.race20 .vrun .l1 .wkn b{font-weight:400;color:var(--text)}
+/* 2行目は「条件・タイム・通過順・上がり・騎手・斤量・馬体重」の7列。走ごとに
+   桁数や箱の有無で幅が変わると縦に揃わないので、騎手以外は幅を決める。
+   余りは騎手が受け持つ（＝騎手の書き出しも結果的に揃う） */
+.race20 .vrun .l2{color:var(--sub)}
+/* 列の間隔だけ 4px→3px に詰める。騎手名4文字（40px）が入る幅を作るため。
+   .vrb>div より弱いセレクタだと gap:4px に負けるので、こちらも子結合子で書く */
+.race20 .vrun .vrb>.l2{gap:3px}
+.race20 .vrun .l2 .cd{font-weight:700;color:var(--text)}
+/* 通過順は常に4マス（足りない手前は「-」の空マス。race.js の cornersHtml）。
+   13px×4 ＋ マスの間隔2px×3 ＝ 58px で固定し、4角と右隣の上がり3Fを縦に揃える */
+.race20 .vrun .l2 .cor{flex:none;width:58px;justify-content:flex-end}
+.race20 .vrun .l2 .cor i{min-width:13px}
+/* タイムと上がり3Fは、速い走だけ金銀銅の箱（.ag）が付いて左右3pxずつ広がる。
+   幅を決めておかないと、箱が付いた走だけ右隣がずれる。中身は桁数が一定なので中央寄せ */
+.race20 .vrun .l2 .val{margin-left:0;font-variant-numeric:tabular-nums;
+  flex:none;width:31px;min-width:0;text-align:center}
+.race20 .vrun .l2 .val.tm{width:41px}
+/* タイムは条件と並ぶ主役なので太字。上がり3F（同じ .val）は補足なので細いまま */
+.race20 .vrun .l2 .val.tm{font-weight:700;color:var(--text)}
+/* ただし金銀銅の箱が付いた勝ち時計は白文字に戻す。上の1行が .race20 .ag{color:#fff} より
+   詳細度が高く、箱の上に濃いグレーの文字が乗って読みにくくなっていた（2026-08-05 指摘） */
+.race20 .vrun .l2 .val.tm.ag{color:#fff}
+/* 騎手だけは余りを受け持つ列。左の6列が固定幅なので書き出しは揃う。
+   入らない名前は「…」で切る */
+.race20 .vrun .l2 .jk{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.race20 .vrun .l2 .kg,.race20 .vrun .l2 .bw{font-variant-numeric:tabular-nums;
+  flex:none;text-align:right}
+.race20 .vrun .l2 .kg{width:2.6em}
+.race20 .vrun .l2 .bw{width:2.4em}
+.race20 .vrun .l3{color:var(--sub);flex-wrap:wrap}
+.race20 .vrun .l3 .wn{overflow:hidden;text-overflow:ellipsis;max-width:9em}
+.race20 .vrun .l3 .mg{font-variant-numeric:tabular-nums}
+.race20 .vrun .l3 .nt{margin:0 2px 1px 0}
+.race20 .vrun.rest{background:var(--sub-bg2)}
+.race20 .vrun.rest .vrb,.race20 .vrun.empty .vrb{color:var(--cap);text-align:center}
+.race20 .vrun.rest .l1,.race20 .vrun.empty .l1{justify-content:center}
+.race20 .vrun.empty{border-style:dashed;background:none}
+
+/* §5.2.5: 通過順の4マス。前・中・後の塗り分けは 2026-08-05 に廃止（色が多すぎたため）。
+   位置は数字そのもので読む。マスの数は必ず4つで、足りない手前は「-」の空マス */
+.race20 .cor{display:inline-flex;gap:2px}
+/* 2026-08-05: 着順の箱と同じ理由で輪郭を足した。塗りの #EDEDEA は白との差が1.17しかなく、
+   マスの区切りが数字の間隔だけで読めていなかった。枠線は着順の箱と同じ #B8B8B2。
+   border ではなく box-shadow なのは下の .none と同じ理由（幅が2px太ると58pxの列がずれる） */
+.race20 .cor i{font-style:normal;min-width:14px;height:14px;line-height:14px;text-align:center;
+  border-radius:2px;font-variant-numeric:tabular-nums;display:inline-block;
+  background:var(--bp-off);color:#4a4a44;box-shadow:inset 0 0 0 1px #B8B8B2}
+/* コーナーが足りないぶんの空マス。枠線は box-shadow で描く
+   （border だとマスが2px太って、揃えたばかりの列がまたずれる） */
+.race20 .cor i.none{background:#fff;color:var(--cap);
+  box-shadow:inset 0 0 0 1px var(--rule)}
+
+/* §5.2.3: 展開（6通りの文字。引けない走は「展開なし」）。
+   2026-08-05: 過去走のマスの中では箱をやめて素の文字にした（.l3 限定）。
+   .sc は買い目タブ側でも使っているので、そちらは箱のまま残す */
+.race20 .sc{display:inline-block;font-size:9.5px;font-weight:700;border-radius:3px;padding:0 3px;
+  background:var(--sub-bg2);color:var(--sub);flex:none;line-height:1.5}
+.race20 .sc.none{font-weight:400;color:var(--cap);background:none;padding:0}
+.race20 .vrun .l3 .sc{background:none;padding:0;color:var(--sub);font-weight:400}
+
+/* ============================================================
+   111-spec: 自分の印（印のマスを押す → 下からシートが上がる）
+   接頭辞は mm-（my mark）。**左端＝自分の印（白地・押せる）／その右＝AIの印（灰地・
+   押せない）** という列の分け方を、札（戦績5走）と1行（印を付ける）の両方で守る。
+   ============================================================ */
+
+/* ── 表示の切り替え（印を付ける ／ 戦績5走）＋いま付いている印の要約 ── */
+.race20 .mm-bar{display:flex;align-items:center;gap:8px;margin:8px 0 0;flex-wrap:wrap}
+.race20 .mm-seg{display:inline-flex;border:1px solid var(--rule-strong);border-radius:6px;
+  overflow:hidden;background:#fff;flex:none}
+.race20 .mm-seg button{border:0;background:#fff;font:inherit;font-size:12px;font-weight:700;
+  color:var(--sub);padding:6px 12px;cursor:pointer;line-height:1.3;
+  border-right:1px solid var(--rule)}
+.race20 .mm-seg button:last-child{border-right:0}
+.race20 .mm-seg button.on{background:var(--navy);color:#fff}
+/* 要約行は必ず2段目の1行に置く（111-spec §3.5）。以前は1段目に同居しており、
+   印の数で文字の長さが変わるたびに「この端末に自動保存」が折り返して帯の高さが
+   30px⇄53px⇄55px と動き、下の札全体が最大23pxズレていた（375px幅で実測）。
+   独立した行にして1行で固定すると、印0個〜10個でズレ0px・文字も切れない。 */
+.race20 .mm-sum{font-size:11.5px;color:var(--sub);flex:1 0 100%;order:2;min-width:0;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  font-variant-numeric:tabular-nums}
+.race20 .mm-sum b{color:var(--navy);font-weight:700;margin-left:5px}
+.race20 .mm-sum .e{color:var(--cap)}
+.race20 .mm-save{font-size:10px;color:var(--cap);flex:none;margin-left:auto}
+
+/* ── 印のマス（札・1行の共通部品） ── */
+.race20 .mm-my{flex:none;width:32px;display:flex;align-items:center;justify-content:center;
+  border:0;border-right:1px solid var(--rule);background:#fff;font:inherit;cursor:pointer;
+  padding:0;color:var(--cap)}
+.race20 .mm-my .v{display:flex;align-items:center;justify-content:center;width:26px;height:26px;
+  border:1px solid var(--rule);border-radius:5px;font-size:17px;font-weight:700;line-height:1;
+  background:#fff}
+.race20 .mm-my.set .v{border-color:var(--navy);background:#F4F8FC}
+.race20 .mm-my .v.e{font-size:10px;font-weight:400;color:#C4C4BF}
+/* 印のランク色は馬名の文字色と同じ濃淡（--mk-*）を使う。AI印の塗りチップ（.mkb）とは
+   作りを変えて、同じ◎でもどちらの印かが形で分かるようにする */
+.race20 .mm-my.m1 .v{color:var(--mk-hon)} .race20 .mm-my.m2 .v{color:var(--mk-tai)}
+.race20 .mm-my.m3 .v{color:var(--mk-tan)} .race20 .mm-my.m4 .v{color:var(--mk-oku)}
+.race20 .mm-my.m5 .v{color:var(--orange)}
+/* 消（切る）は「買う」側の印ではないので、濃淡のランプから外して灰色にする。
+   漢字なので1文字ぶん小さくする。ー は 2026-08-07 に廃止した */
+.race20 .mm-my.m6 .v{color:var(--cap);font-size:12px}
+/* 取消馬は押せない灰色のマスにする */
+.race20 .mm-my:disabled{cursor:default}
+.race20 .mm-my:disabled .v{background:var(--sub-bg);color:#C4C4BF}
+
+/* ── 札（戦績5走）の中の印の1行（111-spec §3.4 / mockup-86 案C） ──
+   札は横幅に余裕が無い（1行目の余りは最悪の馬で56px）ので、印の列を横に足さず
+   馬体重の行の下に1行敷く。マス→シートではなく**押した印がその場で付く**。
+   1タップで済む代わりに、札が1枚38px高くなる（14頭で 4,417px → 4,919px＝+11.4%・実測）。 */
+.race20 .mm-in{display:flex;align-items:center;gap:3px;margin:0 0 4px;padding:3px 0 4px;
+  border-bottom:1px dotted var(--rule)}
+.race20 .mm-in .lb{flex:none;font-size:9.5px;color:var(--cap);font-weight:700;
+  letter-spacing:.02em;margin-right:1px}
+.race20 .mm-in button{flex:1 1 0;min-width:0;height:26px;border:1px solid var(--rule);
+  background:#fff;border-radius:5px;font:inherit;font-size:14px;font-weight:700;
+  color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;
+  line-height:1;padding:0}
+/* 色は一覧のマス・シートと同じ（--mk-* の濃淡）。押す前に何色の印か分かるように */
+.race20 .mm-in button.m1{color:var(--mk-hon)} .race20 .mm-in button.m2{color:var(--mk-tai)}
+.race20 .mm-in button.m3{color:var(--mk-tan)} .race20 .mm-in button.m4{color:var(--mk-oku)}
+.race20 .mm-in button.m5{color:var(--orange)}
+.race20 .mm-in button.m6{color:var(--cap);font-size:12px}
+.race20 .mm-in button.on{border-color:var(--navy);background:#F4F8FC;
+  box-shadow:inset 0 0 0 1px var(--navy)}
+
+/* ── 「印を付ける」モードの一覧（1頭1行・高さ40px固定） ── */
+.race20 .mm-list{margin-top:8px;max-width:760px;border:1px solid var(--rule-strong);
+  border-radius:7px;overflow:hidden;background:#fff}
+.race20 .mm-list.off,.race20 .shlist.off{display:none}
+/* 見出しは行（.mm-row）とまったく同じ組み方にする。以前は見出しだけ padding と gap を
+   持っていて、「自分」「AI」「馬」が列より右へずれ、点数・オッズは値の真上に来ていなかった */
+.race20 .mm-hd{display:flex;align-items:center;padding:4px 0;background:var(--sub-bg2);
+  font-size:9.5px;color:var(--cap);font-weight:700;border-bottom:1px solid var(--rule-strong)}
+.race20 .mm-hd .h-my{width:32px;text-align:center;flex:none}
+.race20 .mm-hd .h-ai{width:30px;text-align:center;flex:none}
+.race20 .mm-hd .h-c{flex:1 1 auto;min-width:0;display:flex;align-items:center;gap:5px;padding:0 5px}
+.race20 .mm-hd .h-nm{flex:1 1 auto;min-width:0}
+.race20 .mm-hd .h-tot{width:62px;text-align:right;flex:none}
+.race20 .mm-hd .h-od{width:54px;text-align:right;flex:none}
+.race20 .mm-row{display:flex;align-items:stretch;border-bottom:1px solid var(--rule);
+  background:#fff;min-height:40px}
+.race20 .mm-row:last-child{border-bottom:0}
+.race20 .mm-row.pred{background:#F4F8FC}
+.race20 .mm-row.scr{color:var(--cap)}
+.race20 .mm-ai{flex:none;width:30px;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:1px;background:var(--sub-bg);border-right:1px solid var(--sep)}
+.race20 .mm-ai .none{font-size:9px;color:#C4C4BF}
+.race20 .mm-ai .mkb{margin-right:0}
+/* AI印が「能力印＋穴」の2段（.mkstack）になる馬は、素のままだと縦48pxあって
+   その行だけ高さが40→49pxに膨らむ。1行の一覧の中でだけ詰める
+   （札の柱・他ページの .mkstack には触らない） */
+.race20 .mm-ai .mkstack{display:flex;flex-direction:column;align-items:center;gap:1px}
+.race20 .mm-ai .mkstack .mkb{font-size:10.5px;line-height:14px;padding:0 4px;min-width:15px}
+.race20 .mm-ai .mkstack .mkb.sub{font-size:8.5px;line-height:11px;padding:0 3px;min-width:0}
+.race20 .mm-c{flex:1 1 auto;min-width:0;display:flex;align-items:center;gap:5px;padding:0 5px}
+/* 111-spec §3.6: 馬名は押せる（馬名ポップアップを開く）。押しどころを稼ぐため
+   align-self:stretch で行の高さ（40px）いっぱいに広げる。行の高さ自体は変えない。
+   はみ出しの「…」は button ではなく中の .t に付ける（横の ▸ を残すため） */
+.race20 .mm-c .nm{flex:1 1 auto;min-width:0;display:flex;align-items:center;gap:3px;
+  align-self:stretch;border:0;background:transparent;padding:0;margin:0;font:inherit;
+  font-size:12.5px;font-weight:700;color:inherit;text-align:left;cursor:pointer}
+.race20 .mm-c .nm .t{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.race20 .mm-c .nm .apop{flex:none;font-style:normal;font-size:9px;color:var(--cta);opacity:.7}
+.race20 .mm-c .nm:hover .t{text-decoration:underline}
+/* 取消馬は span のまま（ポップアップが無い）。押せる見た目にしない */
+.race20 .mm-row.scr .nm{cursor:default}
+.race20 .mm-c .tot{flex:none;width:62px;display:flex;align-items:center;justify-content:flex-end;
+  gap:3px;font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums}
+.race20 .mm-c .tot .grade{min-width:22px;font-size:10.5px;padding:1px 3px}
+/* 3桁オッズ（130.4倍）で「倍」が折り返すとその行だけ高くなるので、幅を確保して折り返さない */
+.race20 .mm-c .od{flex:none;width:54px;text-align:right;font-size:12.5px;font-weight:700;
+  font-variant-numeric:tabular-nums;line-height:1.15;white-space:nowrap}
+.race20 .mm-c .od i{font-style:normal;font-size:9px;font-weight:400;color:var(--cap);margin-left:1px}
+.race20 .mm-c .od .pp{display:block;font-size:9.5px;font-weight:400;color:var(--cap)}
+.race20 .mm-c .od.hot .pp{color:var(--cap)}
+.race20 .mm-hint{max-width:760px;font-size:10.5px;color:var(--cap);margin-top:6px;line-height:1.6}
+.race20 .mm-list.off + .mm-hint{display:none}
+
+/* ── ボトムシート ── */
+.mm-shade{position:fixed;inset:0;background:rgba(0,0,0,.28);opacity:0;pointer-events:none;
+  transition:opacity .16s;z-index:60}
+.mm-shade.on{opacity:1;pointer-events:auto}
+.mm-sheet{position:fixed;left:0;right:0;bottom:0;z-index:61;background:#fff;
+  border-top:1px solid var(--rule-strong);border-radius:12px 12px 0 0;
+  box-shadow:0 -4px 18px rgba(0,0,0,.22);padding:9px 12px calc(14px + env(safe-area-inset-bottom));
+  transform:translateY(105%);transition:transform .18s ease-out;max-width:760px;margin:0 auto}
+.mm-sheet.on{transform:translateY(0)}
+.mm-sheet .grip{width:36px;height:4px;border-radius:2px;background:var(--rule);margin:0 auto 8px}
+.mm-sheet .sh{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text);
+  margin-bottom:9px;padding-bottom:8px;border-bottom:1px solid var(--rule)}
+.mm-sheet .sh .cur{margin-left:auto;font-size:10.5px;color:var(--cap);font-weight:400}
+.mm-sheet .sh .cur i{font-style:normal;font-size:15px;font-weight:700;color:var(--navy);
+  margin-left:3px;vertical-align:-2px}
+/* 6つ（◎○▲△☆消）。375px でも1列に収まるよう gap は5px */
+.mm-sheet .mks{display:flex;gap:5px}
+.mm-sheet .mks button{flex:1;min-width:0;height:52px;border:1px solid var(--rule);background:#fff;
+  border-radius:8px;font:inherit;font-size:21px;font-weight:700;color:var(--text);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;line-height:1}
+.mm-sheet .mks button.on{border-color:var(--navy);background:#F4F8FC;
+  box-shadow:inset 0 0 0 1px var(--navy)}
+/* シートのボタンも一覧のマスと同じ色にする（押す前に何色の印か分かるように） */
+.mm-sheet .mks button.m1{color:var(--mk-hon)} .mm-sheet .mks button.m2{color:var(--mk-tai)}
+.mm-sheet .mks button.m3{color:var(--mk-tan)} .mm-sheet .mks button.m4{color:var(--mk-oku)}
+.mm-sheet .mks button.m5{color:var(--orange)}
+.mm-sheet .mks button.m6{color:var(--cap);font-size:16px}
+
+/* ============================================================
+   105-spec §5.3: 買える／消せるの10項目チップ（2段・○×だけ表示）
+   ============================================================ */
+.race20 .chips{display:flex;flex-wrap:wrap;gap:4px}
+/* 109-spec §6.2: コースタブは.race20の内側に.cstatsを置くため.chipsだけ取り合いになる。
+   .race20 .chips（上記）が.cstats .chipsに勝ってしまうので、フィルタ用の見た目に戻す */
+.race20 .cstats .chips{gap:5px;flex:1}
+.race20 .chip2{display:inline-flex;flex-direction:column;border-radius:4px;padding:2px 6px;
+  background:var(--sub-bg2);line-height:1.45;max-width:196px}
+.race20 .chip2 .c2h{display:flex;align-items:baseline;gap:4px;font-size:10px}
+.race20 .chip2 .c2h b{font-weight:700}
+.race20 .chip2 .c2h em{font-style:normal;font-weight:700;font-size:12px}
+.race20 .chip2 .c2b{font-size:10.5px}
+.race20 .chip2.v-o{background:var(--chip-ok-bg);color:var(--chip-ok-fg)}
+.race20 .chip2.v-x{background:var(--chip-ng-bg);color:var(--chip-ng-fg)}
+.race20 .chip2.none{color:var(--cap);background:none}
+
+/* ============================================================
+   105-spec §5.5: 馬名ポップアップ（通算成績・コース適性・レース戦績）
+   ============================================================ */
+/* 111-spec §3.8: 覆い（ポップアップ・ボトムシート）が出ている間、後ろのページを止める。
+   overflow:hidden だけでは iOS Safari で背後が指で動くため、body ごと position:fixed に
+   する。縦位置は race.js が top のマイナス値で保ち、閉じる時に元へ戻す。
+   width:100% は、fixed にした瞬間に body が中身の幅まで縮むのを防ぐため。 */
+body.noscroll{position:fixed;width:100%;overflow:hidden}
+
+.race20 .pbg{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:40;display:none}
+.race20 .pbg.on{display:block}
+.race20 .popup{display:none;position:fixed;z-index:50;left:50%;top:50%;transform:translate(-50%,-50%);
+  width:min(760px,94vw);max-height:86vh;background:#fff;border-radius:10px;
+  box-shadow:0 12px 40px rgba(0,0,0,.28);overflow:hidden;flex-direction:column;text-align:left}
+.race20 .popup.on{display:flex}
+.race20 .popup .phead{display:flex;align-items:center;gap:8px;padding:10px 14px;
+  border-bottom:2px solid var(--rule-strong);background:var(--sub-bg);flex:none}
+.race20 .popup .phead .pname{font-weight:700;font-size:16px}
+.race20 .popup .phead .pmeta{font-size:11.5px;color:var(--sub)}
+.race20 .popup .pclose{margin-left:auto;border:1px solid var(--rule);background:#fff;
+  border-radius:5px;padding:4px 12px;font-size:12px;cursor:pointer;flex:none}
+/* overscroll-behavior:contain＝中身を末尾まで送っても、その勢いが後ろのページへ渡らない */
+.race20 .popup .pbody{padding:12px 14px 16px;overflow-y:auto;overscroll-behavior:contain}
+.race20 .popup .pcareer{font-size:13px;font-weight:700;margin-bottom:10px}
+.race20 .popup .pcareer .cl b{color:var(--text)}
+.race20 .popup .pcareer .cl-loc{color:var(--cap);margin-left:5px;font-weight:400}
+.race20 .popup .ph{font-size:12.5px;font-weight:700;margin:12px 0 4px;padding-left:7px;
+  border-left:3px solid var(--navy)}
+.race20 .popup .mkw{margin:0 0 10px}
+
+/* ============================================================
+   102-spec: トッピング（19軸の単体 ＋ 掛け合わせ条件）
+   既存セレクタは1つも変更しない。ここから下は追加のみ。
+   色は馬名に引くマーカーだけ。総合・勝率・オッズの列と行の背景は触らない。
+   ============================================================ */
+.race20{
+  /* 馬名マーカーの10色。緑5＝人気より走る側 / 赤5＝走らない側 */
+  --tp1:#EBB0A2;--tp2:#F2C7BD;--tp3:#F7DBD4;--tp4:#FBEBE7;--tp5:#FCF3F1;
+  --tp6:#F2F9F5;--tp7:#E8F5ED;--tp8:#DAF0E3;--tp9:#C7E7D3;--tp10:#AEDCC1;
+}
+.race20 .acard.tp1 .aspine{background:var(--tp1)}
+.race20 .acard.tp2 .aspine{background:var(--tp2)}
+.race20 .acard.tp3 .aspine{background:var(--tp3)}
+.race20 .acard.tp4 .aspine{background:var(--tp4)}
+.race20 .acard.tp5 .aspine{background:var(--tp5)}
+.race20 .acard.tp6 .aspine{background:var(--tp6)}
+.race20 .acard.tp7 .aspine{background:var(--tp7)}
+.race20 .acard.tp8 .aspine{background:var(--tp8)}
+.race20 .acard.tp9 .aspine{background:var(--tp9)}
+.race20 .acard.tp10 .aspine{background:var(--tp10)}
+
+/* 111-spec §3.7: 「印を付ける」モードの1行にも同じ10色を反映する。
+   1行には柱（.aspine）が無いので、塗るのは .mm-c（馬番・馬名・点数・オッズ）。
+   自分の印（白地）とAIの印（灰地）の2列は自前の背景を持っているので塗らない
+   ＝111-spec §3.1 の「左端が自分・その右がAI」の列の分け方は色が乗っても崩れない。
+   .mm-row.pred（能力印の薄い青）より後に書いてあるので、色を乗せている間は
+   こちらが勝つ（能力印そのものはAIの列のチップで読める）。 */
+.race20 .mm-row.tp1 .mm-c{background:var(--tp1)}
+.race20 .mm-row.tp2 .mm-c{background:var(--tp2)}
+.race20 .mm-row.tp3 .mm-c{background:var(--tp3)}
+.race20 .mm-row.tp4 .mm-c{background:var(--tp4)}
+.race20 .mm-row.tp5 .mm-c{background:var(--tp5)}
+.race20 .mm-row.tp6 .mm-c{background:var(--tp6)}
+.race20 .mm-row.tp7 .mm-c{background:var(--tp7)}
+.race20 .mm-row.tp8 .mm-c{background:var(--tp8)}
+.race20 .mm-row.tp9 .mm-c{background:var(--tp9)}
+.race20 .mm-row.tp10 .mm-c{background:var(--tp10)}
+
+/* 操作盤（.shctl の空いている左側に入る） */
+.race20 .tpctl{flex:1 1 100%;margin:0 0 6px}
+.race20 .tpmain{display:flex;align-items:center;gap:9px;padding:7px 9px;
+  border:1.5px solid var(--orange);border-radius:4px;background:#FFF6EA}
+.race20 .tpmain .tx{flex:1 1 auto;font-size:10.5px;color:#B36200;line-height:1.5}
+.race20 .tpmain .tx b{color:#8A4B00;font-size:11.5px}
+.race20 button.tpbig{font:inherit;font-size:11.5px;font-weight:700;cursor:pointer;flex:none;
+  padding:7px 11px;border-radius:4px;border:1.5px solid var(--orange);background:#fff;color:#B36200}
+.race20 button.tpbig.on{background:var(--orange);border-color:var(--orange);color:#fff}
+.race20 button.tpbig:disabled{opacity:.45;cursor:not-allowed}
+.race20 button.tpsum{font:inherit;width:100%;text-align:left;font-size:11px;font-weight:700;
+  color:var(--navy);background:#EEF2F6;border:1px solid #CFDCE7;border-radius:4px;
+  padding:6px 9px;cursor:pointer;display:flex;align-items:center;gap:6px;margin-top:6px}
+.race20 button.tpsum .ar{margin-left:auto;font-size:10px}
+.race20 .tpbody{display:none;padding:7px 2px 0}
+.race20 .tpbody.open{display:block}
+.race20 .tpall{display:flex;gap:6px;justify-content:flex-end;margin-bottom:5px}
+.race20 .tpall button{font:inherit;font-size:10.5px;font-weight:700;color:var(--cta);
+  background:#fff;border:1px solid var(--rule);border-radius:4px;padding:3px 8px;cursor:pointer}
+.race20 .tpgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
+.race20 button.tpgl{grid-column:1/-1;font:inherit;font-size:9.5px;font-weight:700;
+  color:var(--cap);background:none;border:0;border-bottom:1px dotted var(--rule);
+  padding:5px 0 1px;margin-bottom:1px;text-align:left;cursor:pointer;width:100%}
+.race20 button.tpgl .gi{font-weight:400;margin-left:5px}
+.race20 button.tpchip{font:inherit;font-size:10.5px;line-height:1;padding:6px 3px;cursor:pointer;
+  border:1px solid var(--rule);background:#fff;color:var(--sub);border-radius:4px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.race20 button.tpchip.on{background:var(--navy);border-color:var(--navy);color:#fff;font-weight:700}
+.race20 .tpstate{font-size:10px;color:var(--cap);margin:5px 0 0}
+
+/* 表（行を開いたときのパネル用） */
+.race20 table.tpt{width:100%;border-collapse:collapse;font-size:10.5px;margin-top:3px}
+.race20 table.tpt th,.race20 table.tpt td{padding:2px 4px;text-align:right;
+  border-bottom:1px dotted var(--rule);white-space:nowrap}
+.race20 table.tpt th.l,.race20 table.tpt td.l{text-align:left;white-space:normal}
+/* 見出しは濃紺の帯＋白文字。この表は出馬表 table.unified の中にあるため
+   `.race20 table.unified th{background:var(--navy)}` が当たって帯になっており、
+   そこに灰色文字を乗せていて読めなかった。帯は残して文字色を合わせる（2026-07-31） */
+.race20 table.tpt thead th{background:var(--navy);color:#fff;font-size:9.5px;
+  font-weight:700;border-bottom:0}
+.race20 table.tpt th.vh,.race20 table.tpt td.vd{text-align:center;padding-left:2px;
+  padding-right:2px}
+.race20 .tp-up{color:var(--hit);font-weight:700}
+.race20 .tp-dn{color:var(--live);font-weight:700}
+.race20 .tp-mid{color:var(--cap)}
+/* 判定は記号（◉○ー△✕）。言葉だと列幅33pxで1文字ずつ縦に割れるため */
+.race20 .tpsym{font-size:14px;line-height:1;font-weight:700}
+.race20 .tp-mid.tpsym{color:#9A9A94}
+.race20 .tplgd{margin-top:5px;font-size:9.5px;color:var(--cap);display:flex;
+  flex-wrap:wrap;gap:2px 10px}
+.race20 .tplgd span{display:inline-flex;align-items:center;gap:3px;white-space:nowrap}
+.race20 .tplgd i{font-style:normal;font-size:12px;font-weight:700}
+
+/* 行を開いたときの「この馬の色の理由」 */
+.race20 .tpwhy{margin:0 0 7px;padding:7px 8px;background:#fff;border:1px solid var(--rule);
+  border-radius:3px}
+.race20 .tpwhy .hd{font-size:11px;font-weight:700;color:var(--navy);margin-bottom:3px;
+  display:flex;align-items:center;gap:6px}
+.race20 .tpwhy .sw{display:inline-block;width:24px;height:11px;border-radius:2px}
+.race20 .tpwhy:empty{display:none}
+
+/* 104-body-weight-live-spec.md §6.3: 体3軸は未発表のあいだ押せない。押せるのに何も
+   起きないのが一番悪いのでopacityで見た目にも分かるようにする */
+.race20 button.tpchip:disabled{opacity:.45;cursor:not-allowed}
+/* 「体」グループを開いたときだけ出す注記（常時表示はしない） */
+.race20 .tpgrid .tpbwnote{grid-column:1/-1;font-size:9.5px;color:var(--cap);margin:1px 0 4px}
+
+
+/* ===== 107-spec: 買い目アキネーター 1頭ずつ査定 ===== */
+.ak-wrap .ak-hh{display:flex;align-items:baseline;gap:7px;flex-wrap:wrap}
+.ak-wrap .ak-hh .nm{font-size:16px;font-weight:700;letter-spacing:.01em}
+.ak-wrap .ak-hh .pop{font-size:11.5px;color:var(--cap);font-weight:700}
+.ak-wrap .ak-mine{font-size:12px;line-height:1.9;border:1px solid var(--rule);border-radius:10px;
+  padding:11px 12px;background:var(--sub-bg);margin-top:10px}
+.ak-wrap .ak-mine .row{display:flex;align-items:baseline;gap:7px;flex-wrap:wrap}
+.ak-wrap .ak-mine .cap{font-size:11.5px;color:var(--cap);margin-top:7px}
+.ak-wrap .ak-mine-reason{font-size:11.5px;color:var(--cap)}
+
+.ak-wrap .ak-memo{padding:0 12px 12px}
+.ak-wrap .ak-memo input{width:100%;font-family:inherit;font-size:12.5px;padding:8px 10px;
+  border:1px solid var(--rule);border-radius:8px;background:#fafafa;color:var(--text)}
+
+.ak-wrap .ak-stack{margin-top:10px;border-top:1px dashed var(--rule);padding-top:9px;
+  font-size:11.5px;color:var(--cap);line-height:2;display:flex;flex-direction:column;gap:2px}
+.ak-wrap .ak-st-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.ak-wrap .ak-st-m{color:#999}
+.ak-wrap .ak-st-tag{font-size:10.5px;font-weight:700;padding:1px 6px;border-radius:4px;border:1px solid;line-height:1.6}
+.ak-wrap .ak-st-tag.keep{color:#0b6b3a;border-color:#9ed3b6;background:#eefaf3}
+.ak-wrap .ak-st-tag.out{color:#8a2020;border-color:#e2adad;background:#fdeeee}
+
+.ak-wrap .ak-mine-warn,.ak-wrap .ak-thin{font-size:12px;line-height:1.8;color:#6b5400;
+  background:#fff7e6;border:1px solid #f0dcb0;border-radius:10px;padding:11px 12px;margin-bottom:10px}
+
+/* 戦績（「わからない」を押したときだけ） */
+.ak-wrap .mt{margin:0 12px 12px;border:1px solid #a8cbe4;background:#f5f9fc;border-radius:9px;padding:11px 12px}
+.ak-wrap .mt-t{font-size:12px;font-weight:700;color:#1a5c8a;margin-bottom:8px}
+.ak-wrap .mt-none{font-size:12px;color:var(--cap)}
+.ak-wrap .mt-q{font-size:13.5px;font-weight:700;margin:12px 0 7px}
+.ak-wrap .mt-note{font-size:11px;color:var(--cap);margin-top:9px;line-height:1.6}
+.ak-wrap .mtr{display:flex;flex-direction:column;gap:7px}
+.ak-wrap .mtr-row{border-bottom:1px solid var(--rule);padding-bottom:6px}
+.ak-wrap .mtr-row:last-child{border-bottom:none;padding-bottom:0}
+.ak-wrap .mtr-h{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;font-size:12px}
+.ak-wrap .mtr-dt{font-variant-numeric:tabular-nums;color:var(--cap);font-size:11px}
+.ak-wrap .mtr-cd{font-weight:700}
+.ak-wrap .mtr-nm{color:var(--cap);font-size:11.5px}
+.ak-wrap .mtr-fi{margin-left:auto;font-weight:700;font-size:13px;color:var(--cap)}
+.ak-wrap .mtr-fi.in{color:#0b5c33}
+.ak-wrap .mtr-m{font-size:11px;color:var(--cap);line-height:1.6;margin-top:2px}
+
+/* 第2段：確認と天井 */
+.ak-wrap .ak-cls{display:flex;flex-direction:column;gap:8px;padding:0 12px 12px}
+.ak-wrap .ak-cl{border:1px solid var(--rule);border-radius:9px;padding:9px 10px;background:#fff}
+.ak-wrap .ak-cl-m{font-size:11.5px;color:var(--cap);margin-top:3px}
+.ak-wrap .ak-segs{display:flex;margin-top:8px}
+.ak-wrap .ak-seg{flex:1;font-family:inherit;font-size:12.5px;font-weight:700;padding:8px 4px;
+  border:1px solid var(--rule);background:#fff;color:var(--cap);cursor:pointer}
+.ak-wrap .ak-seg:first-child{border-radius:7px 0 0 7px}
+.ak-wrap .ak-seg:last-child{border-radius:0 7px 7px 0}
+.ak-wrap .ak-seg+.ak-seg{border-left:none}
+.ak-wrap .ak-seg.on{background:#3a6ea5;border-color:#3a6ea5;color:#fff}
+.ak-wrap .ak-cl-x{margin-top:7px;font-family:inherit;font-size:11px;color:var(--cap);background:none;
+  border:none;text-decoration:underline;cursor:pointer;padding:0}
+
+/* 保留リスト */
+.ak-wrap .ak-pd{margin:0 12px 12px;border:1px solid var(--rule);border-radius:9px;
+  padding:9px 11px;background:var(--sub-bg)}
+.ak-wrap .ak-pd-h{font-family:inherit;font-size:12.5px;font-weight:700;color:var(--text);
+  background:none;border:none;cursor:pointer;padding:0;text-align:left;width:100%}
+.ak-wrap .ak-need{font-size:11.5px;color:#6b5400;background:#fff7e6;border:1px solid #f0dcb0;
+  border-radius:7px;padding:6px 9px;margin-top:8px;line-height:1.6}
+.ak-wrap .ak-pd-list{display:flex;flex-direction:column;gap:5px;margin-top:8px}
+.ak-wrap .ak-pd-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:12px;
+  border-bottom:1px solid var(--rule);padding-bottom:5px}
+.ak-wrap .ak-pd-row .nm{font-weight:700}
+.ak-wrap .ak-pd-row .pop{color:var(--cap);font-size:11px}
+.ak-wrap .ak-pd-row .bt{margin-left:auto;display:flex;gap:5px}
+.ak-wrap .ak-pd-row .bt button{font-family:inherit;font-size:11.5px;font-weight:700;padding:4px 10px;
+  border-radius:6px;border:1px solid var(--rule);background:#fff;color:var(--cap);cursor:pointer}
+.ak-wrap .ak-pd-note{font-size:11px;color:var(--cap);margin-top:8px;line-height:1.6}
+
+/* 見送り */
+.ak-wrap .ak-skip{border:1px solid #e2adad;background:#fdeeee;border-radius:12px;padding:15px;margin-bottom:12px}
+.ak-wrap .ak-skip .t{font-size:16px;font-weight:700;color:#8a2020}
+.ak-wrap .ak-skip .b{font-size:12.5px;line-height:1.85;margin-top:7px}
+.ak-wrap .ak-skip table{border-collapse:collapse;margin:8px 0;font-size:12px}
+.ak-wrap .ak-skip td{padding:1px 12px 1px 0;font-variant-numeric:tabular-nums}
+
+/* 脚の役割チップ（本線／保険／上乗せ） */
+.ak-wrap .mainchip.guard{background:#0b6b3a}
+.ak-wrap .mainchip.boost{background:#7a6000}
+
+
+/* ══════════════════════════════════════════════════════════════════
+   展開タブ 作り直し（docs/keiba-log-design/108-tenkai-tab-redesign-spec.md）
+   2026-08-05。既存の .race20 スコープに足すだけで、旧クラスは1つも消していない
+   （旧データのレースは旧クラスのまま描かれる）。
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ── §2 レース見出し ── */
+.race20 .rhead.h2{padding:14px 2px 0}
+.race20 .rhead.h2 .ttlrow{display:flex;align-items:center;gap:7px}
+.race20 .rhead.h2 .gb2{flex:none;font-size:11px;font-weight:800;letter-spacing:.04em;
+  color:#fff;background:var(--navy);border-radius:3px;padding:2px 7px;line-height:1.25}
+.race20 .rhead.h2 .ttl{font-size:19px;font-weight:800;letter-spacing:.01em;margin:0}
+.race20 .rhead.h2 .meta{font-size:12px;color:var(--sub);margin-top:4px}
+.race20 .rhead.h2 .meta .dot{color:var(--rule);margin:0 4px}
+.race20 .rhead.h2 .specrow{display:flex;margin-top:9px;border-top:1px solid var(--rule);
+  border-bottom:1px solid var(--rule)}
+.race20 .rhead.h2 .sp{flex:1 1 auto;min-width:0;padding:7px 0 7px 10px;
+  border-left:1px solid var(--rule)}
+.race20 .rhead.h2 .sp:first-child{padding-left:0;border-left:0}
+.race20 .rhead.h2 .sp .k{display:block;font-size:10px;color:var(--cap);font-weight:700;
+  letter-spacing:.03em;margin-bottom:2px}
+.race20 .rhead.h2 .sp .v{font-size:13px;font-weight:700;white-space:nowrap}
+.race20 .rhead.h2 .sp .v .w{font-weight:400;color:var(--sub);font-size:11.5px}
+.race20 .rhead.h2 .sp .v .sf{display:inline-block;font-size:11px;font-weight:800;
+  border-radius:2px;padding:0 4px;margin-right:3px;color:#fff}
+.race20 .rhead.h2 .sp .v .sf.turf{background:var(--turf)}
+.race20 .rhead.h2 .sp .v .sf.dirt{background:var(--dirt)}
+.race20 .rhead.h2 .pt{margin-top:7px;padding-bottom:2px}
+
+/* ── §3 コースの形（C案・mockup-79） ──
+   図・距離・数値の3つを役割で分ける。図には位置しか置かない。
+     1段目 ペース（図の外）
+     2段目 オーバル … ゴール／スタート／4角／回り だけ。寸法線も数値も置かない
+     3段目 距離バー … 距離を実長比で3区間に割る
+     4段目 チップ   … 内外の枠と諸元。**内外の色は値で決める**（内=緑の固定はしない） */
+.race20 .paceline{display:flex;align-items:baseline;justify-content:center;gap:8px;
+  margin:2px 0 2px}
+.race20 .paceline b{font-size:15px;font-weight:800;color:#003E70}
+.race20 .paceline span{font-size:11px;color:var(--sub);
+  font-variant-numeric:tabular-nums}
+.race20 svg.tk2{width:100%;height:auto;display:block;margin:2px auto 0}
+.race20 svg.tk2 .c2{font-size:10.5px;fill:#6E6E68;text-anchor:middle}
+/* 目盛りはコース上のどこにでも置くので、矩形ではなく法線方向の線で引く */
+.race20 svg.tk2 .tkm{stroke:#333;stroke-width:2.5;stroke-linecap:butt;fill:none}
+.race20 svg.tk2 .tkm.st{stroke:#B26B00}
+.race20 svg.tk2 .tk{fill:#333}
+.race20 svg.tk2 .tk.st{fill:#B26B00}
+.race20 svg.tk2 .tkl{font-size:9.5px;font-weight:700;text-anchor:middle;fill:#333}
+.race20 svg.tk2 .tkl.st{fill:#B26B00}
+.race20 svg.tk2 .tkl.cn{fill:#8b8b84;font-weight:400}
+.race20 svg.tk2 .lp{font-size:11px;text-anchor:middle;fill:#8b8b84;letter-spacing:.08em}
+/* 回りの向きは2本の矢印で示す。1本だけだと読み違える */
+.race20 svg.tk2 .arw2{stroke:#5C5C5C;stroke-width:1.6;fill:none}
+/* 距離バー。数字は帯の中に置く。ただし1区間目は距離の 5.0%（東京芝2000m）まで
+   細くなり、そこには数字が入らない。**入る区間だけ帯の中**に置き、入らない区間は
+   帯の下に色見本つきで出す（全105距離のうち26距離で1区間だけ下に出る）。 */
+.race20 .dwrap{margin-top:9px}
+.race20 .dbar{display:flex;border-radius:4px;overflow:hidden;height:40px}
+.race20 .dbar .sg{display:flex;flex-direction:column;align-items:center;
+  justify-content:center;min-width:0;overflow:hidden}
+.race20 .dbar .sl{font-size:8.5px;color:var(--sub);white-space:nowrap;line-height:1.3}
+.race20 .dbar .sv{font-size:12px;font-weight:800;color:var(--text);white-space:nowrap;
+  font-variant-numeric:tabular-nums;line-height:1.3}
+.race20 .dbar .sa{background:#E8CFAE}
+.race20 .dbar .sb{background:#E4E4DF}
+.race20 .dbar .sc{background:#C3D6E8}
+.race20 .dbar .sc .sl{color:#4A7BA5}
+.race20 .dbar .sa .sl{color:#9A7442}
+.race20 .dlgd{display:flex;flex-wrap:wrap;gap:2px 12px;margin-top:6px}
+.race20 .dlgd .dl{display:inline-flex;align-items:center;gap:4px;font-size:11px;
+  color:var(--sub);white-space:nowrap}
+.race20 .dlgd .dl i{width:9px;height:9px;border-radius:2px;flex:none}
+.race20 .dlgd .dl b{font-weight:800;color:var(--text);font-variant-numeric:tabular-nums}
+.race20 .dlgd .sa i{background:#E8CFAE}
+.race20 .dlgd .sb i{background:#E4E4DF}
+.race20 .dlgd .sc i{background:#C3D6E8}
+.race20 .geochips{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.race20 .geochips .gc{font-size:11px;font-weight:700;line-height:1;padding:5px 7px;
+  border-radius:3px;background:var(--sub-bg2);white-space:nowrap;
+  font-variant-numeric:tabular-nums}
+.race20 .geochips .gc .k{color:var(--cap);font-weight:400;margin-right:4px}
+.race20 .geochips .gc.gdir{background:#E8EEF4;color:#003E70}
+.race20 .geochips .gc.gb1{background:#CBE5D6;color:#1F7A4D}
+.race20 .geochips .gc.gb1 .k{color:#3F8C63}
+.race20 .geochips .gc.gb2{background:#E3F0E7;color:#2F8B5C}
+.race20 .geochips .gc.gb2 .k{color:#5FA37E}
+.race20 .geochips .gc.gb3{background:#EDEDEA;color:#5C5C5C}
+.race20 .geochips .gc.gb4{background:#F7DEDE;color:#B03A3A}
+.race20 .geochips .gc.gb4 .k{color:#C46B6B}
+.race20 .geochips .gc.gb5{background:#F0C9C9;color:#8E2A2A}
+.race20 .geochips .gc.gb5 .k{color:#B05A5A}
+
+/* ── §4 馬場（クッション値） ── */
+.race20 .babadetail.v2{padding:10px 11px 11px}
+.race20 .babadetail.v2 .l1{display:flex;flex-wrap:wrap;align-items:center;gap:7px;
+  margin-bottom:2px}
+.race20 .babadetail.v2 .l1 .lv{font-size:12.5px;font-weight:800;border-radius:3px;
+  padding:2px 8px;line-height:1.35}
+.race20 .babadetail.v2 .l1 .lv.m2{background:#2E6DA4;color:#fff}
+.race20 .babadetail.v2 .l1 .lv.m1{background:#DCE8F3;color:#2E6DA4}
+.race20 .babadetail.v2 .l1 .lv.z0{background:#EDEDEA;color:#5C5C5C}
+.race20 .babadetail.v2 .l1 .lv.p1{background:#F6E4D6;color:#A8632B}
+.race20 .babadetail.v2 .l1 .lv.p2{background:#B26B00;color:#fff}
+.race20 .babadetail.v2 .l1 .hd{font-size:12.5px;color:var(--text)}
+.race20 .babadetail.v2 .l1 .hd b{font-variant-numeric:tabular-nums}
+.race20 .babadetail.v2 .l1 .tl{font-size:11.5px;color:var(--sub)}
+.race20 .babadetail.v2 .l3{margin-top:7px;border-top:1px solid #dbe6f0;padding-top:6px}
+.race20 .cscale{margin-top:13px}
+.race20 .cscale .lbl{display:flex;justify-content:space-between;font-size:10px;
+  color:var(--cap);margin-bottom:3px}
+.race20 .cscale .lbl .soft{color:#2E6DA4} .race20 .cscale .lbl .hard{color:#B26B00}
+.race20 .cscale .tr{position:relative;height:10px;border-radius:5px;
+  background:linear-gradient(90deg,#DCE8F3 0%,#EFEFEC 50%,#F6E4D6 100%);margin:14px 0 0}
+.race20 .cscale .tr .band{position:absolute;top:0;bottom:0;background:rgba(90,90,85,.20);
+  border-radius:2px}
+.race20 .cscale .tr .nm{position:absolute;top:-4px;bottom:-4px;width:2px;margin-left:-1px;
+  background:#5C5C5C}
+.race20 .cscale .below{position:relative;height:13px;margin-top:1px}
+.race20 .cscale .below .pv{position:absolute;top:0;width:0;height:0;margin-left:-4px;
+  border-left:4px solid transparent;border-right:4px solid transparent;
+  border-bottom:5px solid #9a9a94}
+.race20 .cscale .below .pvl{position:absolute;top:5px;transform:translateX(-50%);
+  font-size:9.5px;color:var(--cap);white-space:nowrap;font-variant-numeric:tabular-nums}
+.race20 .cscale .tr .td{position:absolute;top:50%;width:16px;height:16px;border-radius:50%;
+  margin:-8px 0 0 -8px;border:3px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.10)}
+.race20 .cscale .tr .td.m2{background:#2E6DA4} .race20 .cscale .tr .td.m1{background:#6C9BC4}
+.race20 .cscale .tr .td.z0{background:#5C5C5C} .race20 .cscale .tr .td.p1{background:#C98B4E}
+.race20 .cscale .tr .td.p2{background:#B26B00}
+.race20 .cscale .tr .tdl{position:absolute;top:-20px;transform:translateX(-50%);
+  font-size:13px;font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap}
+.race20 .cscale .ends{position:relative;display:flex;justify-content:space-between;
+  font-size:10px;color:var(--cap);margin-top:5px;font-variant-numeric:tabular-nums}
+.race20 .cscale .ends .nml{position:absolute;transform:translateX(-50%);color:#5C5C5C;
+  white-space:nowrap}
+.race20 .cscale .cnote{font-size:10.5px;color:var(--cap);line-height:1.7;margin-top:16px}
+.race20 .babadetail.v2 .striplegend{margin-top:8px;border-top:1px solid #dbe6f0;padding-top:6px}
+
+/* ── §4.3 この馬場だと、こうなりやすい ── */
+.race20 .outlook{margin-top:12px;border-top:1px solid #dbe6f0;padding-top:9px}
+.race20 .outlook .oh{font-size:10.5px;font-weight:800;letter-spacing:.05em;color:var(--cap);
+  margin-bottom:6px}
+.race20 .outlook .ots{display:flex;gap:6px}
+.race20 .outlook .ot{flex:1;min-width:0;background:#fff;border-radius:4px;padding:7px 8px 8px;
+  box-shadow:inset 0 0 0 1px #dbe6f0}
+.race20 .outlook .ot .ttl{display:block;font-size:10px;color:var(--cap);font-weight:700}
+.race20 .outlook .ot .v{display:block;font-size:17px;font-weight:800;line-height:1.25;
+  margin-top:2px;font-variant-numeric:tabular-nums}
+.race20 .outlook .ot .w{display:block;font-size:11.5px;font-weight:700}
+.race20 .outlook .ot .n{display:block;font-size:9.5px;color:var(--cap);margin-top:3px;line-height:1.5}
+.race20 .outlook .ot.p1 .v,.race20 .outlook .ot.p1 .w{color:#0F6A34}
+.race20 .outlook .ot.m1 .v,.race20 .outlook .ot.m1 .w{color:#A8632B}
+.race20 .outlook .ot.z0 .v{color:var(--text)} .race20 .outlook .ot.z0 .w{color:var(--sub)}
+.race20 .outlook .onote{font-size:10.5px;color:var(--cap);line-height:1.7;margin-top:7px}
+.race20 .outlook .onote b{color:var(--text)}
+.race20 .outlook .ocap{font-size:10px;color:var(--cap);line-height:1.7;margin-top:5px}
+
+/* ── §5 脚質 ── */
+/* 塗りで判定を言わない（2026-08-06）。旧版は全コース平均との差でカードを赤・緑に塗って
+   いたが、そのコースでの複勝率が4脚質のうち上位でも赤くなり、脚質そのものが弱いと読めた。
+   カードは4つとも同じ地色にし、高い・低いは文言と符号だけで言う。89-spec（荒れ度）で
+   「良し悪しを含意させないため緑・赤は使わない」と決めたのと同じ扱いにそろえる。 */
+.race20 .rank2{margin-top:4px}
+.race20 .rk2{padding:8px 9px 9px;border-radius:5px;margin-bottom:5px;
+  background:var(--sub-bg);border:1px solid var(--rule)}
+.race20 .rk2.top{box-shadow:inset 0 0 0 2px #B4B4AC}
+.race20 .rk2 .r1{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}
+.race20 .rk2 .r1 .st{font-size:14px;font-weight:800}
+.race20 .rk2 .r1 .cnt{font-size:10.5px;color:var(--cap)}
+.race20 .rk2 .r1 .jd{font-size:11px;font-weight:700;color:var(--sub)}
+.race20 .rk2 .r1 .jd i{font-style:normal;font-size:9px;color:var(--navy);margin-right:2px}
+.race20 .rk2 .r1 .dt{margin-left:auto;font-size:13px;font-weight:800;
+  color:var(--text);font-variant-numeric:tabular-nums}
+/* 3列×2行の小さな表。行見出しがあるので、何と比べているかが本文なしで分かる */
+.race20 table.rt3{width:100%;border-collapse:collapse;margin:6px 0 2px;
+  font-variant-numeric:tabular-nums;background:none}
+.race20 table.rt3 th,.race20 table.rt3 td{border:0;padding:2px 4px;text-align:right;
+  white-space:nowrap;background:none}
+.race20 table.rt3 thead th{font-size:10px;color:var(--cap);font-weight:700;
+  border-bottom:1px solid rgba(90,90,85,.18)}
+.race20 table.rt3 th.l{text-align:left;font-size:10px;color:var(--cap);font-weight:400;
+  width:5.6em}
+.race20 table.rt3 tr.cur td{font-size:13.5px;font-weight:800;color:var(--text);padding-top:4px}
+.race20 table.rt3 tr.avg td{font-size:11px;color:var(--cap);font-weight:400}
+.race20 .rk2 .hs{display:flex;flex-wrap:wrap;gap:1px 0;margin-top:6px}
+.race20 .rk2 .hs .pz{display:inline-flex;flex-direction:column;align-items:center;width:26px}
+.race20 .rk2 .hs .pz .mk{height:12px;line-height:12px;font-size:11px;font-weight:700}
+.race20 .rk2 .hs .pz.jirai .hn{box-shadow:0 0 0 2px var(--live)}
+.race20 .rk2 .hs .pz.nige .hn{box-shadow:0 0 0 2px var(--orange)}
+.race20 .rk2 .hs .none{font-size:11px;color:var(--cap)}
+/* 判定クラス（p2/p1/z0/m1/m2）は JS 側で付いたまま残すが、色は当てない。
+   文言（.jd）と符号（.dt）が判定を言う。塗り分けを復活させないこと */
+
+/* ── §7 逃げ候補・先行圧（メーター） ── */
+.race20 .mt{margin-top:5px}
+.race20 .mt .m1{font-size:12.5px;color:var(--sub);margin-bottom:7px}
+.race20 .mt .m1 b{font-size:17px;color:#A32B1F;font-variant-numeric:tabular-nums}
+.race20 .mtr{position:relative;height:16px;border-radius:3px;overflow:hidden;background:#F1F1EE}
+.race20 .mtr .sg{position:absolute;top:0;bottom:0}
+.race20 .mtr .pin{position:absolute;top:-3px;bottom:-3px;width:3px;margin-left:-1.5px;
+  background:#003E70;border-radius:2px;z-index:2}
+.race20 .mtr .pv{position:absolute;top:-17px;transform:translateX(-50%);font-size:11.5px;
+  font-weight:800;color:#003E70;font-variant-numeric:tabular-nums}
+.race20 .mtk{position:relative;height:12px;margin-top:2px;font-size:9px;color:var(--cap);
+  font-variant-numeric:tabular-nums}
+.race20 .mtk .tk{position:absolute;transform:translateX(-50%)}
+.race20 .mlb{display:flex;justify-content:space-between;font-size:10px;color:var(--cap)}
+.race20 .fh2{margin-top:10px;border-top:1px solid var(--rule)}
+.race20 .fh2 .row{display:flex;align-items:center;gap:8px;min-height:38px;padding:4px 0;
+  border-bottom:1px solid var(--rule)}
+.race20 .fh2 .row .k{flex:none;width:3.6em;font-size:11.5px;font-weight:700}
+.race20 .fh2 .row .cnt{flex:none;width:2.6em;text-align:right;font-size:12.5px;font-weight:800;
+  font-variant-numeric:tabular-nums}
+.race20 .fh2 .row .hs{flex:1;min-width:0;display:flex;flex-wrap:wrap;align-items:center;gap:1px 0}
+.race20 .fh2 .row .hs .none{font-size:11px;color:var(--cap);font-style:normal}
+.race20 .fh2 .row .pz{display:inline-flex;flex-direction:column;align-items:center;width:24px}
+.race20 .fh2 .row .pz .mk{height:10px;line-height:10px;font-size:9px;font-weight:700}
+.race20 .fh2 .row .pz.nige .hn{box-shadow:0 0 0 2px var(--orange)}
+
+/* ── §8 展開シナリオ（2枚カード） ── */
+.race20 .pcwrap{margin-top:5px}
+.race20 .pc{border:1px solid var(--rule);border-radius:6px;margin-bottom:7px;overflow:hidden}
+.race20 .pc.on{border-color:var(--navy)}
+.race20 .pch{display:flex;align-items:baseline;gap:6px;padding:7px 9px;background:var(--sub-bg)}
+.race20 .pc.on .pch{background:#E8EFF6}
+.race20 .pch .nm{font-size:13.5px;font-weight:800}
+.race20 .pch .sb{font-size:10px;color:var(--cap)}
+.race20 .pch .pp{margin-left:auto;font-size:16px;font-weight:800;color:var(--navy);
+  font-variant-numeric:tabular-nums}
+.race20 .pc .split{display:flex;height:20px;font-size:10px;font-weight:700;color:#fff}
+.race20 .pc .split i{display:flex;align-items:center;padding:0 7px;font-style:normal;
+  overflow:hidden;white-space:nowrap}
+.race20 .pc .split .f{background:#9BB0C4}
+.race20 .pc .split .r{background:#003E70;justify-content:flex-end}
+.race20 .pcb{display:flex}
+.race20 .pcb .side{flex:1;min-width:0;padding:7px 8px 8px}
+.race20 .pcb .side + .side{border-left:1px solid var(--rule)}
+.race20 .pcb .side.on{background:#F4F8FC}
+.race20 .pcb .side .v{font-size:17px;font-weight:800;color:var(--navy);
+  font-variant-numeric:tabular-nums}
+.race20 .pcb .side .hs{display:flex;flex-wrap:wrap;gap:1px 0;margin-top:4px}
+.race20 .pcb .side .hs .pz{display:inline-flex;flex-direction:column;align-items:center;width:24px}
+.race20 .pcb .side .hs .pz .mk{height:11px;line-height:11px;font-size:10px;font-weight:700}
+.race20 .pcb .side .hs .pz.jirai .hn{box-shadow:0 0 0 2px var(--live)}
+.race20 .pcb .side .hs .pz.nige .hn{box-shadow:0 0 0 2px var(--orange)}
+
+/* ── §8 展開シナリオ（通過タイムを見出しへ） ── */
+.race20 .pch{flex-wrap:wrap;row-gap:1px}
+.race20 .pch .pt{font-size:10px;color:var(--cap);font-variant-numeric:tabular-nums;
+  white-space:nowrap}
+.race20 .pcwrap.p1 .pc.on .pch .pt{color:var(--sub)}
+
+/* ── §8.2 展開シナリオ 配色P1（前残り＝琥珀 / 差し・追込＝青） ── */
+/* 対になる概念を色でも対にする。枠と見出しは無彩色にして、
+   色が意味するのは「前か後ろか」の1つだけにする。P2/P3 は採らない。 */
+.race20 .pcwrap.p1 .pc{border-color:var(--rule)}
+.race20 .pcwrap.p1 .pc.on{border-color:#8a8a84;box-shadow:0 0 0 1px #8a8a84}
+.race20 .pcwrap.p1 .pch{background:#F4F4F2}
+.race20 .pcwrap.p1 .pc.on .pch{background:#EDEDEA}
+.race20 .pcwrap.p1 .pch .pp{color:var(--text)}
+.race20 .pcwrap.p1 .split .f{background:#C08A4E;color:#fff}
+.race20 .pcwrap.p1 .split .r{background:#4E7FA6;color:#fff}
+.race20 .pcwrap.p1 .side.f .v{color:#A8632B}
+.race20 .pcwrap.p1 .side.r .v{color:#2E6DA4}
+.race20 .pcwrap.p1 .side.f.on{background:#F9EFE5}
+.race20 .pcwrap.p1 .side.r.on{background:#EAF1F7}
+
+body{padding:14px;background:#f5f6f8;font-family:-apple-system,"Hiragino Sans",sans-serif}
+.wrap{max-width:430px;margin:0 auto}
+h3{font-size:14px;margin:4px 0 2px;color:#003E70}
+p.note{font-size:11.5px;color:#5C5C5C;margin:0 0 8px;line-height:1.55}
+.race20 .shlist.off{display:block}
+</style>
+<div class="wrap race20">
+<h3>出馬表の札に「展開が向かない」だけを出す</h3>
+<p class="note">既存の「消せる理由」チップ（<b>調教×</b> 等）と同じ見た目・同じ行に置きます。
+専用のCSSは1行も足していません。5番と6番に付いています。
+12番は過去走が足りず、値そのものを出していません（無印）。
+直近60レース797頭で実際に付いたのは <b>100頭（12.5%）</b>、値なしは 218頭（27.4%）でした。</p>
+<div class="shlist off"><article class="acard pred">
+  <button type="button" class="aspine"><span class="mkb m-hon">◎</span><span class="hn wk3 sm">3</span>
+    <span class="vname">アウローラシエル</span><i class="apop">▸</i></button>
+  <div class="abody">
+    <div class="ahead"><span class="pa">牝4</span><span class="pk">55</span>
+      <span class="pj">ルメール</span><span class="legbar"><span class="legcells"><i class=""></i><i class=""></i><i class="on">◀</i><i class=""></i></span><span class="lbl">差</span></span>
+      <span class="tot">58.4<i class="grade g-b">B</i></span>
+      <span class="od">3.2<i>倍</i><i>2人</i></span></div>
+    <div class="asub"><span class="pw">486(+4)</span><span class="rot">中9週</span><span class="idot d-o">近走<i>○</i></span></div>
+  </div>
+</article><article class="acard">
+  <button type="button" class="aspine"><span class="hn wk3 sm">5</span>
+    <span class="vname">メイショウホウオウ</span><i class="apop">▸</i></button>
+  <div class="abody">
+    <div class="ahead"><span class="pa">牡5</span><span class="pk">57</span>
+      <span class="pj">川田</span><span class="legbar"><span class="legcells"><i class=""></i><i class="on">◀</i><i class=""></i><i class=""></i></span><span class="lbl">先</span></span>
+      <span class="tot">52.1<i class="grade g-c">C</i></span>
+      <span class="od">7.6<i>倍</i><i>4人</i></span></div>
+    <div class="asub"><span class="pw">502(-2)</span><span class="rot">中3週</span><span class="idot d-o">騎手<i>○</i></span><span class="idot d-x" title="今日の想定ペースで走ったときの平均着差が、この馬の通算平均より0.21秒悪い（ペースの分かる過去9走から）。予測が当たるかは未検証です">展開が向かない<i>×</i></span></div>
+  </div>
+</article><article class="acard">
+  <button type="button" class="aspine"><span class="hn wk4 sm">6</span>
+    <span class="vname">キタノインパクト</span><i class="apop">▸</i></button>
+  <div class="abody">
+    <div class="ahead"><span class="pa">牡4</span><span class="pk">56</span>
+      <span class="pj">武豊</span><span class="legbar"><span class="legcells"><i class=""></i><i class=""></i><i class=""></i><i class="on">◀</i></span><span class="lbl">追</span></span>
+      <span class="tot">47.3<i class="grade g-d">D</i></span>
+      <span class="od">12.4<i>倍</i><i>6人</i></span></div>
+    <div class="asub"><span class="pw">470(+8)</span><span class="rot">中5週</span><span class="idot d-x">調教<i>×</i></span><span class="idot d-x" title="今日の想定ペースで走ったときの平均着差が、この馬の通算平均より0.34秒悪い（ペースの分かる過去14走から）。予測が当たるかは未検証です">展開が向かない<i>×</i></span></div>
+  </div>
+</article><article class="acard">
+  <button type="button" class="aspine"><span class="hn wk7 sm">12</span>
+    <span class="vname">ハツシュッソウ</span><i class="apop">▸</i></button>
+  <div class="abody">
+    <div class="ahead"><span class="pa">牡3</span><span class="pk">54</span>
+      <span class="pj">横山武</span><span class="legbar"><span class="legcells"><i class=""></i><i class="on">◀</i><i class=""></i><i class=""></i></span><span class="lbl">先</span></span>
+      <span class="tot">44.8<i class="grade g-e">E</i></span>
+      <span class="od">31.0<i>倍</i><i>9人</i></span></div>
+    <div class="asub"><span class="pw">448(—)</span><span class="rot">初出走</span><span class="idot">目立つ長所も短所もなし</span></div>
+  </div>
+</article></div>
+<p class="note" style="margin-top:12px">チップにカーソルを合わせると
+「今日の想定ペースで走ったときの平均着差が、この馬の通算平均より0.21秒悪い（ペースの分かる過去9走から）。
+予測が当たるかは未検証です」と出ます。</p>
+</div>
