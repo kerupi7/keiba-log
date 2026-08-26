@@ -87,7 +87,7 @@ const W5P_BAND = { L: '〜4.9倍', M: '5.0〜19.9倍', H: '20.0倍〜' };
 const W5P_ORDER = ['L', 'M', 'H'];
 let w5pData = null;
 let w5pState = { mode: null, step: 0, bucket: null, budget: null, budgetText: '',
-  day: 0, sel: null, showAll: false, openCompo: null };
+  day: 0, sel: null, showAll: false, openCompo: null, leg: 0 };
 let w5pDays = [];          // render() が渡す当週の日（印から見る側で使う）
 
 function w5pYen(v) {
@@ -302,10 +302,25 @@ function w5pRender() {
       w5pState.budget = y; w5pState.step = 3; w5pRender();
     };
   }
-  const go = document.getElementById('w5pgo');
-  if (go) go.onclick = () => { w5pState.step = 2; w5pRender(); };
+  box.querySelectorAll('[data-w5pgoleg]').forEach(x => x.onclick = () => {
+    w5pState.leg = Number(x.dataset.w5pgoleg); w5pRender();
+  });
+  const next = document.getElementById('w5pnext');
+  if (next) next.onclick = () => {
+    const day = w5pCurrentDay();
+    const last = !day || w5pState.leg >= day.legs.length - 1;
+    if (last) w5pState.step = 2; else w5pState.leg += 1;
+    w5pRender();
+    if (!last) window.scrollTo(0, 0);
+  };
+  const prev = document.getElementById('w5pprev');
+  if (prev) prev.onclick = () => {
+    if (w5pState.leg > 0) w5pState.leg -= 1;
+    else { w5pState.mode = null; w5pState.step = 0; }
+    w5pRender();
+  };
   const edit = document.getElementById('w5pedit');
-  if (edit) edit.onclick = () => { w5pState.step = 1; w5pRender(); };
+  if (edit) edit.onclick = () => { w5pState.step = 1; w5pState.leg = 0; w5pRender(); };
   box.querySelectorAll('[data-w5popen]').forEach(x => x.onclick = () => {
     w5pState.openCompo = (w5pState.openCompo === x.dataset.w5popen)
       ? null : x.dataset.w5popen;
@@ -316,7 +331,7 @@ function w5pRender() {
   const again = document.getElementById('w5pagain');
   if (again) again.onclick = () => {
     w5pState = { mode: null, step: 0, bucket: null, budget: null, budgetText: '',
-      day: 0, sel: null, showAll: false, openCompo: null };
+      day: 0, sel: null, showAll: false, openCompo: null, leg: 0 };
     w5pRender();
   };
 }
@@ -490,6 +505,7 @@ function w5pCurrentDay() {
 function w5pInitSel() {
   const day = w5pCurrentDay();
   w5pState.sel = [0, 1, 2, 3, 4].map(() => new Set());
+  w5pState.leg = 0;
   if (!day) return;
   day.legs.forEach((lg, i) => {
     const mk = w5pMyMarks(lg.race_id);
@@ -501,6 +517,11 @@ function w5pInitSel() {
 
 function w5pPoints() {
   return (w5pState.sel || []).reduce((a, s) => a * (s.size || 0), 1);
+}
+
+// まだ選んでいない鞍を1頭ぶんとして数えた点数。選んでいる途中でも0円にならないようにする
+function w5pPointsSoFar() {
+  return (w5pState.sel || []).reduce((a, s) => a * (s.size || 1), 1);
 }
 
 function w5pDayTabs() {
@@ -525,40 +546,148 @@ function w5pHorseRow(lg, i, h) {
     + '<span class="chk"></span></button>';
 }
 
+// ===== 選ぶたびに動く配当のものさし（2026-08-26・1鞍ずつ選ぶ画面で使う）=====
+//
+// **当たりやすさは一切見ていない。**当たった場合に過去いくら付いたかを引いているだけ。
+// まだ選んでいない鞍は「3帯とも起こり得る」として残すので、鞍を決めるほど幅が狭くなる。
+
+function w5pHasStat(r) {
+  return r && r.n >= w5pData.source.min_n_per_plan && r.median != null;
+}
+
+// いまの選び方から、当たり得る帯の組み合わせを出す（最大でも 3^5 = 243通りの数え上げ）
+function w5pReachableCompos() {
+  const day = w5pCurrentDay();
+  if (!day) return [];
+  const allow = day.legs.map((lg, i) => {
+    const set = new Set();
+    (lg.horses || []).forEach(h => {
+      if (w5pState.sel[i].has(h.number)) set.add(w5pBandOf(h.odds));
+    });
+    return set.size ? W5P_ORDER.filter(k => set.has(k)) : W5P_ORDER.slice();
+  });
+  let acc = [{ L: 0, M: 0, H: 0 }];
+  allow.forEach(keys => {
+    const next = [];
+    acc.forEach(c => keys.forEach(k => {
+      const x = { L: c.L, M: c.M, H: c.H };
+      x[k] += 1;
+      next.push(x);
+    }));
+    acc = next;
+  });
+  const stat = {};
+  (w5pData.compositions || []).forEach(x => { stat[x.compo] = x; });
+  const seen = {};
+  acc.forEach(c => {
+    seen[W5P_ORDER.filter(k => c[k]).map(k => k + c[k]).join('')] = true;
+  });
+  return Object.keys(seen).map(k => stat[k]).filter(Boolean);
+}
+
+// ものさしの端。過去に記録のある組み合わせ全体の幅を背景に敷いて、いまの幅を重ねる
+let w5pSpanCache = null;
+function w5pAllSpan() {
+  if (w5pSpanCache) return w5pSpanCache;
+  const m = (w5pData.compositions || []).filter(w5pHasStat).map(x => x.median);
+  w5pSpanCache = { lo: Math.min.apply(null, m), hi: Math.max.apply(null, m) };
+  return w5pSpanCache;
+}
+
+// 配当は2万円から4億円まで1万倍以上ひらくので、目盛りは桁で取る（対数目盛り）
+function w5pMeterPos(v) {
+  const s = w5pAllSpan();
+  const r = (Math.log(v) - Math.log(s.lo)) / (Math.log(s.hi) - Math.log(s.lo));
+  return Math.max(0, Math.min(100, r * 100));
+}
+
+function w5pMeterHtml() {
+  const known = w5pReachableCompos().filter(w5pHasStat)
+    .sort((a, b) => a.median - b.median);
+  const left = 5 - (w5pState.sel || []).filter(s => s.size).length;
+  const pts = w5pPointsSoFar();
+  // まだ決めていない鞍は1頭として数えているので「最低」と断る
+  const cost = (left ? '最低' : '') + `${pts.toLocaleString()}点・`
+    + `${(pts * 100).toLocaleString()}円`;
+  const tail = left === 5 ? '鞍を決めるほど狭まります'
+    : (left ? `残り${left}鞍を決めると狭まります` : '5鞍そろいました');
+  if (!known.length) {
+    return '<div class="w5meter"><div class="mh">'
+      + '<span class="ml">当たったときの配当</span>'
+      + '<span class="mv dim">目安なし</span></div>'
+      + `<div class="mf">${cost} ・ この帯の組み合わせは`
+      + `過去${w5pData.source.n_rounds}回のうち`
+      + `${w5pData.source.min_n_per_plan}回に届きません</div></div>`;
+  }
+  const lo = known[0], hi = known[known.length - 1];
+  const a = w5pMeterPos(lo.median), b = w5pMeterPos(hi.median);
+  const val = known.length === 1
+    ? `${w5pYen(lo.median)}`
+    : `${w5pYen(lo.median)} 〜 ${w5pYen(hi.median)}`;
+  const note = known.length === 1
+    ? `4回に1回は ${w5pYen(lo.q1)} を下回り、4回に1回は ${w5pYen(lo.q3)} を超えます`
+    : `${tail} ・ 帯の組み合わせ ${known.length}通り`;
+  return '<div class="w5meter"><div class="mh">'
+    + '<span class="ml">当たったときの配当</span>'
+    + `<span class="mv">${val}</span></div>`
+    + `<div class="mbar"><i style="left:${a}%;width:${Math.max(1.5, b - a)}%"></i></div>`
+    + `<div class="mf">${cost} ・ ${note}</div></div>`;
+}
+
+// 鞍の行き来。選んだ頭数が見えるので、戻る先を探さずに押せる
+function w5pLegNav(day) {
+  return '<div class="w5nav">' + day.legs.map((lg, i) => {
+    const n = w5pState.sel[i].size;
+    return `<button class="w5navb${i === w5pState.leg ? ' on' : ''}${n ? ' done' : ''}"`
+      + ` data-w5pgoleg="${i}"><span class="l">WIN${lg.leg}</span>`
+      + `<span class="n">${n ? n + '頭' : '—'}</span></button>`;
+  }).join('') + '</div>';
+}
+
+// 1鞍ずつ選ぶ（2026-08-26・ユーザー指示で5鞍まとめ表示から変更）
 function w5pPickScreen() {
   const day = w5pCurrentDay();
-  const pts = w5pPoints();
-  let h = w5pProg('馬を選ぶ', `${pts ? pts.toLocaleString() + '点' : '未選択の鞍あり'}`, 2, 3);
-  h += w5pDayTabs();
   if (!day) {
-    return h + '<div class="w5p-res"><div class="rf">'
+    return w5pProg('馬を選ぶ', '対象レース未取得', 2, 7)
+      + w5pDayTabs()
+      + '<div class="w5p-res"><div class="rf">'
       + '対象レースの記録がまだありません（金曜の取得後に出ます）。'
       + 'この入り口は今週の5鞍が決まってから使えます。</div></div>'
       + '<div class="w5pagain"><button class="ak-btn ghost" id="w5pagain">はじめから</button></div>';
   }
-  day.legs.forEach((lg, i) => {
-    const n = w5pState.sel[i].size;
-    h += '<div class="ak-card" style="margin-bottom:10px"><div class="ak-q"><div class="qhead">'
-      + `<span class="q" style="font-size:14px">WIN${lg.leg} `
-      + `${escapeHtml(lg.track || '')}${lg.race_number || ''}R `
-      + `${escapeHtml(lg.race_name || '')}</span>`
-      + `<span class="qcount${n ? ' on' : ''}"><span class="cn">${n}</span>`
-      + '<span class="cs">頭</span></span></div>'
-      + '</div><div class="ak-hlist">';
-    if (!(lg.horses || []).length) {
-      h += '<div class="none" style="padding:10px 13px;font-size:12px">'
-        + 'この鞍の出馬表がまだありません（新馬・障害・2歳未勝利は予想の対象外です）。</div>';
-    } else {
-      h += lg.horses.map(x => w5pHorseRow(lg, i, x)).join('');
-    }
-    h += '</div></div>';
-  });
-  const ok = w5pState.sel.every(s => s.size > 0);
-  h += '<div class="ak-card"><div class="ak-foot"><span class="picked">'
-    + (ok ? `<b>${pts.toLocaleString()}点</b>・${(pts * 100).toLocaleString()}円（100円ずつ）`
-      : '5鞍すべてで1頭以上を選んでください')
-    + `</span><button class="ak-btn" id="w5pgo"${ok ? '' : ' disabled'}>配当を見る</button>`
-    + '</div></div>';
+  const i = Math.max(0, Math.min(day.legs.length - 1, w5pState.leg));
+  const lg = day.legs[i];
+  const n = w5pState.sel[i].size;
+  const last = i >= day.legs.length - 1;
+  // 出馬表が無い鞍（新馬・障害・2歳未勝利）は選べないので、そこで止めない
+  const empty = !(lg.horses || []).length;
+  const done = (w5pState.sel || []).filter(s => s.size).length;
+
+  let h = w5pProg(`WIN${lg.leg} の馬を選ぶ`, `決めた鞍 <b>${done}</b>/5`, i + 2, 7);
+  h += w5pDayTabs();
+  h += w5pLegNav(day);
+  h += '<div class="ak-card"><div class="ak-q"><div class="qhead">'
+    + `<span class="q" style="font-size:14px">`
+    + `${escapeHtml(lg.track || '')}${lg.race_number || ''}R `
+    + `${escapeHtml(lg.race_name || '')}</span>`
+    + `<span class="qcount${n ? ' on' : ''}"><span class="cn">${n}</span>`
+    + '<span class="cs">頭</span></span></div>'
+    + '</div><div class="ak-hlist">';
+  if (!(lg.horses || []).length) {
+    h += '<div class="none" style="padding:10px 13px;font-size:12px">'
+      + 'この鞍の出馬表がまだありません（新馬・障害・2歳未勝利は予想の対象外です）。</div>';
+  } else {
+    h += lg.horses.map(x => w5pHorseRow(lg, i, x)).join('');
+  }
+  h += '</div></div>';
+
+  // ものさしと送りの button は画面の下に貼り付ける。馬を押すたびに額が動くのを見せるため
+  h += '<div class="w5stick">' + w5pMeterHtml()
+    + '<div class="w5btns">'
+    + `<button class="ak-mini" id="w5pprev">${i ? `WIN${day.legs[i - 1].leg}へ戻る` : '入り口に戻る'}</button>`
+    + `<button class="ak-btn" id="w5pnext"${n || empty ? '' : ' disabled'}>`
+    + (n || empty ? (last ? '配当を見る' : `WIN${day.legs[i + 1].leg}へ`) : '1頭以上えらぶ')
+    + '</button></div></div>';
   return h;
 }
 
@@ -645,12 +774,23 @@ function w5pComboRow(hs, cls) {
 }
 
 function w5pMarksResult() {
+  // 出馬表の無い鞍を飛ばしてここまで来た場合。5鞍そろわないと帯の組み合わせが作れない
+  const cur = w5pCurrentDay();
+  const miss = (cur ? cur.legs : [])
+    .filter((lg, i) => !w5pState.sel[i].size).map(lg => 'WIN' + lg.leg);
+  if (miss.length) {
+    return w5pProg('答え', '5鞍そろっていません', 7, 7)
+      + `<div class="w5p-res"><div class="rf">${miss.join('・')} の馬が決まっていないので`
+      + '、配当の目安が出せません（この鞍の出馬表がまだ出ていません）。</div></div>'
+      + '<div class="w5pagain"><button class="ak-btn ghost" id="w5pedit">馬を選び直す</button> '
+      + '<button class="ak-btn ghost" id="w5pagain">はじめから</button></div>';
+  }
   const rows = w5pCompositions();
   const pts = w5pPoints();
   const known = rows.filter(r => r.n >= w5pData.source.min_n_per_plan && r.median != null);
   const wSum = rows.reduce((a, r) => a + r.ways, 0);
   const maxWays = rows.reduce((a, r) => Math.max(a, r.ways), 1);
-  let h = w5pProg('答え', `${pts.toLocaleString()}点・${(pts * 100).toLocaleString()}円`, 3, 3);
+  let h = w5pProg('答え', `${pts.toLocaleString()}点・${(pts * 100).toLocaleString()}円`, 7, 7);
 
   if (known.length) {
     const meds = known.map(r => r.median).sort((a, b) => a - b);
