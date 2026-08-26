@@ -515,11 +515,10 @@ function renderReviewLap(lap) {
   const diffRow = avg ? `<div class="rv-ldf${dense}">${splits.map((v, i) => {
     const d = v - avg[i];
     return `<span>${d > 0 ? '+' : d < 0 ? '−' : '±'}${Math.abs(d).toFixed(1)}</span>`;
-  }).join('')}</div>
-    <div class="rv-note">↑ 今回−平均（秒）。＋は平均より時間がかかったハロン</div>` : '';
+  }).join('')}</div>` : '';
 
   const firstM = course ? course.lap_first_m : null;
-  const notes = ['上にあるほど速いハロン。縦軸は0秒から始めていません（差を見るため）'];
+  const notes = [];
   if (firstM && firstM !== 200) {
     notes.push(`最初の${firstM}mは今回 ${splits[0].toFixed(1)}秒`
       + `${avg ? ` / 平均 ${avg[0].toFixed(1)}秒` : ''}。`
@@ -1309,8 +1308,8 @@ function renderUpset20(upset, bigpayHtml) {
   // 古いレース（110-spec より前に公開）には無い。その行だけ出さない（110-spec §5.4）
   const avg = upset.average_line
     ? `<div class="avg">${escapeHtml(upset.average_line)}</div>` : '';
-  const th = upset.threshold_line
-    ? `<div class="th">${escapeHtml(upset.threshold_line)}</div>` : '';
+  // threshold_line は 2026-08-27 のデザイン見直しで表示をやめた（analysis.json には残る）
+  const th = '';
   // upset.line / tendency_hint / note は analysis.json に残るが（89-spec の契約は無改修）、
   // ここでは描画しない（110-spec §9-2）。
   return `
@@ -2256,7 +2255,6 @@ function mmBar() {
       <button type="button" data-view="paper">新聞</button>
     </span>
     <span class="mm-sum"></span>
-    <span class="mm-save">この端末に自動保存</span>
   </div>`;
 }
 
@@ -3593,7 +3591,6 @@ function renderOverview20(site) {
       const c = ratioClass(g.ratio);
       return `<div class="cell h${c}">${wakuBox(g.gate, 'sm')}<span class="v ${c}">${g.ratio.toFixed(2)}</span></div>`;
     }).join('');
-    const hasNd = p.inner_outer_bias.gates.some((g) => g.ratio == null);
     // 内回り／外回りが混在するコース（京都芝1600/1400・新潟芝2000）では、どちらの
     // 数字を見ているのかを出す。混在しないコースでは scope が無く、何も足さない。
     const scopeHtml = p.inner_outer_bias.scope
@@ -3601,7 +3598,6 @@ function renderOverview20(site) {
     sections.push(`
       <div class="biaslabel"><b>このコースの枠順成績</b> ${escapeHtml(p.inner_outer_bias.label)}${scopeHtml}</div>
       <div class="strip">${cellsHtml}</div>
-      <div class="striplegend">緑=有利 / 赤=不利、濃いほど強い（1.00=標準）${hasNd ? ' / —=走数不足で判定なし' : ''}</div>
     `);
   }
 
@@ -4054,8 +4050,7 @@ function tpCtl(site) {
       <div class="tpall"><button type="button" data-tpall="${allSel ? 'off' : 'on'}">${allSel ? '全部外す' : '全部選ぶ'}</button></div>
       <div class="tpgrid">${grid}</div>
     </div>
-    <p class="tpstate">${on.length ? `乗せているもの：${on.join('　＋　')}`
-      : 'なにも乗せていない（＝いまの出馬表と同じ）'}</p>
+    ${on.length ? `<p class="tpstate">乗せているもの：${on.join('　＋　')}</p>` : ''}
   </div>`;
 }
 

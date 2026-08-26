@@ -191,8 +191,6 @@ function renderUpsetPayouts(upset) {
       <thead><tr><th class="l">出したラベル</th>${head}</tr></thead>
       <tbody>${body}</tbody>
     </table>
-    <div class="scrollnote">この予想が各ラベルを出したレースの実績。「実際にそのクラスで決着したレース全体の平均」ではない。
-      3連単は1本の大穴で平均が跳ねるので、真ん中の額（中央）も併記している。</div>
   `;
 }
 
@@ -234,8 +232,6 @@ function renderFoot(nFinal) {
     : '';
   return `
     ${alert}
-    <div class="foot">馬券の購入は自己責任です。本サイトは予想の的中を保証しません。<br>
-      30レース未満の期間は各指標に「蓄積中 n/基準」を表示し、参考値として扱います。</div>
   `;
 }
 

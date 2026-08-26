@@ -192,21 +192,10 @@ function renderPanel(site) {
     ${renderLapSection(f, data.distance, data.lap_first_m, state.pace, true)}
     ${renderPaceTrend(f)}
     <div class="ctab-flag">ここから下は <b>今日の${n}頭を重ねた表</b></div>
-    <div class="notebox">左端の馬番が、その行に当てはまる今日の出走馬です。
-    数字はコースの過去データそのもので、<b>その馬の成績ではありません</b>。
-    上のフィルタを変えると、この下の表も同じ条件で入れ替わります。</div>
     <div class="eyebrow">${escapeHtml(activeLabel)}別成績<span class="note">${covByDim[activeDim]}/${n}頭</span></div>
     <div class="enttabs ct5">${entTabsHtml}</div>
     ${dimTbl}
     ${missRow(dimMiss, MISS_TEXT[activeDim])}
-    <div class="notebox">
-      勝率・連対率・複勝率は該当区分の全出走馬ベース。単回収・複回収は単勝／複勝100円購入時の回収率（100%＝収支トントン）。
-      <b>走数30未満の行は率をグレー表示</b>しています。
-      <span class="rk r1">1</span><span class="rk r2">2</span><span class="rk r3">3</span>
-      は各表で数字が良い順の上位3件（勝率・連対率・複勝率のみが対象）。
-      <b>指標名をタップすると、その数字の良い順に並べ替わります</b>（もう一度タップで元の並びに戻る）。
-      詳しい条件（クラス・年代・馬場・仮柵の掛け合わせ、騎手・種牡馬別の全順位）は下のリンクから。
-    </div>
     <a class="back-link" href="courses.html?c=${encodeURIComponent(cid)}">→ コース別データ（全項目）を見る</a>
   `;
 }
