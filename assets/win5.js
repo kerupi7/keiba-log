@@ -380,10 +380,15 @@ function w5pLegCardHtml(lg, key, heads) {
       + (u.percent == null ? '' : `<span class="pv">${u.percent}<small>%</small></span>`)
       + '</span>'
     : '';
+  // レース名は出馬表（race.html）へのリンクにする。race_id が無い鞍だけ文字のまま
+  const rcTxt = `${escapeHtml(lg.track || '')}${lg.race_number || ''}R `
+    + `${escapeHtml(lg.race_name || '')}`;
+  const rc = lg.race_id
+    ? `<a class="w5rc" href="race.html?id=${encodeURIComponent(lg.race_id)}">${rcTxt}`
+      + '<span class="go">›</span></a>'
+    : `<span class="w5rc">${rcTxt}</span>`;
   let h = '<div class="w5leg"><div class="lgh">'
-    + `<span class="no">WIN${lg.leg}</span>`
-    + `<span class="w5rc">${escapeHtml(lg.track || '')}${lg.race_number || ''}R `
-    + `${escapeHtml(lg.race_name || '')}</span>${uchip}</div>`
+    + `<span class="no">WIN${lg.leg}</span>${rc}${uchip}</div>`
     + `<div class="band"><span class="bt b${key}">${W5P_BAND[key]}</span>`
     + `<span class="cap">${heads}頭<small>まで</small></span></div>`;
   if (!inband.length) {
@@ -392,6 +397,7 @@ function w5pLegCardHtml(lg, key, heads) {
   h += '<div class="unums">'
     + inband.map(x => `<span class="unum${rec.has(x.number) ? ' on' : ''}">`
       + umaBox(x.number, x.gate, 'sm')
+      + `<span class="nm">${escapeHtml(x.name || '')}</span>`
       + `<span class="od">${x.odds.toFixed(1)}</span></span>`).join('')
     + '</div>';
   return h + '</div>';
