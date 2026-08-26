@@ -71,10 +71,22 @@ function initState(races) {
   const activeDate = pickDefaultDate(dates);
 
   const tracksForDate = (d) => {
-    const set = new Set(races.filter((r) => r.date === d).map((r) => r.track));
-    return TRACK_ORDER.filter((t) => set.has(t)).concat(
+    const todays = races.filter((r) => r.date === d);
+    const set = new Set(todays.map((r) => r.track));
+    const base = TRACK_ORDER.filter((t) => set.has(t)).concat(
       [...set].filter((t) => !TRACK_ORDER.includes(t)).sort()
     );
+    // 左から「その日の最初の掲載レースの発走時刻が早い順」（2026-08-27 ユーザー決定）。
+    // post_time は全件 HH:MM の5桁なので文字列比較で足りる。同時刻・時刻無しは従来の場順。
+    const firstPost = {};
+    for (const r of todays) {
+      if (!r.post_time) continue;
+      if (!firstPost[r.track] || r.post_time < firstPost[r.track]) firstPost[r.track] = r.post_time;
+    }
+    return base
+      .map((t, i) => ({ t, i, p: firstPost[t] || '99:99' }))
+      .sort((a, b) => (a.p < b.p ? -1 : a.p > b.p ? 1 : a.i - b.i))
+      .map((x) => x.t);
   };
 
   const activeTrack = tracksForDate(activeDate)[0];
