@@ -1592,6 +1592,58 @@ function courseRecordTable(h, bare) {
   `;
 }
 
+// ============================================================
+// レースレベル別の好走歴（handoff_2026-08-17_race-level.md の値を数え直したもの）
+//
+// 過去走の「クラス」列に出している Lv を、**全戦績ぶん段ごとに集計**する。
+// コース適性が「今日と同じ条件をどれだけ走ったか」なのに対し、こちらは
+// 「どれだけ中身の濃いレースで通用したか」。同じ3勝クラスでも、濃い回のほうで
+// 3着に入った馬と、薄い回で勝った馬を見分けるための表。
+//
+// **当たりやすさの印ではない。**レベルは「そのレースの出走馬がその後180日で
+// 3着以内に何回入ったか」＝レース後に確定する値で、モデル・印・買い目には
+// 一切入っていない（入れた瞬間に未来の情報を使うことになるため）。
+//
+// レベルが付くのは中央の平地だけ。地方・海外・障害の走はここに出ないので、
+// 表の合計は通算成績と一致しない。合わない走数は表の下に出す（黙って消さない）。
+// ============================================================
+const LEVEL_ORDER = ['S', 'A', 'B', 'C', 'D'];
+
+function levelRecordTable(h) {
+  const runs = (h.past_runs || []).concat(h.career_runs || []);
+  if (!runs.length) return '';
+  const cnt = {};
+  LEVEL_ORDER.forEach((g) => { cnt[g] = [0, 0, 0, 0]; });
+  let leveled = 0;
+  runs.forEach((r) => {
+    const c = cnt[r.level_grade];
+    if (!c) return;
+    const f = parseInt(r.finish, 10);
+    c[(f >= 1 && f <= 3) ? f - 1 : 3] += 1;
+    leveled += 1;
+  });
+  // ゼロの段も出す（コース適性と同じ。「その濃さのレースは走っていない」も情報のため）
+  const rows = LEVEL_ORDER.map((g) => {
+    const c = cnt[g];
+    const zero = c.reduce((a, b) => a + b, 0) === 0;
+    const tds = c.map((v) => `<td class="${v === 0 ? 'c0' : ''}">${v}</td>`).join('');
+    return `<tr${zero ? ' class="zero"' : ''}><td class="l">`
+      + `<span class="lv lv-${g.toLowerCase()}"><i>Lv</i>${g}</span></td>${tds}</tr>`;
+  }).join('');
+  const rest = runs.length - leveled;
+  const note = leveled
+    ? (rest ? `<div class="lvn">レベルが付かない ${rest}走（地方・海外・障害・レベルが取れなかった走）は入っていない</div>` : '')
+    : `<div class="crn">レベルの付いた走なし（${rest}走すべてレベルが取れていない）</div>`;
+  return `
+    <div class="crh">レースレベル別の好走歴（中央の平地のみ・全走）</div>
+    ${note}
+    <table class="crt lvt">
+      <thead><tr><th class="l">レベル</th><th>1着</th><th>2着</th><th>3着</th><th>着外</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+}
+
 // 126-spec §5: 札と新聞の面に出すコース適性。見出しは自分で出す（表は bare で取る）
 function courseBlock(h) {
   const t = courseRecordTable(h, true);
@@ -2096,6 +2148,7 @@ function popupBody(h) {
       ${markWhyBlock(h)}
       ${itemWhyBlock(h)}
       ${courseRecordTable(h)}
+      ${levelRecordTable(h)}
       ${popupRunsTable(h)}
     </div>`;
 }
