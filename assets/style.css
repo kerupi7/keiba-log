@@ -585,59 +585,66 @@ details.fold.om-fold>summary .cnt{color:#fff;opacity:.85;font-size:11px}
 /* タブ直下の紺バー見出しは上マージンを詰める（縦一列時の16pxはタブ内では空きすぎる） */
 .race20 .tabpane>.secthead:first-child{margin-top:8px}
 
-/* 荒れ度ラベル（110-upset-display-v2-spec.md・案2「1クラス1行」）。
-   見出し（クラス名＋一言＋大きい%）＋3行（名前・帯・%）＋平均の1行＋しきい値の1行。
+/* 荒れ度ラベル（132-spec・案C「当たった率を数字で」／2026-08-27）。
+   1行（クラス名＋一言）＋右に「その予想が当たった率」＋帯＋母数の1行。
+   旧デザイン（110-spec の3行）は .up2 .rows / .row ごと廃止し、3クラスの内訳は
+   折りたたみへ移した（.ucrow）。替えた理由は race.js の renderUpset20 のコメント。
+   大きく出す数字を「見立てクラスの確率」から「当たった率」へ替えたのが要点で、
+   前者はレースの性質・後者は予想の確からしさ。混ぜると「一番大きい数字が選ばれる」
+   ように見える（大荒れ19% / 中荒れ77% でラベルは大荒れ、が起きるため）。
    色は同じ色相の濃淡だけ＝緑(--hit)・赤(--live)は使わない。良し悪しを含意させないため
-   （見送り推奨と読まれないこと。89-spec §3.1）。濃い=人気に集中、薄い=ばらける。
-   色だけに意味を持たせない＝どの行にもクラス名の文字が必ず出る。 */
+   （見送り推奨と読まれないこと。89-spec §3.1）。濃い=人気に集中、薄い=ばらける。 */
 .race20 .up2{margin-top:11px;font-variant-numeric:tabular-nums}
-.race20 .up2 .hd{display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
-.race20 .up2 .hd .lb{font-size:17px;font-weight:700;letter-spacing:.02em;line-height:1.3}
-.race20 .up2 .hd .tx{font-size:11.5px;color:var(--sub);line-height:1.5}
-.race20 .up2 .hd .r{display:flex;align-items:baseline;white-space:nowrap}
-.race20 .up2 .hd .big{font-size:40px;font-weight:700;line-height:.92;letter-spacing:-.02em}
-/* クラス名は `pcs`（percent sign）。`pc` にしてはいけない。
-   `.race20 .pc` は展開タブのペースカードの枠（`border:1px solid`＋`border-radius:6px`）で、
-   こちらは border を書いていないため、%の1文字が**枠で囲われて**表示されていた
-   （2026-08-07 まで。`margin-bottom:7px` も一緒にもらって縦位置もずれていた）。 */
-.race20 .up2 .hd .pcs{font-size:15px;font-weight:700;margin-left:2px}
-/* 見出しの色は見立てクラスの文字色。大きい%は「見立てクラスの確率」であって最大値ではない
-   （しきい値で決まるため。理由は .th の1行が説明する） */
-.race20 .up2 .hd.k-kata{color:var(--up-kata-t)}
-.race20 .up2 .hd.k-naka{color:var(--up-naka-t)}
-.race20 .up2 .hd.k-dai{color:var(--up-dai-t)}
+.race20 .up2 .hd{display:flex;align-items:flex-start;gap:12px}
+.race20 .up2 .hd .l{min-width:0;flex:1}
+.race20 .up2 .hd .lb{font-size:17px;font-weight:700;letter-spacing:.02em;line-height:1.25}
+.race20 .up2 .hd .tx{font-size:11.5px;color:var(--sub);line-height:1.5;margin-top:2px}
+.race20 .up2 .hd .r{flex:none;text-align:right}
+.race20 .up2 .hd .pv{font-size:32px;font-weight:700;line-height:.95;letter-spacing:-.02em}
+.race20 .up2 .hd .pv small{font-size:14px;margin-left:1px}
+.race20 .up2 .hd .pl{font-size:10px;color:var(--cap);margin-top:3px;line-height:1.35}
+/* 見出しの色は見立てクラスの文字色。右の%はクラスの色を使わない（クラスの話ではなく
+   「当たった率」の話なので、色でクラスと結びつけない） */
+.race20 .up2 .hd.k-kata .lb{color:var(--up-kata-t)}
+.race20 .up2 .hd.k-naka .lb{color:var(--up-naka-t)}
+.race20 .up2 .hd.k-dai .lb{color:var(--up-dai-t)}
 
-/* 3行。並びは 堅い→中荒れ→大荒れ で固定（確率順に並べ替えない）。
-   .hit=モデルの見立て（不動・左の紺アクセント） / .viewing=いま折りたたみに出している
-   クラス（タップで動く）。2つは別物なので見た目も分ける */
-.race20 .up2 .rows{margin-top:12px}
-.race20 .up2 .row{display:flex;align-items:center;gap:9px;width:100%;padding:5px 0 5px 8px;
+/* 当たった率の帯と母数。45%未満（.low）は灰にして、当てにならない帯だと形で分かるようにする。
+   45は代理指標で、守りたいのは「五分より下かどうかが一目で分かること」。
+   帯の刻みが増えて45が真ん中でなくなったら、この数字のほうを捨てて引き直す */
+.race20 .up2 .cbar{margin-top:10px;height:9px;border-radius:3px;background:var(--sub-bg2);
+  overflow:hidden}
+.race20 .up2 .cbar i{display:block;height:100%;border-radius:3px;background:var(--navy)}
+.race20 .up2 .csaid{margin-top:7px;font-size:11.5px;color:var(--sub);line-height:1.6}
+.race20 .up2 .csaid b{color:var(--text);font-weight:700}
+.race20 .up2.low .hd .pv{color:var(--cap)}
+.race20 .up2.low .cbar i{background:#B0B0A8}
+
+/* 折りたたみの中の3クラス。並びは 堅い→中荒れ→大荒れ で固定（確率順に並べ替えない）。
+   .hit=モデルの見立て（不動・左の紺アクセント） / .viewing=いま傾向表に出している
+   クラス（タップで動く）。2つは別物なので見た目も分ける。
+   クラス名は .ucrow（.marks .mrow が別物として既にあるので名前を分けている） */
+.race20 .up2 .ucrows{margin-top:2px}
+.race20 .up2 .ucrow{display:flex;align-items:center;gap:9px;width:100%;padding:5px 0 5px 8px;
   background:none;border:0;font:inherit;color:inherit;cursor:pointer;text-align:left;
   -webkit-appearance:none;appearance:none}
-.race20 .up2 .row+.row{border-top:1px solid var(--rule)}
-.race20 .up2 .row:focus-visible{outline:2px solid var(--cta);outline-offset:-2px}
-.race20 .up2 .row.hit{box-shadow:inset 3px 0 0 var(--navy)}
-.race20 .up2 .row.viewing .nm{text-decoration:underline;text-underline-offset:3px}
-.race20 .up2 .row .nm{width:44px;flex:none;font-size:12px;font-weight:700}
-.race20 .up2 .row .track{flex:1;height:10px;border-radius:3px;background:var(--sub-bg2);
+.race20 .up2 .ucrow+.ucrow{border-top:1px solid var(--rule)}
+.race20 .up2 .ucrow:focus-visible{outline:2px solid var(--cta);outline-offset:-2px}
+.race20 .up2 .ucrow.hit{box-shadow:inset 3px 0 0 var(--navy)}
+.race20 .up2 .ucrow.viewing .nm{text-decoration:underline;text-underline-offset:3px}
+.race20 .up2 .ucrow .nm{width:44px;flex:none;font-size:12px;font-weight:700}
+.race20 .up2 .ucrow .track{flex:1;height:10px;border-radius:3px;background:var(--sub-bg2);
   display:block}
-.race20 .up2 .row .fill{display:block;height:100%;border-radius:3px;min-width:3px}
-.race20 .up2 .row .pv{width:46px;flex:none;text-align:right;font-size:15px;font-weight:700}
-.race20 .up2 .row .pv small{font-size:10px;margin-left:1px}
-.race20 .up2 .row.hit .pv{font-size:18px}
+.race20 .up2 .ucrow .fill{display:block;height:100%;border-radius:3px;min-width:3px}
+.race20 .up2 .ucrow .pv{width:46px;flex:none;text-align:right;font-size:15px;font-weight:700}
+.race20 .up2 .ucrow .pv small{font-size:10px;margin-left:1px}
 /* 文字は文字色（--up-*-t）、帯の塗りは既存の --up-*（89-spec のまま） */
-.race20 .up2 .row.c0 .nm,.race20 .up2 .row.c0 .pv{color:var(--up-kata-t)}
-.race20 .up2 .row.c1 .nm,.race20 .up2 .row.c1 .pv{color:var(--up-naka-t)}
-.race20 .up2 .row.c2 .nm,.race20 .up2 .row.c2 .pv{color:var(--up-dai-t)}
-.race20 .up2 .row.c0 .fill{background:var(--up-kata)}
-.race20 .up2 .row.c1 .fill{background:var(--up-naka)}
-.race20 .up2 .row.c2 .fill{background:var(--up-dai)}
-
-/* 全レース平均との差（110-spec §4.2）としきい値の1行（同 §4.1）。
-   古いレースには両方とも無い＝その行だけ出ない */
-.race20 .up2 .avg{font-size:10.5px;color:var(--cap);text-align:right;margin-top:6px}
-.race20 .up2 .th{font-size:10.5px;color:var(--cap);line-height:1.6;margin-top:8px;
-  padding-top:8px;border-top:1px solid var(--rule)}
+.race20 .up2 .ucrow.c0 .nm,.race20 .up2 .ucrow.c0 .pv{color:var(--up-kata-t)}
+.race20 .up2 .ucrow.c1 .nm,.race20 .up2 .ucrow.c1 .pv{color:var(--up-naka-t)}
+.race20 .up2 .ucrow.c2 .nm,.race20 .up2 .ucrow.c2 .pv{color:var(--up-dai-t)}
+.race20 .up2 .ucrow.c0 .fill{background:var(--up-kata)}
+.race20 .up2 .ucrow.c1 .fill{background:var(--up-naka)}
+.race20 .up2 .ucrow.c2 .fill{background:var(--up-dai)}
 
 /* 折りたたみ。中身は「その決着になったレースの1着・2着の顔ぶれ」であって
    ラベルの的中率ではない（89-spec §2.6）。見出しの言い回しでそこを外さないこと */
@@ -677,31 +684,48 @@ details.fold.om-fold>summary .cnt{color:#fff;opacity:.85;font-size:11px}
   width:4.5em}
 .race20 .up2tend tr:last-child th,.race20 .up2tend tr:last-child td{border-bottom:none}
 @media(max-width:420px){
-  .race20 .up2 .hd .big{font-size:34px}
-  .race20 .up2 .row .nm{width:40px}
-  .race20 .up2 .row .pv{width:42px;font-size:14px}
-  .race20 .up2 .row.hit .pv{font-size:17px}
+  .race20 .up2 .hd .pv{font-size:27px}
+  .race20 .up2 .ucrow .nm{width:40px}
+  .race20 .up2 .ucrow .pv{width:42px;font-size:14px}
 }
 
-/* 3連単100万超え（103-sanrentan-1m-spec.md §3.3・案A）。荒れ度パネルの直下に1行＋帯。
-   .on は表示確率が highlight_threshold(4.0%) 以上のときだけ（keiba_build_analysis.pyが判定）。
-   凡例・注記は出さない（§3.4）。帯に人気番号が入るので番号列そのものが軸の説明を兼ねる。 */
-.race20 .bpC{margin-top:9px;border:1px solid var(--rule);border-radius:4px;padding:7px 9px 8px}
-.race20 .bpC.on{border-color:var(--bp-on);background:var(--up-on-bg)}
-.race20 .bpC .r1{display:flex;align-items:center;gap:8px}
-.race20 .bpC .lb{font-size:11.5px;font-weight:700;color:var(--sub);white-space:nowrap}
-.race20 .bpC.on .lb{color:var(--navy)}
-.race20 .bpC .pv{font-size:17px;font-weight:700;font-variant-numeric:tabular-nums;
-  color:var(--text);white-space:nowrap}
-.race20 .bpC.on .pv{color:var(--navy)}
-.race20 .bpC .pv small{font-size:11px;margin-left:1px}
-.race20 .bpC .rt{font-size:11px;color:var(--cap);white-space:nowrap;margin-left:auto}
+/* 3連単100万超え（132-spec・2026-08-27）。それまでは全レースに同じ大きさで出していた。
+     6%以上 → .bpHot（激アツ・215レース中11レース＝20レースに1回）
+     4〜6%  → .bpQ（1行だけ）
+     4%未満 → 出さない（73%のレースでこの枠が消える）
+   段の切り方は keiba_sitestats.BIGPAY_TIER_CUT が正本。
+   オレンジは買い印★（.mkb.m-ana）と同じ色相なので、必ず「🔥」と「激アツ」の文字を
+   添えて意味を分ける。色だけで区別させない。 */
+.race20 .bpQ{margin-top:12px;padding-top:10px;border-top:1px solid var(--rule);
+  display:flex;align-items:baseline;gap:8px;font-size:11.5px;color:var(--sub)}
+.race20 .bpQ .lb{font-weight:700;color:var(--sub);white-space:nowrap}
+.race20 .bpQ .pv{font-size:16px;font-weight:700;color:var(--text);
+  font-variant-numeric:tabular-nums;white-space:nowrap}
+.race20 .bpQ .pv small{font-size:10px;margin-left:1px}
+.race20 .bpQ .rt{margin-left:auto;font-size:10.5px;color:var(--cap);white-space:nowrap}
+
+/* 見出しを**塗り**にする理由（2026-08-27）: 掛け合わせ条件の枠（.tpmain）が
+   まったく同じ orange の細枠＋クリーム地で、すぐ下に毎レース出る。枠だけで組むと
+   「20レースに1回」が常設の操作パネルと見分けられない。塗りの帯はこの画面に他に無い。 */
+.race20 .bpHot{margin-top:12px;border:2px solid #B85F00;border-radius:6px;
+  background:#FFF8EF;overflow:hidden;padding-bottom:11px}
+.race20 .bpHot .t{background:#B85F00;color:#fff;font-size:11.5px;font-weight:700;
+  letter-spacing:.02em;padding:6px 12px 7px}
+.race20 .bpHot .m{display:flex;align-items:baseline;gap:8px;margin:9px 12px 0}
+.race20 .bpHot .m .nm{font-size:14.5px;font-weight:700;color:var(--text)}
+.race20 .bpHot .m .pv{font-size:29px;font-weight:700;margin-left:auto;line-height:1;
+  color:#B85F00;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.race20 .bpHot .m .pv small{font-size:13px;margin-left:1px}
+.race20 .bpHot .s{margin:8px 12px 0;padding-top:8px;border-top:1px solid #F0D9BC;
+  font-size:11px;color:var(--sub);line-height:1.6}
+.race20 .bpHot .s b{color:var(--text);font-weight:700}
 /* 人気番号の帯（.bpMap）は 2026-08-06 のユーザー決定で削除した。理由は race.js の
    renderBigPay のコメント（読み取れない／レースごとの情報がほとんど無い）。 */
 @media(max-width:420px){
-  .race20 .bpC .lb{font-size:11px}
-  .race20 .bpC .pv{font-size:16px}
-  .race20 .bpC .rt{font-size:10px}
+  .race20 .bpQ .lb{font-size:11px}
+  .race20 .bpQ .pv{font-size:15px}
+  .race20 .bpQ .rt{font-size:10px}
+  .race20 .bpHot .m .pv{font-size:26px}
 }
 
 /* 印リスト（.mkb本体は既存流用。穴・地雷の2色のみ新設） */

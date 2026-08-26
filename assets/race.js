@@ -1269,33 +1269,52 @@ function ratioClass(ratio) {
   return 'b5';
 }
 
-// 荒れ度ラベル（110-upset-display-v2-spec.md・案2「1クラス1行」）。
+// data/upset_bands.json（132-spec）。読めなかったときは null のまま動く
+let BANDS = null;
+
+// このレースの予想が過去どれだけ当たっていたかを引く（132-spec）。
+// 帯の切り方は keiba_sitestats.UPSET_CONF_CUT が正本で、こちらは引くだけ。
+function upsetConfidence(upset) {
+  if (!BANDS || !upset || !upset.label) return null;
+  const sel = (upset.classes || []).find((c) => c.selected);
+  if (!sel || typeof sel.percent !== 'number') return null;
+  const cut = (BANDS.upset.cuts || {})[upset.label];
+  const side = (cut === undefined || cut === null) ? null : (sel.percent >= cut ? 'hi' : 'lo');
+  const b = (BANDS.upset.bands || []).find((x) => x.label === upset.label && x.side === side);
+  return (b && b.n && b.rate !== null) ? b : null;
+}
+
+// 荒れ度ラベル（132-spec・案C「当たった率を数字で」）。
 // upset が無いレースは何も出さない（89-spec §3.3 の縮退）。
-// 文言も整数%も keiba_build_analysis.py が確定済み。ここでは組み立てるだけで計算しない。
 //
-// 3枚のカード（旧 .upC）をやめた理由は 110-spec §0。要点は、ラベルが**しきい値**で
-// 決まるため「大荒れ20% / 中荒れ78% でラベルは大荒れ」が起きるのに、画面が
-// 「一番大きい数字が選ばれる」形をしていたこと。しきい値の1行（threshold_line）で解いている。
+// 3行を1行にした理由（2026-08-27）は4つ。
+//  1. 同じ%が見出しと行で2回出ていた
+//  2. 比べ方が3種類（差・倍率・絶対値のバー）混ざっていた
+//  3. 平均比の1行が3行の下にあるのに、中身は見立てクラス1つ分だけだった
+//  4. しきい値で決まるラベルを3行で並べると「一番大きい数字が選ばれる」形に見えた
+//     （大荒れ19% / 中荒れ77% でラベルは大荒れ、が起きる）
+// 大きく出す数字を「見立てクラスの確率」から「その予想が当たった率」へ替えたのが要点。
+// 前者はレースの性質、後者は予想の確からしさで、混ぜると 4 が起きる。
+// 3クラスの内訳は折りたたみに残す（同じ大荒れでも堅いが0%か34%かで中身が違うため）。
 //
 // bigpayHtml（3連単100万超え・103-spec）は折りたたみの**上**に入れる（110-spec §2）。
 // 呼び出し元 renderMitate20 が組み立てて渡す。
 function renderUpset20(upset, bigpayHtml) {
   if (!upset || !Array.isArray(upset.classes) || upset.classes.length !== 3) return '';
   const sel = upset.classes.find((c) => c.selected) || upset.classes[0];
-  // 2つの状態を混ぜないこと（89-spec §3.1）:
-  //   .hit     = モデルの見立て（selected）。タップしても動かない
-  //   .viewing = いま折りたたみに出しているクラス。初期値は見立てと同じ
-  // 並びは 堅い → 中荒れ → 大荒れ で固定。確率順に並べ替えない（110-spec §2.2）。
+  const conf = upsetConfidence(upset);
+  // 45%未満は「当てにならない帯」。数字を灰にして、強い予想と見た目で分ける
+  const low = conf && conf.rate < 45;
+
+  // 折りたたみの中の3クラス。並びは 堅い → 中荒れ → 大荒れ で固定（確率順にしない）
   const rows = upset.classes.map((c, i) => `
-      <button type="button" class="row c${i}${c.selected ? ' hit viewing' : ''}"
+      <button type="button" class="ucrow c${i}${c.selected ? ' hit viewing' : ''}"
               data-upset="${escapeHtml(c.key)}" aria-pressed="${c.selected ? 'true' : 'false'}">
         <span class="nm">${escapeHtml(c.name)}</span>
         <span class="track"><span class="fill" style="width:${c.percent}%"></span></span>
         <span class="pv">${c.percent}<small>%</small></span>
       </button>`).join('');
-  // 傾向表は「その決着になったレースの顔ぶれ」であってラベルの的中率ではない
-  // （ラベル堅いのレースが実際に堅く決まるのは55%＝89-spec §2.6）。
-  // 3クラス分を先に書き出しておき、表示の切り替えだけを setupUpset20 が行う。
+  // 傾向表は「その決着になったレースの顔ぶれ」であって予想の当たった率ではない
   const tables = upset.classes.map((c) => {
     if (!Array.isArray(c.tendencies) || !c.tendencies.length) return '';
     return `
@@ -1305,27 +1324,32 @@ function renderUpset20(upset, bigpayHtml) {
         </tbody>
       </table>`;
   }).join('');
-  // 古いレース（110-spec より前に公開）には無い。その行だけ出さない（110-spec §5.4）
-  const avg = upset.average_line
-    ? `<div class="avg">${escapeHtml(upset.average_line)}</div>` : '';
-  // threshold_line は 2026-08-27 のデザイン見直しで表示をやめた（analysis.json には残る）
-  const th = '';
-  // upset.line / tendency_hint / note は analysis.json に残るが（89-spec の契約は無改修）、
-  // ここでは描画しない（110-spec §9-2）。
+
+  // 実測が取れないとき（bands が読めない・公開直後で母数ゼロ）は右の数字ごと出さない。
+  // 「当たった率」を出せないのに枠だけ残すと、空欄が数字に見える
+  const right = conf ? `
+      <div class="r">
+        <div class="pv">${conf.rate}<small>%</small></div>
+        <div class="pl">この予想が<br>その通りになった率</div>
+      </div>` : '';
+  const meter = conf ? `
+      <div class="cbar"><i style="width:${conf.rate}%"></i></div>
+      <div class="csaid">同じ判断をした過去 <b>${conf.n}レース</b> 中 <b>${conf.ok}レース</b></div>` : '';
+
   return `
-    <div class="up2">
+    <div class="up2${low ? ' low' : ''}">
       <div class="hd k-${escapeHtml(sel.key)}">
         <div class="l">
           <div class="lb">${escapeHtml(upset.label_name)}</div>
           <div class="tx">${escapeHtml(sel.card)}</div>
         </div>
-        <div class="r"><span class="big">${sel.percent}</span><span class="pcs">%</span></div>
+        ${right}
       </div>
-      <div class="rows">${rows}</div>
-      ${avg}${th}
+      ${meter}
       ${bigpayHtml || ''}
       <details class="up2fold">
-        <summary>「<span class="sname">${escapeHtml(sel.name)}</span>」で決まったレースの顔ぶれ</summary>
+        <summary>3つの形の内訳と、「<span class="sname">${escapeHtml(sel.name)}</span>」で決まったレースの顔ぶれ</summary>
+        <div class="ucrows">${rows}</div>
         ${tables}
       </details>
     </div>
@@ -1342,15 +1366,51 @@ function renderUpset20(upset, bigpayHtml) {
 //     変わるだけ。レースごとの情報がほとんど無い。しかも密度は1.12＝全馬を無選別に囲った
 //     場合(1.00)より1割濃いだけで、絞り込みとして弱い（§2.5 の★）
 // band_lo / band_hi / field_size はデータ契約（§4.2）に残るが、ここでは描画しない。
+// 3段の出し分け（132-spec・2026-08-27）。それまでは全レースに同じ大きさで出していた。
+//
+//   6%以上  → 激アツ（215レース中11レース＝20レースに1回）
+//   4〜6%   → 1行だけ
+//   4%未満  → 出さない（73%のレースでこの枠が消える）
+//
+// 段の切り方は keiba_sitestats.BIGPAY_TIER_CUT が正本。ここは引くだけで判定しない。
+// 見出しの「100万超え」は母数が少なく（215レース中6件）率にできないので、
+// 激アツの中では中央値と10万超えの割合という**測れている数字**を並べる。
+function bigpayTier(pct) {
+  if (!BANDS || typeof pct !== 'number') return null;
+  const c = BANDS.bigpay.cuts || {};
+  if (pct >= c.hot) return 'hot';
+  if (pct >= c.quiet) return 'quiet';
+  return 'off';
+}
+
 function renderBigPay(bigpay) {
   if (!bigpay || !bigpay.field_size) return '';
+  const pct = parseFloat(bigpay.percent);
+  const tier = bigpayTier(pct);
+  // bands が読めないときは従来どおり1行で出す（黙って消さない）
+  if (tier === 'off') return '';
+  const quiet = `
+    <div class="bpQ">
+      <span class="lb">3連単100万超え</span>
+      <span class="pv">${escapeHtml(bigpay.percent)}<small>%</small></span>
+      <span class="rt">${escapeHtml(bigpay.ratio_line)}</span>
+    </div>`;
+  if (tier !== 'hot') return quiet;
+
+  const t = (BANDS.bigpay.tiers || {}).hot;
+  const yen = t && t.median ? t.median.toLocaleString('ja-JP') : null;
+  const oku = t && t.over_yen ? Math.round(t.over_yen / 10000) : 10;
+  const sub = (t && t.n && yen) ? `
+      <div class="s">同じ水準の過去<b>${t.n}レース</b>は3連単の真ん中の額が<b>${yen}円</b>、`
+        + `<b>${t.over_rate}%</b>が${oku}万を超えた</div>` : '';
   return `
-    <div class="bpC${bigpay.highlight ? ' on' : ''}">
-      <div class="r1">
-        <span class="lb">3連単100万超え</span>
+    <div class="bpHot">
+      <div class="t">🔥🔥 激アツ ／ 20レースに1回の水準</div>
+      <div class="m">
+        <span class="nm">3連単100万超え</span>
         <span class="pv">${escapeHtml(bigpay.percent)}<small>%</small></span>
-        <span class="rt">${escapeHtml(bigpay.ratio_line)}</span>
       </div>
+      ${sub}
     </div>
   `;
 }
@@ -3872,16 +3932,20 @@ async function main() {
     renderError('不正なレースIDです');
     return;
   }
-  let site, oddsAll;
+  let site, oddsAll, bands;
   try {
-    [site, oddsAll] = await Promise.all([
+    [site, oddsAll, bands] = await Promise.all([
       getData(`data/races/${id}.json`),
       getData(`data/odds/${id}.json`).catch(() => null),
+      // 132-spec: 荒れ度の「その通りに決まった率」と100万超えの段。1KB程度。
+      // 取れなくてもレースは出す（率の行だけ消える）
+      getData('data/upset_bands.json').catch(() => null),
     ]);
   } catch (e) {
     renderError(`レースデータの読み込みに失敗しました: ${e.message}`);
     return;
   }
+  BANDS = (bands && bands.schema_version === 'keiba-log-bands-1.0') ? bands : null;
 
   // F10: odds_all の schema_version が "odds_all-1." で前方一致しなければ、安全側で
   // オッズ無し（F3）へ全体縮退する（想定外スキーマを誤って読まない）。
