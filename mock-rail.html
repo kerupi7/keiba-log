@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>仮柵の表示場所 4案 — モック</title>
+<link rel="stylesheet" href="assets/style.css?v=20260826b">
+<style>
+  body{padding:0}
+  .mock{max-width:760px;margin:0 auto;padding:14px 16px 40px}
+  .mock h1{font-size:15px;margin:0 0 4px}
+  .mock .lead{font-size:12px;color:var(--cap);margin:0 0 18px;line-height:1.7}
+  .case{border:1px solid var(--rule);border-radius:6px;padding:12px 12px 14px;margin-bottom:16px}
+  .caseh{font-size:12.5px;font-weight:700;margin-bottom:2px}
+  .casen{font-size:11px;color:var(--cap);margin-bottom:10px;line-height:1.6}
+  .where{display:inline-block;font-size:10.5px;font-weight:700;color:#fff;background:var(--cap);
+    border-radius:3px;padding:1px 6px;margin-left:6px;vertical-align:2px}
+  .pros{font-size:11.5px;color:var(--sub);line-height:1.7;margin-top:9px}
+  .pros b{color:var(--text)}
+
+  /* ▼ 仮柵の見せ方（本実装ではこれを style.css へ移す） */
+  .railchip{display:inline-flex;align-items:baseline;gap:5px;border-radius:3px;
+    background:#EEF2F7;color:#2B4B6F;font-size:11.5px;font-weight:700;padding:2px 7px}
+  .railchip .wk{font-weight:400;color:#5A7797}
+  .race20 .babadetail .mrow .k .railmark{color:var(--cap);font-weight:400}
+</style>
+</head>
+<body>
+<div class="mock race20">
+
+<h1>仮柵をどこに出すか — 4案（モック・2026-08-26）</h1>
+<p class="lead">
+数字は実データ。札幌 2026-08-23 4R（芝1200m）。この日の札幌は<b>Bコース</b>で、
+柵を外へ動かした初日が 8/22 なので<b>1週目</b>。7/25〜8/17 はAコースだった。<br>
+4案とも同じ中身（記号＋今の柵になってから何週目か）で、置き場所だけが違う。
+</p>
+
+<div class="case">
+  <div class="caseh">案1：馬場の行に足す<span class="where">展開タブの中</span></div>
+  <div class="casen">クッション値・含水率と同じ並び。どれも「その日の芝の状態」なので、意味の揃った場所。</div>
+  <div class="babadetail v2">
+    <div class="l1"><span class="lv p1">やや硬い</span><span class="hd">札幌の平年より <b>+0.7</b></span><span class="tl">時計は速くなりやすい</span></div>
+    <div class="l3">
+      <div class="mrow"><span class="k">仮柵</span><span class="v">Bコース・1週目</span><span class="t">8/22から</span></div>
+      <div class="mrow"><span class="k">クッション値</span><span class="v">8.2</span><span class="t">8/23 8:20測定</span></div>
+      <div class="mrow"><span class="k">含水率 芝</span><span class="v">G前 12.3% ／ 4C 12.1%</span><span class="t">8/23 4:00測定</span></div>
+    </div>
+  </div>
+  <div class="pros"><b>長所</b>：測定値と並ぶので「今日の芝の話」だと分かる。3行が同じ形で読みやすい。<br>
+  <b>短所</b>：展開タブを開かないと見えない。ページを開いた直後には目に入らない。</div>
+</div>
+
+<div class="case">
+  <div class="caseh">案2：馬場の見出し行にチップで並べる<span class="where">展開タブの中</span></div>
+  <div class="casen">「やや硬い」の隣。馬場の一言まとめと同じ高さに置く。</div>
+  <div class="babadetail v2">
+    <div class="l1"><span class="lv p1">やや硬い</span><span class="railchip">Bコース<span class="wk">1週目</span></span><span class="hd">札幌の平年より <b>+0.7</b></span></div>
+    <div class="l3">
+      <div class="mrow"><span class="k">クッション値</span><span class="v">8.2</span><span class="t">8/23 8:20測定</span></div>
+      <div class="mrow"><span class="k">含水率 芝</span><span class="v">G前 12.3% ／ 4C 12.1%</span><span class="t">8/23 4:00測定</span></div>
+    </div>
+  </div>
+  <div class="pros"><b>長所</b>：馬場ブロックの中で最初に目に入る。行数が増えない。<br>
+  <b>短所</b>：見出し行が3つから4つに増えて詰まる。「時計は速くなりやすい」が押し出されて折り返す。</div>
+</div>
+
+<div class="case">
+  <div class="caseh">案3：ページ上部のレース情報に併記<span class="where">最初に見える</span></div>
+  <div class="casen">コース・馬場・頭数・クラスが並ぶ帯。芝のレースだけ「仮柵」の枠が増える。</div>
+  <div class="rhead h2"><div class="specrow">
+    <div class="sp"><span class="k">コース</span><span class="v"><span class="sf turf">芝</span>1200m<span class="w">・右</span></span></div>
+    <div class="sp"><span class="k">仮柵</span><span class="v">Bコース<span class="w">・1週目</span></span></div>
+    <div class="sp"><span class="k">馬場</span><span class="v">良（晴）</span></div>
+    <div class="sp"><span class="k">頭数</span><span class="v">16<span class="w">頭</span></span></div>
+    <div class="sp"><span class="k">クラス</span><span class="v">未勝利<span class="w">・馬齢</span></span></div>
+  </div></div>
+  <div class="pros"><b>長所</b>：タブを開かずに見える。開いた瞬間に「今日はBコースの1週目」と分かる。<br>
+  <b>短所</b>：<b>スマホで「1週目」が切れる</b>。幅375pxで実測すると帯の中身が326px必要なところ表示できるのは313pxで、右端がはみ出す（この帯は折り返さない作り）。ダートでは枠ごと消えるので並びが日によって変わる。</div>
+</div>
+
+<div class="case">
+  <div class="caseh">案4：コースの形のチップ帯に足す<span class="where">展開タブの中</span></div>
+  <div class="casen">1周の距離・高低差・回りと同じ帯。コースの物理的な形をまとめている場所。</div>
+  <div class="geochips">
+    <span class="gc gb4"><span class="k">内めの枠</span>0.87</span>
+    <span class="gc gb2"><span class="k">外めの枠</span>1.13</span>
+    <span class="gc"><span class="k">仮柵</span>Bコース・1週目</span>
+    <span class="gc"><span class="k">1周</span>1,640.9m</span>
+    <span class="gc"><span class="k">高低差</span>0.7m・ほぼ平坦</span>
+    <span class="gc gdir"><span class="k">回り</span>右</span>
+  </div>
+  <div class="pros"><b>長所</b>：柵の位置は物理的にコースの形を変えるものなので、理屈は通る。<br>
+  <b>短所</b>：<b>この帯は変わらない情報の置き場</b>。1周距離や高低差と並ぶと、毎週変わる値だと気づけない。</div>
+</div>
+
+<p class="lead">
+どの案でも、仮柵が取れていない日（2026年の芝の開催204のうち12）は行やチップを出さない。
+ダートのレースでは出さない（仮柵は芝だけ）。
+</p>
+
+</div>
+</body>
+</html>

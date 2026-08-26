@@ -3255,6 +3255,17 @@ function renderBaba20(site) {
     + (tail ? `<span class="tl">${escapeHtml(tail)}</span>` : '') + '</div>';
 
   const rows = [];
+  // 仮柵（芝だけ・2026-08-26 追加）。クッション値・含水率と同じ「今日の芝の状態」なので
+  // 同じ並びに置く。柵になってから何週目かが出せない日（開催の初日など）は記号だけ。
+  const rail = (bd || {}).rail;
+  if (rail && rail.course) {
+    const wk = rail.weeks ? `・${rail.weeks}週目` : '';
+    const from = rail.start_date
+      ? `${Number(rail.start_date.slice(5, 7))}/${Number(rail.start_date.slice(8, 10))}から` : '';
+    rows.push(`<div class="mrow"><span class="k">仮柵</span>`
+      + `<span class="v">${escapeHtml(rail.course)}${wk}</span>`
+      + `<span class="t">${from}</span></div>`);
+  }
   if (isTurf && cu.value != null) {
     rows.push(`<div class="mrow"><span class="k">クッション値</span>`
       + `<span class="v">${cu.value}</span>`
