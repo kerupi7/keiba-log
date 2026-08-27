@@ -1332,8 +1332,8 @@ function renderUpset20(upset, bigpayHtml) {
         <div class="pv">${conf.rate}<small>%</small></div>
         <div class="pl">この予想が<br>その通りになった率</div>
       </div>` : '';
+  // 帯（.cbar）は 2026-08-27 に廃止。右の%と同じことを二度言っていた
   const meter = conf ? `
-      <div class="cbar"><i style="width:${conf.rate}%"></i></div>
       <div class="csaid">同じ判断をした過去 <b>${conf.n}レース</b> 中 <b>${conf.ok}レース</b></div>` : '';
 
   return `
