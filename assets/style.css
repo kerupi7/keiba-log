@@ -2137,10 +2137,17 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
   font:inherit;font-size:12px;font-weight:700;color:var(--navy);height:28px;padding:0 10px;
   cursor:pointer}
 .race20 .crsb:hover{background:var(--sub-bg)}
-/* コースのポップアップは表が横に広いので、馬名のポップアップより広く取る */
+/* コースのポップアップは表が横に広いので、馬名のポップアップより広く取る。
+   2026-08-27: padding:0 にしていたら文字が左右の端に貼り付いて、幅390pxの画面で
+   「クラス」「年代」の見出しが切れて見えた（実測：中身が8px〜382pxで余白ゼロ）。
+   左右に余白を戻す。狭い画面では余白を詰めて、表に使える幅を残す。 */
 .race20 .popup.wide{width:min(1080px,96vw)}
-.race20 .popup.wide .pbody{padding:0}
+.race20 .popup.wide .pbody{padding:12px 14px 14px}
 .race20 .popup.wide .cstats{margin:0}
+@media (max-width:480px){
+  .race20 .popup.wide{width:min(1080px,98vw);max-height:92vh}
+  .race20 .popup.wide .pbody{padding:10px 10px 12px}
+}
 .race20 .mm-seg{display:inline-flex;border:1px solid var(--rule-strong);border-radius:6px;
   overflow:hidden;background:#fff;flex:none}
 .race20 .mm-seg button{border:0;background:#fff;font:inherit;font-size:12px;font-weight:700;
