@@ -2112,6 +2112,7 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
    印の数で文字の長さが変わるたびに「この端末に自動保存」が折り返して帯の高さが
    30px⇄53px⇄55px と動き、下の札全体が最大23pxズレていた（375px幅で実測）。
    独立した行にして1行で固定すると、印0個〜10個でズレ0px・文字も切れない。 */
+.race20 .mm-tp{display:contents}
 .race20 .mm-sum{font-size:11.5px;color:var(--sub);flex:1 0 100%;order:2;min-width:0;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   font-variant-numeric:tabular-nums}
@@ -2326,22 +2327,29 @@ body.noscroll{position:fixed;width:100%;overflow:hidden}
 .race20 .mm-row.tp9 .mm-c{background:var(--tp9)}
 .race20 .mm-row.tp10 .mm-c{background:var(--tp10)}
 
-/* 操作盤（.shctl の空いている左側に入る） */
-.race20 .tpctl{flex:1 1 100%;margin:0 0 6px}
-.race20 .tpmain{display:flex;align-items:center;gap:9px;padding:7px 9px;
-  border:1.5px solid var(--orange);border-radius:4px;background:#FFF6EA}
-.race20 .tpmain .tx{flex:1 1 auto;font-size:10.5px;color:#B36200;line-height:1.5}
-.race20 .tpmain .tx b{color:#8A4B00;font-size:11.5px}
-.race20 button.tpbig{font:inherit;font-size:11.5px;font-weight:700;cursor:pointer;flex:none;
-  padding:7px 11px;border-radius:4px;border:1.5px solid var(--orange);background:#fff;color:#B36200}
-.race20 button.tpbig.on{background:var(--orange);border-color:var(--orange);color:#fff}
-.race20 button.tpbig:disabled{opacity:.45;cursor:not-allowed}
-.race20 button.tpsum{font:inherit;width:100%;text-align:left;font-size:11px;font-weight:700;
-  color:var(--navy);background:#EEF2F6;border:1px solid #CFDCE7;border-radius:4px;
-  padding:6px 9px;cursor:pointer;display:flex;align-items:center;gap:6px;margin-top:6px}
-.race20 button.tpsum .ar{margin-left:auto;font-size:10px}
-.race20 .tpbody{display:none;padding:7px 2px 0}
-.race20 .tpbody.open{display:block}
+/* 操作盤（2026-08-27）。大きな箱2つ（.tpmain 82px ＋ .tpsum 31px ＝ 118px）をやめ、
+   「印／戦績／新聞」と同じ行の右端に**繋げた1組**として置いた。
+     ・繋げるのは要素の間の隙間を1つ減らすため。離して2つ置くと375pxでも折り返した
+     ・材料の19個と説明文は札（#pop-topping）の中へ移した。中身は消していない
+   幅の実測（この1組は125px）:
+     375px幅 → 使える幅192px（余り67px） / 320px幅 → 152px（余り27px）
+   色はオレンジ（買い印★と同じ色相）だが、押した時だけ塗る。押していない間は
+   ふつうの枠線なので、常時オレンジだった前の版より画面が静かになる。 */
+.race20 .tpctl{flex:none;margin-left:auto}
+.race20 .tpseg{display:inline-flex;border:1px solid var(--rule-strong);border-radius:6px;
+  overflow:hidden;background:#fff}
+.race20 button.tpb{font:inherit;font-size:11.5px;font-weight:700;cursor:pointer;
+  border:0;border-right:1px solid var(--rule);background:#fff;color:var(--sub);
+  padding:6px 9px;line-height:1.3;white-space:nowrap;display:inline-flex;align-items:center;gap:3px}
+.race20 button.tpb:last-child{border-right:0}
+.race20 button.tpb.on{background:var(--orange);color:#fff}
+.race20 button.tpb:disabled{opacity:.45;cursor:not-allowed}
+.race20 button.tpb .n{font-weight:800;font-variant-numeric:tabular-nums}
+.race20 button.tpb .apop{font-style:normal;font-size:9px;opacity:.65}
+.race20 button.tpb.on .apop{opacity:.9}
+/* 材料の札の中の説明。前は .tpmain の中に出しっぱなしだった文 */
+.race20 #pop-topping .tpnote{font-size:11.5px;color:var(--sub);line-height:1.7;margin-bottom:12px}
+.race20 #pop-topping .tpnote b{color:var(--text);font-weight:700}
 .race20 .tpall{display:flex;gap:6px;justify-content:flex-end;margin-bottom:5px}
 .race20 .tpall button{font:inherit;font-size:10.5px;font-weight:700;color:var(--cta);
   background:#fff;border:1px solid var(--rule);border-radius:4px;padding:3px 8px;cursor:pointer}

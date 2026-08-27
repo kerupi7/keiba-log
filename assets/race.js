@@ -2318,13 +2318,18 @@ function mmInline(h) {
     + '</div>';
 }
 
+// ラベルを「印を付ける／戦績5走」から「印／戦績」へ縮めた（2026-08-27）。
+// この行の右端にトッピングの2つ（掛け合わせ｜材料）を並べるため。3つで204px使っていて、
+// それが行の58%だった。縮めると136pxになり、320px幅の端末でも27px余る。
+// .tpctl は setupTopping がここ（.mm-tp）へ差し込む。
 function mmBar() {
   return `<div class="mm-bar">
     <span class="mm-seg">
-      <button type="button" data-view="mark" class="on">印を付ける</button>
-      <button type="button" data-view="runs">戦績5走</button>
+      <button type="button" data-view="mark" class="on">印</button>
+      <button type="button" data-view="runs">戦績</button>
       <button type="button" data-view="paper">新聞</button>
     </span>
+    <span class="mm-tp"></span>
     <span class="mm-sum"></span>
   </div>`;
 }
@@ -2612,7 +2617,7 @@ function renderShutuba20(site) {
 
   const cards = [...all].sort((a, b) => a.number - b.number).map(shutubaCard).join('');
   const popups = live.map((h) => `<div class="popup" id="pop-${h.number}">${popupBody(h)}</div>`).join('')
-    + (up ? up.popup : '');
+    + (up ? up.popup : '') + tpPopup(site);
 
   // .shctl は空でも残す。トッピングの操作パネルが setupTopping からここへ差し込まれる
   return `
@@ -4114,21 +4119,60 @@ function tpCtl(site) {
   // 選ぶ／外すは1つのボタンで往復する
   const allAxes = (meta.groups || []).reduce((s, g) => s.concat(g.axes), []);
   const allSel = allAxes.length > 0 && allAxes.every((a) => TP.sel.has(a));
-  return `<div class="tpctl" id="tpctl">
-    <div class="tpmain">
-      <button type="button" class="tpbig${TP.cross ? ' on' : ''}" id="tpx"${zero ? ' disabled' : ''}>掛け合わせ条件</button>
-      <div class="tx">${zero ? 'このコースでは条件が見つかっていません'
-        : `<b>${escapeHtml(course)} だけで見つけた条件</b>を当てはめ、<br>人気より走る条件 − 走らない条件 の数で10段階に分ける`}</div>
-    </div>
-    <button type="button" class="tpsum" id="tpsum">材料を1つずつ選ぶ（${(meta.axes || []).length}種類）
-      ${TP.sel.size ? `<span style="color:var(--cta)">・${TP.sel.size}個</span>` : ''}
-      <span class="ar">${TP.open ? '▾' : '▸'}</span></button>
-    <div class="tpbody${TP.open ? ' open' : ''}">
-      <div class="tpall"><button type="button" data-tpall="${allSel ? 'off' : 'on'}">${allSel ? '全部外す' : '全部選ぶ'}</button></div>
-      <div class="tpgrid">${grid}</div>
-    </div>
-    ${on.length ? `<p class="tpstate">乗せているもの：${on.join('　＋　')}</p>` : ''}
-  </div>`;
+  // 2026-08-27: 大きな箱2つ（.tpmain 82px ＋ .tpsum 31px）をやめ、
+  // 「印／戦績／新聞」と同じ行の右端に**繋げた1組**として置く。
+  //   ・繋げるのは隙間を1つ減らすため。離して2つ置くと375pxでも折り返した
+  //   ・説明文は材料の札の中へ移した。中身は消していない
+  // 幅の実測（掛け合わせ｜材料▸ は125px）:
+  //   375px幅 → 使える幅192px（余り67px） / 320px幅 → 152px（余り27px）
+  return `<span class="tpctl" id="tpctl">
+    <span class="tpseg">
+      <button type="button" class="tpb${TP.cross ? ' on' : ''}" id="tpx"${zero ? ' disabled' : ''}
+        title="${escapeHtml(zero ? 'このコースでは条件が見つかっていません'
+          : `${course} だけで見つけた条件を全部まとめて当てはめる`)}">掛け合わせ</button>
+      <button type="button" class="tpb${TP.sel.size ? ' on' : ''}" data-pop="topping">材料${
+        TP.sel.size ? `<span class="n">${TP.sel.size}</span>` : ''}<i class="apop">▸</i></button>
+    </span>
+  </span>`;
+}
+
+// 材料を選ぶ札（#pop-topping）。renderShutuba20 が他の札と一緒に並べる。
+// 開け閉めは馬名・荒れ度の札とまったく同じ仕組み（[data-pop] → #pop-*）。
+function tpPopup(site) {
+  if (!tpOn(site)) return '';
+  const meta = site.topping_meta || {};
+  const first = (site.horses || []).find((h) => h.topping) || {};
+  const course = (first.topping || {}).course || '';
+  const grid = (meta.groups || []).map((g) => {
+    const n = g.axes.filter((a) => TP.sel.has(a)).length;
+    const gi = n === g.axes.length ? '全部選択中・押すと外す'
+      : n ? `${n}/${g.axes.length}選択中・押すと全部選ぶ` : '押すとまとめて選ぶ';
+    // 104-spec §6.3: 「体」グループを開いたときだけ、発表タイミングの注記を1行出す
+    const bwNote = g.name === '体'
+      ? '<p class="tpbwnote">馬体重は発走の約50分前に発表されます。それまでは体の3つは選べません。</p>' : '';
+    return `<button type="button" class="tpgl" data-tpgrp="${escapeHtml(g.name)}">${escapeHtml(g.name)}<span class="gi">${gi}</span></button>`
+      + g.axes.map((a) => {
+        const disabled = TP_BODY_AXES.includes(a) && !tpAxisHasData(site, a);
+        return `<button type="button" class="tpchip${TP.sel.has(a) ? ' on' : ''}" data-tpax="${a}"${disabled ? ' disabled' : ''}>${escapeHtml(tpJp(a))}</button>`;
+      }).join('')
+      + bwNote;
+  }).join('');
+  const allAxes = (meta.groups || []).reduce((acc, g) => acc.concat(g.axes), []);
+  const allSel = allAxes.length > 0 && allAxes.every((a) => TP.sel.has(a));
+  return `
+    <div class="popup" id="pop-topping">
+      <div class="phead">
+        <span class="pname">材料を選ぶ</span>
+        <span class="pmeta">${(meta.axes || []).length}種類・${escapeHtml(course)}</span>
+        <button type="button" class="pclose" data-close>閉じる</button>
+      </div>
+      <div class="pbody" id="tppop">
+        <div class="tpnote">選んだ材料だけで、<b>人気より走る条件 − 走らない条件</b> の数を数えて10段階に色分けする。
+          <b>掛け合わせ</b>（帯の左のボタン）は ${escapeHtml(course)} だけで見つけた条件を全部まとめて使う。</div>
+        <div class="tpall"><button type="button" data-tpall="${allSel ? 'off' : 'on'}">${allSel ? '全部外す' : '全部選ぶ'}</button></div>
+        <div class="tpgrid">${grid}</div>
+      </div>
+    </div>`;
 }
 
 // 行を開いたときに出す「この馬の色の理由」
@@ -4190,6 +4234,15 @@ function tpRefresh() {
   });
   const ctl = document.getElementById('tpctl');
   if (ctl) ctl.outerHTML = tpCtl(site);
+  // 札を開いたまま材料を押すので、中身も同時に描き直す。札の外枠（.popup）は
+  // 差し替えない — 差し替えると .on が消えて札が閉じてしまう
+  const pop = document.getElementById('tppop');
+  if (pop) {
+    const fresh = document.createElement('div');
+    fresh.innerHTML = tpPopup(site);
+    const body = fresh.querySelector('#tppop');
+    if (body) pop.innerHTML = body.innerHTML;
+  }
 }
 
 function setupTopping(site) {
@@ -4197,11 +4250,11 @@ function setupTopping(site) {
   TP.site = site;
   const root = document.querySelector('.race20');
   if (!root) return;
-  const shctl = root.querySelector('.shctl');
-  if (shctl) shctl.insertAdjacentHTML('afterbegin', tpCtl(site));
+  // 差し込み先は「印／戦績／新聞」の行の中（2026-08-27）。空の .shctl は残す
+  const slot = root.querySelector('.mm-tp');
+  if (slot) slot.innerHTML = tpCtl(site);
   root.addEventListener('click', (e) => {
     if (e.target.closest('#tpx')) { TP.cross = !TP.cross; tpRefresh(); return; }
-    if (e.target.closest('#tpsum')) { TP.open = !TP.open; tpRefresh(); return; }
     const all = e.target.closest('[data-tpall]');
     if (all) {
       TP.sel.clear();
