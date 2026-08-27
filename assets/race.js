@@ -3363,9 +3363,24 @@ function renderBaba20(site) {
 
   const delta = isTurf ? norm.delta : mo.normal_delta;
   const sign = `${delta > 0 ? '+' : ''}${Number(delta).toFixed(1)}`;
-  const tail = lv.cls === 'z0' || lv.label === 'いつも通り' ? ''
-    : (delta < 0 ? (isTurf ? '時計はかかりやすい' : '時計はかかりやすい')
-                 : (isTurf ? '時計は速くなりやすい' : '時計は速くなりやすい'));
+  // 時計の一言（2026-08-27 に作り直し）。
+  //
+  // それまでは「平年より乾いていれば かかりやすい」とコードで決め打ちしていたが、
+  // 実測の表（baba_effect.json）と合っていなかった。ダートの含水率で言うと、
+  // 「乾くほど時計がかかる」が成り立つのは平年より3.0以上乾いた帯だけで、
+  // 1.0〜3.0 乾いた帯は 2,094レースの平均で +0.018秒＝ほぼ差が無い。
+  // そこを「かかりやすい」と言い切っていた。
+  //
+  // いまは下の「勝ちタイム」タイルと**同じ実測値**（display.baba.time）から文を作る。
+  // 上下が同じ数字を見るので、反対を向くことがなくなる。
+  // ±0.03秒（100mを6秒で走る計算で50cmぶん）に収まる帯は「ほぼ変わらない」にする。
+  // これは数字で置いた目安で、守りたいのは「差と呼べない幅を差と言わないこと」。
+  // 帯の刻みが変わって0.03が真ん中でなくなったら、この数字のほうを引き直す。
+  const secs = disp && typeof disp.time === 'number' ? disp.time : null;
+  const tail = secs === null ? ''
+    : (secs > 0.03 ? '時計はかかりやすい'
+      : secs < -0.03 ? '時計は速くなりやすい'
+        : '時計はほぼ変わらない');
   const head = `<div class="l1"><span class="lv ${lv.cls || 'z0'}">${escapeHtml(lv.label)}</span>`
     + `<span class="hd">${escapeHtml(site.race.track)}の平年より <b>${sign}</b></span>`
     + (tail ? `<span class="tl">${escapeHtml(tail)}</span>` : '') + '</div>';
