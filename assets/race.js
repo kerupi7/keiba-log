@@ -3785,38 +3785,10 @@ function renderOverview20(site) {
   // 対になっているので隣に置く（2026-08-27 に枠順マップの下から移動）。
   sections.push(renderWeekTrend20(site));
 
-  // (c) 脚質傾向（コース別実績の内訳）＋ 脚質マップ（各脚質に出走馬を並べる）
-  // 2026-07-27: マップ→傾向 だった並びを逆にした。先にこのコースの傾向を見て、
-  // そのあと出走馬がどの脚質に入っているかを見る流れにする。
-  // 108-spec §5/T6: 傾向の表と脚質マップを1ブロックに統合し、判定を全コース平均との差に。
-  // display が無ければ下の旧2ブロックへ落ちる。
-  const leg108 = renderLeg20(site);
-  if (leg108) {
-    sections.push(leg108);
-  } else if (p.leg_bias && p.leg_bias.length) {
-    // 数値セルは列ごとに濃淡を付ける（同じ列の脚質どうしの比較。列をまたぐ比較ではない）。
-    // 判定ピルは5段階の発散スケールで、マップ側と同じ色。
-    const cols = { win_rate: [], rentai_rate: [], fukusho_rate: [] };
-    for (const k of Object.keys(cols)) {
-      cols[k] = p.leg_bias.map((lb) => paceRate(lb[k])).filter((v) => v !== null);
-    }
-    const cell = (lb, k) =>
-      `<td class="hv ${heatClass(cols[k], paceRate(lb[k]))}">${escapeHtml(lb[k])}</td>`;
-    const rows = p.leg_bias.map((lb) => `
-      <tr class="${PACE_JUDG_CLASS[lb.judgment] || 'j-z0'}"><td class="l">${escapeHtml(lb.style)}</td>${cell(lb, 'win_rate')}${cell(lb, 'rentai_rate')}${cell(lb, 'fukusho_rate')}<td>${lb.runs}走</td><td class="l sep"><span class="jpill">${escapeHtml(lb.judgment)}</span></td></tr>
-    `).join('');
-    sections.push(`
-      <div class="subh">脚質傾向</div>
-      <table class="kg heat">
-        <thead><tr><th class="l">脚質</th><th>勝率</th><th>連対</th><th>複勝</th><th>走数</th><th class="l sep">判定</th></tr></thead>
-        <tbody>${rows}</tbody>
-      </table>
-    `);
-
-    sections.push(renderPaceMap20(site));
-  }
-
-  // (d) 内外バイアス → 発馬機のマップ（2026-08-27）
+  // (c) 内外バイアス → 発馬機のマップ（2026-08-27）
+  //
+  // 2026-08-27 に脚質より前へ移した（ユーザー決定）。上のコースの形にある
+  // 「枠の有利」のシーソーと同じ話を8つの枠に割ったものなので、間に脚質をはさまない。
   //
   // 8つの数字を横に並べるだけだったのを、**発馬機（ゲート）の絵**に置き換えた。
   // 「枠」という言葉そのものの絵なので、何の並びかを説明なしで示せる。
@@ -3853,6 +3825,37 @@ function renderOverview20(site) {
         <div class="gends"><span>◀ 内</span><span>外 ▶</span></div>
       </div>
     `);
+  }
+
+  // (d) 脚質傾向（コース別実績の内訳）＋ 脚質マップ（各脚質に出走馬を並べる）
+  // 2026-07-27: マップ→傾向 だった並びを逆にした。先にこのコースの傾向を見て、
+  // そのあと出走馬がどの脚質に入っているかを見る流れにする。
+  // 108-spec §5/T6: 傾向の表と脚質マップを1ブロックに統合し、判定を全コース平均との差に。
+  // display が無ければ下の旧2ブロックへ落ちる。
+  const leg108 = renderLeg20(site);
+  if (leg108) {
+    sections.push(leg108);
+  } else if (p.leg_bias && p.leg_bias.length) {
+    // 数値セルは列ごとに濃淡を付ける（同じ列の脚質どうしの比較。列をまたぐ比較ではない）。
+    // 判定ピルは5段階の発散スケールで、マップ側と同じ色。
+    const cols = { win_rate: [], rentai_rate: [], fukusho_rate: [] };
+    for (const k of Object.keys(cols)) {
+      cols[k] = p.leg_bias.map((lb) => paceRate(lb[k])).filter((v) => v !== null);
+    }
+    const cell = (lb, k) =>
+      `<td class="hv ${heatClass(cols[k], paceRate(lb[k]))}">${escapeHtml(lb[k])}</td>`;
+    const rows = p.leg_bias.map((lb) => `
+      <tr class="${PACE_JUDG_CLASS[lb.judgment] || 'j-z0'}"><td class="l">${escapeHtml(lb.style)}</td>${cell(lb, 'win_rate')}${cell(lb, 'rentai_rate')}${cell(lb, 'fukusho_rate')}<td>${lb.runs}走</td><td class="l sep"><span class="jpill">${escapeHtml(lb.judgment)}</span></td></tr>
+    `).join('');
+    sections.push(`
+      <div class="subh">脚質傾向</div>
+      <table class="kg heat">
+        <thead><tr><th class="l">脚質</th><th>勝率</th><th>連対</th><th>複勝</th><th>走数</th><th class="l sep">判定</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    `);
+
+    sections.push(renderPaceMap20(site));
   }
 
   // (d-2) 今週の馬場は 2026-08-27 にコースの形の直後へ移した（renderWeekTrend20）。
