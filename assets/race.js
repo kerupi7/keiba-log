@@ -3385,7 +3385,17 @@ function renderCourseBabaBar20(site, g, iv, ov) {
   const delta = isTurf ? (norm || {}).delta : src.normal_delta;
   if (lv && delta != null) {
     const sign = `${delta > 0 ? '+' : ''}${Number(delta).toFixed(1)}`;
-    cells.push(`<div class="cell wide"><span class="k">今日の馬場</span>`
+    // 仮柵は「今日の馬場」のマスの先頭に入れる（2026-08-27・ユーザー決定）。
+    // それまでは下に青い枠を作って1行だけ置いていたが、クッション値を消したことで
+    // 枠の中身が1行だけになり浮いていた。マスを6つに増やすと 351px を分け合う関係で
+    // 1マスが63px→53pxになり、高低差・今日の馬場・上がり3F・仮柵の4つで
+    // 文字が2行に折り返す（実測。バーは69px→82px）。5マスのままにする理由はそれ。
+    const rail = bd.rail;
+    const railHtml = rail && rail.course
+      ? `<span class="rl">${escapeHtml(rail.course)}`
+        + (rail.weeks ? `・${rail.weeks}週目` : '') + '</span>'
+      : '';
+    cells.push(`<div class="cell wide"><span class="k">今日の馬場</span>${railHtml}`
       + `<span class="lv ${lv.cls || 'z0'}">${escapeHtml(lv.label)}</span>`
       + `<span class="w">${escapeHtml(site.race.track)}の平年より ${sign}</span></div>`);
   }
@@ -3506,47 +3516,18 @@ function renderWeekTrend20(site) {
 }
 
 function renderBaba20(site) {
+  // 馬場の青い枠は 2026-08-27 に無くなった。中身の行き先は次のとおり。
+  //   今日の馬場・平年との差・時計の一言 → 1本バー（renderCourseBabaBar20）
+  //   勝ちタイム・上がり3F             → 同じく1本バー
+  //   含水率の生の値・クッション値・目盛り → 削除（バーの1行が同じ話を読み下している）
+  //   仮柵                             → 1本バーの「今日の馬場」のマスの先頭
+  // 旧データ（level / normal を持たないぶん）は今も旧ブロックへ落とすので null を返す。
   const p = site.prediction;
   const bd = p.baba_detail;
-  const disp = (p.display || {}).baba;
-  const cu = (bd || {}).cushion_detail || {};
-  const mo = (bd || {}).moisture_detail || {};
   const isTurf = String(site.race.surface || '').startsWith('芝');
-  // 芝はクッション値、ダートは含水率が軸（§4 / §7.4）
-  const lv = isTurf ? cu.level : mo.level;
-  const norm = isTurf ? cu.normal : mo.normal;
-  if (!lv || !norm) return null;         // 旧データ → 呼び出し側が旧ブロックへ落とす
-
-  // 「やや乾いている・平年より-1.0・時計は速くなりやすい」の1行は
-  // 2026-08-27 に上の1本バー（renderCourseBabaBar20）へ移した。
-  // 「時計は速くなりやすい」は勝ちタイムのマスと同じ display.baba.time から作っていた
-  // 同じ話なので、移すときに落とした。
-
-  const rows = [];
-  // 仮柵（芝だけ・2026-08-26 追加）。クッション値・含水率と同じ「今日の芝の状態」なので
-  // 同じ並びに置く。柵になってから何週目かが出せない日（開催の初日など）は記号だけ。
-  const rail = (bd || {}).rail;
-  if (rail && rail.course) {
-    const wk = rail.weeks ? `・${rail.weeks}週目` : '';
-    const from = rail.start_date
-      ? `${Number(rail.start_date.slice(5, 7))}/${Number(rail.start_date.slice(8, 10))}から` : '';
-    rows.push(`<div class="mrow"><span class="k">仮柵</span>`
-      + `<span class="v">${escapeHtml(rail.course)}${wk}</span>`
-      + `<span class="t">${from}</span></div>`);
-  }
-  // クッション値の生の値（9.9 と測定時刻）と、その下の目盛り（軟らかい〜硬い・
-  // 今日/前回/平年の位置）は 2026-08-27 に削除した。ダートの含水率を同日に消したのと
-  // 同じ理由で、上の1本バーの「今日の馬場」が「やや硬い・新潟の平年より +0.6」と
-  // 読み下しており、生の数字から読み手が判断を足す場面が無かった。
-  // 芝111レースすべてにクッション値が入っていたので、消えるのは芝の全レース。
-
-  // 「この馬場だと、こうなりやすい」の勝ちタイム・上がり3Fは
-  // 2026-08-27 に上の1本バーへ移した。
-
-  // ここに残るのは仮柵の行だけ。無ければ枠ごと出さない（ダートは常に無い）。
-  // null は旧データの合図なので、ここは空文字を返す（呼び出し側が旧ブロックへ落ちない）。
-  if (!rows.length) return '';
-  return `<div class="babadetail v2"><div class="l3 top">${rows.join('')}</div></div>`;
+  const src = (bd || {})[isTurf ? 'cushion_detail' : 'moisture_detail'] || {};
+  if (!src.level || !src.normal) return null;   // 旧データ → 呼び出し側が旧ブロックへ落とす
+  return '';
 }
 
 // §5 脚質 ────────────────────────────────────────────────
