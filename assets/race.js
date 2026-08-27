@@ -3559,6 +3559,16 @@ const LEG_WORD = {
 // shared/keiba/leg_bias_baseline.json の grade_bands。
 //
 // 等級を持たない過去のレース（grade が無い）は、これまでどおり差を出す。
+// 先行圧の言葉の色。高い＝赤、低い＝青、標準＝地の色。
+// 高い/標準/低い の3つは、ハイペース率の帯が重なる粗い言い方（実測で
+// 「標準」は20〜50%、「高い」は35〜62%）。順位はほぼ同じなので、
+// 細かい違いは隣のハイペース率のほうを見る。
+function fpClass(label) {
+  if (label === '高い') return 'hi';
+  if (label === '低い') return 'lo';
+  return '';
+}
+
 function renderLeg20(site) {
   const p = site.prediction;
   const disp = (p.display || {}).leg;
@@ -3585,7 +3595,27 @@ function renderLeg20(site) {
   // 上の見出し帯（.lhd）と下の説明（.lft）は 2026-08-27 に削除した。
   // コース名は画面の上（レースヘッダの基本情報4項目）に既にあり、
   // 等級の意味は札の色と S〜D の並びが持っている。
-  return `<div class="subh">脚質</div>
+  // 先行圧を見出しの右に出す（2026-08-27・148-spec）。それまでは下に
+  // 「逃げ候補・先行圧」という別ブロックがあり、10段のゲージと主逃げ・先行の
+  // 馬番が並んでいた。馬番は脚質マップの逃げ・先行の区画と75%重なっており
+  // （公開済み214レース・1,426頭で実測）、主逃げの馬はマップでオレンジ枠が
+  // すでに付いている。ゲージは「先行圧が10段のどこか」を見せていたが、
+  // 先行圧の順位とハイペース率の順位は+0.948でほぼ同じ並びなので、
+  // ハイペース率だけで足りる。
+  //
+  // ハイペース率は単体では高いか低いかが読めないため、必ず比べる相手を添える。
+  // bands は先行圧を10等分した各段のハイペース率なので、10段の平均＝全体の割合。
+  // 実際 ppi_pace.json の実測（15,455レース）は34.6%で、bands の平均と一致する。
+  const fd = (p.display || {}).front;
+  const fp = p.front_pressure;
+  let fpHtml = '';
+  if (fd && fp && Array.isArray(fd.bands) && fd.bands.length) {
+    const base = fd.bands.reduce((a, b) => a + b, 0) / fd.bands.length;
+    fpHtml = `<span class="fps">先行圧 <b class="${fpClass(fp.label)}">${escapeHtml(fp.label)}</b>`
+      + `<span class="sep">／</span>ハイペース <b class="hi">${Math.round(fd.h * 100)}%</b>`
+      + `<span class="bs">ふつうは${Math.round(base * 100)}%</span></span>`;
+  }
+  return `<div class="subh">脚質${fpHtml}</div>
     <div class="lmap">
       <div class="lfield">
         <div class="lrail"></div>
@@ -3596,53 +3626,8 @@ function renderLeg20(site) {
 }
 
 // §7 逃げ候補・先行圧 ───────────────────────────────────────
-function renderFront20(site) {
-  const p = site.prediction;
-  const d = (p.display || {}).front;
-  const fp = p.front_pressure;
-  if (!d || !fp) return '';
-  const max = d.ppi_max || 1;
-  const pos = (v) => Math.max(0, Math.min(100, v / max * 100));
-  const lo = Math.min(...d.bands), hi = Math.max(...d.bands);
-  const segs = d.bands.map((h, i) => {
-    const w = 100 / d.bands.length;
-    const t = (h - lo) / Math.max(hi - lo, 0.001);
-    return `<i class="sg" style="left:${(i * w).toFixed(1)}%;width:${w.toFixed(1)}%;`
-      + `background:rgba(192,72,58,${(0.10 + t * 0.62).toFixed(2)})"></i>`;
-  }).join('');
-  const ticks = d.bands.map((h, i) => (i % 2 === 1
-    ? `<span class="tk" style="left:${((i + 1) * 100 / d.bands.length).toFixed(1)}%">${Math.round(h * 100)}</span>`
-    : '')).join('');
-  const byNumber = {};
-  site.horses.forEach((h) => { byNumber[h.number] = h; });
-  const nige = scenarioMainNigeSet(p);
-  const mainChips = (fp.main_nige || []).map((s) => {
-    const n = Number(String(s).match(/^\d+/));
-    const h = byNumber[n];
-    return h ? paceHorsePiece(h, true) : '';
-  }).join('');
-  const others = (p.front_runners || [])
-    .filter((fr) => !String(fr.type).startsWith('逃げ'))
-    .map((fr) => byNumber[Number(fr.number)])
-    .filter(Boolean)
-    .map((h) => paceHorsePiece(h, nige.has(h.number))).join('');
-  const lead = d.how === 'cross' ? 'この先行圧と主逃げの頭数だと' : 'この先行圧だと';
-  return `<div class="subh">逃げ候補・先行圧</div>
-    <div class="mt">
-      <div class="m1">${lead}<b>${Math.round(d.h * 100)}%</b>がハイペースだった</div>
-      <div class="mtr">${segs}<i class="pin" style="left:${pos(d.ppi).toFixed(1)}%"></i>
-        <span class="pv" style="left:${pos(d.ppi).toFixed(1)}%">${d.ppi.toFixed(2)}</span></div>
-      <div class="mtk">${ticks}</div>
-      <div class="mlb"><span>先行圧 低い</span><span>高い</span></div>
-    </div>
-    <div class="fh2">
-      <div class="row"><span class="k">主逃げ</span><span class="cnt">${d.nige_n}頭</span>
-        <span class="hs">${mainChips || '<i class="none">—</i>'}</span></div>
-      <div class="row"><span class="k">先行</span>
-        <span class="cnt">${(p.front_runners || []).length - d.nige_n}頭</span>
-        <span class="hs">${others || '<i class="none">—</i>'}</span></div>
-    </div>`;
-}
+// renderFront20 は 2026-08-27 に削除した。呼ぶ所が無くなったため。
+// 先行圧の言葉とハイペース率は renderLeg20（脚質の見出し）が引き継いでいる。
 
 // §8 展開シナリオ ───────────────────────────────────────────
 function renderScenarioCards20(site) {
@@ -3862,33 +3847,14 @@ function renderOverview20(site) {
   // 上の1本バーが「このコースの過去の平均」、こちらが「今週ここで終わったレース」で
   // 対になっているため、離して置く理由が無かった。
 
-  // (e) 逃げ候補・先行圧
-  // 108-spec §7/T7: 3分割ラベルをやめ、実測のハイペース率に置き換える。
-  const front108 = renderFront20(site);
-  if (front108) {
-    sections.push(front108);
-  } else {
-    const runners = p.front_runners || [];
-    let tableHtml = '';
-    if (runners.length) {
-      const rows = runners.map((fr) => `<tr><td>${umaBox(Number(fr.number), (byNumberOv[fr.number] || {}).gate)}</td><td class="l">${escapeHtml(fr.name)}</td><td class="l">${escapeHtml(fr.type)}</td><td>${fr.front_rate.toFixed(2)}</td></tr>`).join('');
-      tableHtml = `
-        <table class="kg">
-          <thead><tr><th>番</th><th class="l">馬名</th><th class="l">分類</th><th>先行率</th></tr></thead>
-          <tbody>${rows}</tbody>
-        </table>
-      `;
-    }
-    let statHtml = '';
-    if (p.front_pressure) {
-      const mainNige = p.front_pressure.main_nige || [];
-      const nigeText = mainNige.length ? `（主逃げ=${mainNige.map((n) => escapeHtml(n)).join('・')}）` : '';
-      statHtml = `<div class="statline">先行圧指数 <span class="big">${p.front_pressure.index.toFixed(2)}</span> → ${escapeHtml(p.front_pressure.label)}${nigeText}</div>`;
-    }
-    if (tableHtml || statHtml) {
-      sections.push(`<div class="subh">逃げ候補・先行圧</div>${tableHtml}${statHtml}`);
-    }
-  }
+  // (e) 「逃げ候補・先行圧」のブロックは 2026-08-27 に廃止した。
+  // 中身の行き先は次のとおり。
+  //   先行圧の言葉・ハイペース率 → 脚質の見出しの右（renderLeg20）
+  //   10段のゲージ・目盛り       → 削除。先行圧の順位とハイペース率の順位は
+  //                               +0.948でほぼ同じ並びで、率だけで足りる
+  //   主逃げ・先行の馬番         → 削除。脚質マップの逃げ・先行の区画と75%重なり、
+  //                               主逃げはマップでオレンジ枠が付いている
+  // 旧データ用の表（馬名・分類・先行率）も一緒に落とした。
 
   // (f) 展開シナリオ。93-pace-scenario-6cell-spec.md §6-0-1: 案22（6マス・主役カード）。
   // scenario_grid が無い過去公開分（§7「再生成しない」）は旧3ブロック表示のまま併存させる。
