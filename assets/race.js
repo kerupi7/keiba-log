@@ -714,8 +714,6 @@ function setupTabs20(site) {
     for (const p of panes) p.classList.toggle('on', p.dataset.pane === key);
     // 回顧タブは開いた瞬間に初めて幅が確定するので測り直す（折りたたみと同じ理由）
     if (key === 'kaiko') setupFinishOrder();
-    // 109-spec §3.1: コースタブは最初に開いた時だけ data/courses/*.json を読む（遅延読み込み）
-    if (key === 'course' && window.CourseTab) window.CourseTab.onShow(site);
     // 111-spec: 出馬表で付けた印をアキネーターにも出すため、開くたびに描き直す
     if (key === 'kaime' && akRefresh) akRefresh();
     if (pushHash) history.replaceState(null, '', `${location.pathname}${location.search}#tab=${key}`);
@@ -2349,13 +2347,19 @@ function mmInline(h) {
 // この行の右端にトッピングの2つ（掛け合わせ｜材料）を並べるため。3つで204px使っていて、
 // それが行の58%だった。縮めると136pxになり、320px幅の端末でも27px余る。
 // .tpctl は setupTopping がここ（.mm-tp）へ差し込む。
-function mmBar() {
+// 「コース」は 2026-08-27 にタブからここへ移した。押すとポップアップ（#pop-course）が開く。
+// 印／戦績／新聞 と違って表示を切り替えるものではないので、3つの帯の中には入れない。
+// course_entities が無いレース（コースが確定できなかったぶん）はボタンごと出さない。
+function mmBar(site) {
+  const crs = site && site.course_entities
+    ? '<button type="button" class="crsb" data-pop="course">コース</button>' : '';
   return `<div class="mm-bar">
     <span class="mm-seg">
       <button type="button" data-view="mark" class="on">印</button>
       <button type="button" data-view="runs">戦績</button>
       <button type="button" data-view="paper">新聞</button>
     </span>
+    ${crs}
     <span class="mm-tp"></span>
     <span class="mm-sum"></span>
   </div>`;
@@ -2661,7 +2665,7 @@ function renderShutuba20(site) {
   return `
     <div class="secthead">出馬表${memberLevelBand(site.prediction)}${up ? up.band : ''}</div>
     <div class="shctl"></div>
-    ${mmBar()}
+    ${mmBar(site)}
     <div class="shlist off">${cards}</div>
     ${renderPaper(site)}
     ${mmList(site)}
@@ -2671,9 +2675,17 @@ function renderShutuba20(site) {
 // 馬名ポップアップと荒れ度の札。**どのタブからも開くのでタブの外に置く**（2026-08-27）。
 function renderPopups20(site) {
   const up = renderUpset20(site.prediction.upset);
+  // コース（2026-08-27）。中身は開いた時に読む（data/courses/*.json の遅延読み込みは
+  // タブだった頃と同じ仕組みのまま）。
+  const crs = site.course_entities && window.CourseTab
+    ? `<div class="popup wide" id="pop-course">
+        <div class="phead"><span class="pname">コースデータ</span>
+          <button type="button" class="pclose" data-close>閉じる</button></div>
+        <div class="pbody">${window.CourseTab.render(site)}</div>
+      </div>` : '';
   return site.horses.filter((h) => !h.scratched)
     .map((h) => `<div class="popup" id="pop-${h.number}">${popupBody(h)}</div>`).join('')
-    + (up ? up.popup : '');
+    + (up ? up.popup : '') + crs;
 }
 
 function setupShutuba20(site) {
@@ -2702,6 +2714,8 @@ function setupShutuba20(site) {
       closePopup();
       const p = root.querySelector(`#pop-${nb.dataset.pop}`);
       if (p) { p.classList.add('on'); bg.classList.add('on'); openPopup = p; lockPageScroll(); }
+      // コースは最初に開いた時だけ data/courses/*.json を読む（タブだった頃と同じ仕組み）
+      if (nb.dataset.pop === 'course' && window.CourseTab) window.CourseTab.onShow(site);
       return;
     }
     if (e.target.closest('[data-close]')) closePopup();
@@ -2804,9 +2818,8 @@ function renderBets20(site) {
 const RACE20_TABS = [
   { key: 'shutuba', label: '出馬表' },
   { key: 'tenkai', label: '展開' },
-  // 109-spec: コースが真ん中・買い目が右から2番目（2026-08-06 ユーザー決定）。
-  // course_entities が無いレースはコースを落とすので、その場合は従来の4枚のまま
-  { key: 'course', label: 'コース' },
+  // コースは 2026-08-27 にタブをやめ、出馬表の「印／戦績／新聞」の右のボタンから
+  // 開くポップアップ（#pop-course）へ移した。タブは5枚から4枚になる。
   { key: 'kaime', label: '買い目' },
   // 回顧タブの見出しは中身に合わせる。レース前は renderVerification20 が
   // 「答え合わせ／結果はレース後に反映されます」を出すので、タブ名も同じ言葉にする
@@ -2847,7 +2860,6 @@ function buildRace20Html(site, oddsAll) {
   // 109-spec §2.2: course_entities（course_idが確定できたレースの人物・血統ぶん）が
   // 無いレースはコースタブ自体を配列から落とす（推測でコースJSONを引かない）
   const tabs = RACE20_TABS
-    .filter((t) => t.key !== 'course' || site.course_entities)
     // 新馬は買い目を出さない（買い目モデル bet-1 は新馬を1レースも学習していない）。
     // 空のタブを残すと「押したのに何も無い」になるので、タブごと落とす
     .filter((t) => t.key !== 'kaime' || !site.shinba);
@@ -2866,7 +2878,6 @@ function buildRace20Html(site, oddsAll) {
       <div class="tabbar" role="tablist">${bar}</div>
       ${pane('shutuba', renderMitate20(site) + renderShutuba20(site))}
       ${pane('tenkai', renderOverview20(site))}
-      ${site.course_entities ? pane('course', window.CourseTab.render(site)) : ''}
       ${pane('kaime', renderBets20(site) + renderOddsMasterSection(site, oddsAll))}
       ${pane('kaiko', renderVerification20(site))}
       ${renderPopups20(site)}
