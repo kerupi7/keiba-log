@@ -3770,8 +3770,11 @@ function renderOverview20(site) {
     // 数字を見ているのかを出す。混在しないコースでは scope が無く、何も足さない。
     const scopeHtml = p.inner_outer_bias.scope
       ? `<span class="scope">${escapeHtml(p.inner_outer_bias.scope)}の成績</span>` : '';
+    // 2026-08-27: 見出しの色をコースの形・脚質と展開にそろえた（.biaslabel → .subh）。
+    // 「外枠有利」の言葉は同日に削除。8つの枠の等級（S〜D）が同じことを示していて、
+    // 内外の傾きは上のコースの形の「枠の有利」のシーソーにも出ているため。
     sections.push(`
-      <div class="biaslabel"><b>このコースの枠順成績</b> ${escapeHtml(p.inner_outer_bias.label)}${scopeHtml}</div>
+      <div class="subh">このコースの枠順成績${scopeHtml}</div>
       <div class="gmap">
         <div class="gbar"></div>
         <div class="gzones">${cellsHtml}</div>
