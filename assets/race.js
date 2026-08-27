@@ -3534,47 +3534,19 @@ function renderBaba20(site) {
       + `<span class="v">${escapeHtml(rail.course)}${wk}</span>`
       + `<span class="t">${from}</span></div>`);
   }
-  if (isTurf && cu.value != null) {
-    rows.push(`<div class="mrow"><span class="k">クッション値</span>`
-      + `<span class="v">${cu.value}</span>`
-      + `<span class="t">${escapeHtml(cu.measured_label || '')}</span></div>`);
-  }
-  // 含水率の生の値（G前3% ／ 4C 2.2% と測定時刻）は 2026-08-27 に削除した。
-  // 同じ数字を上の1行が「やや乾いている・平年より-1.0」と読み下しており、
-  // 生の%から読み手が判断を足す場面が無かった。
-
-  // 目盛り。芝だけ（クッション値の実測はばが要る）
-  let scale = '';
-  if (isTurf && cu.range && cu.value != null) {
-    const lo = cu.range.min, hi = cu.range.max, span = Math.max(hi - lo, 0.1);
-    const pos = (v) => Math.max(0, Math.min(100, (v - lo) / span * 100));
-    const bl = pos(norm.mean - 0.3), bh = pos(norm.mean + 0.3);
-    const prev = cu.prev && cu.prev.value != null ? cu.prev.value : null;
-    scale = `<div class="cscale">
-      <div class="lbl"><span class="soft">軟らかい</span><span class="hard">硬い</span></div>
-      <div class="tr">
-        <i class="band" style="left:${bl.toFixed(1)}%;width:${Math.max(bh - bl, 1).toFixed(1)}%"></i>
-        <i class="nm" style="left:${pos(norm.mean).toFixed(1)}%"></i>
-        <i class="td ${lv.cls || 'z0'}" style="left:${pos(cu.value).toFixed(1)}%"></i>
-        <span class="tdl" style="left:${pos(cu.value).toFixed(1)}%">今日 ${cu.value}</span>
-      </div>
-      ${prev != null ? `<div class="below"><i class="pv" style="left:${pos(prev).toFixed(1)}%"></i>
-        <span class="pvl" style="left:${pos(prev).toFixed(1)}%">前回 ${prev}</span></div>` : ''}
-      <div class="ends"><span>${lo}</span>
-        <span class="nml" style="left:${pos(norm.mean).toFixed(1)}%">平年 ${norm.mean}</span>
-        <span>${hi}</span></div>
-    </div>`;
-  }
+  // クッション値の生の値（9.9 と測定時刻）と、その下の目盛り（軟らかい〜硬い・
+  // 今日/前回/平年の位置）は 2026-08-27 に削除した。ダートの含水率を同日に消したのと
+  // 同じ理由で、上の1本バーの「今日の馬場」が「やや硬い・新潟の平年より +0.6」と
+  // 読み下しており、生の数字から読み手が判断を足す場面が無かった。
+  // 芝111レースすべてにクッション値が入っていたので、消えるのは芝の全レース。
 
   // 「この馬場だと、こうなりやすい」の勝ちタイム・上がり3Fは
   // 2026-08-27 に上の1本バーへ移した。
 
-  // 出すものが残らない（ダートは仮柵もクッション値も目盛りも無い）なら枠ごと出さない。
+  // ここに残るのは仮柵の行だけ。無ければ枠ごと出さない（ダートは常に無い）。
   // null は旧データの合図なので、ここは空文字を返す（呼び出し側が旧ブロックへ落ちない）。
-  if (!rows.length && !scale) return '';
-  return `<div class="babadetail v2">`
-    + (rows.length ? `<div class="l3 top">${rows.join('')}</div>` : '')
-    + scale + '</div>';
+  if (!rows.length) return '';
+  return `<div class="babadetail v2"><div class="l3 top">${rows.join('')}</div></div>`;
 }
 
 // §5 脚質 ────────────────────────────────────────────────
