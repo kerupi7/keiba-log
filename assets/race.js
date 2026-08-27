@@ -2773,13 +2773,38 @@ function race20TabFromHash() {
   return m && RACE20_TABS.some((t) => t.key === m[1]) ? m[1] : RACE20_TAB_DEFAULT;
 }
 
+// ===== 新馬レースの注記（2026-08-27・handoff_2026-08-27_shinba-model.md 決定3） =====
+// 新馬は本体の勝率モデル win-1 の材料100項目のうち80項目が死ぬ（全頭が過去走ゼロ）ので、
+// 新馬だけで学習した shinba-1 で予想を出している。点数は出さない：7観点のうち
+// ③④の20点ぶんが全馬同点になり（実測 13頭とも6.0）、順位を付ける意味が無いため。
+// 公開側（keiba_publish.py の mask_shinba）が site.shinba を付けたレースだけこの札を出す。
+function renderShinbaNote20(site) {
+  const sh = site.shinba;
+  if (!sh) return '';
+  const lines = [];
+  if (sh.scores_hidden) lines.push(escapeHtml(sh.scores_hidden_reason || '新馬のため点数なし'));
+  if (sh.marks_available === false && sh.marks_hidden_reason) {
+    lines.push(escapeHtml(sh.marks_hidden_reason));
+  }
+  if (sh.bets_hidden_reason) lines.push(escapeHtml(sh.bets_hidden_reason));
+  const model = sh.model ? `<b>${escapeHtml(sh.model)}</b> で予想しています。` : '';
+  return `<div class="shinba-note">
+      <div class="h">新馬レース</div>
+      <p>${model}${lines.join('／')}</p>
+    </div>`;
+}
+
 function buildRace20Html(site, oddsAll) {
   const banner = site.status === 'cancelled' ? '<div class="alert">このレースは中止になりました</div>' : '';
   // 結果が出ているレースだけ「回顧」に赤ドットを出す（renderVerification20 と同じ判定）
   const settled = site.status === 'final';
   // 109-spec §2.2: course_entities（course_idが確定できたレースの人物・血統ぶん）が
   // 無いレースはコースタブ自体を配列から落とす（推測でコースJSONを引かない）
-  const tabs = RACE20_TABS.filter((t) => t.key !== 'course' || site.course_entities);
+  const tabs = RACE20_TABS
+    .filter((t) => t.key !== 'course' || site.course_entities)
+    // 新馬は買い目を出さない（買い目モデル bet-1 は新馬を1レースも学習していない）。
+    // 空のタブを残すと「押したのに何も無い」になるので、タブごと落とす
+    .filter((t) => t.key !== 'kaime' || !site.shinba);
   const bar = tabs.map((t) => `<button type="button" class="t20" role="tab"`
     + ` data-tab="${t.key}" aria-controls="pane-${t.key}" aria-selected="false">`
     + `${!settled && t.labelPre ? t.labelPre : t.label}`
@@ -2791,6 +2816,7 @@ function buildRace20Html(site, oddsAll) {
     <div class="race20">
       ${renderHeader20(site)}
       ${banner}
+      ${renderShinbaNote20(site)}
       <div class="tabbar" role="tablist">${bar}</div>
       ${pane('shutuba', renderMitate20(site) + renderShutuba20(site))}
       ${pane('tenkai', renderOverview20(site))}
