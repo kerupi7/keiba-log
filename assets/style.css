@@ -1982,10 +1982,23 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
 /* §5.2.2: 勝ち＝金／僅差で負け＝青。色は2つだけ。
    2026-08-05: マスを面で塗るのをやめ、左端の見出し帯（もともと13px幅ある）だけを塗る。
    帯を別に足すと本文の幅が削られて騎手名が切れるので、既にある帯を色の置き場所に使う。 */
-.race20 .vrun.pb-win{background:#fff;border-color:#E4D9B8}
-.race20 .vrun.pb-close{background:#fff;border-color:#DCE5EE}
+/* 2026-08-27: 面も塗るように戻した（新聞モードと同じ形にそろえる）。
+   2026-08-05 に面塗りをやめたのは「帯を別に足すと本文の幅が削られて騎手名が切れる」
+   ためで、要素を足さず地の色を変えるだけの今回は幅に影響しない。
+   色は新聞モードの #FFF9E8 / #F2F7FC より1段濃い。薄いままだと白との差が小さく、
+   塗ったことが分からなかった（実測：塗った面が #F2F7FC、塗らない面が #FFFFFF）。 */
+.race20 .vrun.pb-win{background:#FFF3D0;border-color:#E4D9B8}
+.race20 .vrun.pb-close{background:#E6EFF8;border-color:#DCE5EE}
 .race20 .vrun.pb-win .vtab{background:#C8A200;color:#fff}
 .race20 .vrun.pb-close .vtab{background:#5C7A99;color:#fff}
+/* 塗った行の薄い文字だけ濃くする。日付・着差・頭数の #757575 は白地でも4.61しかなく、
+   面を塗ると4.5を割る。#5C5C5C なら塗った面でも6.2以上ある。
+   .l1 / .l3 まで書いているのは、既にある指定（.race20 .vrun .l1 .dt 等）と
+   セレクタの数をそろえないと勝てないため（実測：省くと日付が #757575 のままだった）。 */
+.race20 .vrun.pb-win .l1 .dt,.race20 .vrun.pb-close .l1 .dt,
+.race20 .vrun.pb-win .l3 .mg,.race20 .vrun.pb-close .l3 .mg,
+.race20 .vrun.pb-win .l3 .nm,.race20 .vrun.pb-close .l3 .nm,
+.race20 .vrun.pb-win .l3 .sc,.race20 .vrun.pb-close .l3 .sc{color:#5C5C5C}
 .race20 .vrun .l1 .dt{color:var(--cap);font-variant-numeric:tabular-nums}
 .race20 .vrun .l1 .tk{font-weight:700}
 /* レース名は1行目の余った幅だけ使い、入らない分は「…」（mockup-52 案B）。
@@ -2925,8 +2938,16 @@ body.noscroll{position:fixed;width:100%;overflow:hidden}
    隣の馬と同じ走を横に見比べられなくなる */
 .race20 .npcol .nprun{height:var(--nph-run);padding:3px 5px;line-height:1.35;
   border-bottom:1px solid var(--rule);overflow:hidden}
-.race20 .npcol .nprun.pb-win{background:#FFF9E8;box-shadow:inset 3px 0 0 #C9A227}
-.race20 .npcol .nprun.pb-close{background:#F2F7FC;box-shadow:inset 3px 0 0 #6E8CA6}
+/* 2026-08-27: 印モードと同じ濃さへ（#FFF9E8 / #F2F7FC から1段濃く）。
+   薄い文字を濃くするのも同じ理由（上の .vrun のコメント参照）。 */
+.race20 .npcol .nprun.pb-win{background:#FFF3D0;box-shadow:inset 3px 0 0 #C9A227}
+.race20 .npcol .nprun.pb-close{background:#E6EFF8;box-shadow:inset 3px 0 0 #6E8CA6}
+.race20 .npcol .nprun.pb-win .dt,.race20 .npcol .nprun.pb-close .dt,
+.race20 .npcol .nprun.pb-win .mg,.race20 .npcol .nprun.pb-close .mg,
+.race20 .npcol .nprun.pb-win .nm,.race20 .npcol .nprun.pb-close .nm,
+.race20 .npcol .nprun.pb-win .sc,.race20 .npcol .nprun.pb-close .sc,
+.race20 .npcol .nprun.pb-win .r6>.sc,.race20 .npcol .nprun.pb-close .r6>.sc,
+.race20 .npcol .nprun.pb-win .r6>.mg,.race20 .npcol .nprun.pb-close .r6>.mg{color:#5C5C5C}
 .race20 .npcol .nprun.rest{display:flex;align-items:center;justify-content:center;
   text-align:center;color:var(--cap);background:var(--sub-bg2)}
 .race20 .npcol .nprun.empty{background:repeating-linear-gradient(45deg,#fff,#fff 5px,#FAFAFA 5px,#FAFAFA 10px)}
