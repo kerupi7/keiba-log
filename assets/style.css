@@ -2032,7 +2032,15 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
 /* 列の間隔だけ 4px→3px に詰める。騎手名4文字（40px）が入る幅を作るため。
    .vrb>div より弱いセレクタだと gap:4px に負けるので、こちらも子結合子で書く */
 .race20 .vrun .vrb>.l2{gap:3px}
-.race20 .vrun .l2 .cd{font-weight:700;color:var(--text)}
+/* 色は下の .cd.tf / .cd.dt が決める。ここで color を指定すると
+   セレクタが1つ長いぶん勝ってしまい、色分けが効かない（2026-08-27 に外した） */
+.race20 .vrun .l2 .cd{font-weight:700}
+/* 戦績欄の条件（芝2000重 など）を芝とダートで色分けする（2026-08-27）。
+   白地での読みやすさ（小さい文字は4.5以上が要る）を測って決めた色。
+   芝 6.52 ／ ダート 5.30。色の変数 --turf(4.07) --dirt(3.12) はどちらも足りないので使わない。
+   行の地の色が変わる場合（勝った走 #FFF9E8・僅差 #F2F7FC・休養 #F1F1F0）でも4.69以上。 */
+.race20 .cd.tf{color:#1F6B3A}
+.race20 .cd.dt{color:#A05A12}
 /* 通過順は常に4マス（足りない手前は「-」の空マス。race.js の cornersHtml）。
    13px×4 ＋ マスの間隔2px×3 ＝ 58px で固定し、4角と右隣の上がり3Fを縦に揃える */
 .race20 .vrun .l2 .cor{flex:none;width:58px;justify-content:flex-end}

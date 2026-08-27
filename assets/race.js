@@ -2071,6 +2071,17 @@ function runBandClass(p) {
   return Math.abs(m) <= th ? ' pb-close' : '';
 }
 
+// 戦績欄の条件（芝2000重 など）を、芝とダートで色分けする（2026-08-27）。
+// 白地での読みやすさ（4.5以上が要る）を測って色を決めた。
+//   芝   #1F6B3A … 6.52（色の変数 --turf #2f8f4e は4.07で足りない）
+//   ダート #A05A12 … 5.30（--dirt #D97A00 は3.12で足りない）
+// 行の地の色が変わる場合（勝った走・僅差・休養）でも 4.69 以上を保つ。
+function condHtml(p) {
+  const cls = String(p.surface || '').startsWith('ダ') ? 'dt' : 'tf';
+  return `<span class="cd ${cls}">${escapeHtml(surfShort(p.surface))}`
+    + `${escapeHtml(p.distance || '')}${escapeHtml(goingShort(p.condition))}</span>`;
+}
+
 function surfShort(s) {
   return String(s || '').startsWith('ダ') ? 'ダ' : (s || '');
 }
@@ -2116,7 +2127,7 @@ function runWakuText(p) {
 // 評価そのものは馬名ポップアップの全戦績の表（popupRunsTable）に残っている。
 // データ側の ai_grade / ai_miss は生成も配信も続けており、消したのは戦績欄の表示だけ。
 function runLine3(p, label) {
-  const cond = `${escapeHtml(surfShort(p.surface))}${escapeHtml(p.distance || '')}${escapeHtml(goingShort(p.condition))}`;
+  const cond = condHtml(p);
   const bw = p.body_weight != null ? String(p.body_weight) : '—';
   const kg = p.weight != null ? escapeHtml(String(p.weight)) : '—';
   const rankCls = { 1: 'f1', 2: 'f2', 3: 'f3' }[p.last3f_rank] || '';
@@ -2128,7 +2139,7 @@ function runLine3(p, label) {
   const noteTitle = notes && p.note_text ? ` title="${escapeHtml(p.note_text)}"` : '';
   return `<div class="vrun${runBandClass(p)}"><span class="vtab">${escapeHtml(label)}</span><div class="vrb">
     <div class="l1">${shutubaFinBox(p.finish)}${levelBadge(p)}<span class="dt">${shutubaMd(p.date)}</span><span class="tk">${escapeHtml(p.track || '')}</span>${classBadge(p.grade, p.race_name)}${runNameSpan(p.race_name)}</div>
-    <div class="l2"><span class="cd">${cond}</span>${rankSpan(p.time ?? '—', p.time_grade || '', timeTitle, 'tm')}${cornersHtml(p.corners)}${rankSpan(p.last_3f ?? '—', rankCls, agTitle)}<span class="jk">${escapeHtml(p.jockey ?? '—')}</span><span class="kg">${kg}</span><span class="bw">${bw}</span></div>
+    <div class="l2">${cond}${rankSpan(p.time ?? '—', p.time_grade || '', timeTitle, 'tm')}${cornersHtml(p.corners)}${rankSpan(p.last_3f ?? '—', rankCls, agTitle)}<span class="jk">${escapeHtml(p.jockey ?? '—')}</span><span class="kg">${kg}</span><span class="bw">${bw}</span></div>
     <div class="l3"${noteTitle}>${scenarioHtml(p.scenario)}<span class="wn">${escapeHtml(p.winner || '')}</span><span class="mg">(${marginText(p)})</span>${notes}<span class="nmg">${runWakuText(p)}<span class="nm hd">${escapeHtml(p.runners ?? '—')}頭</span><span class="nm pp">${escapeHtml(p.popularity ?? '—')}人</span></span></div>
   </div></div>`;
 }
@@ -2540,7 +2551,7 @@ function npRunName(raceName) {
 
 // 過去走1走（横6行・12項目）。札の runLine3（横3行）を柱の幅154pxに組み替えたもの
 function npRun(p) {
-  const cond = `${surfShort(p.surface)}${escapeHtml(p.distance || '')}${goingShort(p.condition)}`;
+  const cond = condHtml(p);
   const bw = p.body_weight != null ? String(p.body_weight) : '—';
   const kg = p.weight != null ? escapeHtml(String(p.weight)) : '—';
   const rankCls = { 1: 'f1', 2: 'f2', 3: 'f3' }[p.last3f_rank] || '';
@@ -2555,7 +2566,7 @@ function npRun(p) {
   return `<div class="nprun${runBandClass(p)}">
     <div class="r1">${shutubaFinBox(p.finish)}${levelBadge(p)}<span class="dt">${shutubaMd(p.date)}</span><span class="tk">${escapeHtml(p.track || '')}</span>${classBadge(p.grade, p.race_name)}</div>
     <div class="r2"${noteTitle}>${npRunName(p.race_name)}${notes}</div>
-    <div class="r3"><span class="cd">${cond}</span><span class="nm hd">${escapeHtml(p.runners ?? '—')}頭</span>${runWakuText(p)}<span class="nm pp">${escapeHtml(p.popularity ?? '—')}人</span></div>
+    <div class="r3">${cond}<span class="nm hd">${escapeHtml(p.runners ?? '—')}頭</span>${runWakuText(p)}<span class="nm pp">${escapeHtml(p.popularity ?? '—')}人</span></div>
     <div class="r4">${rankSpan(p.time ?? '—', p.time_grade || '', timeTitle, 'tm')}${cornersHtml(p.corners)}${rankSpan(p.last_3f ?? '—', rankCls, agTitle)}</div>
     <div class="r5"><span class="jk">${escapeHtml(p.jockey ?? '—')}</span><span class="kg">${kg}</span><span class="bw">${bw}</span></div>
     <div class="r6">${scenarioHtml(p.scenario)}<span class="mg">(${marginText(p)})</span><span class="wn">${escapeHtml(p.winner || '')}</span></div>
