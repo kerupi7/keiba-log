@@ -1479,8 +1479,8 @@ function renderHeader20(site) {
 function renderMitate20(site) {
   const p = site.prediction;
   const bp = renderBigPay(p.bigpay);
-  const mb = renderMemberLevel(p);
-  return (renderUpset20(p.upset, bp) || bp) + mb;
+  // メンバーレベルは 2026-08-27 に出馬表の帯（renderShutuba20）へ移した
+  return renderUpset20(p.upset, bp) || bp;
 }
 
 // 今回のレースのメンバーレベル（handoff_2026-08-19_member-level.md 決定#3/#4・v2.1）。
@@ -1491,18 +1491,23 @@ function renderMitate20(site) {
 // 過去5走の Lv 列（.lv・そのレースが終わってみて濃かったか）とは**別の物差し**なので、
 // 「メンバー」とラベルを付け、色も別に用意する（.mlv）。
 // 新馬・2歳戦・段の基準が無いレースは publish がキーごと出さないので、ここでは何も描かない。
-function renderMemberLevel(p) {
+// 2026-08-27: 荒れ度の下から**出馬表の帯（.secthead）の中**へ移した。
+// レース全体の話ではなく「この18頭がどういう顔ぶれか」なので、馬が並ぶ表の見出しに置く。
+// 帯の中は横1行しか使えないため、入れ替えたものが2つある。
+//   ・帯の「馬番順」を落とした。出馬表は3つの見え方すべてが馬番で並んでいて
+//     （race.js の 2321 / 2591 / 2599 行）、並べ替える操作も無い＝レースによって変わらない
+//   ・「（同じクラス・年齢の中）」は title の吹き出しへ。中身は消していない
+// 「全N頭」は残した（頭数はレースごとに変わる）。
+function memberLevelBand(p) {
   if (!p || !p.member_grade) return '';
   const t = 'メンバーレベル ' + p.member_grade
     + '（出走' + (p.member_horses || 0) + '頭の直近3走を、その走のクラスの中での順位に'
     + '直して平均。同じクラス・同じ年齢条件の中での相対）';
-  return `
-    <div class="mlv" title="${escapeHtml(t)}">
+  return `<span class="mlv" title="${escapeHtml(t)}">
       <span class="lb">メンバー</span>
       <span class="gr g-${p.member_grade.toLowerCase()}">${escapeHtml(p.member_grade)}</span>
-      <span class="nt">出走馬が走ってきたレースの濃さ（同じクラス・年齢の中）</span>
-    </div>
-  `;
+      <span class="nt">走ってきたレースの濃さ</span>
+    </span>`;
 }
 
 // ===== 97-spec: 出馬表（馬柱）=====
@@ -2601,7 +2606,7 @@ function renderShutuba20(site) {
 
   // .shctl は空でも残す。トッピングの操作パネルが setupTopping からここへ差し込まれる
   return `
-    <div class="secthead">出馬表<span class="cnt">全${site.race.field_size}頭・馬番順</span></div>
+    <div class="secthead">出馬表${memberLevelBand(site.prediction)}<span class="cnt">全${site.race.field_size}頭</span></div>
     <div class="shctl"></div>
     ${mmBar()}
     <div class="shlist off">${cards}</div>

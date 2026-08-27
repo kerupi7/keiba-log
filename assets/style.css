@@ -650,21 +650,20 @@ details.fold.om-fold>summary .cnt{color:#fff;opacity:.85;font-size:11px}
      過去5走のレベル(.lv)      … 金/赤/青/灰の**淡い塗り**
      AI評価(.sim-grade)        … 緑〜赤の**濃い塗り＋白文字**
      メンバーレベル(.mlv .gr)  … 紫の**枠線＋同色の文字・地は白** ← 新設 */
-.race20 .mlv{display:flex;align-items:center;gap:8px;margin-top:10px;padding-top:9px;
-  border-top:1px solid var(--rule)}
-/* ラベルとバッジは折り返さない。説明文だけが2行になる（幅の狭い端末で「メンバ／ー」と
-   割れていたため 2026-08-19 に flex:none と nowrap を追加） */
-.race20 .mlv .lb{flex:none;white-space:nowrap;font-size:12px;font-weight:700;
-  color:var(--sub);letter-spacing:.02em}
-.race20 .mlv .gr{display:inline-block;flex:none;min-width:22px;padding:1px 5px;border-radius:3px;
-  background:#fff;border:1.5px solid currentColor;font-size:13px;font-weight:800;
-  line-height:1.45;text-align:center}
-.race20 .mlv .gr.g-s{color:#5B2A87}
-.race20 .mlv .gr.g-a{color:#8156B0}
-.race20 .mlv .gr.g-b{color:#A07FBE}
-.race20 .mlv .gr.g-c{color:#7E7589}
-.race20 .mlv .gr.g-d{color:#9A93A4}
-.race20 .mlv .nt{font-size:10.5px;color:var(--cap);line-height:1.5}
+/* メンバーレベル。2026-08-27 に出馬表の帯（.secthead・紺地）の中へ移した。
+   移す前は白地に紫の濃淡で「3つ目の記号体系」だと分かるようにしていたが、紺地では
+   紫の濃淡が読めない。帯の中は**白の枠線＋白文字で一律**にして、段の違いは文字
+   （S/A/B/C/D）だけで示す。すぐ左に「メンバー」と書いてあるので、馬の評価バッジ
+   （緑〜赤の塗り）や過去5走のLv（淡い塗り）と取り違える余地は無い。
+   全部を1行に収めるため、帯からは「馬番順」を落としてある（理由は race.js 側）。 */
+.race20 .secthead .mlv{display:inline-flex;align-items:center;gap:6px;margin-left:4px}
+.race20 .secthead .mlv .lb{flex:none;white-space:nowrap;font-size:11px;font-weight:400;
+  letter-spacing:.02em;opacity:.9}
+.race20 .secthead .mlv .gr{display:inline-block;flex:none;min-width:20px;padding:0 5px;
+  border-radius:3px;background:none;border:1.5px solid #fff;color:#fff;
+  font-size:12px;font-weight:800;line-height:1.5;text-align:center}
+.race20 .secthead .mlv .nt{flex:none;white-space:nowrap;font-size:10.5px;font-weight:400;
+  opacity:.85;line-height:1.5}
 .race20 .up2fold{margin-top:12px;border-top:1px solid var(--rule);padding-top:8px}
 .race20 .up2fold summary{font-size:11px;color:var(--link);cursor:pointer;list-style:none}
 .race20 .up2fold summary::-webkit-details-marker{display:none}
