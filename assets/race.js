@@ -2325,7 +2325,7 @@ function mmRow(h) {
       <span class="mm-c">${umaBox(h.number, h.gate, 'sm')}<span class="nm"><span class="t">${escapeHtml(h.name)}</span></span>
         <span class="tot">（取消）</span><span class="od">—</span></span></div>`;
   }
-  return `<div class="mm-row${h.ability_mark ? ' pred' : ''}" data-n="${h.number}">${mmCell(h)}
+  return `<div class="mm-row${markStateCls(h)}" data-n="${h.number}">${mmCell(h)}
     <span class="mm-ai">${markBadge20(h) || '<span class="none">—</span>'}</span>
     <span class="mm-c">${umaBox(h.number, h.gate, 'sm')}<button type="button" class="nm" data-pop="${h.number}"><span class="t">${escapeHtml(h.name)}</span><i class="apop">▸</i></button>
       <span class="tot">${fmtNum(dispScore(h), 1)}<i class="grade ${gradeClass(dispGrade(h))}">${gradeDisp(dispGrade(h))}</i></span>
@@ -2496,6 +2496,15 @@ function setupMyMarks(site) {
 }
 
 // 106-spec §3: 1頭1枚の札
+// 消し・印・無印の3つを地の色で分ける（2026-08-27・155-spec 案2）。
+// 札（.acard）・新聞の柱（.npcol）・印を付けるモードの行（.mm-row）で同じ関数を使う。
+// 公開済み215レース2,979頭の内訳は 印あり1,075頭・無印1,866頭・消し38頭。
+// 消しは全体の1.3%しかないので、目立たせるのではなく沈める側に倒している。
+function markStateCls(h) {
+  if (h.keshi) return ' keshi';
+  return h.ability_mark ? ' pred' : '';
+}
+
 function shutubaCard(h) {
   if (h.scratched) {
     return `<article class="acard scratched" data-h="${h.number}">
@@ -2506,7 +2515,7 @@ function shutubaCard(h) {
   const kg = h.weight_carried != null ? String(h.weight_carried).replace(/\.0$/, '') : '—';
   const bw = bwDisplay(h);
   const rot = h.rotation ? `<span class="rot">${escapeHtml(h.rotation)}</span>` : '';
-  return `<article class="acard${h.ability_mark ? ' pred' : ''}" data-h="${h.number}">
+  return `<article class="acard${markStateCls(h)}" data-h="${h.number}">
     ${spineHtml(h)}
     <div class="abody">
       <div class="ahead">
@@ -2597,7 +2606,7 @@ function npCol(h) {
   // 柱の頭。押せるものが2つある（自分の印のマスと馬名）ので、頭ごとボタンにはできない。
   // 印は1マス（押すと下からシートが上がる）にした。札の7ボタン（mmInline）は
   // 幅154pxだと1つ20pxを切って押しにくいため、一覧と同じシート方式にしている。
-  return `<article class="npcol${h.ability_mark ? ' pred' : ''}" data-h="${h.number}">
+  return `<article class="npcol${markStateCls(h)}" data-h="${h.number}">
     <div class="nphead">
       <div class="l1">${mmCell(h)}${markBadge20(h)}${umaBox(h.number, h.gate, 'sm')}</div>
       <button type="button" class="npname" data-pop="${h.number}"><span class="nm">${escapeHtml(h.name)}</span><i class="apop">▸</i></button>
