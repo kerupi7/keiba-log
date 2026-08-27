@@ -2641,41 +2641,68 @@ body.noscroll{position:fixed;width:100%;overflow:hidden}
 .race20 .outlook .onote b{color:var(--text)}
 .race20 .outlook .ocap{font-size:10px;color:var(--cap);line-height:1.7;margin-top:5px}
 
-/* ── §5 脚質 ── */
-/* 塗りで判定を言わない（2026-08-06）。旧版は全コース平均との差でカードを赤・緑に塗って
-   いたが、そのコースでの複勝率が4脚質のうち上位でも赤くなり、脚質そのものが弱いと読めた。
-   カードは4つとも同じ地色にし、高い・低いは文言と符号だけで言う。89-spec（荒れ度）で
-   「良し悪しを含意させないため緑・赤は使わない」と決めたのと同じ扱いにそろえる。 */
-.race20 .rank2{margin-top:4px}
-.race20 .rk2{padding:8px 9px 9px;border-radius:5px;margin-bottom:5px;
-  background:var(--sub-bg);border:1px solid var(--rule)}
-.race20 .rk2.top{box-shadow:inset 0 0 0 2px #B4B4AC}
-.race20 .rk2 .r1{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}
-.race20 .rk2 .r1 .st{font-size:14px;font-weight:800}
-.race20 .rk2 .r1 .cnt{font-size:10.5px;color:var(--cap)}
-.race20 .rk2 .r1 .jd{font-size:11px;font-weight:700;color:var(--sub)}
-.race20 .rk2 .r1 .jd i{font-style:normal;font-size:9px;color:var(--navy);margin-right:2px}
-.race20 .rk2 .r1 .dt{margin-left:auto;font-size:13px;font-weight:800;
-  color:var(--text);font-variant-numeric:tabular-nums}
-/* 3列×2行の小さな表。行見出しがあるので、何と比べているかが本文なしで分かる */
-.race20 table.rt3{width:100%;border-collapse:collapse;margin:6px 0 2px;
-  font-variant-numeric:tabular-nums;background:none}
-.race20 table.rt3 th,.race20 table.rt3 td{border:0;padding:2px 4px;text-align:right;
-  white-space:nowrap;background:none}
-.race20 table.rt3 thead th{font-size:10px;color:var(--cap);font-weight:700;
-  border-bottom:1px solid rgba(90,90,85,.18)}
-.race20 table.rt3 th.l{text-align:left;font-size:10px;color:var(--cap);font-weight:400;
-  width:5.6em}
-.race20 table.rt3 tr.cur td{font-size:13.5px;font-weight:800;color:var(--text);padding-top:4px}
-.race20 table.rt3 tr.avg td{font-size:11px;color:var(--cap);font-weight:400}
-.race20 .rk2 .hs{display:flex;flex-wrap:wrap;gap:1px 0;margin-top:6px}
-.race20 .rk2 .hs .pz{display:inline-flex;flex-direction:column;align-items:center;width:26px}
-.race20 .rk2 .hs .pz .mk{height:12px;line-height:12px;font-size:11px;font-weight:700}
-.race20 .rk2 .hs .pz.jirai .hn{box-shadow:0 0 0 2px var(--live)}
-.race20 .rk2 .hs .pz.nige .hn{box-shadow:0 0 0 2px var(--orange)}
-.race20 .rk2 .hs .none{font-size:11px;color:var(--cap)}
-/* 判定クラス（p2/p1/z0/m1/m2）は JS 側で付いたまま残すが、色は当てない。
-   文言（.jd）と符号（.dt）が判定を言う。塗り分けを復活させないこと */
+/* ── §5 脚質（2026-08-27・地図に作り替え） ── */
+/* 4枚のカードを縦に積むのをやめ、芝の上に4区画を置く。上のタブの隊列マップと同じ向き。
+   ・区画は**白いカードで塗らない**。塗ると芝が隠れて、コース図ではなく白いカードが
+     4枚並んだ表になる。切れ目は白い破線1本だけ
+   ・芝の上に置く文字は、地の緑(#7FBF7F)に対して4.5以上にする
+       #06421F=5.35 / #7A1F14=4.75 / 等級チップの白文字は 6.5以上（下の g-* 参照）
+   ・等級の色は白文字が4.5以上になる濃さ。#2f8f4e(4.07)・#B5654A(4.26)では足りなかった
+   旧版の「塗りで判定を言わない」（2026-08-06）はカードの地色の話で、
+   ここでは等級チップ1つに色を集約している。区画の地は4つとも芝のまま。 */
+.race20 .lmap{margin-top:4px;border:1px solid var(--rule);border-radius:8px;overflow:hidden}
+.race20 .lmap .lhd{display:flex;align-items:center;gap:6px;padding:7px 10px;
+  background:var(--sub-bg);border-bottom:1px solid var(--rule);font-size:10.5px;color:var(--cap)}
+.race20 .lmap .lhd .s{margin-left:auto}
+.race20 .lfield{position:relative;padding:0 0 6px;
+  background:linear-gradient(180deg,#DCEBF7 0%,#DCEBF7 13%,#93CB93 13%,#7FBF7F 100%)}
+.race20 .lrail{height:5px;margin-bottom:7px;
+  background:repeating-linear-gradient(90deg,#fff 0 7px,#cfd8d0 7px 12px);
+  border-top:1px solid #b8c6bc;border-bottom:1px solid #b8c6bc}
+.race20 .lzones{display:flex;padding:0 6px 4px;gap:3px}
+.race20 .lz{flex:1;text-align:center;min-width:0}
+.race20 .lz+.lz{border-left:1px dashed rgba(255,255,255,.55)}
+.race20 .lz .lb{display:inline-flex;align-items:baseline;gap:4px;padding:2px 8px;
+  border-radius:999px;background:var(--lgc,#4E5862);color:#fff;font-size:10.5px;font-weight:700}
+.race20 .lz .lb .c{font-size:9px;opacity:.85;font-weight:400}
+.race20 .lends{display:flex;justify-content:space-between;padding:3px 10px 0;
+  font-size:9.5px;color:#2c4d33;font-weight:700}
+.race20 .lft{font-size:10px;color:var(--cap);padding:7px 10px 9px;line-height:1.7;
+  border-top:1px solid var(--rule)}
+.race20 .lft b{color:var(--text)}
+
+/* 等級＋このコースの複勝率 */
+.race20 .lgv{margin-top:4px}
+.race20 .lgv .g{display:inline-flex;align-items:center;justify-content:center;
+  width:26px;height:26px;border-radius:6px;background:var(--lgc,#4E5862);color:#fff;
+  font-size:15px;font-weight:800;line-height:1;border:1.5px solid rgba(255,255,255,.85)}
+.race20 .lgv .p{display:block;font-size:9.5px;font-weight:700;color:#1B3D22;margin-top:2px}
+/* 等級を持たない過去の公開分だけが使う、差の表示 */
+.race20 .lgd{margin-top:3px;font-size:14px;font-weight:800;line-height:1.2;color:#1B3D22}
+.race20 .lgd small{font-size:9.5px;font-weight:700}
+.race20 .lgd.up{color:#06421F}
+.race20 .lgd.dn{color:#7A1F14}
+
+/* 等級の色（白文字とのコントラスト：S 7.91 / A 6.52 / B 7.0 / C 6.60 / D 7.19） */
+.race20 .lz.g-S{--lgc:#0B5E2E}
+.race20 .lz.g-A{--lgc:#1F6B3A}
+.race20 .lz.g-B{--lgc:#4E5862}
+.race20 .lz.g-C{--lgc:#8E4A36}
+.race20 .lz.g-D{--lgc:#A32B1F}
+/* 等級が無い過去分は判定クラス（p2〜m2）が来る。札は灰色1色にして色で語らない */
+.race20 .lz.g-p2,.race20 .lz.g-p1,.race20 .lz.g-z0,
+.race20 .lz.g-m1,.race20 .lz.g-m2{--lgc:#4E5862}
+
+.race20 .lz .hs{display:flex;flex-wrap:wrap;gap:3px;justify-content:center;
+  margin-top:5px;min-height:26px}
+.race20 .lz .hs .pz{display:inline-flex;flex-direction:column;align-items:center}
+.race20 .lz .hs .pz .mk{height:12px;line-height:12px;font-size:10px;font-weight:700;color:#12331a}
+.race20 .lz .hs .pz.jirai .hn{box-shadow:0 0 0 2px var(--live)}
+.race20 .lz .hs .pz.nige .hn{box-shadow:0 0 0 2px var(--orange)}
+@media(max-width:420px){
+  .race20 .lz .lb{padding:2px 6px;font-size:10px}
+  .race20 .lgv .g{width:24px;height:24px;font-size:14px}
+}
 
 /* ── §7 逃げ候補・先行圧（メーター） ── */
 .race20 .mt{margin-top:5px}

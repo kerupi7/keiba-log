@@ -3425,43 +3425,59 @@ const LEG_WORD = {
   p1: ['▲', '全コース平均よりやや高い'], p2: ['▲', '全コース平均より高い'],
 };
 
+// 脚質マップ（2026-08-27・案3＋案B）。4枚のカードを縦に積むのをやめ、
+// 芝の地面の上に4区画を置く「地図」にした。上のタブの隊列マップと同じ向き（左が前）。
+//
+// 区画は**白いカードで塗らない**。塗ると芝が隠れて、コース図ではなく白いカードが
+// 4枚並んだ表になる。区画の切れ目は白い破線1本だけ。芝の上に置く文字は
+// 地の緑（#7FBF7F）に対して4.5以上の濃さにする（CSS側のコメントに実測値）。
+//
+// 真ん中の数字は「差（pt）」をやめて**等級＋このコースの複勝率**にした。
+// ptは差の単位で読み手が持っている単位ではなく、しかも脚質をまたぐと意味が変わる
+// （先行の+3ptは上位、追込の+3ptは真ん中）。等級は脚質ごとの境目で切ってあるので、
+// 逃げのSと追込のSが同じ「上位2割」を指す。境目の正本は
+// shared/keiba/leg_bias_baseline.json の grade_bands。
+//
+// 等級を持たない過去のレース（grade が無い）は、これまでどおり差を出す。
 function renderLeg20(site) {
   const p = site.prediction;
   const disp = (p.display || {}).leg;
   if (!disp || !disp.length || !p.leg_bias) return '';
-  const byStyle = {};
-  p.leg_bias.forEach((lb) => { byStyle[lb.style] = lb; });
   const runners = site.horses.filter((h) => !h.scratched);
   const nige = scenarioMainNigeSet(p);
-  const best = Math.max(...disp.map((d) => d.delta));
-  const cards = disp.map((d) => {
-    const lb = byStyle[d.style] || {};
+  const course = `${site.race.track}${site.race.surface}${site.race.distance}`;
+  const zones = disp.map((d) => {
     const key = PACE_STYLE_KEY[d.style];
     const hs = runners.filter((h) => h.running_style === key);
-    const chips = hs.map((h) => paceHorsePiece(h, nige.has(h.number))).join('')
-      || '<span class="none">—</span>';
-    const cells = [['win_rate', d.baseline.win_rate], ['rentai_rate', d.baseline.rentai_rate],
-                   ['fukusho_rate', d.baseline.fukusho_rate]];
-    // 「このコース」の数字には色を付けない。高い・低いは判定の文言1か所だけで言う
-    const cur = cells.map(([k]) => {
-      const v = parseFloat(String(lb[k] || '').replace('%', ''));
-      return `<td>${isNaN(v) ? '—' : v.toFixed(1) + '%'}</td>`;
-    }).join('');
-    const avg = cells.map(([, b]) => `<td>${b.toFixed(1)}%</td>`).join('');
-    const [ar, word] = LEG_WORD[d.cls] || LEG_WORD.z0;
-    return `<div class="rk2 ${d.cls}${d.delta === best ? ' top' : ''}">
-      <div class="r1"><span class="st">${escapeHtml(d.style)}</span>
-        <span class="cnt">${hs.length}頭</span>
-        <span class="jd"><i>${ar}</i>${escapeHtml(word)}</span>
-        <span class="dt">${d.delta > 0 ? '+' : ''}${d.delta.toFixed(1)}pt</span></div>
-      <table class="rt3"><thead><tr><th class="l"></th>
-        <th>勝率</th><th>連対</th><th>複勝</th></tr></thead>
-        <tbody><tr class="cur"><th class="l">このコース</th>${cur}</tr>
-          <tr class="avg"><th class="l">全コース平均</th>${avg}</tr></tbody></table>
+    const chips = hs.map((h) => paceHorsePiece(h, nige.has(h.number))).join('');
+    // 等級があれば等級＋複勝率、無ければ従来どおり差を出す（過去の公開分の縮退）
+    const val = d.grade
+      ? `<div class="lgv"><span class="g g-${escapeHtml(d.grade)}">${escapeHtml(d.grade)}</span>`
+        + `<span class="p">複勝 ${d.fukusho_rate}%</span></div>`
+      : `<div class="lgd ${d.delta > 0.5 ? 'up' : d.delta < -0.5 ? 'dn' : ''}">`
+        + `${d.delta > 0.5 ? '▲' : d.delta < -0.5 ? '▼' : '＝'}`
+        + `${d.delta > 0 ? '+' : ''}${d.delta.toFixed(1)}<small>%</small></div>`;
+    return `<div class="lz g-${escapeHtml(d.grade || d.cls)}">
+      <span class="lb">${escapeHtml(d.style)}<span class="c">${hs.length}</span></span>
+      ${val}
       <div class="hs">${chips}</div>
     </div>`;
   }).join('');
-  return `<div class="subh">脚質</div><div class="rank2">${cards}</div>`;
+  const graded = disp.some((d) => d.grade);
+  return `<div class="subh">脚質</div>
+    <div class="lmap">
+      <div class="lhd">${escapeHtml(course)} の過去成績<span class="s">${
+        graded ? '全国のコースの中での順位' : '全コース平均との差'}</span></div>
+      <div class="lfield">
+        <div class="lrail"></div>
+        <div class="lzones">${zones}</div>
+        <div class="lends"><span>◀ 先頭</span><span>後方 ▶</span></div>
+      </div>
+      <div class="lft">${graded
+        ? '<b>S＝この脚質にとって上位2割の走りやすさ</b>（全国のコースを5等分）。D＝下位2割。'
+          + '下の%は、このコースで3着以内に入った割合。'
+        : '<b>3着以内に入る割合</b>が、全コースの平均と比べてどれだけ高いか低いか。'}</div>
+    </div>`;
 }
 
 // §7 逃げ候補・先行圧 ───────────────────────────────────────
