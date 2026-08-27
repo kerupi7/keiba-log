@@ -1332,19 +1332,34 @@ function renderUpset20(upset) {
     + `<span class="pv">${conf.rate}<small>%</small></span></span>`
     : `<span class="up"><span class="nm">${escapeHtml(upset.label_name)}</span></span>`;
 
+  // 一言（4番人気以下が…）と3クラスの内訳は、帯を押して開く札の中へ入れた（2026-08-27）。
+  // 帯の下に裸で置くと、左端が帯と9pxずれ、下の罫線で上下どちらの塊からも切れて浮いていた。
+  // 札の開け閉めは馬名の札（#pop-N）と同じ仕組みをそのまま使う（[data-pop] → #pop-*）。
+  // 見出しは行のタップで差し替わる（setupUpset20）。最初は見立てクラスのもの
+  const tendCaption = `<div class="pcap pcap-tend">「${escapeHtml(sel.name)}」で決まったレースでは</div>`;
   return {
-    // 帯の中に置く分（renderShutuba20 が差し込む）
-    band: rate,
-    // 帯のすぐ下に置く分
-    below: `
-      <div class="upline">
-        <span class="cd">${escapeHtml(sel.card)}</span>
-      </div>
-      <details class="up2fold">
-        <summary>3つの形の内訳と、「<span class="sname">${escapeHtml(sel.name)}</span>」で決まったレースの顔ぶれ</summary>
-        <div class="ucrows">${rows}</div>
-        ${tables}
-      </details>`,
+    // 帯の中に置く分（renderShutuba20 が差し込む）。押すと札が開く
+    band: `<button type="button" class="up${low ? ' low' : ''}" data-pop="upset">`
+      + `<span class="nm">${escapeHtml(upset.label_name)}</span>`
+      + (conf ? `<span class="pv">${conf.rate}<small>%</small></span>` : '')
+      + `<i class="apop">▸</i></button>`,
+    // 札の中身。renderShutuba20 が他の札と一緒に並べる
+    popup: `
+      <div class="popup" id="pop-upset">
+        <div class="phead">
+          <span class="pname k-${escapeHtml(sel.key)}">${escapeHtml(upset.label_name)}</span>
+          <span class="pmeta">${escapeHtml(sel.card)}</span>
+          <button type="button" class="pclose" data-close>閉じる</button>
+        </div>
+        <div class="pbody">
+          ${conf ? `<div class="upconf">この予想がその通りになったのは、同じ判断をした過去
+            <b>${conf.n}レース</b> 中 <b>${conf.ok}レース</b>（<b>${conf.rate}%</b>）</div>` : ''}
+          <div class="pcap">3つの形の内訳</div>
+          <div class="ucrows">${rows}</div>
+          ${tendCaption}
+          ${tables}
+        </div>
+      </div>`,
   };
 }
 
@@ -1407,9 +1422,9 @@ function renderBigPay(bigpay) {
   `;
 }
 
-// 荒れ度の行をタップすると折りたたみの傾向表が差し替わる。見立て(.hit)は動かさない
-// （89-spec §3.1）。旧デザインではカードのタップだったが、案2では行そのものが押せる
-// （110-spec §1-7・操作ヒントの1行を消したのでここで機能を保つ）。
+// 札の中で荒れ度の行をタップすると、その下の傾向表が差し替わる。
+// 見立て(.hit)は動かさない（89-spec §3.1）。2026-08-27 に折りたたみから札へ移したので、
+// 見出しの差し替え先が .up2fold .sname から .pcap になった。
 function setupUpset20() {
   const root = document.querySelector('.race20');
   if (!root) return;
@@ -1425,11 +1440,9 @@ function setupUpset20() {
     root.querySelectorAll('[data-upsettend]').forEach((t) => {
       t.classList.toggle('show', t.dataset.upsettend === key);
     });
-    // 折りたたみの見出しも一緒に変える。色や枠だけでなく必ず文字でどの形か分かるように
-    const nm = root.querySelector('.up2fold .sname');
-    if (nm) nm.textContent = btn.querySelector('.nm').textContent;
-    const fold = root.querySelector('.up2fold');
-    if (fold) fold.open = true;
+    // 表の見出しも一緒に変える。色や枠だけでなく必ず文字でどの形か分かるように
+    const cap = root.querySelector('#pop-upset .pcap-tend');
+    if (cap) cap.textContent = `「${btn.querySelector('.nm').textContent}」で決まったレースでは`;
   });
 }
 
@@ -2598,12 +2611,12 @@ function renderShutuba20(site) {
   const live = all.filter((h) => !h.scratched);
 
   const cards = [...all].sort((a, b) => a.number - b.number).map(shutubaCard).join('');
-  const popups = live.map((h) => `<div class="popup" id="pop-${h.number}">${popupBody(h)}</div>`).join('');
+  const popups = live.map((h) => `<div class="popup" id="pop-${h.number}">${popupBody(h)}</div>`).join('')
+    + (up ? up.popup : '');
 
   // .shctl は空でも残す。トッピングの操作パネルが setupTopping からここへ差し込まれる
   return `
     <div class="secthead">出馬表${memberLevelBand(site.prediction)}${up ? up.band : ''}</div>
-    ${up ? up.below : ''}
     <div class="shctl"></div>
     ${mmBar()}
     <div class="shlist off">${cards}</div>

@@ -605,6 +605,7 @@ details.fold.om-fold>summary .cnt{color:#fff;opacity:.85;font-size:11px}
    クラス（タップで動く）。2つは別物なので見た目も分ける。
    クラス名は .ucrow（.marks .mrow が別物として既にあるので名前を分けている） */
 .race20 .ucrows{margin-top:2px}
+.race20 #pop-upset .ucrow{padding-left:0}
 .race20 .ucrow{display:flex;align-items:center;gap:9px;width:100%;padding:5px 0 5px 8px;
   background:none;border:0;font:inherit;color:inherit;cursor:pointer;text-align:left;
   -webkit-appearance:none;appearance:none}
@@ -660,15 +661,28 @@ details.fold.om-fold>summary .cnt{color:#fff;opacity:.85;font-size:11px}
 .race20 .secthead .mlv .gr.g-d{background:#3C5670;color:#FFFFFF}
 
 /* 荒れ度を帯の右端へ（132-spec 案A）。「的中」の2文字は付けない（ユーザー決定）。
-   一言（4番人気以下が…）は帯に入れると375pxで余り8pxしか残らず、320pxでは切れる。
-   .upline として帯のすぐ下に出す。 */
+   押すと札（#pop-upset）が開く。一言と3クラスの内訳はその中。
+   帯の下に裸で置いた版（.upline）は 2026-08-27 に廃止した。左端が帯の文字と9pxずれ、
+   下の罫線で上下どちらの塊からも切れて、1行だけ浮いて見えたため。
+   ▸ の印と data-pop の仕組みは馬名の札とまったく同じものを使う。 */
 .race20 .secthead .up{display:inline-flex;align-items:baseline;gap:6px;margin-left:auto;
-  white-space:nowrap;flex:none}
+  white-space:nowrap;flex:none;background:none;border:0;padding:0;
+  color:inherit;font:inherit;cursor:pointer;-webkit-appearance:none;appearance:none}
+.race20 .secthead .up:focus-visible{outline:2px solid #fff;outline-offset:2px;border-radius:3px}
 .race20 .secthead .up .nm{font-size:13.5px;font-weight:700}
 .race20 .secthead .up .pv{font-size:15px;font-weight:700}
 .race20 .secthead .up .pv small{font-size:10px;margin-left:1px}
 .race20 .secthead .up.low .pv{opacity:.72}
-.race20 .upline{padding:7px 2px 0;font-size:11.5px;color:var(--sub);line-height:1.5}
+.race20 .secthead .up .apop{font-style:normal;font-size:10px;opacity:.7;margin-left:1px}
+
+/* 荒れ度の札（#pop-upset）。見出しの色は見立てクラスの文字色 */
+.race20 .popup .pname.k-kata{color:var(--up-kata-t)}
+.race20 .popup .pname.k-naka{color:var(--up-naka-t)}
+.race20 .popup .pname.k-dai{color:var(--up-dai-t)}
+.race20 #pop-upset .upconf{font-size:12px;color:var(--sub);line-height:1.7;margin-bottom:12px}
+.race20 #pop-upset .upconf b{color:var(--text);font-weight:700}
+.race20 #pop-upset .pcap{font-size:11px;color:var(--cap);margin:14px 0 4px}
+.race20 #pop-upset .pcap:first-child{margin-top:0}
 .race20 .up2fold{margin-top:12px;border-top:1px solid var(--rule);padding-top:8px}
 .race20 .up2fold summary{font-size:11px;color:var(--link);cursor:pointer;list-style:none}
 .race20 .up2fold summary::-webkit-details-marker{display:none}
