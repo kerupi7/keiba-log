@@ -3600,12 +3600,13 @@ function renderLeg20(site) {
   // 元の値（front_pressure / display.front）は公開JSONに残っているので、
   // 出し直したくなったら拾える。
 
+  // 2026-08-27: 下にあった「◀ 先頭 / 後方 ▶」を削除した。逃げ→先行→差し→追込の並び自体が
+  // 前から後ろの順で、区画の名前がそれを示しているため。
   return `<div class="subh">脚質と展開</div>
     <div class="lmap">
       <div class="lfield">
         <div class="lrail"></div>
         <div class="lzones">${zones}</div>
-        <div class="lends"><span>◀ 先頭</span><span>後方 ▶</span></div>
       </div>
     </div>${renderPaceRows20(site)}`;
 }
@@ -3771,6 +3772,8 @@ function renderOverview20(site) {
     const scopeHtml = p.inner_outer_bias.scope
       ? `<span class="scope">${escapeHtml(p.inner_outer_bias.scope)}の成績</span>` : '';
     // 2026-08-27: 見出しの色をコースの形・脚質と展開にそろえた（.biaslabel → .subh）。
+    // 同日、下にあった「◀ 内 / 外 ▶」も削除した。1枠から8枠へ並んでいる絵で、
+    // 発馬機の形そのものが内から外の順を示しているため。
     // 「外枠有利」の言葉は同日に削除。8つの枠の等級（S〜D）が同じことを示していて、
     // 内外の傾きは上のコースの形の「枠の有利」のシーソーにも出ているため。
     sections.push(`
@@ -3778,7 +3781,6 @@ function renderOverview20(site) {
       <div class="gmap">
         <div class="gbar"></div>
         <div class="gzones">${cellsHtml}</div>
-        <div class="gends"><span>◀ 内</span><span>外 ▶</span></div>
       </div>
     `);
   }
