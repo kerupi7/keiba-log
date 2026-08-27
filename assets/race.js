@@ -2701,21 +2701,40 @@ function setupShutuba20(site) {
   bg.className = 'pbg';
   root.appendChild(bg);
   let openPopup = null;
+  // 2026-08-27: 戻り先を1つだけ覚える。コースのポップアップから馬番を押して
+  // 馬の戦績へ移ったとき、閉じたらコースへ戻す（開き直す手間をなくす）。
+  // 覚えるのは1段だけ。馬 → コース → 馬 と行き来しても積み上がらない。
+  let backTo = null;
+  const openPopupById = (id) => {
+    const p = root.querySelector(`#pop-${id}`);
+    if (!p) return;
+    p.classList.add('on');
+    bg.classList.add('on');
+    openPopup = p;
+    lockPageScroll();
+    // コースは最初に開いた時だけ data/courses/*.json を読む（タブだった頃と同じ仕組み）
+    if (id === 'course' && window.CourseTab) window.CourseTab.onShow(site);
+  };
   const closePopup = () => {
     if (!openPopup) return;             // 開いていない時の Esc・[data-close] では何もしない
     openPopup.classList.remove('on');
     openPopup = null;
+    const back = backTo;
+    backTo = null;
+    if (back) { openPopupById(back); return; }   // 戻り先があるなら閉じずに入れ替える
     bg.classList.remove('on');
     unlockPageScroll();                 // 111-spec §3.8
   };
   root.addEventListener('click', (e) => {
     const nb = e.target.closest('[data-pop]');
     if (nb) {
+      // コースの中から馬番を押したときだけ、戻り先としてコースを覚える
+      const from = openPopup && openPopup.id === 'pop-course' && nb.dataset.pop !== 'course'
+        ? 'course' : null;
+      backTo = null;                    // 閉じる処理に戻り先を拾わせない
       closePopup();
-      const p = root.querySelector(`#pop-${nb.dataset.pop}`);
-      if (p) { p.classList.add('on'); bg.classList.add('on'); openPopup = p; lockPageScroll(); }
-      // コースは最初に開いた時だけ data/courses/*.json を読む（タブだった頃と同じ仕組み）
-      if (nb.dataset.pop === 'course' && window.CourseTab) window.CourseTab.onShow(site);
+      backTo = from;
+      openPopupById(nb.dataset.pop);
       return;
     }
     if (e.target.closest('[data-close]')) closePopup();
