@@ -2592,6 +2592,51 @@ body.noscroll{position:fixed;width:100%;overflow:hidden}
 .race20 .geochips .gc.gb5 .k{color:#B05A5A}
 
 /* ── §4 馬場（クッション値） ── */
+/* .outlook（この馬場だと、こうなりやすい）の指定は 2026-08-27 に削除。1本バー .cbbar へ移した */
+/* コースの形と馬場をまとめた1本バー（144-spec / 2026-08-27）。
+   内めの枠・外めの枠・高低差の灰色チップと、青枠の中の「今日の馬場」「勝ちタイム」を
+   同じ作りの横1マスにそろえて、2つに見えていたのを1つにする。 */
+.race20 .cbbar{display:flex;margin-top:7px;border:1px solid var(--rule);
+  border-radius:8px;overflow:hidden;background:#fff}
+.race20 .cbbar .cell{flex:1 1 0;min-width:0;padding:7px 4px 8px;text-align:center}
+.race20 .cbbar .cell.wide{flex:1.7 1 0}
+.race20 .cbbar .cell+.cell{border-left:1px solid var(--rule)}
+.race20 .cbbar .cell .k{display:block;font-size:9.5px;color:var(--cap);line-height:1.3}
+.race20 .cbbar .cell .v{display:block;font-size:16px;font-weight:800;line-height:1.25;
+  margin-top:2px;font-variant-numeric:tabular-nums;color:var(--text);white-space:nowrap}
+.race20 .cbbar .cell .v small{font-size:10px;font-weight:700;margin-left:1px}
+/* そえの一言。「速い脚が出る」「起伏が大きい」の6文字が1行に収まる大きさ。
+   守りたいのは1文字だけ次の行に落ちないことで、ここが崩れたら文言のほうを短くする */
+.race20 .cbbar .cell .w{display:block;font-size:9px;color:var(--cap);line-height:1.4;
+  margin-top:1px;letter-spacing:-.02em}
+.race20 .cbbar .cell.p1 .v,.race20 .cbbar .cell.p1 .w{color:#0F6A34}
+.race20 .cbbar .cell.m1 .v,.race20 .cbbar .cell.m1 .w{color:#A8632B}
+/* 今日の馬場。色の意味は青＝軟らかい/湿っている、橙＝硬い/乾いている */
+.race20 .cbbar .cell .lv{display:inline-block;margin-top:3px;font-size:12.5px;font-weight:800;
+  border-radius:3px;padding:2px 6px;line-height:1.3}
+.race20 .cbbar .cell .lv.m2{background:#2E6DA4;color:#fff}
+.race20 .cbbar .cell .lv.m1{background:#DCE8F3;color:#2E6DA4}
+.race20 .cbbar .cell .lv.z0{background:#EDEDEA;color:#5C5C5C}
+.race20 .cbbar .cell .lv.p1{background:#F6E4D6;color:#A8632B}
+.race20 .cbbar .cell .lv.p2{background:#B26B00;color:#fff}
+/* シーソー。左が内・右が外で、有利な側へ傾く */
+.race20 .cbbar .ss{display:block;width:60px;margin:5px auto 0}
+.race20 .cbbar .ss .bar{position:relative;display:block;height:7px;border-radius:4px;
+  background:#F1F1F0;overflow:hidden}
+.race20 .cbbar .ss .bar i{position:absolute;top:0;bottom:0;display:block}
+.race20 .cbbar .ss .bar i.L{left:0;background:#B05656}
+.race20 .cbbar .ss .bar i.R{right:0;background:#1F6B3A}
+.race20 .cbbar .ss .bar u{position:absolute;left:50%;top:-1px;bottom:-1px;width:1px;
+  background:#fff;box-shadow:0 0 0 1px rgba(0,0,0,.18)}
+.race20 .cbbar .ss .ends{display:flex;justify-content:space-between;margin-top:1px}
+.race20 .cbbar .ss .ends b{font-size:9px;font-weight:400;color:var(--cap);line-height:1.2}
+.race20 .cbbar .cell .w.t2{color:#B05656;font-weight:700}
+.race20 .cbbar .cell .w.t1{color:#B05656}
+.race20 .cbbar .cell .w.t0{color:var(--sub)}
+.race20 .cbbar .cell .w.u1{color:#1F6B3A}
+.race20 .cbbar .cell .w.u2{color:#1F6B3A;font-weight:700}
+/* 見出し行を外したので、先頭の行は上の線を消す */
+.race20 .babadetail.v2 .l3.top{margin-top:0;border-top:none;padding-top:0}
 .race20 .babadetail.v2{padding:10px 11px 11px}
 .race20 .babadetail.v2 .l1{display:flex;flex-wrap:wrap;align-items:center;gap:7px;
   margin-bottom:2px}
@@ -2637,23 +2682,9 @@ body.noscroll{position:fixed;width:100%;overflow:hidden}
 .race20 .babadetail.v2 .striplegend{margin-top:8px;border-top:1px solid #dbe6f0;padding-top:6px}
 
 /* ── §4.3 この馬場だと、こうなりやすい ── */
-.race20 .outlook{margin-top:12px;border-top:1px solid #dbe6f0;padding-top:9px}
-.race20 .outlook .oh{font-size:10.5px;font-weight:800;letter-spacing:.05em;color:var(--cap);
   margin-bottom:6px}
-.race20 .outlook .ots{display:flex;gap:6px}
-.race20 .outlook .ot{flex:1;min-width:0;background:#fff;border-radius:4px;padding:7px 8px 8px;
   box-shadow:inset 0 0 0 1px #dbe6f0}
-.race20 .outlook .ot .ttl{display:block;font-size:10px;color:var(--cap);font-weight:700}
-.race20 .outlook .ot .v{display:block;font-size:17px;font-weight:800;line-height:1.25;
   margin-top:2px;font-variant-numeric:tabular-nums}
-.race20 .outlook .ot .w{display:block;font-size:11.5px;font-weight:700}
-.race20 .outlook .ot .n{display:block;font-size:9.5px;color:var(--cap);margin-top:3px;line-height:1.5}
-.race20 .outlook .ot.p1 .v,.race20 .outlook .ot.p1 .w{color:#0F6A34}
-.race20 .outlook .ot.m1 .v,.race20 .outlook .ot.m1 .w{color:#A8632B}
-.race20 .outlook .ot.z0 .v{color:var(--text)} .race20 .outlook .ot.z0 .w{color:var(--sub)}
-.race20 .outlook .onote{font-size:10.5px;color:var(--cap);line-height:1.7;margin-top:7px}
-.race20 .outlook .onote b{color:var(--text)}
-.race20 .outlook .ocap{font-size:10px;color:var(--cap);line-height:1.7;margin-top:5px}
 
 /* ── §5 脚質（2026-08-27・地図に作り替え） ── */
 /* 4枚のカードを縦に積むのをやめ、芝の上に4区画を置く。上のタブの隊列マップと同じ向き。

@@ -3314,41 +3314,111 @@ function renderCourseShape20(site) {
       if (g.to_c1_m) chips.push(['スタート〜1角', `約${Math.round(g.to_c1_m)}m`, '']);
     }
   }
-  // 内外の枠は**値で色を決める**。内が緑・外が赤という固定はしない
-  if (iv != null && ov != null) {
-    chips.push(['内めの枠', iv.toFixed(2), 'g' + ratioClass(iv)]);
-    chips.push(['外めの枠', ov.toFixed(2), 'g' + ratioClass(ov)]);
-  }
-  // 「1周」と「回り」は 2026-08-27 に削除した。1周の距離はこのレースの走る距離と
+  // 内めの枠・外めの枠・高低差は 2026-08-27 に下の1本バー（renderCourseBabaBar20）へ移した。
+  // 「1周」と「回り」は同日に削除した。1周の距離はこのレースの走る距離と
   // 別物で判断に使わず、回りは上のコース図の矢印が既に示している。
-  if (!g.straight_only) {
-    chips.push(['高低差', `${g.rise_m}m・${g.flat_label}`, '']);
-  }
   const chipHtml = chips.map(([k, v, cls]) =>
     `<span class="gc ${cls}"><span class="k">${escapeHtml(k)}</span>${escapeHtml(v)}</span>`).join('');
   return `<div class="subh">コースの形</div>${pace}`
     + courseShapeSvg(g, innerTone, outerTone)
     + courseDistBar(g)
-    + `<div class="geochips">${chipHtml}</div>`;
+    + (chipHtml ? `<div class="geochips">${chipHtml}</div>` : '')
+    + renderCourseBabaBar20(site, g, iv, ov);
 }
 
-// §4 馬場 ────────────────────────────────────────────────
-function babaOutlookTile(title, v, kind) {
+// コースの形と馬場を1本にまとめた横バー（144-spec / 2026-08-27）。
+//
+// それまでは灰色のチップ3つ（内めの枠・外めの枠・高低差）と、
+// 左に紺の線が入った青い枠（今日の馬場・勝ちタイム）に分かれていた。
+// 地の色も枠の作りも違うので2つのかたまりに見えていた。
+//
+// 内めの枠0.80・外めの枠1.21という倍率をそのまま出すのはやめ、
+// 内と外のどちらへ傾いているかをシーソーで出す（144-spec 案B）。
+// すぐ下の発馬機マップが1枠D〜8枠Sの等級を出しているので、
+// ここで同じ等級を出すと同じ話が3か所に並ぶため、言い方を変えてある。
+
+// 傾きの段。外めの枠 − 内めの枠 の差で切る。
+// ±0.05 は「差と呼べない幅」の線、±0.15 は「はっきり差がある」の線。
+// どちらも数字で置いた目安で、守りたいのは**言葉と傾きが食い違わないこと**。
+// 公開済み208レースで数えると、この切り方なら食い違いは0件。
+// 全レースを5等分する切り方（-0.092/+0.058/+0.145/+0.203）だと段ごとの数はそろうが、
+// 差が+0.10あるのに「互角」と出るなど55件が食い違ったので捨てた。
+// 段ごとの数のそろいと食い違いが衝突したら、**そろいのほうを捨てる**。
+const TILT_CUTS = [-0.15, -0.05, 0.05, 0.15];
+const TILT_WORDS = ['内が有利', 'やや内', '互角', 'やや外', '外が有利'];
+const TILT_CLS = ['t2', 't1', 't0', 'u1', 'u2'];
+// シーソーの傾きは差そのものを写す。0.30以上は端で止める（それ以上傾けても読めない）
+const TILT_FULL = 0.30;
+
+function renderCourseBabaBar20(site, g, iv, ov) {
+  const cells = [];
+
+  // (1) 枠の有利
+  if (iv != null && ov != null) {
+    const d = ov - iv;
+    let k = 0;
+    for (let i = 0; i < TILT_CUTS.length; i += 1) if (d >= TILT_CUTS[i]) k = i + 1;
+    const pull = Math.max(-1, Math.min(1, d / TILT_FULL)) * 40;   // 中心からの寄り（%）
+    const L = (50 - pull).toFixed(1);
+    cells.push(`<div class="cell"><span class="k">枠の有利</span>`
+      + `<span class="ss"><span class="bar"><i class="L" style="width:${L}%"></i>`
+      + `<i class="R" style="width:${(100 - Number(L)).toFixed(1)}%"></i><u></u></span>`
+      + `<span class="ends"><b>内</b><b>外</b></span></span>`
+      + `<span class="w ${TILT_CLS[k]}">${TILT_WORDS[k]}</span></div>`);
+  }
+
+  // (2) 高低差
+  if (!g.straight_only && g.rise_m != null) {
+    cells.push(`<div class="cell"><span class="k">高低差</span>`
+      + `<span class="v">${g.rise_m}<small>m</small></span>`
+      + `<span class="w">${escapeHtml(g.flat_label || '')}</span></div>`);
+  }
+
+  // (3) 今日の馬場 ＋ (4)(5) 実測の見込み。中身は renderBaba20 と同じ元データ。
+  const p = site.prediction;
+  const bd = p.baba_detail || {};
+  const disp = (p.display || {}).baba;
+  const isTurf = String(site.race.surface || '').startsWith('芝');
+  const src = (isTurf ? bd.cushion_detail : bd.moisture_detail) || {};
+  const lv = src.level;
+  const norm = isTurf ? src.normal : null;
+  const delta = isTurf ? (norm || {}).delta : src.normal_delta;
+  if (lv && delta != null) {
+    const sign = `${delta > 0 ? '+' : ''}${Number(delta).toFixed(1)}`;
+    cells.push(`<div class="cell wide"><span class="k">今日の馬場</span>`
+      + `<span class="lv ${lv.cls || 'z0'}">${escapeHtml(lv.label)}</span>`
+      + `<span class="w">${escapeHtml(site.race.track)}の平年より ${sign}</span></div>`);
+  }
+  if (disp) {
+    cells.push(babaOutlookCell('勝ちタイム', disp.time, 'time'));
+    if (disp.last3f !== undefined) cells.push(babaOutlookCell('上がり3F', disp.last3f, 'l3'));
+  }
+
+  if (cells.length < 2) return '';
+  return `<div class="cbbar">${cells.join('')}</div>`;
+}
+
+// 1本バーの中の「勝ちタイム」「上がり3F」
+function babaOutlookCell(title, v, kind) {
   let val = '—', word = '—', cls = 'z0';
   if (v != null) {
-    if (Math.abs(v) < 0.05) { val = '±0.0秒'; word = kind === 'time' ? '基準どおり' : 'いつも通り'; }
+    if (Math.abs(v) < 0.05) { val = '±0.0'; word = kind === 'time' ? '基準どおり' : 'いつも通り'; }
     else {
-      val = `${Math.abs(v).toFixed(2)}秒`;
+      val = Math.abs(v).toFixed(2);
       const fast = v < 0;
       word = kind === 'time' ? (fast ? '速い' : '時計がかかる')
                              : (fast ? '速い脚が出る' : '上がりがかかる');
       cls = fast ? 'p1' : 'm1';
     }
   }
-  return `<div class="ot ${cls}"><span class="ttl">${escapeHtml(title)}</span>`
-    + `<span class="v">${escapeHtml(val)}</span><span class="w">${escapeHtml(word)}</span></div>`;
+  return `<div class="cell ${cls}"><span class="k">${escapeHtml(title)}</span>`
+    + `<span class="v">${escapeHtml(val)}<small>秒</small></span>`
+    + `<span class="w">${escapeHtml(word)}</span></div>`;
 }
 
+// §4 馬場 ────────────────────────────────────────────────
+// babaOutlookTile は 2026-08-27 に削除した。「この馬場だと、こうなりやすい」の枠ごと
+// 1本バーへ移り、呼ぶ所が無くなったため。文言は babaOutlookCell が引き継いでいる。
 function renderBaba20(site) {
   const p = site.prediction;
   const bd = p.baba_detail;
@@ -3359,31 +3429,12 @@ function renderBaba20(site) {
   // 芝はクッション値、ダートは含水率が軸（§4 / §7.4）
   const lv = isTurf ? cu.level : mo.level;
   const norm = isTurf ? cu.normal : mo.normal;
-  if (!lv || !norm) return '';           // 旧データ → 呼び出し側が旧ブロックへ落とす
+  if (!lv || !norm) return null;         // 旧データ → 呼び出し側が旧ブロックへ落とす
 
-  const delta = isTurf ? norm.delta : mo.normal_delta;
-  const sign = `${delta > 0 ? '+' : ''}${Number(delta).toFixed(1)}`;
-  // 時計の一言（2026-08-27 に作り直し）。
-  //
-  // それまでは「平年より乾いていれば かかりやすい」とコードで決め打ちしていたが、
-  // 実測の表（baba_effect.json）と合っていなかった。ダートの含水率で言うと、
-  // 「乾くほど時計がかかる」が成り立つのは平年より3.0以上乾いた帯だけで、
-  // 1.0〜3.0 乾いた帯は 2,094レースの平均で +0.018秒＝ほぼ差が無い。
-  // そこを「かかりやすい」と言い切っていた。
-  //
-  // いまは下の「勝ちタイム」タイルと**同じ実測値**（display.baba.time）から文を作る。
-  // 上下が同じ数字を見るので、反対を向くことがなくなる。
-  // ±0.03秒（100mを6秒で走る計算で50cmぶん）に収まる帯は「ほぼ変わらない」にする。
-  // これは数字で置いた目安で、守りたいのは「差と呼べない幅を差と言わないこと」。
-  // 帯の刻みが変わって0.03が真ん中でなくなったら、この数字のほうを引き直す。
-  const secs = disp && typeof disp.time === 'number' ? disp.time : null;
-  const tail = secs === null ? ''
-    : (secs > 0.03 ? '時計はかかりやすい'
-      : secs < -0.03 ? '時計は速くなりやすい'
-        : '時計はほぼ変わらない');
-  const head = `<div class="l1"><span class="lv ${lv.cls || 'z0'}">${escapeHtml(lv.label)}</span>`
-    + `<span class="hd">${escapeHtml(site.race.track)}の平年より <b>${sign}</b></span>`
-    + (tail ? `<span class="tl">${escapeHtml(tail)}</span>` : '') + '</div>';
+  // 「やや乾いている・平年より-1.0・時計は速くなりやすい」の1行は
+  // 2026-08-27 に上の1本バー（renderCourseBabaBar20）へ移した。
+  // 「時計は速くなりやすい」は勝ちタイムのマスと同じ display.baba.time から作っていた
+  // 同じ話なので、移すときに落とした。
 
   const rows = [];
   // 仮柵（芝だけ・2026-08-26 追加）。クッション値・含水率と同じ「今日の芝の状態」なので
@@ -3429,17 +3480,15 @@ function renderBaba20(site) {
     </div>`;
   }
 
-  // §4.3 実測の見込み。対照を超えた材料だけ載っている
-  let outlook = '';
-  if (disp) {
-    let tiles = babaOutlookTile('勝ちタイム', disp.time, 'time');
-    if (disp.last3f !== undefined) tiles += babaOutlookTile('勝ち馬の上がり3F', disp.last3f, 'l3');
-    outlook = `<div class="outlook"><div class="oh">この馬場だと、こうなりやすい</div>`
-      + `<div class="ots">${tiles}</div></div>`;
-  }
-  return `<div class="babadetail v2">${head}`
-    + (rows.length ? `<div class="l3">${rows.join('')}</div>` : '')
-    + scale + outlook + '</div>';
+  // 「この馬場だと、こうなりやすい」の勝ちタイム・上がり3Fは
+  // 2026-08-27 に上の1本バーへ移した。
+
+  // 出すものが残らない（ダートは仮柵もクッション値も目盛りも無い）なら枠ごと出さない。
+  // null は旧データの合図なので、ここは空文字を返す（呼び出し側が旧ブロックへ落ちない）。
+  if (!rows.length && !scale) return '';
+  return `<div class="babadetail v2">`
+    + (rows.length ? `<div class="l3 top">${rows.join('')}</div>` : '')
+    + scale + '</div>';
 }
 
 // §5 脚質 ────────────────────────────────────────────────
@@ -3632,8 +3681,8 @@ function renderOverview20(site) {
   // 108-spec §4/T5: display と新しい baba_detail がそろえば新ブロック。
   // 無ければ下の旧ブロックへ落ちる（93-spec §7 と同じ縮退）。
   const baba108 = renderBaba20(site);
-  if (baba108) {
-    sections.push(baba108);
+  if (baba108 !== null) {
+    if (baba108) sections.push(baba108);
   } else if (p.baba_detail) {
     const bd = p.baba_detail;
     const favs = bd.favorites || [];
