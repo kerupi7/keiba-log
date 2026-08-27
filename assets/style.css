@@ -594,53 +594,37 @@ details.fold.om-fold>summary .cnt{color:#fff;opacity:.85;font-size:11px}
    ように見える（大荒れ19% / 中荒れ77% でラベルは大荒れ、が起きるため）。
    色は同じ色相の濃淡だけ＝緑(--hit)・赤(--live)は使わない。良し悪しを含意させないため
    （見送り推奨と読まれないこと。89-spec §3.1）。濃い=人気に集中、薄い=ばらける。 */
-.race20 .up2{margin-top:11px;font-variant-numeric:tabular-nums}
-.race20 .up2 .hd{display:flex;align-items:flex-start;gap:12px}
-.race20 .up2 .hd .l{min-width:0;flex:1}
-.race20 .up2 .hd .lb{font-size:17px;font-weight:700;letter-spacing:.02em;line-height:1.25}
-.race20 .up2 .hd .tx{font-size:11.5px;color:var(--sub);line-height:1.5;margin-top:2px}
-.race20 .up2 .hd .r{flex:none;text-align:right}
-.race20 .up2 .hd .pv{font-size:32px;font-weight:700;line-height:.95;letter-spacing:-.02em}
-.race20 .up2 .hd .pv small{font-size:14px;margin-left:1px}
-.race20 .up2 .hd .pl{font-size:10px;color:var(--cap);margin-top:3px;line-height:1.35}
-/* 見出しの色は見立てクラスの文字色。右の%はクラスの色を使わない（クラスの話ではなく
-   「当たった率」の話なので、色でクラスと結びつけない） */
-.race20 .up2 .hd.k-kata .lb{color:var(--up-kata-t)}
-.race20 .up2 .hd.k-naka .lb{color:var(--up-naka-t)}
-.race20 .up2 .hd.k-dai .lb{color:var(--up-dai-t)}
-
-/* 45%未満（.low）は右の%を灰にして、当てにならない帯だと色で分かるようにする。
+/* .up2 の外枠と見出しは 2026-08-27（案A）に廃止。荒れ度は出馬表の帯（.secthead .up）へ、
+   一言は .upline へ、3クラスの内訳は折りたたみ（.up2fold）へ分かれた。
+   45%未満で率を薄くする扱いだけ .secthead .up.low に引き継いでいる。
    45は数字で置いた目安で、守りたいのは「五分より下かどうかが一目で分かること」。
-   帯の刻みが増えて45が真ん中でなくなったら、この数字のほうを捨てて引き直す。
-   帯（.cbar）と母数の1行（.csaid）は 2026-08-27 に廃止。
-   どちらも右の%と同じことを二度言っていた */
-.race20 .up2.low .hd .pv{color:var(--cap)}
+   帯の刻みが増えて45が真ん中でなくなったら、この数字のほうを捨てて引き直す。 */
 
 /* 折りたたみの中の3クラス。並びは 堅い→中荒れ→大荒れ で固定（確率順に並べ替えない）。
    .hit=モデルの見立て（不動・左の紺アクセント） / .viewing=いま傾向表に出している
    クラス（タップで動く）。2つは別物なので見た目も分ける。
    クラス名は .ucrow（.marks .mrow が別物として既にあるので名前を分けている） */
-.race20 .up2 .ucrows{margin-top:2px}
-.race20 .up2 .ucrow{display:flex;align-items:center;gap:9px;width:100%;padding:5px 0 5px 8px;
+.race20 .ucrows{margin-top:2px}
+.race20 .ucrow{display:flex;align-items:center;gap:9px;width:100%;padding:5px 0 5px 8px;
   background:none;border:0;font:inherit;color:inherit;cursor:pointer;text-align:left;
   -webkit-appearance:none;appearance:none}
-.race20 .up2 .ucrow+.ucrow{border-top:1px solid var(--rule)}
-.race20 .up2 .ucrow:focus-visible{outline:2px solid var(--cta);outline-offset:-2px}
-.race20 .up2 .ucrow.hit{box-shadow:inset 3px 0 0 var(--navy)}
-.race20 .up2 .ucrow.viewing .nm{text-decoration:underline;text-underline-offset:3px}
-.race20 .up2 .ucrow .nm{width:44px;flex:none;font-size:12px;font-weight:700}
-.race20 .up2 .ucrow .track{flex:1;height:10px;border-radius:3px;background:var(--sub-bg2);
+.race20 .ucrow+.ucrow{border-top:1px solid var(--rule)}
+.race20 .ucrow:focus-visible{outline:2px solid var(--cta);outline-offset:-2px}
+.race20 .ucrow.hit{box-shadow:inset 3px 0 0 var(--navy)}
+.race20 .ucrow.viewing .nm{text-decoration:underline;text-underline-offset:3px}
+.race20 .ucrow .nm{width:44px;flex:none;font-size:12px;font-weight:700}
+.race20 .ucrow .track{flex:1;height:10px;border-radius:3px;background:var(--sub-bg2);
   display:block}
-.race20 .up2 .ucrow .fill{display:block;height:100%;border-radius:3px;min-width:3px}
-.race20 .up2 .ucrow .pv{width:46px;flex:none;text-align:right;font-size:15px;font-weight:700}
-.race20 .up2 .ucrow .pv small{font-size:10px;margin-left:1px}
+.race20 .ucrow .fill{display:block;height:100%;border-radius:3px;min-width:3px}
+.race20 .ucrow .pv{width:46px;flex:none;text-align:right;font-size:15px;font-weight:700}
+.race20 .ucrow .pv small{font-size:10px;margin-left:1px}
 /* 文字は文字色（--up-*-t）、帯の塗りは既存の --up-*（89-spec のまま） */
-.race20 .up2 .ucrow.c0 .nm,.race20 .up2 .ucrow.c0 .pv{color:var(--up-kata-t)}
-.race20 .up2 .ucrow.c1 .nm,.race20 .up2 .ucrow.c1 .pv{color:var(--up-naka-t)}
-.race20 .up2 .ucrow.c2 .nm,.race20 .up2 .ucrow.c2 .pv{color:var(--up-dai-t)}
-.race20 .up2 .ucrow.c0 .fill{background:var(--up-kata)}
-.race20 .up2 .ucrow.c1 .fill{background:var(--up-naka)}
-.race20 .up2 .ucrow.c2 .fill{background:var(--up-dai)}
+.race20 .ucrow.c0 .nm,.race20 .ucrow.c0 .pv{color:var(--up-kata-t)}
+.race20 .ucrow.c1 .nm,.race20 .ucrow.c1 .pv{color:var(--up-naka-t)}
+.race20 .ucrow.c2 .nm,.race20 .ucrow.c2 .pv{color:var(--up-dai-t)}
+.race20 .ucrow.c0 .fill{background:var(--up-kata)}
+.race20 .ucrow.c1 .fill{background:var(--up-naka)}
+.race20 .ucrow.c2 .fill{background:var(--up-dai)}
 
 /* 折りたたみ。中身は「その決着になったレースの1着・2着の顔ぶれ」であって
    ラベルの的中率ではない（89-spec §2.6）。見出しの言い回しでそこを外さないこと */
@@ -659,11 +643,32 @@ details.fold.om-fold>summary .cnt{color:#fff;opacity:.85;font-size:11px}
 .race20 .secthead .mlv{display:inline-flex;align-items:center;gap:6px;margin-left:4px}
 .race20 .secthead .mlv .lb{flex:none;white-space:nowrap;font-size:11px;font-weight:400;
   letter-spacing:.02em;opacity:.9}
-.race20 .secthead .mlv .gr{display:inline-block;flex:none;min-width:20px;padding:0 5px;
-  border-radius:3px;background:none;border:1.5px solid #fff;color:#fff;
-  font-size:12px;font-weight:800;line-height:1.5;text-align:center}
-.race20 .secthead .mlv .nt{flex:none;white-space:nowrap;font-size:10.5px;font-weight:400;
-  opacity:.85;line-height:1.5}
+/* 段の色（2026-08-27）。白に近いほど濃い顔ぶれ。地の紺との距離がそのまま段の差になる。
+   移す前の紫の濃淡は、紺地では S(#5B2A87) と D(#9A93A4) の差が出なかった。
+   暗い段でもチップの形が消えないよう、全段に薄い枠線を付ける。 */
+/* 枠線は必ず**白**にする。塗りだけで並べると、暗い段は地の紺に沈む
+   （実測のコントラスト比：S 10.92 / A 7.49 / B 4.44 / C 2.47 / D 1.43）。
+   白枠は地に対して10.92あるので、どの段でもチップの形と位置は必ず出る。
+   塗りは段の並びを、枠線は見つけやすさを、それぞれ受け持つ。 */
+.race20 .secthead .mlv .gr{display:inline-block;flex:none;min-width:21px;padding:0 6px;
+  border-radius:3px;border:1.5px solid rgba(255,255,255,.85);
+  font-size:12.5px;font-weight:800;line-height:1.5;text-align:center}
+.race20 .secthead .mlv .gr.g-s{background:#FFFFFF;color:#003E70}
+.race20 .secthead .mlv .gr.g-a{background:#C6D8EA;color:#0E3350}
+.race20 .secthead .mlv .gr.g-b{background:#8FA8C0;color:#0B2A42}
+.race20 .secthead .mlv .gr.g-c{background:#5E7B95;color:#FFFFFF}
+.race20 .secthead .mlv .gr.g-d{background:#3C5670;color:#FFFFFF}
+
+/* 荒れ度を帯の右端へ（132-spec 案A）。「的中」の2文字は付けない（ユーザー決定）。
+   一言（4番人気以下が…）は帯に入れると375pxで余り8pxしか残らず、320pxでは切れる。
+   .upline として帯のすぐ下に出す。 */
+.race20 .secthead .up{display:inline-flex;align-items:baseline;gap:6px;margin-left:auto;
+  white-space:nowrap;flex:none}
+.race20 .secthead .up .nm{font-size:13.5px;font-weight:700}
+.race20 .secthead .up .pv{font-size:15px;font-weight:700}
+.race20 .secthead .up .pv small{font-size:10px;margin-left:1px}
+.race20 .secthead .up.low .pv{opacity:.72}
+.race20 .upline{padding:7px 2px 0;font-size:11.5px;color:var(--sub);line-height:1.5}
 .race20 .up2fold{margin-top:12px;border-top:1px solid var(--rule);padding-top:8px}
 .race20 .up2fold summary{font-size:11px;color:var(--link);cursor:pointer;list-style:none}
 .race20 .up2fold summary::-webkit-details-marker{display:none}
@@ -679,9 +684,9 @@ details.fold.om-fold>summary .cnt{color:#fff;opacity:.85;font-size:11px}
   width:4.5em}
 .race20 .up2tend tr:last-child th,.race20 .up2tend tr:last-child td{border-bottom:none}
 @media(max-width:420px){
-  .race20 .up2 .hd .pv{font-size:27px}
-  .race20 .up2 .ucrow .nm{width:40px}
-  .race20 .up2 .ucrow .pv{width:42px;font-size:14px}
+  .race20 .secthead .up .nm{font-size:12.5px}
+  .race20 .ucrow .nm{width:40px}
+  .race20 .ucrow .pv{width:42px;font-size:14px}
 }
 
 /* 3連単100万超え（132-spec・2026-08-27）。それまでは全レースに同じ大きさで出していた。

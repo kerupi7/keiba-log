@@ -1299,8 +1299,8 @@ function upsetConfidence(upset) {
 //
 // bigpayHtml（3連単100万超え・103-spec）は折りたたみの**上**に入れる（110-spec §2）。
 // 呼び出し元 renderMitate20 が組み立てて渡す。
-function renderUpset20(upset, bigpayHtml) {
-  if (!upset || !Array.isArray(upset.classes) || upset.classes.length !== 3) return '';
+function renderUpset20(upset) {
+  if (!upset || !Array.isArray(upset.classes) || upset.classes.length !== 3) return null;
   const sel = upset.classes.find((c) => c.selected) || upset.classes[0];
   const conf = upsetConfidence(upset);
   // 45%未満は「当てにならない帯」。数字を灰にして、強い予想と見た目で分ける
@@ -1325,33 +1325,27 @@ function renderUpset20(upset, bigpayHtml) {
       </table>`;
   }).join('');
 
-  // 実測が取れないとき（bands が読めない・公開直後で母数ゼロ）は右の数字ごと出さない。
+  // 実測が取れないとき（bands が読めない・公開直後で母数ゼロ）は率ごと出さない。
   // 「当たった率」を出せないのに枠だけ残すと、空欄が数字に見える
-  const right = conf ? `
-      <div class="r">
-        <div class="pv">${conf.rate}<small>%</small></div>
-        <div class="pl">この予想が<br>その通りになった率</div>
-      </div>` : '';
-  // 帯（.cbar）と母数の1行（.csaid）は 2026-08-27 に廃止。
-  // どちらも右の%と同じことを二度言っていた。conf は %の有無の判定にだけ使う
+  const rate = conf ? `<span class="up${low ? ' low' : ''}">`
+    + `<span class="nm">${escapeHtml(upset.label_name)}</span>`
+    + `<span class="pv">${conf.rate}<small>%</small></span></span>`
+    : `<span class="up"><span class="nm">${escapeHtml(upset.label_name)}</span></span>`;
 
-  return `
-    <div class="up2${low ? ' low' : ''}">
-      <div class="hd k-${escapeHtml(sel.key)}">
-        <div class="l">
-          <div class="lb">${escapeHtml(upset.label_name)}</div>
-          <div class="tx">${escapeHtml(sel.card)}</div>
-        </div>
-        ${right}
+  return {
+    // 帯の中に置く分（renderShutuba20 が差し込む）
+    band: rate,
+    // 帯のすぐ下に置く分
+    below: `
+      <div class="upline">
+        <span class="cd">${escapeHtml(sel.card)}</span>
       </div>
-      ${bigpayHtml || ''}
       <details class="up2fold">
         <summary>3つの形の内訳と、「<span class="sname">${escapeHtml(sel.name)}</span>」で決まったレースの顔ぶれ</summary>
         <div class="ucrows">${rows}</div>
         ${tables}
-      </details>
-    </div>
-  `;
+      </details>`,
+  };
 }
 
 // 3連単100万超え（103-sanrentan-1m-spec.md §3）。bigpay が無ければ何も出さない（§3.5 の縮退）。
@@ -1476,11 +1470,12 @@ function renderHeader20(site) {
 // 【2026-08-19・118-spec】置き場所を「買い目」タブの先頭から**「出馬表」タブの先頭**へ移した。
 // 荒れ度は買い方ではなくレース全体の傾向で、出馬表を見ている最中に必要な情報だったため。
 // 買い目タブからは消してある（同じものを2か所に出さない）。関数の中身は1文字も変えていない。
+// 出馬表タブの先頭に出すのは3連単100万超えだけになった（2026-08-27・案A）。
+// 荒れ度とメンバーレベルは下の出馬表の帯（renderShutuba20）の中へ移してある。
+// 100万超えを帯に入れなかったのは、4%未満の73%のレースでは何も出さない＝
+// 出たり消えたりする物なので、常にある帯の形を変えてしまうため。
 function renderMitate20(site) {
-  const p = site.prediction;
-  const bp = renderBigPay(p.bigpay);
-  // メンバーレベルは 2026-08-27 に出馬表の帯（renderShutuba20）へ移した
-  return renderUpset20(p.upset, bp) || bp;
+  return renderBigPay(site.prediction.bigpay);
 }
 
 // 今回のレースのメンバーレベル（handoff_2026-08-19_member-level.md 決定#3/#4・v2.1）。
@@ -1503,10 +1498,10 @@ function memberLevelBand(p) {
   const t = 'メンバーレベル ' + p.member_grade
     + '（出走' + (p.member_horses || 0) + '頭の直近3走を、その走のクラスの中での順位に'
     + '直して平均。同じクラス・同じ年齢条件の中での相対）';
+  // 「走ってきたレースの濃さ」の1行は 2026-08-27 に外した。中身は title の吹き出しに残る
   return `<span class="mlv" title="${escapeHtml(t)}">
       <span class="lb">メンバー</span>
       <span class="gr g-${p.member_grade.toLowerCase()}">${escapeHtml(p.member_grade)}</span>
-      <span class="nt">走ってきたレースの濃さ</span>
     </span>`;
 }
 
@@ -2598,6 +2593,7 @@ function renderPaper(site) {
 }
 
 function renderShutuba20(site) {
+  const up = renderUpset20(site.prediction.upset);
   const all = site.horses;
   const live = all.filter((h) => !h.scratched);
 
@@ -2606,7 +2602,8 @@ function renderShutuba20(site) {
 
   // .shctl は空でも残す。トッピングの操作パネルが setupTopping からここへ差し込まれる
   return `
-    <div class="secthead">出馬表${memberLevelBand(site.prediction)}<span class="cnt">全${site.race.field_size}頭</span></div>
+    <div class="secthead">出馬表${memberLevelBand(site.prediction)}${up ? up.band : ''}</div>
+    ${up ? up.below : ''}
     <div class="shctl"></div>
     ${mmBar()}
     <div class="shlist off">${cards}</div>
