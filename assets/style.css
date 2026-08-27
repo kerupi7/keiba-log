@@ -2960,8 +2960,12 @@ body.noscroll{position:fixed;width:100%;overflow:hidden}
 .race20 .npcol .npcr table.crt th,.race20 .npcol .npcr table.crt td{padding:0 1px}
 /* 過去走1走（横6行・12項目）。高さを固定しないと柱の背がそろわず、
    隣の馬と同じ走を横に見比べられなくなる */
+/* 2026-08-27: 地の色 #fff を足した。それまで指定が無く、柱の地（自分の印の紫・
+   消しの灰・AIの印の青）が過去走の行にも透けていた。勝ちでも僅差でもない走まで
+   色が付いて見えるので、行は白で塗って柱の色を止める。
+   勝ち・僅差・休養の行は下の指定が上書きするので、そちらの色は変わらない。 */
 .race20 .npcol .nprun{height:var(--nph-run);padding:3px 5px;line-height:1.35;
-  border-bottom:1px solid var(--rule);overflow:hidden}
+  border-bottom:1px solid var(--rule);overflow:hidden;background:#fff}
 /* 2026-08-27: 印モードと同じ濃さへ（#FFF9E8 / #F2F7FC から1段濃く）。
    薄い文字を濃くするのも同じ理由（上の .vrun のコメント参照）。 */
 .race20 .npcol .nprun.pb-win{background:#FFF3D0;box-shadow:inset 3px 0 0 #C9A227}
