@@ -32,8 +32,13 @@ function stripBelong(name) {
   return i >= 0 ? name.slice(i + 1) : name;
 }
 
+// 2026-08-27: 馬番を押すと馬名ポップアップ（#pop-N）が開くようにした。
+// 開く仕組みは race.js の [data-pop] の1本だけで、こちらは属性を付けるだけ。
+// 押すと今開いているコースのポップアップは閉じ、馬のポップアップに入れ替わる
+// （同時に2枚は開かない作りをそのまま使う）。
 function badges(hs) {
-  return hs.map((h) => umaBox(h.number, h.gate, 'sm')).join('');
+  return hs.map((h) => `<button type="button" class="hnb" data-pop="${h.number}">`
+    + `${umaBox(h.number, h.gate, 'sm')}</button>`).join('');
 }
 
 // §4.6: 行が引けなかった馬は必ず1行でまとめて出す（黙って消さない）
