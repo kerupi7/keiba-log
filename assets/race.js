@@ -1332,9 +1332,8 @@ function renderUpset20(upset, bigpayHtml) {
         <div class="pv">${conf.rate}<small>%</small></div>
         <div class="pl">この予想が<br>その通りになった率</div>
       </div>` : '';
-  // 帯（.cbar）は 2026-08-27 に廃止。右の%と同じことを二度言っていた
-  const meter = conf ? `
-      <div class="csaid">同じ判断をした過去 <b>${conf.n}レース</b> 中 <b>${conf.ok}レース</b></div>` : '';
+  // 帯（.cbar）と母数の1行（.csaid）は 2026-08-27 に廃止。
+  // どちらも右の%と同じことを二度言っていた。conf は %の有無の判定にだけ使う
 
   return `
     <div class="up2${low ? ' low' : ''}">
@@ -1345,7 +1344,6 @@ function renderUpset20(upset, bigpayHtml) {
         </div>
         ${right}
       </div>
-      ${meter}
       ${bigpayHtml || ''}
       <details class="up2fold">
         <summary>3つの形の内訳と、「<span class="sname">${escapeHtml(sel.name)}</span>」で決まったレースの顔ぶれ</summary>
