@@ -3319,10 +3319,10 @@ function renderCourseShape20(site) {
     chips.push(['内めの枠', iv.toFixed(2), 'g' + ratioClass(iv)]);
     chips.push(['外めの枠', ov.toFixed(2), 'g' + ratioClass(ov)]);
   }
+  // 「1周」と「回り」は 2026-08-27 に削除した。1周の距離はこのレースの走る距離と
+  // 別物で判断に使わず、回りは上のコース図の矢印が既に示している。
   if (!g.straight_only) {
-    chips.push(['1周', `${g.lap_m.toLocaleString(undefined, { minimumFractionDigits: 1 })}m`, '']);
     chips.push(['高低差', `${g.rise_m}m・${g.flat_label}`, '']);
-    chips.push(['回り', g.direction + (g.loop ? `・${g.loop}回り` : ''), 'gdir']);
   }
   const chipHtml = chips.map(([k, v, cls]) =>
     `<span class="gc ${cls}"><span class="k">${escapeHtml(k)}</span>${escapeHtml(v)}</span>`).join('');
@@ -3387,11 +3387,9 @@ function renderBaba20(site) {
       + `<span class="v">${cu.value}</span>`
       + `<span class="t">${escapeHtml(cu.measured_label || '')}</span></div>`);
   }
-  if (mo.goal != null) {
-    rows.push(`<div class="mrow"><span class="k">含水率 ${escapeHtml(mo.surface || '')}</span>`
-      + `<span class="v">G前 ${mo.goal}% ／ 4C ${mo.corner4}%</span>`
-      + `<span class="t">${escapeHtml(mo.measured_label || '')}</span></div>`);
-  }
+  // 含水率の生の値（G前3% ／ 4C 2.2% と測定時刻）は 2026-08-27 に削除した。
+  // 同じ数字を上の1行が「やや乾いている・平年より-1.0」と読み下しており、
+  // 生の%から読み手が判断を足す場面が無かった。
 
   // 目盛り。芝だけ（クッション値の実測はばが要る）
   let scale = '';
