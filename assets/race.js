@@ -3600,14 +3600,55 @@ function renderLeg20(site) {
   // 元の値（front_pressure / display.front）は公開JSONに残っているので、
   // 出し直したくなったら拾える。
 
-  return `<div class="subh">脚質</div>
+  return `<div class="subh">脚質と展開</div>
     <div class="lmap">
       <div class="lfield">
         <div class="lrail"></div>
         <div class="lzones">${zones}</div>
         <div class="lends"><span>◀ 先頭</span><span>後方 ▶</span></div>
       </div>
-    </div>`;
+    </div>${renderPaceRows20(site)}`;
+}
+
+// 展開シナリオを2行に畳んだもの（2026-08-27・151-spec 案A ＋ 152-spec）。
+//
+// それまでは「展開シナリオ」という別ブロックに大きなカードが2枚あった。
+// 1枚に ペース名・通過タイム・確率・前残りの帯・前後の馬 が入っていたが、
+// **2枚のカードに出る馬は公開済み214レース全部で同じ顔ぶれ**だった
+// （並び順まで同じが104レース・並び順だけ違うが110レース）。
+// 馬のチップが1枚159pxのうち99pxを占めていて、そこが丸ごと重複していた。
+// 馬は上の脚質マップが持っているので、ここでは出さない。
+//
+// 「前残り 81% ／ 差し・追込 19%」の帯も落とした（2026-08-27 ユーザー決定）。
+// あれは「勝ち馬が4コーナーを先頭1/3以内で通過する確率」で、
+// scenario_calib.json の実測3,353レースには
+// 「実績に合わせて直しても『毎回前と答える』68.9%を大きくは超えない。
+//  5段の実測も単調ではない。数字を出すなら直した値を使い、断定はしないこと」
+// と書かれている。81%と71%の差10ポイントを判断に使いにくい。
+// 空いたところにはペースの説明（一定ペース 等）を入れて行の両端をそろえた。
+function renderPaceRows20(site) {
+  const p = site.prediction;
+  const grid = p.scenario_grid;
+  if (!grid || !grid.cells || !grid.cells.length) return '';
+  const paceProb = {};
+  grid.cells.forEach((c) => { paceProb[c.code] = c.pace_prob; });
+  const keep = Object.keys(paceProb).sort((a, b) => paceProb[b] - paceProb[a]).slice(0, TOP_PACE_108);
+  if (!keep.length) return '';
+  // 通過タイムはペースごとに違う。main/sub/other が持っているものを符号で引く
+  const pts = {};
+  ['main', 'sub', 'other'].forEach((key) => {
+    const s = (p.scenario || {})[key] || {};
+    if (s.code && s.pass_time && s.pass_time.sec != null && !pts[s.code]) pts[s.code] = s.pass_time;
+  });
+  const rows = keep.map((k, i) => {
+    const pt = pts[k];
+    return `<div class="prow${i === 0 ? ' on' : ''}">`
+      + `<span class="nm">${PACE_LABEL_108[k]}</span>`
+      + `<span class="sb">${PACE_SUB_108[k]}</span>`
+      + (pt ? `<span class="pt">${pt.point_m}m通過 約${pt.sec}秒</span>` : '')
+      + `<span class="pp">${Math.round(paceProb[k] * 100)}<small>%</small></span></div>`;
+  }).join('');
+  return `<div class="pwrap">${rows}</div>`;
 }
 
 // §7 逃げ候補・先行圧 ───────────────────────────────────────
@@ -3615,66 +3656,8 @@ function renderLeg20(site) {
 // 先行圧の言葉とハイペース率は renderLeg20（脚質の見出し）が引き継いでいる。
 
 // §8 展開シナリオ ───────────────────────────────────────────
-function renderScenarioCards20(site) {
-  const p = site.prediction;
-  const grid = p.scenario_grid;
-  const cal = (p.display || {}).scenario;
-  if (!grid || !grid.cells || !grid.cells.length || !cal) return '';
-  const byNumber = {};
-  site.horses.forEach((h) => { byNumber[h.number] = h; });
-  const nige = scenarioMainNigeSet(p);
-  const paceProb = {};
-  grid.cells.forEach((c) => { paceProb[c.code] = c.pace_prob; });
-  // §8.1 ペースは確率の高い上位2つだけ。落としたぶんは出さない
-  const keep = Object.keys(paceProb).sort((a, b) => paceProb[b] - paceProb[a]).slice(0, TOP_PACE_108);
-  // §8.3 前後は実測で較正した値を使う
-  const front = cal.front_by_pace || {};
-  const cellOf = (code, side) => grid.cells.find((c) => c.code === code && c.side === side);
-  const probOf = (code, side) => {
-    const f = front[code] != null ? front[code] : (cellOf(code, '前') || {}).side_prob;
-    return paceProb[code] * (side === '前' ? f : 1 - f);
-  };
-  let topKey = null, topVal = -1;
-  keep.forEach((k) => ['前', '後'].forEach((sd) => {
-    const v = probOf(k, sd);
-    if (v > topVal) { topVal = v; topKey = `${k}|${sd}`; }
-  }));
-  // 通過タイムはペースごとに違う。main/sub/other が持っているものを符号で引く
-  const pts = {};
-  ['main', 'sub', 'other'].forEach((key) => {
-    const s = (p.scenario || {})[key] || {};
-    if (s.code && s.pass_time && s.pass_time.sec != null && !pts[s.code]) pts[s.code] = s.pass_time;
-  });
-
-  const cards = keep.map((k) => {
-    const f = front[k] != null ? front[k] : (cellOf(k, '前') || {}).side_prob;
-    const chips = (side) => {
-      const c = cellOf(k, side) || {};
-      const hs = (c.horses || []).map((x) => byNumber[x.number]).filter((h) => h && !h.scratched);
-      const shown = hs.slice(0, 6).map((h) => paceHorsePiece(h, nige.has(h.number))).join('');
-      return shown + (hs.length > 6 ? `<span class="more">＋${hs.length - 6}</span>` : '');
-    };
-    const pt = pts[k];
-    const on = (sd) => (topKey === `${k}|${sd}` ? ' on' : '');
-    return `<div class="pc${topKey && topKey.startsWith(`${k}|`) ? ' on' : ''}">
-      <div class="pch"><span class="nm">${PACE_LABEL_108[k]}</span>
-        <span class="sb">${PACE_SUB_108[k]}</span>
-        ${pt ? `<span class="pt">${pt.point_m}m通過 約${pt.sec}秒</span>` : ''}
-        <span class="pp">${Math.round(paceProb[k] * 100)}%</span></div>
-      <div class="split"><i class="f" style="width:${(f * 100).toFixed(1)}%">
-          前残り ${Math.round(f * 100)}%</i>
-        <i class="r" style="width:${((1 - f) * 100).toFixed(1)}%">
-          差し・追込 ${Math.round((1 - f) * 100)}%</i></div>
-      <div class="pcb">
-        <div class="side f${on('前')}"><span class="v">${Math.round(probOf(k, '前') * 100)}%</span>
-          <div class="hs">${chips('前')}</div></div>
-        <div class="side r${on('後')}"><span class="v">${Math.round(probOf(k, '後') * 100)}%</span>
-          <div class="hs">${chips('後')}</div></div>
-      </div>
-    </div>`;
-  }).join('');
-  return `<div class="subh">展開シナリオ</div><div class="pcwrap p1">${cards}</div>`;
-}
+// renderScenarioCards20 は 2026-08-27 に削除した。呼ぶ所が無くなったため。
+// 中身の行き先は renderPaceRows20 のコメントを見ること。
 
 function renderOverview20(site) {
   const r = site.race;
@@ -3841,17 +3824,18 @@ function renderOverview20(site) {
   //                               主逃げはマップでオレンジ枠が付いている
   // 旧データ用の表（馬名・分類・先行率）も一緒に落とした。
 
-  // (f) 展開シナリオ。93-pace-scenario-6cell-spec.md §6-0-1: 案22（6マス・主役カード）。
-  // scenario_grid が無い過去公開分（§7「再生成しない」）は旧3ブロック表示のまま併存させる。
-  // 108-spec §8: 上位2ペースの2枚カード（配色P1・前後は実測で較正）。
-  // 較正表が引けない旧データは6マス、6マスも無ければ旧3ブロック。
-  const scn108 = renderScenarioCards20(site);
-  if (scn108) {
-    sections.push(scn108);
-  } else if (p.scenario_grid && p.scenario_grid.cells && p.scenario_grid.cells.length === 6) {
-    sections.push(renderScenarioGrid20(site));
-  } else if (p.scenario) {
-    sections.push(renderScenarioLegacy20(site));
+  // (f) 「展開シナリオ」の独立ブロックは 2026-08-27 に廃止した。
+  // ペース2つの名前・説明・通過タイム・確率は脚質のブロックへ移した（renderPaceRows20）。
+  // 前後の馬と前残りの帯は落とした。理由は renderPaceRows20 のコメントに書いてある。
+  //
+  // 脚質のブロックが出せない旧データ（display.leg が無いぶん）だけ、
+  // 従来どおり6マスか旧3ブロックへ落とす。
+  if (!renderLeg20(site)) {
+    if (p.scenario_grid && p.scenario_grid.cells && p.scenario_grid.cells.length === 6) {
+      sections.push(renderScenarioGrid20(site));
+    } else if (p.scenario) {
+      sections.push(renderScenarioLegacy20(site));
+    }
   }
 
   return `

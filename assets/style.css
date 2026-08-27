@@ -2567,6 +2567,25 @@ body.noscroll{position:fixed;width:100%;overflow:hidden}
 .race20 .geochips .gc.gb5 .k{color:#B05A5A}
 
 /* ── §4 馬場（クッション値） ── */
+/* ペース2行（2026-08-27・151-spec 案A ＋ 152-spec）。脚質マップのすぐ下に置く。
+   「展開シナリオ」という別ブロックの大きなカード2枚をここへ畳んだ。
+   左にペース名と説明、右端に確率を置いて行の両端をそろえる。
+   前残りの帯（前81%／後19%）は落とした。理由は race.js の renderPaceRows20 に書いた。 */
+.race20 .pwrap{margin-top:5px;border:1px solid var(--rule);border-radius:8px;
+  overflow:hidden;background:#fff}
+.race20 .prow{display:flex;align-items:center;gap:7px;padding:7px 10px 8px}
+.race20 .prow+.prow{border-top:1px solid var(--rule)}
+.race20 .prow.on{background:#FAF6F1}
+/* 「スロー」が3文字なので 2.6em では2行に折り返す（実測）。3.4em にして nowrap を付ける */
+.race20 .prow .nm{flex:none;width:3.4em;font-size:13.5px;font-weight:800;white-space:nowrap}
+.race20 .prow .sb{flex:none;font-size:10.5px;color:var(--cap);white-space:nowrap}
+.race20 .prow .pt{flex:none;font-size:9.5px;color:var(--cap);white-space:nowrap}
+.race20 .prow .pp{margin-left:auto;font-size:19px;font-weight:800;line-height:1.15;
+  font-variant-numeric:tabular-nums}
+.race20 .prow .pp small{font-size:10px;margin-left:1px}
+/* 旧「展開シナリオ」（.pcwrap / .pc / .pch / .split / .pcb）の指定は残してある。
+   .split と .side は他でも使われている名前で、まとめて片付ける方が安全なため。 */
+
 /* 脚質の見出しに出していた先行圧（.fps）の指定は 2026-08-27 に削除した。
    同日に入れて同日に外している。理由は race.js の renderLeg20 のコメントに書いた。 */
 /* 旧「逃げ候補・先行圧」（.mt / .mtr / .mtk / .mlb / .fh2）の指定は**残してある**。
