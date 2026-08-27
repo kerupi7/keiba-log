@@ -2240,6 +2240,7 @@ function popupBody(h) {
       <button type="button" class="pclose" data-close>閉じる</button>
     </div>
     <div class="pbody">
+      ${mmInline(h)}
       <div class="pcareer">${careerLine(h)}</div>
       ${markWhyBlock(h)}
       ${itemWhyBlock(h)}
@@ -2651,13 +2652,12 @@ function renderPaper(site) {
 function renderShutuba20(site) {
   const up = renderUpset20(site.prediction.upset);
   const all = site.horses;
-  const live = all.filter((h) => !h.scratched);
 
   const cards = [...all].sort((a, b) => a.number - b.number).map(shutubaCard).join('');
-  const popups = live.map((h) => `<div class="popup" id="pop-${h.number}">${popupBody(h)}</div>`).join('')
-    + (up ? up.popup : '');
-
   // .shctl は空でも残す。トッピングの操作パネルが setupTopping からここへ差し込まれる
+  // 馬名ポップアップは 2026-08-27 にタブの外へ出した（renderPopups20）。
+  // タブは display:none で切り替えるので、出馬表タブの中に置くと展開タブから
+  // 馬番を押しても中身が組み上がらず、幅も高さも0のまま開いていた。
   return `
     <div class="secthead">出馬表${memberLevelBand(site.prediction)}${up ? up.band : ''}</div>
     <div class="shctl"></div>
@@ -2665,8 +2665,15 @@ function renderShutuba20(site) {
     <div class="shlist off">${cards}</div>
     ${renderPaper(site)}
     ${mmList(site)}
-    ${popups}
   `;
+}
+
+// 馬名ポップアップと荒れ度の札。**どのタブからも開くのでタブの外に置く**（2026-08-27）。
+function renderPopups20(site) {
+  const up = renderUpset20(site.prediction.upset);
+  return site.horses.filter((h) => !h.scratched)
+    .map((h) => `<div class="popup" id="pop-${h.number}">${popupBody(h)}</div>`).join('')
+    + (up ? up.popup : '');
 }
 
 function setupShutuba20(site) {
@@ -2862,6 +2869,7 @@ function buildRace20Html(site, oddsAll) {
       ${site.course_entities ? pane('course', window.CourseTab.render(site)) : ''}
       ${pane('kaime', renderBets20(site) + renderOddsMasterSection(site, oddsAll))}
       ${pane('kaiko', renderVerification20(site))}
+      ${renderPopups20(site)}
     </div>
   `;
 }
@@ -2899,10 +2907,14 @@ function paceRate(s) {
   return Number.isNaN(n) ? null : n;
 }
 
+// 2026-08-27: 馬番を押すと馬名ポップアップ（#pop-N）が開くようにした。
+// それまでは名前が出るだけの札で、脚質マップから中身を見る手が無かった。
+// span → button に変えただけで、見た目は変えていない（.pz の指定をそのまま当てる）。
 function paceHorsePiece(h, isMainNige) {
   const cls = `pz${h.bet_mark === '地雷' ? ' jirai' : ''}${isMainNige ? ' nige' : ''}`;
-  return `<span class="${cls}" title="${escapeHtml(h.name)}">${umaBox(h.number, h.gate, 'sm')}`
-    + `<span class="mk ${markNameClass(h.ability_mark)}">${h.ability_mark || ''}</span></span>`;
+  return `<button type="button" class="${cls}" data-pop="${h.number}" title="${escapeHtml(h.name)}">`
+    + `${umaBox(h.number, h.gate, 'sm')}`
+    + `<span class="mk ${markNameClass(h.ability_mark)}">${h.ability_mark || ''}</span></button>`;
 }
 
 function renderPaceMap20(site) {

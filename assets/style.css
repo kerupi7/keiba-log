@@ -2172,6 +2172,10 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
    札は横幅に余裕が無い（1行目の余りは最悪の馬で56px）ので、印の列を横に足さず
    馬体重の行の下に1行敷く。マス→シートではなく**押した印がその場で付く**。
    1タップで済む代わりに、札が1枚38px高くなる（14頭で 4,417px → 4,919px＝+11.4%・実測）。 */
+/* ポップアップの中の自分の印（2026-08-27）。札の中の行と同じ作りを使うが、
+   ポップアップは横幅があるので上下に余白を足して押しやすくする。 */
+.race20 .popup .mm-in{margin:0 0 10px;padding:6px 0 7px}
+.race20 .popup .mm-in button{height:30px}
 .race20 .mm-in{display:flex;align-items:center;gap:3px;margin:0 0 4px;padding:3px 0 4px;
   border-bottom:1px dotted var(--rule)}
 .race20 .mm-in .lb{flex:none;font-size:9.5px;color:var(--cap);font-weight:700;
@@ -2764,7 +2768,10 @@ body.noscroll{position:fixed;width:100%;overflow:hidden}
 
 .race20 .lz .hs{display:flex;flex-wrap:wrap;gap:3px;justify-content:center;
   margin-top:5px;min-height:26px}
-.race20 .lz .hs .pz{display:inline-flex;flex-direction:column;align-items:center}
+/* 2026-08-27: span から button に変えた（押すと馬名ポップアップが開く）。
+   ボタンの既定の枠・地・余白を消して、見た目は元のままにする。 */
+.race20 .lz .hs .pz{display:inline-flex;flex-direction:column;align-items:center;
+  border:0;background:none;padding:0;margin:0;font:inherit;color:inherit;cursor:pointer}
 .race20 .lz .hs .pz .mk{height:12px;line-height:12px;font-size:10px;font-weight:700;color:#12331a}
 /* 地雷（赤枠）と主逃げ候補（オレンジ枠）の枠線は 2026-08-27 に削除した。
    地雷は出馬表のタブに「地雷」の文字で出ている。主逃げ候補は他に出す場所が無くなる。 */
