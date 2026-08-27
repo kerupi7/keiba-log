@@ -1261,6 +1261,21 @@ function setupAkinatorPanel(site, oddsAll, simCtl) {
 // gradeClass/gradeDispは app.js（共通層）に移設（45-spec §2.8: 手動シミュレーターの評価バッジが
 // 既存の評価体系に合わせて参照するため。呼び出しは従来どおりグローバル解決される）。
 
+// 枠順の等級（2026-08-27）。倍率＝その枠の複勝率 ÷ そのコースの全枠平均。
+// 刻みは全国106コース×8枠のうち走数100以上の603件を5等分した値。
+// 脚質は4つの範囲がずれていて刻みを分けたが、枠は8つとも同じ「1頭あたりの複勝率」
+// なので共通の1本で足りる（最小0.30・最大2.00の1つの分布）。
+const GATE_CUTS = [0.889, 0.974, 1.034, 1.106];
+const GATE_GRADES = ['D', 'C', 'B', 'A', 'S'];
+
+function gateGrade(ratio) {
+  if (ratio == null) return null;
+  for (let i = 0; i < GATE_CUTS.length; i += 1) {
+    if (ratio < GATE_CUTS[i]) return GATE_GRADES[i];
+  }
+  return GATE_GRADES[GATE_GRADES.length - 1];
+}
+
 function ratioClass(ratio) {
   if (ratio >= 1.15) return 'b1';
   if (ratio >= 1.05) return 'b2';
@@ -3692,18 +3707,30 @@ function renderOverview20(site) {
     sections.push(renderPaceMap20(site));
   }
 
-  // (d) 内外バイアス
+  // (d) 内外バイアス → 発馬機のマップ（2026-08-27）
+  //
+  // 8つの数字を横に並べるだけだったのを、**発馬機（ゲート）の絵**に置き換えた。
+  // 「枠」という言葉そのものの絵なので、何の並びかを説明なしで示せる。
+  //
+  // 脚質マップ（芝の地面・左が前）とは背景を分けている。脚質は走る向きの話、
+  // 枠順は幅の話で軸が違うのに、同じ緑を敷くと2つの地図が読み分けられないため。
+  //
+  // 数字（0.86 など）は出さない。中身は「その枠の複勝率 ÷ コースの全枠平均」の倍率で、
+  // 単位が無く読み手の単位ではない。等級（S〜D）に置き換えた。刻みは
+  // 全国106コース×8枠のうち走数100以上の603件を5等分して決めてある（GATE_CUTS）。
+  // 脚質と違って枠は8つとも同じ「1頭あたりの複勝率」なので、共通の刻み1本で足りる。
+  //
+  // 馬番は置かない（2026-08-27 ユーザー決定）。どの馬がどの枠かは出馬表そのものが持つ。
   if (p.inner_outer_bias) {
-    // 枠の識別は馬番と同じJRA枠色バッジ、有利不利はセルの背景色の濃淡で表す（C-1案）
-    // ratio が null の枠＝コースの走数不足で比率を出せない枠。セルごと消すと
-    // 「枠順が全部出ていない」ように見えるので、'—' のまま並べる
     const cellsHtml = p.inner_outer_bias.gates.map((g) => {
-      if (g.ratio == null) {
-        return `<div class="cell hnd" title="このコースの走数が足りず判定できません">`
-          + `${wakuBox(g.gate, 'sm')}<span class="v nd">—</span></div>`;
-      }
-      const c = ratioClass(g.ratio);
-      return `<div class="cell h${c}">${wakuBox(g.gate, 'sm')}<span class="v ${c}">${g.ratio.toFixed(2)}</span></div>`;
+      // ratio が null の枠＝コースの走数不足で比率を出せない枠。セルごと消すと
+      // 「枠順が全部出ていない」ように見えるので、'—' のまま並べる
+      const grade = gateGrade(g.ratio);
+      return `<div class="gz${grade ? ` g-${grade}` : ' nd'}"${
+        grade ? '' : ' title="このコースの走数が足りず判定できません"'}>
+        ${wakuBox(g.gate, 'sm')}
+        <div><span class="g">${grade || '—'}</span></div>
+      </div>`;
     }).join('');
     // 内回り／外回りが混在するコース（京都芝1600/1400・新潟芝2000）では、どちらの
     // 数字を見ているのかを出す。混在しないコースでは scope が無く、何も足さない。
@@ -3711,7 +3738,11 @@ function renderOverview20(site) {
       ? `<span class="scope">${escapeHtml(p.inner_outer_bias.scope)}の成績</span>` : '';
     sections.push(`
       <div class="biaslabel"><b>このコースの枠順成績</b> ${escapeHtml(p.inner_outer_bias.label)}${scopeHtml}</div>
-      <div class="strip">${cellsHtml}</div>
+      <div class="gmap">
+        <div class="gbar"></div>
+        <div class="gzones">${cellsHtml}</div>
+        <div class="gends"><span>◀ 内</span><span>外 ▶</span></div>
+      </div>
     `);
   }
 
