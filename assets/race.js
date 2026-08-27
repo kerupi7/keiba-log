@@ -2617,7 +2617,7 @@ function renderShutuba20(site) {
 
   const cards = [...all].sort((a, b) => a.number - b.number).map(shutubaCard).join('');
   const popups = live.map((h) => `<div class="popup" id="pop-${h.number}">${popupBody(h)}</div>`).join('')
-    + (up ? up.popup : '') + tpPopup(site);
+    + (up ? up.popup : '');
 
   // .shctl は空でも残す。トッピングの操作パネルが setupTopping からここへ差し込まれる
   return `
@@ -4092,87 +4092,44 @@ function tpAxisHasData(site, axisKey) {
   });
 }
 
+// 「材料」で全部オンにする対象。馬体重の3つは発走の約50分前まで値が無く、
+// 混ぜると19分の3が中立値（1.0）で埋まって残りの材料の差が薄まるので、
+// 値が来ていない材料は最初から外す（旧デザインでチップを押せなくしていたのと同じ考え）。
+function tpUsableAxes(site) {
+  const groups = ((site.topping_meta || {}).groups) || [];
+  return groups.reduce((acc, g) => acc.concat(g.axes), [])
+    .filter((a) => !TP_BODY_AXES.includes(a) || tpAxisHasData(site, a));
+}
+
+// 出馬表の帯の下、「印／戦績／新聞」と同じ行の右端に置く2つのボタン（2026-08-27）。
+//   好走条件 … このコースだけで見つけた条件をまとめて当てはめる（TP.cross）
+//   材料     … 19種類を全部オンにして当てはめる（TP.sel が全部入り／空で往復）
+// どちらも押すと色が付き、もう一度押すと消える。
+//
+// それまでは大きな箱2つ（.tpmain 82px ＋ .tpsum 31px ＝ 118px）が縦に積んでいて、
+// 馬が1頭も見えないまま画面を118px使っていた。
+// 繋げた1組にしたのは要素の間の隙間を1つ減らすため。離して2つ置くと375pxでも折り返した。
+//
+// 材料を1つずつ選ぶ札（旧 #pop-topping）は入口が無くなったので外した。
+// 選ぶ仕組み自体は TP.sel と [data-tpax] / [data-tpgrp] の処理に残っているので、
+// 入口を足せば戻る。
 function tpCtl(site) {
   const meta = site.topping_meta || {};
   const first = (site.horses || []).find((h) => h.topping) || {};
-  const ncond = (site.horses || []).reduce(
-    (m, h) => Math.max(m, (h.topping && h.topping.conds_total) || 0), 0);
   const course = (first.topping || {}).course || '';
   const zero = !(site.horses || []).some((h) => h.topping && h.topping.conds_total);
-  const on = [];
-  if (TP.cross) on.push('<b>掛け合わせ</b>');
-  if (TP.sel.size) on.push(`単体 <b>${[...TP.sel].map(tpJp).join('・')}</b>`);
-  const grid = (meta.groups || []).map((g) => {
-    const n = g.axes.filter((a) => TP.sel.has(a)).length;
-    const gi = n === g.axes.length ? '全部選択中・押すと外す'
-      : n ? `${n}/${g.axes.length}選択中・押すと全部選ぶ` : '押すとまとめて選ぶ';
-    // 104-spec §6.3: 「体」グループを開いたときだけ、発表タイミングの注記を1行出す
-    const bwNote = g.name === '体'
-      ? '<p class="tpbwnote">馬体重は発走の約50分前に発表されます。それまでは体の3つは選べません。</p>' : '';
-    return `<button type="button" class="tpgl" data-tpgrp="${escapeHtml(g.name)}">${escapeHtml(g.name)}<span class="gi">${gi}</span></button>`
-      + g.axes.map((a) => {
-        const disabled = TP_BODY_AXES.includes(a) && !tpAxisHasData(site, a);
-        return `<button type="button" class="tpchip${TP.sel.has(a) ? ' on' : ''}" data-tpax="${a}"${disabled ? ' disabled' : ''}>${escapeHtml(tpJp(a))}</button>`;
-      }).join('')
-      + bwNote;
-  }).join('');
-  // 選ぶ／外すは1つのボタンで往復する
-  const allAxes = (meta.groups || []).reduce((s, g) => s.concat(g.axes), []);
+  const allAxes = tpUsableAxes(site);
   const allSel = allAxes.length > 0 && allAxes.every((a) => TP.sel.has(a));
-  // 2026-08-27: 大きな箱2つ（.tpmain 82px ＋ .tpsum 31px）をやめ、
-  // 「印／戦績／新聞」と同じ行の右端に**繋げた1組**として置く。
-  //   ・繋げるのは隙間を1つ減らすため。離して2つ置くと375pxでも折り返した
-  //   ・説明文は材料の札の中へ移した。中身は消していない
-  // 幅の実測（掛け合わせ｜材料▸ は125px）:
-  //   375px幅 → 使える幅192px（余り67px） / 320px幅 → 152px（余り27px）
   return `<span class="tpctl" id="tpctl">
     <span class="tpseg">
       <button type="button" class="tpb${TP.cross ? ' on' : ''}" id="tpx"${zero ? ' disabled' : ''}
         title="${escapeHtml(zero ? 'このコースでは条件が見つかっていません'
-          : `${course} だけで見つけた条件を全部まとめて当てはめる`)}">掛け合わせ</button>
-      <button type="button" class="tpb${TP.sel.size ? ' on' : ''}" data-pop="topping">材料${
-        TP.sel.size ? `<span class="n">${TP.sel.size}</span>` : ''}<i class="apop">▸</i></button>
+          : `${course} だけで見つけた条件を全部まとめて当てはめる`)}">好走条件</button>
+      <button type="button" class="tpb${allSel ? ' on' : ''}" id="tpall"
+        title="${escapeHtml(`${allAxes.length}種類の材料を全部使って、`
+          + '人気より走る条件 − 走らない条件 の数で10段階に分ける')}">材料</button>
     </span>
   </span>`;
-}
-
-// 材料を選ぶ札（#pop-topping）。renderShutuba20 が他の札と一緒に並べる。
-// 開け閉めは馬名・荒れ度の札とまったく同じ仕組み（[data-pop] → #pop-*）。
-function tpPopup(site) {
-  if (!tpOn(site)) return '';
-  const meta = site.topping_meta || {};
-  const first = (site.horses || []).find((h) => h.topping) || {};
-  const course = (first.topping || {}).course || '';
-  const grid = (meta.groups || []).map((g) => {
-    const n = g.axes.filter((a) => TP.sel.has(a)).length;
-    const gi = n === g.axes.length ? '全部選択中・押すと外す'
-      : n ? `${n}/${g.axes.length}選択中・押すと全部選ぶ` : '押すとまとめて選ぶ';
-    // 104-spec §6.3: 「体」グループを開いたときだけ、発表タイミングの注記を1行出す
-    const bwNote = g.name === '体'
-      ? '<p class="tpbwnote">馬体重は発走の約50分前に発表されます。それまでは体の3つは選べません。</p>' : '';
-    return `<button type="button" class="tpgl" data-tpgrp="${escapeHtml(g.name)}">${escapeHtml(g.name)}<span class="gi">${gi}</span></button>`
-      + g.axes.map((a) => {
-        const disabled = TP_BODY_AXES.includes(a) && !tpAxisHasData(site, a);
-        return `<button type="button" class="tpchip${TP.sel.has(a) ? ' on' : ''}" data-tpax="${a}"${disabled ? ' disabled' : ''}>${escapeHtml(tpJp(a))}</button>`;
-      }).join('')
-      + bwNote;
-  }).join('');
-  const allAxes = (meta.groups || []).reduce((acc, g) => acc.concat(g.axes), []);
-  const allSel = allAxes.length > 0 && allAxes.every((a) => TP.sel.has(a));
-  return `
-    <div class="popup" id="pop-topping">
-      <div class="phead">
-        <span class="pname">材料を選ぶ</span>
-        <span class="pmeta">${(meta.axes || []).length}種類・${escapeHtml(course)}</span>
-        <button type="button" class="pclose" data-close>閉じる</button>
-      </div>
-      <div class="pbody" id="tppop">
-        <div class="tpnote">選んだ材料だけで、<b>人気より走る条件 − 走らない条件</b> の数を数えて10段階に色分けする。
-          <b>掛け合わせ</b>（帯の左のボタン）は ${escapeHtml(course)} だけで見つけた条件を全部まとめて使う。</div>
-        <div class="tpall"><button type="button" data-tpall="${allSel ? 'off' : 'on'}">${allSel ? '全部外す' : '全部選ぶ'}</button></div>
-        <div class="tpgrid">${grid}</div>
-      </div>
-    </div>`;
 }
 
 // 行を開いたときに出す「この馬の色の理由」
@@ -4234,15 +4191,6 @@ function tpRefresh() {
   });
   const ctl = document.getElementById('tpctl');
   if (ctl) ctl.outerHTML = tpCtl(site);
-  // 札を開いたまま材料を押すので、中身も同時に描き直す。札の外枠（.popup）は
-  // 差し替えない — 差し替えると .on が消えて札が閉じてしまう
-  const pop = document.getElementById('tppop');
-  if (pop) {
-    const fresh = document.createElement('div');
-    fresh.innerHTML = tpPopup(site);
-    const body = fresh.querySelector('#tppop');
-    if (body) pop.innerHTML = body.innerHTML;
-  }
 }
 
 function setupTopping(site) {
@@ -4255,12 +4203,12 @@ function setupTopping(site) {
   if (slot) slot.innerHTML = tpCtl(site);
   root.addEventListener('click', (e) => {
     if (e.target.closest('#tpx')) { TP.cross = !TP.cross; tpRefresh(); return; }
-    const all = e.target.closest('[data-tpall]');
-    if (all) {
+    // 材料は「全部オン ⇄ 全部オフ」の往復。押している材料が1つでもあれば消す側に回る
+    if (e.target.closest('#tpall')) {
+      const axes = tpUsableAxes(site);
+      const full = axes.length > 0 && axes.every((a) => TP.sel.has(a));
       TP.sel.clear();
-      if (all.dataset.tpall === 'on') {
-        ((site.topping_meta || {}).groups || []).forEach((g) => g.axes.forEach((a) => TP.sel.add(a)));
-      }
+      if (!full) axes.forEach((a) => TP.sel.add(a));
       tpRefresh(); return;
     }
     const grp = e.target.closest('[data-tpgrp]');
