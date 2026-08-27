@@ -1697,7 +1697,10 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
 /* 2026-08-05: 印付きの札だけ枠を薄い青 #B9CFE1 に変えていたのをやめ、枠は全札 #333 に統一した。
    白との差が 印なし12.6 : 印あり1.6 で、**大事な馬の枠のほうが弱い**という逆転になっていた。
    印が付いていることは背景の青（#F4F8FC）と柱の印で分かるので、枠に仕事をさせない。 */
-.race20 .acard.pred{background:#F4F8FC}
+/* AIの印の薄い青（#F4F8FC）は 2026-08-27 に消した（ユーザー決定）。
+   地の色は**自分の印だけ**が持つ形にする。青と紫が同時に出て色が増えるのをやめた。
+   AIの印そのものは、左の列・柱のチップ（◎○▲△穴地雷消）で読める。
+   クラス .pred は残してあるので、戻したくなったらここに1行足せば戻る。 */
 /* 自分の印で3つに塗り分ける（2026-08-27・155-spec 案2）。**AIの印とは別物**。
    AIの印は .pred（上の薄い青）が持っていて、こちらは別の色みで上書きする。
      消     … 薄い灰 #F2F2F0 ＋ 中身の文字を62%に落として沈める
@@ -2209,7 +2212,6 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
 .race20 .mm-row{display:flex;align-items:stretch;border-bottom:1px solid var(--rule);
   background:#fff;min-height:40px}
 .race20 .mm-row:last-child{border-bottom:0}
-.race20 .mm-row.pred{background:#F4F8FC}
 /* 自分の印。好走条件の色（.mm-row.tpN .mm-c）は後に書いてあるので、
    色を乗せている間はそちらが勝つ（自分の印は左端のマスで読める）。 */
 .race20 .mm-row.my-mark{background:#EFE9F7}
@@ -2928,7 +2930,6 @@ body.noscroll{position:fixed;width:100%;overflow:hidden}
 /* 柱1本。幅154pxは375pxの画面で2本以上が同時に見えるための代理指標で、
    過去走の行がはみ出すなら幅のほうを広げる（126-spec §4.1） */
 .race20 .npcol{flex:none;width:154px;border-right:1px solid var(--rule)}
-.race20 .npcol.pred{background:var(--pred-row)}
 /* 自分の印。好走条件は柱の頭（.nphead）だけを塗るので、頭から下は地が残る。 */
 .race20 .npcol.my-mark{background:#EFE9F7}
 .race20 .npcol.my-keshi{background:#F2F2F0}
