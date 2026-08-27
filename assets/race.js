@@ -3294,13 +3294,9 @@ function renderCourseShape20(site) {
   const innerTone = iv != null ? GATE_TONE_108[ratioClass(iv)] : CS_NEUTRAL;
   const outerTone = ov != null ? GATE_TONE_108[ratioClass(ov)] : CS_NEUTRAL;
 
-  const grid = site.prediction.scenario_grid;
-  const top = grid && grid.cells ? [...grid.cells].sort((a, b) => a.rank - b.rank)[0] : null;
-  const pt = ((site.prediction.scenario || {}).main || {}).pass_time || {};
-  const pace = top
-    ? `<div class="paceline"><b>${PACE_LABEL_108[top.code]}ペース</b>`
-      + (pt.sec != null ? `<span>1000m通過 約${pt.sec}秒</span>` : '') + '</div>'
-    : '';
+  // 図の上に出していた「平均ペース 1000m通過 約35.2秒」は 2026-08-27 に削除した。
+  // 同じ話を下の「脚質と展開」のペース2行が持っている（平均 一定ペース 600m通過 約35.2秒 72%）。
+  // あちらは2つのペースと確率まで出すので、こちらは重複していた。
 
   // 帯のすぐ下に帯の凡例（3区間）が来るように並べる。枠の内外はそのあと
   const chips = [];
@@ -3319,7 +3315,7 @@ function renderCourseShape20(site) {
   // 別物で判断に使わず、回りは上のコース図の矢印が既に示している。
   const chipHtml = chips.map(([k, v, cls]) =>
     `<span class="gc ${cls}"><span class="k">${escapeHtml(k)}</span>${escapeHtml(v)}</span>`).join('');
-  return `<div class="subh">コースの形</div>${pace}`
+  return `<div class="subh">コースの形</div>`
     + courseShapeSvg(g, innerTone, outerTone)
     + courseDistBar(g)
     + (chipHtml ? `<div class="geochips">${chipHtml}</div>` : '')
