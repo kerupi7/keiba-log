@@ -3445,7 +3445,6 @@ function renderLeg20(site) {
   if (!disp || !disp.length || !p.leg_bias) return '';
   const runners = site.horses.filter((h) => !h.scratched);
   const nige = scenarioMainNigeSet(p);
-  const course = `${site.race.track}${site.race.surface}${site.race.distance}`;
   const zones = disp.map((d) => {
     const key = PACE_STYLE_KEY[d.style];
     const hs = runners.filter((h) => h.running_style === key);
@@ -3463,20 +3462,16 @@ function renderLeg20(site) {
       <div class="hs">${chips}</div>
     </div>`;
   }).join('');
-  const graded = disp.some((d) => d.grade);
+  // 上の見出し帯（.lhd）と下の説明（.lft）は 2026-08-27 に削除した。
+  // コース名は画面の上（レースヘッダの基本情報4項目）に既にあり、
+  // 等級の意味は札の色と S〜D の並びが持っている。
   return `<div class="subh">脚質</div>
     <div class="lmap">
-      <div class="lhd">${escapeHtml(course)} の過去成績<span class="s">${
-        graded ? '全国のコースの中での順位' : '全コース平均との差'}</span></div>
       <div class="lfield">
         <div class="lrail"></div>
         <div class="lzones">${zones}</div>
         <div class="lends"><span>◀ 先頭</span><span>後方 ▶</span></div>
       </div>
-      <div class="lft">${graded
-        ? '<b>S＝この脚質にとって上位2割の走りやすさ</b>（全国のコースを5等分）。D＝下位2割。'
-          + '下の%は、このコースで3着以内に入った割合。'
-        : '<b>3着以内に入る割合</b>が、全コースの平均と比べてどれだけ高いか低いか。'}</div>
     </div>`;
 }
 
