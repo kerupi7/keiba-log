@@ -3400,24 +3400,28 @@ function renderCourseBabaBar20(site, g, iv, ov) {
       + `<span class="w">${escapeHtml(site.race.track)}の平年より ${sign}</span></div>`);
   }
   if (disp) {
-    cells.push(babaOutlookCell('勝ちタイム', disp.time, 'time'));
-    if (disp.last3f !== undefined) cells.push(babaOutlookCell('上がり3F', disp.last3f, 'l3'));
+    // 上がり3F（勝ち馬のゴール前3ハロン）のマスは 2026-08-27 に削除した。
+    // 出るのは公開済み215レース中111レースだけで、出る日と出ない日でマスの数が
+    // 5つ・4つと変わっていた。勝ちタイムと同じ display.baba の値で、
+    // どちらも「この馬場だと時計がどう出るか」の話。マスは常に4つにする。
+    cells.push(babaOutlookCell('勝ちタイム', disp.time));
   }
 
   if (cells.length < 2) return '';
   return `<div class="cbbar">${cells.join('')}</div>`;
 }
 
-// 1本バーの中の「勝ちタイム」「上がり3F」
-function babaOutlookCell(title, v, kind) {
+// 1本バーの中の「勝ちタイム」。上がり3F用の分岐は 2026-08-27 にマスごと消えた。
+// ±0.05秒は「差と呼べない幅」の線。守りたいのは差でないものを差と言わないことで、
+// 帯の刻みが変わってここが真ん中でなくなったら、この数字のほうを引き直す。
+function babaOutlookCell(title, v) {
   let val = '—', word = '—', cls = 'z0';
   if (v != null) {
-    if (Math.abs(v) < 0.05) { val = '±0.0'; word = kind === 'time' ? '基準どおり' : 'いつも通り'; }
+    if (Math.abs(v) < 0.05) { val = '±0.0'; word = '基準どおり'; }
     else {
       val = Math.abs(v).toFixed(2);
       const fast = v < 0;
-      word = kind === 'time' ? (fast ? '速い' : '時計がかかる')
-                             : (fast ? '速い脚が出る' : '上がりがかかる');
+      word = fast ? '速い' : '時計がかかる';
       cls = fast ? 'p1' : 'm1';
     }
   }
