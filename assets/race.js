@@ -2342,8 +2342,7 @@ function mmList(site) {
         <span class="h-c"><span class="h-nm">馬</span><span class="h-tot">点数・評価</span>
           <span class="h-od">オッズ</span></span></div>
       ${rows}
-    </div>
-    <div class="mm-hint">印のマスを押すと下から選べます。◎○▲は1頭まで（別の馬に付けると前の馬から外れます）、△☆消は何頭でも。<b>いま付いている印をシートでもう一度押すと、その印が消えます。</b><br><b>馬名を押すと、その馬の通算成績と全戦績が開きます。</b></div>`;
+    </div>`;
 }
 
 // 印のマスと要約行を、いまの MM.marks に合わせて塗り直す
