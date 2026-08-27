@@ -3419,6 +3419,92 @@ function babaOutlookCell(title, v, kind) {
 // §4 馬場 ────────────────────────────────────────────────
 // babaOutlookTile は 2026-08-27 に削除した。「この馬場だと、こうなりやすい」の枠ごと
 // 1本バーへ移り、呼ぶ所が無くなったため。文言は babaOutlookCell が引き継いでいる。
+// 今週の馬場（3マスの1本バー。2026-08-27 に3枚のカードから差し替え・146-spec 案1）
+//
+// 上の renderCourseBabaBar20 が「このコースの過去の平均」、こちらが
+// 「今週この競馬場で終わったレース」。対になっているので同じ作りで並べる。
+// 2026-08-26 までは白い角丸カード3枚で、枠の作りも文字の大きさも上と違っていた。
+//
+// 元の値の出どころ（変えていない）:
+//   内と外  … day_bias.surfaces[馬場] の3着以内率。2026-07-27 に「同じ日の別の競馬場を
+//             予測子にするとゼロになる＝競馬場ごとの現象」と確認済み。ただし採点には入れない。
+//   前と後ろ… day_bias.legs。3着以内に入った馬を1頭ずつ最終コーナーの位置で振り分けた頭数。
+//             2026-08-26 追加で、通過順を集め始めたのが同日のため今週末から出る。
+//   時計    … time_trend。勝ちタイムから出す別系統で、内外の偏りより持続がはっきりしている
+//             （同じ開催の連続日で相関+0.406 ／ その日の前半→後半で+0.512）。
+
+// 内と外のシーソーが端に届く差（内%−外%）。公開済み46件のうち20ptを超えるのは2件だけ。
+// 守りたいのは「ふだんの範囲が真ん中あたりに見えること」。
+// 端に張り付く回が増えたらこの数字のほうを広げる。
+const WK_IO_FULL = 20;
+
+function seesawHtml(leftPct, tickPct, ends, cls) {
+  const L = Math.max(0, Math.min(100, leftPct));
+  return `<span class="ss${cls ? ' ' + cls : ''}"><span class="bar">`
+    + `<i class="L" style="width:${L.toFixed(1)}%"></i>`
+    + `<i class="R" style="width:${(100 - L).toFixed(1)}%"></i>`
+    + `<u style="left:${tickPct}%"></u></span>`
+    + `<span class="ends"><b>${ends[0]}</b><b>${ends[1]}</b></span></span>`;
+}
+
+function renderWeekTrend20(site) {
+  const p = site.prediction;
+  const db = p.day_bias;
+  const tt = p.time_trend;
+  if (!db && !tt) return '';
+  // そのレースと同じ馬場だけ見る。新しいデータは day_bias.surface が入っており集計時点で
+  // 絞ってある。2026-08-26 より前に公開したぶんは芝とダートの両方が入っているので、
+  // ここでそのレースの馬場を選ぶ（作り直しはしない）。
+  const raceSurf = String((site.race || {}).surface || '').startsWith('芝') ? '芝' : 'ダート';
+  const io = db && db.surfaces ? (db.surfaces[raceSurf] || null) : null;
+  const legs = (db && db.legs) || null;
+  if (!io && !legs && !tt) return '';
+
+  const cells = [];
+  if (io) {
+    const L = 50 + Math.max(-1, Math.min(1, io.diff / WK_IO_FULL)) * 40;
+    const cls = io.label === '大きな偏りなし' ? 't0' : (io.diff >= 0 ? 't1' : 'u1');
+    cells.push(`<div class="cell"><span class="k">内と外</span>`
+      + seesawHtml(L, 50, ['内', '外'])
+      + `<span class="w ${cls}">${escapeHtml(io.label)}</span>`
+      + `<span class="n">内${io.inner_pct.toFixed(1)} 外${io.outer_pct.toFixed(1)}</span></div>`);
+  }
+  if (legs) {
+    // 白い目盛りは50%ではなく平年値（前62.2%）に置く。前と後ろは半々が中立ではないため。
+    const base = legs.base_pct != null ? legs.base_pct : 62.2;
+    const word = legs.label || `前${legs.front_pct.toFixed(0)}%`;
+    const cls = !legs.label || legs.label === '大きな偏りなし'
+      ? 't0' : (legs.label === '前が残りやすい' ? 't1' : 'u1');
+    const miss = legs.no_data_races ? `・${legs.no_data_races}R除外` : '';
+    cells.push(`<div class="cell"><span class="k">前と後ろ</span>`
+      + seesawHtml(legs.front_pct, base, ['前', '後ろ'], 'zg')
+      + `<span class="w ${cls}">${escapeHtml(word)}</span>`
+      + `<span class="n">前${legs.front} 後ろ${legs.rear}頭${miss}</span></div>`);
+  }
+  if (tt) {
+    const cls = tt.value <= 0 ? 'p1' : '';
+    const n = (tt.today_races || 0) + (tt.prev_races || 0);
+    cells.push(`<div class="cell ${cls}"><span class="k">時計</span>`
+      + `<span class="v">${tt.value >= 0 ? '+' : ''}${tt.value.toFixed(2)}<small>秒</small></span>`
+      + `<span class="w">${escapeHtml(tt.label)}</span>`
+      + `<span class="n">${n}レース</span></div>`);
+  }
+  if (!cells.length) return '';
+
+  // 見出しの母数。3レースで出た偏りと14レースで出た偏りは重みが違うので必ず添える。
+  let scope = '';
+  if (db && db.n_races) {
+    scope = db.prev_races
+      ? `${raceSurf}・${db.n_races}レース（前日まで${db.prev_races}＋本日${db.today_races}）`
+      : `${raceSurf}・本日${db.n_races}レース`;
+  } else if (io) {
+    scope = `${raceSurf}・${io.n_races}レース`;
+  }
+  return `<div class="wkhead"><b>今週の馬場</b>`
+    + (scope ? `<span class="sc">${escapeHtml(scope)}</span>` : '') + '</div>'
+    + `<div class="cbbar wk">${cells.join('')}</div>`;
+}
+
 function renderBaba20(site) {
   const p = site.prediction;
   const bd = p.baba_detail;
@@ -3738,6 +3824,10 @@ function renderOverview20(site) {
     `);
   }
 
+  // (b-2) 今週の馬場。上の1本バーが「このコースの過去の平均」で、こちらが「今週の実測」。
+  // 対になっているので隣に置く（2026-08-27 に枠順マップの下から移動）。
+  sections.push(renderWeekTrend20(site));
+
   // (c) 脚質傾向（コース別実績の内訳）＋ 脚質マップ（各脚質に出走馬を並べる）
   // 2026-07-27: マップ→傾向 だった並びを逆にした。先にこのコースの傾向を見て、
   // そのあと出走馬がどの脚質に入っているかを見る流れにする。
@@ -3808,87 +3898,9 @@ function renderOverview20(site) {
     `);
   }
 
-  // (d-2) 今週の馬場（3枚のカード。2026-08-26 に6列の表から差し替え）
-  // 仕様は shared/keiba/handoff_2026-08-26_week-trend-cards.md。
-  // 上の帯がコースの過去平均なのに対し、こちらは「今週この競馬場で終わったレース」を見る。
-  // 2026-08-19 に当日ぶんだけ→今週ぶん（前の開催日＋当日の先行レース）へ広げた。
-  // 日曜5Rの芝で3→10レースに増える。土曜は前の開催日が6日前なので当日ぶんだけのまま。
-  // 2026-07-27の検証で、内外の偏りは実在する（同じ日の別の競馬場を予測子にすると
-  // ゼロになる＝競馬場ごとの現象）ことを確認済み。ただし効果は採点に足す基準の1/5で、
-  // 予想の当たり具合は作り方2通り・物差し2通りとも改善しなかったため点数には入れない。
-  // 人が他の材料と合わせて見るための材料として出す。
-  // 時計の傾向（time_trend）は勝ちタイムから出す別系統（2026-07-30までは芝だけ、
-  // 以降はそのレースと同じ馬場種別）。内外の偏りより持続が
-  // はっきりしている（同じ開催の連続日で相関+0.406 / その日の前半→後半で+0.512）。
-  // どれか1つしか無い日もあるので、カードは有るものだけ並べる。
-  // 「前と後ろ」は3着以内の馬を1頭ずつ振り分けた頭数（2026-08-26 追加）。それ以前は
-  // 「前が残ったレース N」という文をここに出していたが、あれは脚質ではなく
-  // **勝ち馬の馬番**が下から3分の1かどうかで決まっていた（front_wins / rear_wins）。
-  // 誤解を招く値なので表示から外した。キー自体は過去公開分に残っている。
-  const db = p.day_bias;
-  const tt = p.time_trend;
-  // そのレースと同じ馬場だけ見る。新しいデータは day_bias.surface が入っており
-  // 集計時点で絞ってある。2026-08-26より前に公開したぶんは芝とダートの両方が
-  // 入っているので、ここでそのレースの馬場を選ぶ（作り直しはしない）。
-  const raceSurf = String((site.race || {}).surface || '').startsWith('芝') ? '芝' : 'ダート';
-  const io2 = db && db.surfaces ? (db.surfaces[raceSurf] || null) : null;
-  const legs = (db && db.legs) || null;
-  if (io2 || legs || tt) {
-    const cards = [];
-
-    if (io2) {
-      const cls = io2.label === '大きな偏りなし' ? 'flat' : (io2.diff >= 0 ? 'in' : 'out');
-      const scope = db.surface
-        ? (db.prev_races
-          ? `今週${escapeHtml(raceSurf)}${db.n_races}レース（前日まで${db.prev_races}＋本日${db.today_races}）`
-          : `本日ここまで${escapeHtml(raceSurf)}${db.n_races}レース`)
-        : `今週${escapeHtml(raceSurf)}${io2.n_races}レース`;
-      cards.push(`<div class="tc">
-        <div class="tch">内と外</div>
-        <div class="tcv ${cls}">${escapeHtml(io2.label)}</div>
-        <div class="tcd">内 ${io2.inner_pct.toFixed(1)}% ／ 外 ${io2.outer_pct.toFixed(1)}%<span class="dl ${cls}">${io2.diff >= 0 ? '+' : ''}${io2.diff.toFixed(1)}pt</span></div>
-        <div class="tcn">${scope}</div>
-      </div>`);
-    }
-
-    if (legs) {
-      // 前＝直線に入った時点で先頭グループ（逃げ・先行）、後ろ＝差し・追込。
-      // 平年値62.2%は全期間の実測。頭数だけでは多いか少ないか分からないので必ず添える。
-      const lcls = !legs.label || legs.label === '大きな偏りなし'
-        ? 'flat' : (legs.label === '前が残りやすい' ? 'in' : 'out');
-      const head = legs.label || `前 ${legs.front}頭 ／ 後ろ ${legs.rear}頭`;
-      const sub = legs.label
-        ? `前 ${legs.front}頭 ／ 後ろ ${legs.rear}頭<span class="dl ${lcls}">前${legs.front_pct.toFixed(0)}%</span>`
-        : '母数が少なく傾向は出していません';
-      const miss = legs.no_data_races
-        ? `・道中の位置が取れず${legs.no_data_races}レース除外` : '';
-      cards.push(`<div class="tc">
-        <div class="tch">前と後ろ</div>
-        <div class="tcv ${lcls}">${escapeHtml(head)}</div>
-        <div class="tcd">${sub}</div>
-        <div class="tcn">3着以内${legs.total}頭・ふだんは前${legs.base_pct.toFixed(0)}%${miss}</div>
-      </div>`);
-    }
-
-    if (tt) {
-      const tcls = tt.value <= 0 ? 'in' : 'out';
-      cards.push(`<div class="tc">
-        <div class="tch">時計</div>
-        <div class="tcv ${tcls}">${tt.value <= 0 ? '速い' : '遅い'}</div>
-        <div class="tcd">基準比 ${tt.value >= 0 ? '+' : ''}${tt.value.toFixed(2)}秒<span class="dl">${escapeHtml(tt.label)}</span></div>
-        <div class="tcn">当日${tt.today_races}＋前日${tt.prev_races}レース</div>
-      </div>`);
-    }
-
-    // 注記は 2026-08-26 にユーザー指示で全文削除（「この注釈いらない」）。
-    // カードの見出し・数字・母数だけで読める形にする。「点数には入れていません」の
-    // 断りもこの時に一緒に消えている。
-    sections.push(`
-      <div class="biaslabel"><b>今週の馬場</b>
-        <span class="scope">${escapeHtml(raceSurf)}のレースの傾向</span></div>
-      <div class="trendcards">${cards.join('')}</div>
-    `);
-  }
+  // (d-2) 今週の馬場は 2026-08-27 にコースの形の直後へ移した（renderWeekTrend20）。
+  // 上の1本バーが「このコースの過去の平均」、こちらが「今週ここで終わったレース」で
+  // 対になっているため、離して置く理由が無かった。
 
   // (e) 逃げ候補・先行圧
   // 108-spec §7/T7: 3分割ラベルをやめ、実測のハイペース率に置き換える。

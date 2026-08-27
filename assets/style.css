@@ -871,33 +871,8 @@ details.fold.om-fold>summary .cnt{color:#fff;opacity:.85;font-size:11px}
 .race20 table.daybias .lab.lean{font-weight:700}
 .race20 table.daybias .n{color:var(--sub);text-align:right}
 
-/* 今週の馬場（3枚のカード）。2026-08-26 に上の6列の表から差し替えた。
-   軸ごとに数字の意味が違う（割合／頭数／秒）ので、1枚1軸に分ける。
-   色の約束は上の表から引き継ぐ＝内寄り・前残り・速い馬場が緑、外寄り・差し・遅いが赤、
-   偏りが小さければ灰。狭い画面では横並びをやめて縦に積む。 */
-.race20 .trendcards{display:flex;gap:6px;margin:2px 0 6px}
-.race20 .trendcards .tc{flex:1;min-width:0;border:1px solid var(--rule);border-radius:6px;
-  padding:8px 10px 9px;display:flex;flex-direction:column;gap:3px}
-.race20 .trendcards .tch{font-size:11px;color:var(--cap);font-weight:700;letter-spacing:.02em}
-.race20 .trendcards .tcv{font-size:15px;font-weight:700;line-height:1.25;color:var(--text)}
-.race20 .trendcards .tcv.in{color:#0F7A3D}
-.race20 .trendcards .tcv.out{color:#B3352F}
-.race20 .trendcards .tcv.flat{color:var(--sub)}
-.race20 .trendcards .tcd{font-size:12px;color:var(--sub);
-  font-variant-numeric:tabular-nums;line-height:1.5}
-.race20 .trendcards .tcd .dl{margin-left:6px;font-weight:700;color:var(--text)}
-.race20 .trendcards .tcd .dl.in{color:#0F7A3D}
-.race20 .trendcards .tcd .dl.out{color:#B3352F}
-.race20 .trendcards .tcn{margin-top:auto;padding-top:3px;font-size:11px;color:var(--cap);
-  font-variant-numeric:tabular-nums;line-height:1.45}
-@media (max-width:560px){
-  .race20 .trendcards{flex-direction:column;gap:4px}
-  .race20 .trendcards .tc{flex-direction:row;flex-wrap:wrap;align-items:baseline;
-    gap:2px 8px;padding:7px 10px 8px}
-  .race20 .trendcards .tch{width:4.5em;flex:none}
-  .race20 .trendcards .tcv{font-size:14px}
-  .race20 .trendcards .tcn{margin:0;padding:0;width:100%}
-}
+/* 今週の馬場の3枚のカード（.trendcards）は 2026-08-27 に削除した。
+   1本バー .cbbar.wk へ差し替え、狭い画面用の縦積みも要らなくなっている。 */
 /* 枠順成績（2026-08-27・発馬機のマップ）。
    8つの数字を横に並べていた旧 .strip を、発馬機（ゲート）の絵に置き換えた。
    「枠」という言葉そのものの絵なので、何の並びかを説明なしで示せる。
@@ -2592,6 +2567,20 @@ body.noscroll{position:fixed;width:100%;overflow:hidden}
 .race20 .geochips .gc.gb5 .k{color:#B05A5A}
 
 /* ── §4 馬場（クッション値） ── */
+/* 今週の馬場（2本目の1本バー。2026-08-27 に3枚のカードから差し替え・146-spec 案1） */
+.race20 .wkhead{display:flex;align-items:baseline;gap:6px;margin-top:11px}
+.race20 .wkhead b{font-size:12.5px;color:var(--navy)}
+.race20 .wkhead .sc{font-size:10px;color:var(--cap)}
+.race20 .cbbar.wk{margin-top:5px}
+.race20 .cbbar.wk .cell .n{display:block;font-size:9px;color:#9A9A9A;margin-top:3px;
+  letter-spacing:-.03em;line-height:1.35}
+/* 前と後ろのシーソーは色を変える。前も後ろも良し悪しではないので赤と緑を使わない */
+/* 「fb」は着順の枠（.race20 .fb）で先に使われていて、padding などを拾ってしまう。
+   前と後ろ用は zg（前後）にする（2026-08-27 に名前の衝突で幅が8px縮んだため改名） */
+.race20 .cbbar .ss.zg .bar i.L{background:#2E6DA4}
+.race20 .cbbar .ss.zg .bar i.R{background:#A9AFB5}
+/* 旧・今週の馬場（.trendcards）の指定は 2026-08-27 に削除した */
+
 /* .outlook（この馬場だと、こうなりやすい）の指定は 2026-08-27 に削除。1本バー .cbbar へ移した */
 /* コースの形と馬場をまとめた1本バー（144-spec / 2026-08-27）。
    内めの枠・外めの枠・高低差の灰色チップと、青枠の中の「今日の馬場」「勝ちタイム」を
@@ -2626,7 +2615,7 @@ body.noscroll{position:fixed;width:100%;overflow:hidden}
 .race20 .cbbar .ss .bar i{position:absolute;top:0;bottom:0;display:block}
 .race20 .cbbar .ss .bar i.L{left:0;background:#B05656}
 .race20 .cbbar .ss .bar i.R{right:0;background:#1F6B3A}
-.race20 .cbbar .ss .bar u{position:absolute;left:50%;top:-1px;bottom:-1px;width:1px;
+.race20 .cbbar .ss .bar u{position:absolute;top:-1px;bottom:-1px;width:1px;
   background:#fff;box-shadow:0 0 0 1px rgba(0,0,0,.18)}
 .race20 .cbbar .ss .ends{display:flex;justify-content:space-between;margin-top:1px}
 .race20 .cbbar .ss .ends b{font-size:9px;font-weight:400;color:var(--cap);line-height:1.2}
