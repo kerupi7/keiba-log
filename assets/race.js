@@ -3559,16 +3559,6 @@ const LEG_WORD = {
 // shared/keiba/leg_bias_baseline.json の grade_bands。
 //
 // 等級を持たない過去のレース（grade が無い）は、これまでどおり差を出す。
-// 先行圧の言葉の色。高い＝赤、低い＝青、標準＝地の色。
-// 高い/標準/低い の3つは、ハイペース率の帯が重なる粗い言い方（実測で
-// 「標準」は20〜50%、「高い」は35〜62%）。順位はほぼ同じなので、
-// 細かい違いは隣のハイペース率のほうを見る。
-function fpClass(label) {
-  if (label === '高い') return 'hi';
-  if (label === '低い') return 'lo';
-  return '';
-}
-
 function renderLeg20(site) {
   const p = site.prediction;
   const disp = (p.display || {}).leg;
@@ -3595,27 +3585,22 @@ function renderLeg20(site) {
   // 上の見出し帯（.lhd）と下の説明（.lft）は 2026-08-27 に削除した。
   // コース名は画面の上（レースヘッダの基本情報4項目）に既にあり、
   // 等級の意味は札の色と S〜D の並びが持っている。
-  // 先行圧を見出しの右に出す（2026-08-27・148-spec）。それまでは下に
-  // 「逃げ候補・先行圧」という別ブロックがあり、10段のゲージと主逃げ・先行の
-  // 馬番が並んでいた。馬番は脚質マップの逃げ・先行の区画と75%重なっており
-  // （公開済み214レース・1,426頭で実測）、主逃げの馬はマップでオレンジ枠が
-  // すでに付いている。ゲージは「先行圧が10段のどこか」を見せていたが、
-  // 先行圧の順位とハイペース率の順位は+0.948でほぼ同じ並びなので、
-  // ハイペース率だけで足りる。
+  // 先行圧とハイペース率は 2026-08-27 に見出しから消した（同日に入れて同日に外した）。
   //
-  // ハイペース率は単体では高いか低いかが読めないため、必ず比べる相手を添える。
-  // bands は先行圧を10等分した各段のハイペース率なので、10段の平均＝全体の割合。
-  // 実際 ppi_pace.json の実測（15,455レース）は34.6%で、bands の平均と一致する。
-  const fd = (p.display || {}).front;
-  const fp = p.front_pressure;
-  let fpHtml = '';
-  if (fd && fp && Array.isArray(fd.bands) && fd.bands.length) {
-    const base = fd.bands.reduce((a, b) => a + b, 0) / fd.bands.length;
-    fpHtml = `<span class="fps">先行圧 <b class="${fpClass(fp.label)}">${escapeHtml(fp.label)}</b>`
-      + `<span class="sep">／</span>ハイペース <b class="hi">${Math.round(fd.h * 100)}%</b>`
-      + `<span class="bs">ふつうは${Math.round(base * 100)}%</span></span>`;
-  }
-  return `<div class="subh">脚質${fpHtml}</div>
+  // 消した理由は当たらなかったから。公開済み214レース（8/1〜8/23・当日に保存された
+  // 値だけ）で、実際にハイペースだったのは65レース（30.4%）。
+  //   先行圧の表（ここに出していた47%側）… 外し具合 0.6028
+  //   展開シナリオ（ハイ24%側）           … 0.4045
+  //   レースを見ずに毎回30%と答えるだけ    … 0.6140
+  // 先行圧の表は「毎回30%」とほとんど変わらない。1レースずつ見ても
+  // 214レース中165レース（77%）で展開シナリオのほうが実際に近かった。
+  // どちらのモデルかを1レースずつ入れ替えて2万回試して、これ以上の差が出たのは0回。
+  //
+  // ハイペースの見込みは展開シナリオのカードが持っている。ここでは出さない。
+  // 元の値（front_pressure / display.front）は公開JSONに残っているので、
+  // 出し直したくなったら拾える。
+
+  return `<div class="subh">脚質</div>
     <div class="lmap">
       <div class="lfield">
         <div class="lrail"></div>
