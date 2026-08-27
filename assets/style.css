@@ -1699,12 +1699,17 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
    印が付いていることは背景の青（#F4F8FC）と柱の印で分かるので、枠に仕事をさせない。 */
 .race20 .acard.pred{background:#F4F8FC}
 /* 自分の印で3つに塗り分ける（2026-08-27・155-spec 案2）。**AIの印とは別物**。
-   AIの印は .pred（上の薄い青）が持っていて、こちらはそれより濃い色で上書きする。
+   AIの印は .pred（上の薄い青）が持っていて、こちらは別の色みで上書きする。
      消     … 薄い灰 #F2F2F0 ＋ 中身の文字を62%に落として沈める
-     ◎○▲△☆ … 1段濃い青 #E9F1F8
+     ◎○▲△☆ … 薄い紫 #EFE9F7
      印なし … 何もしない（白 or AIの印の薄い青のまま）
-   .pred より後に書いてあるので、自分の印を付けた馬はこちらが勝つ。 */
-.race20 .acard.my-mark{background:#E9F1F8}
+   .pred より後に書いてあるので、自分の印を付けた馬はこちらが勝つ。
+
+   紫にした理由（157-spec）: 最初は青 #E9F1F8 にしたが、AIの印 #F4F8FC と
+   戦績の僅差 #E6EFF8 と色みが同じで見分けが付かなかった。CSSの色を色みごとに
+   数えると、薄い地に使えるものは 青33色・赤15色・橙17色・緑10色に対して
+   **紫は0色**で空いていた。他のどの色とも混ざらない。 */
+.race20 .acard.my-mark{background:#EFE9F7}
 .race20 .acard.my-keshi{background:#F2F2F0}
 .race20 .acard.my-keshi .abody{opacity:.62}
 .race20 .acard.scratched{color:var(--cap)}
@@ -2203,7 +2208,7 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
 .race20 .mm-row.pred{background:#F4F8FC}
 /* 自分の印。好走条件の色（.mm-row.tpN .mm-c）は後に書いてあるので、
    色を乗せている間はそちらが勝つ（自分の印は左端のマスで読める）。 */
-.race20 .mm-row.my-mark{background:#E9F1F8}
+.race20 .mm-row.my-mark{background:#EFE9F7}
 .race20 .mm-row.my-keshi{background:#F2F2F0}
 .race20 .mm-row.my-keshi .mm-c{opacity:.62}
 .race20 .mm-row.scr{color:var(--cap)}
@@ -2918,7 +2923,7 @@ body.noscroll{position:fixed;width:100%;overflow:hidden}
 .race20 .npcol{flex:none;width:154px;border-right:1px solid var(--rule)}
 .race20 .npcol.pred{background:var(--pred-row)}
 /* 自分の印。好走条件は柱の頭（.nphead）だけを塗るので、頭から下は地が残る。 */
-.race20 .npcol.my-mark{background:#E9F1F8}
+.race20 .npcol.my-mark{background:#EFE9F7}
 .race20 .npcol.my-keshi{background:#F2F2F0}
 .race20 .npcol.my-keshi .nphead,.race20 .npcol.my-keshi .npcr,
 .race20 .npcol.my-keshi .nprun{opacity:.62}
