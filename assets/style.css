@@ -76,7 +76,13 @@
   --win5:#1f6feb;        /* WIN5マーク（121-spec・一覧の脚番号の札。白抜き文字で4.6:1） */
   --green-row:#E3F4E8;   /* 45-spec: EV>1の買える馬・買い目の行背景 */
 
-  --font:-apple-system,"system-ui","Segoe UI",Roboto,Oxygen,Ubuntu,"Helvetica Neue",Arial,sans-serif;
+  /* 2026-08-28: 和文（日本語）の書体を明記した。それまで並んでいたのは欧文専用の9個だけで、
+     日本語はブラウザの初期設定に落ちていた（Macはヒラギノ角ゴW3・Windowsは游ゴシック）。
+     端末ごとに太さが変わるのをやめ、サイト全体をヒラギノ角ゴにそろえる。
+     欧文と数字は今までどおり先頭の並びから取るので、桁の揃い方は変わらない。
+     Windowsにヒラギノは無いので BIZ UDPGothic → 游ゴシックMedium → メイリオ の順で受ける。 */
+  --font:-apple-system,"system-ui","Segoe UI",Roboto,Oxygen,Ubuntu,"Helvetica Neue",Arial,
+    "Hiragino Sans","BIZ UDPGothic","Yu Gothic Medium",Meiryo,sans-serif;
   --max-width:720px;
 }
 
@@ -3227,12 +3233,10 @@ body.noscroll{position:fixed;width:100%;overflow:hidden}
      守りたいのは「9〜10px の漢字を読み違えないこと」。600 はそのための当て値で、
      8〜9px で字の中の空きが埋まって潰れるなら、600 のほうを 500 に落とす。
    ═══════════════════════════════════════════════════════════════════ */
+/* 2026-08-28 追記: 書体の指定は --font へ移した（サイト全体をヒラギノにそろえたため）。
+   ここに残すのは太さだけ。戦績・新聞は 8〜10px が中心で、標準の太さ(400)では読みにくい。 */
 .race20 .acard,
-.race20 .npgrid{
-  font-family:-apple-system,"system-ui","Segoe UI",Roboto,Oxygen,Ubuntu,"Helvetica Neue",Arial,
-    "Hiragino Sans","BIZ UDPGothic","Yu Gothic Medium",Meiryo,sans-serif;
-  font-weight:600;
-}
+.race20 .npgrid{font-weight:600}
 /* コース適性の「条件」列は 1877 行で font-weight:400 が名指しで入っており、
    上の 600 が届かない。新聞では 9px（サイト内で最小）で、「重不芝」「中京芝1600m」
    のような画数の多い漢字がここに来るので、この 2 か所だけ 600 へ上げる。
