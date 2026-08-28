@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>和文フォント 5案 見比べ（W5軸）— モック</title>
+<link rel="stylesheet" href="assets/style.css?v=20260828a">
+<style>
+  body{padding:0}
+  .mock{max-width:100%;margin:0 auto;padding:14px 16px 40px}
+  .mock h1{font-size:16px;margin:0 0 4px}
+  .mock .lead{font-size:12px;color:var(--cap);margin:0 0 14px;line-height:1.8}
+  .bar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:8px}
+  .bar .lbl{font-size:11.5px;font-weight:700;color:var(--sub);margin-right:2px}
+  .bar button{font-family:inherit;font-size:12px;font-weight:700;padding:6px 10px;
+    border:1px solid #C9C9C4;background:#fff;color:var(--text);border-radius:5px;cursor:pointer}
+  .bar button.on{background:var(--navy);border-color:var(--navy);color:#fff}
+  .bar label{font-size:11.5px;color:var(--sub);display:flex;align-items:center;gap:4px}
+  .note{font-size:11px;color:var(--cap);line-height:1.7;margin:6px 0 12px}
+  .pair{display:flex;gap:12px;align-items:flex-start;overflow-x:auto}
+  .pair.stack{flex-direction:column}
+  .side{flex:none;width:375px}
+  .side h2{font-size:12px;font-weight:700;margin:0 0 4px;padding:4px 8px;border-radius:4px;
+    background:var(--sub-bg2);color:var(--text)}
+  .side h2 i{font-style:normal;font-weight:400;color:var(--cap);margin-left:6px;font-size:10.5px}
+  .side.now h2{background:#F1F1F0}
+  .side.new h2{background:#E8EFF5;color:var(--navy)}
+  iframe{width:375px;height:760px;border:1px solid var(--rule-strong);border-radius:4px;background:#fff}
+  .zoomwrap{overflow:hidden}
+</style>
+</head>
+<body>
+<div class="mock">
+  <h1>和文（日本語）の書体を指定する — 5案の見比べ（ヒラギノ角ゴ W5 が軸）</h1>
+  <p class="lead">
+    左が<b>今のサイト</b>（和文の書体を1つも指定しておらず、端末まかせ）。右が<b>選んだ案</b>。<br>
+    文字の大きさ・レイアウト・色は<b>1pxも変えていません</b>。変えたのは書体だけです。<br>
+    欧文と数字は今のまま（並びの先頭に残してある）ので、桁の揃い方は変わりません。<br>
+    <b>案Aと案Dは「太字の指定が効かなくなる」案</b>です。本文と見出しの濃さの差が消えます。
+  </p>
+
+  <div class="bar">
+    <span class="lbl">右の書体</span>
+    <button data-f="w5flat">案A W5フラット（前回見たもの）</button>
+    <button data-f="w5">案B W5＋太字W7</button>
+    <button data-f="w6" class="on">案C W6＋太字W7</button>
+    <button data-f="w6flat">案D W6フラット</button>
+    <button data-f="w7">案E W7フラット（最も太い）</button>
+  </div>
+  <div class="bar">
+    <span class="lbl">見る画面</span>
+    <button data-v="runs" class="on">出馬表／戦績</button>
+    <button data-v="paper">出馬表／新聞</button>
+    <button data-v="tenkai">展開</button>
+    <label><input type="checkbox" id="sync" checked> 左右のスクロールを合わせる</label>
+  </div>
+  <div class="bar">
+    <span class="lbl">効かせる範囲</span>
+    <button data-s="all">サイト全体</button>
+    <button data-s="dense" class="on">戦績・新聞だけ</button>
+    <label><input type="checkbox" id="apt" checked> コース適性の「条件」列も太くする</label>
+    <span class="note" style="margin:0">「だけ」を選ぶと、レース名・タブ・コース欄・展開タブは今のまま</span>
+  </div>
+  <div class="bar">
+    <span class="lbl">見る大きさ</span>
+    <button data-z="1" class="on">実寸（スマホと同じ）</button>
+    <button data-z="1.6">1.6倍</button>
+    <button data-z="2.4">2.4倍</button>
+    <span class="note" style="margin:0">拡大は<b>字の形を見るため</b>のもの。読みやすさの判定は実寸で行う</span>
+  </div>
+  <p class="note" id="desc"></p>
+
+  <div class="pair">
+    <div class="side now"><h2>今のサイト<i>書体の指定なし</i></h2>
+      <iframe id="fA" src="race.html?id=202607030206"></iframe></div>
+    <div class="side new"><h2 id="hB">案C W6＋太字W7<i id="hBi"></i></h2>
+      <iframe id="fB" src="race.html?id=202607030206"></iframe></div>
+  </div>
+</div>
+
+<script>
+const LATIN = '-apple-system,"system-ui","Segoe UI",Roboto,Oxygen,Ubuntu,"Helvetica Neue",Arial';
+const WINFB = '"BIZ UDPGothic","Yu Gothic Medium",Meiryo';
+const FAM   = LATIN + ',"Hiragino Sans",' + WINFB + ',sans-serif';
+const NAMED = (n)=> LATIN + ',"Hiragino Sans ' + n + '","Hiragino Sans",' + WINFB + ',sans-serif';
+
+// ink = 32pxで「戦績新聞展開条件着差」を描いたときの黒の量（実測値・単位なしの相対値）
+const FONTS = {
+  now:{name:'今のサイト', stack: LATIN + ',sans-serif', bodyW:null,
+    desc:'和文の書体を指定していない。本文＝W3（黒の量929）／太字＝W6（1372）。'},
+  w5flat:{name:'案A W5フラット（前回見たもの）', stack: NAMED('W5'), bodyW:null,
+    desc:'書体名で W5 を直接指定。本文はW5（1200）に太るが、太字の指定700が効かず太字もW5（1200）になる。'
+        +'つまり本文と見出しの濃さの差が消える。前回「これがいい」と選んだのはこの状態。'},
+  w5:{name:'案B W5＋太字W7', stack: FAM, bodyW:500,
+    desc:'書体はヒラギノ角ゴ、本文の太さを500にする。本文＝W5（1200）／太字＝W7（1544）。'
+        +'今（929／1372）より本文が29%・太字が13%濃くなり、濃さの差は残る。'},
+  w6:{name:'案C W6＋太字W7', stack: FAM, bodyW:600,
+    desc:'本文の太さを600にする。本文＝W6（1372）／太字＝W7（1544）。'
+        +'本文は今の太字と同じ濃さになる。差は172しかないので見出しは目立たなくなる。'},
+  w6flat:{name:'案D W6フラット', stack: NAMED('W6'), bodyW:null,
+    desc:'書体名で W6 を直接指定。本文も太字もW6（1372）。案Aをもう1段太くしたもので、濃さの差は消える。'},
+  w7:{name:'案E W7フラット（最も太い）', stack: FAM, bodyW:700,
+    desc:'本文の太さを700にする。本文も太字もW7（1544）で、5案でいちばん太い。'
+        +'濃さの差は消え、8〜9pxの箇所は字の中の空きが埋まって潰れやすくなる。'}
+};
+let curFont = 'w6', curView = 'runs', curScope = 'dense';
+const DENSE = '.race20 .acard, .race20 .npgrid';
+const APTSEL = '.race20 table.crt th.l, .race20 table.crt td.l, .race20 table.crt td.c0';
+
+function apply(iframe, key, scope){
+  const d = iframe.contentDocument; if(!d || !d.documentElement) return;
+  let st = d.getElementById('mockhide');
+  if(!st){ st = d.createElement('style'); st.id='mockhide'; d.head.appendChild(st); }
+  const f = FONTS[key], bw = f.bodyW;
+  let css = '.site-header{display:none!important}';
+  if(key === 'now' || scope === 'all'){
+    d.documentElement.style.setProperty('--font', f.stack);
+    if(bw) css += 'html,body{font-weight:' + bw + '}';
+  } else {
+    d.documentElement.style.setProperty('--font', FONTS.now.stack);
+    css += DENSE + '{font-family:' + f.stack + (bw ? ';font-weight:' + bw : '') + '}';
+  }
+  if(key !== 'now' && bw && document.getElementById('apt').checked){
+    css += APTSEL + '{font-weight:' + bw + '}';
+  }
+  st.textContent = css;
+}
+function setView(iframe, v){
+  const d = iframe.contentDocument; if(!d) return;
+  const tabs = [...d.querySelectorAll('button.t20')];
+  const hit = (t)=> tabs.filter(b=>b.textContent.trim()===t)[0];
+  if(v === 'tenkai'){ hit('展開') && hit('展開').click(); return; }
+  hit('出馬表') && hit('出馬表').click();
+  const b = d.querySelector('[data-view="'+v+'"]'); b && b.click();
+}
+function refresh(){
+  apply(fA,'now','all'); apply(fB,curFont,curScope);
+  setView(fA,curView); setView(fB,curView);
+  hB.firstChild.nodeValue = FONTS[curFont].name;
+  desc.textContent = FONTS[curFont].desc;
+}
+for(const f of [fA,fB]){
+  f.addEventListener('load', ()=> setTimeout(refresh, 350));
+}
+document.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('[data-f]').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on'); curFont=b.dataset.f; refresh();
+});
+document.getElementById('apt').onchange = ()=>refresh();
+document.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('[data-s]').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on'); curScope=b.dataset.s; refresh();
+});
+document.querySelectorAll('[data-z]').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('[data-z]').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on');
+  const z=parseFloat(b.dataset.z);
+  for(const f of [fA,fB]){ f.style.zoom=z; f.style.height=(z>1?520:760)/z+'px'; }
+  document.querySelectorAll('.side').forEach(s=>s.style.width=(375*z)+'px');
+  document.querySelector('.pair').classList.toggle('stack', z>1.6);
+});
+document.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('[data-v]').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on'); curView=b.dataset.v; refresh();
+});
+let lock=false;
+function link(src,dst){
+  src.contentWindow.addEventListener('scroll', ()=>{
+    if(!document.getElementById('sync').checked || lock) return;
+    lock=true; dst.contentWindow.scrollTo(0, src.contentWindow.scrollY);
+    setTimeout(()=>lock=false, 20);
+  });
+}
+setTimeout(()=>{ try{ link(fA,fB); link(fB,fA); }catch(e){} }, 1500);
+</script>
+</body>
+</html>

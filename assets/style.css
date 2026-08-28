@@ -3201,3 +3201,42 @@ body.noscroll{position:fixed;width:100%;overflow:hidden}
 .shinba-note .h{font-weight:700;font-size:11.5px;margin-bottom:3px;letter-spacing:.04em}
 .shinba-note p{margin:0}
 .shinba-note b{font-weight:700}
+
+/* ═══ 和文（日本語）の書体指定 — 戦績・新聞だけ（2026-08-28）═════════════
+   仕様: Kelpie.Inc/shared/keiba/handoff_2026-08-28_font-review.md
+
+   何が問題だったか:
+     --font には欧文の書体しか並んでおらず、日本語は最後の sans-serif
+     （ブラウザの初期設定）に落ちていた。Mac ならヒラギノ角ゴ W3、
+     Windows なら游ゴシック。どちらも細い部類で、端末ごとに太さが変わる。
+     戦績は画面に出ている文字の 78% が 11px 未満・最小 8px、新聞は最小 9px。
+     細く見える正体は「小さい × 標準の太さ(400) × 灰色」の重なりだった。
+
+   なぜ書体名で "Hiragino Sans W6" と書かないか:
+     1つの太さしか持たない指定になり、CSS に 309 か所ある font-weight:700
+     が全部効かなくなる（実測: 本文も太字も同じ濃さ 1372）。
+     書体は「ヒラギノ角ゴ」だけ指定し、太さ 600 で W6 を選ぶ。太字 700 は
+     自動で W7 になり、本文と見出しの差が残る。
+
+   範囲を戦績(.acard)と新聞(.npgrid)に絞る理由:
+     レース名・タブ・コース欄・展開タブは今のままでよい（2026-08-28 ユーザー判断）。
+     .acard は戦績の 1 頭 1 枚、.npgrid は新聞の柱の入れ物で、印のモードには
+     どちらも出ない（実測: 印 0 / 戦績 14 / 新聞 1）。
+
+   太さ 600 は代理指標（何を守るための数字か）:
+     守りたいのは「9〜10px の漢字を読み違えないこと」。600 はそのための当て値で、
+     8〜9px で字の中の空きが埋まって潰れるなら、600 のほうを 500 に落とす。
+   ═══════════════════════════════════════════════════════════════════ */
+.race20 .acard,
+.race20 .npgrid{
+  font-family:-apple-system,"system-ui","Segoe UI",Roboto,Oxygen,Ubuntu,"Helvetica Neue",Arial,
+    "Hiragino Sans","BIZ UDPGothic","Yu Gothic Medium",Meiryo,sans-serif;
+  font-weight:600;
+}
+/* コース適性の「条件」列は 1877 行で font-weight:400 が名指しで入っており、
+   上の 600 が届かない。新聞では 9px（サイト内で最小）で、「重不芝」「中京芝1600m」
+   のような画数の多い漢字がここに来るので、この 2 か所だけ 600 へ上げる。
+   「0」の値（td.c0）は数字であって漢字ではなく、無いことを示すために薄くして
+   あるので触らない。馬名ポップアップ内の同じ表も範囲外なので触らない。 */
+.race20 .acard table.crt th.l,.race20 .acard table.crt td.l,
+.race20 .npgrid table.crt th.l,.race20 .npgrid table.crt td.l{font-weight:600}
