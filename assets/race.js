@@ -2731,7 +2731,10 @@ function setupShutuba20(site) {
     openPopup = null;
     const back = backTo;
     backTo = null;
-    if (back) { openPopupById(back); return; }   // 戻り先があるなら閉じずに入れ替える
+    // 戻り先があるなら閉じずに入れ替える。入れ替えでも「1つ閉じて1つ開く」なので、
+    // 先に止めを外してから開き直す。外さずに開くと lock だけが1つ余り、
+    // そのあと最後の覆いを閉じても body の noscroll が解けない（読み込み直すまで動かせない）
+    if (back) { unlockPageScroll(); openPopupById(back); return; }
     bg.classList.remove('on');
     unlockPageScroll();                 // 111-spec §3.8
   };
