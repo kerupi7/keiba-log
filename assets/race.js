@@ -1308,6 +1308,14 @@ function upsetConfidence(upset) {
 //     （大荒れ19% / 中荒れ77% でラベルは大荒れ、が起きる）
 // 大きく出す数字を「見立てクラスの確率」から「その予想が当たった率」へ替えたのが要点。
 // 前者はレースの性質、後者は予想の確からしさで、混ぜると 4 が起きる。
+//
+// 【2026-08-31・ユーザー決定】帯の数字は「見立てクラスの確率」へ戻した。
+// 一覧のチップ（index.js upsetChipHtml）は確率を出しており、同じ見た目のチップが
+// 一覧と詳細で別物を指していた（一覧「堅い65%」→詳細「堅い78%」→開くと内訳「堅い65%」）。
+// 当たった率は札の中の .upconf に言葉つきで残す（そこでだけ意味が読める）。
+// 上の 4（ラベルが確率最大とは限らない）は画面に説明が無いままになる。
+// predict.json 側に threshold_line（例「大荒れが19%以上なので大荒れ」）はあるが、
+// 2026-08-27 の作り直しで描画から落ちており、ここでも描いていない。
 // 3クラスの内訳は折りたたみに残す（同じ大荒れでも堅いが0%か34%かで中身が違うため）。
 //
 // bigpayHtml（3連単100万超え・103-spec）は折りたたみの**上**に入れる（110-spec §2）。
@@ -1316,7 +1324,8 @@ function renderUpset20(upset) {
   if (!upset || !Array.isArray(upset.classes) || upset.classes.length !== 3) return null;
   const sel = upset.classes.find((c) => c.selected) || upset.classes[0];
   const conf = upsetConfidence(upset);
-  // 45%未満は「当てにならない帯」。数字を灰にして、強い予想と見た目で分ける
+  // 45%未満は「当てにならない帯」。帯を灰にして、強い予想と見た目で分ける
+  // （2026-08-31以降、灰にする根拠は当たった率のまま。帯に出す数字だけ確率へ戻した）
   const low = conf && conf.rate < 45;
 
   // 折りたたみの中の3クラス。並びは 堅い → 中荒れ → 大荒れ で固定（確率順にしない）
@@ -1354,7 +1363,8 @@ function renderUpset20(upset) {
     // 帯の中に置く分（renderShutuba20 が差し込む）。押すと札が開く
     band: `<button type="button" class="up${low ? ' low' : ''}" data-pop="upset">`
       + `<span class="nm">${escapeHtml(upset.label_name)}</span>`
-      + (conf ? `<span class="pv">${conf.rate}<small>%</small></span>` : '')
+      + (typeof sel.percent === 'number'
+        ? `<span class="pv">${sel.percent}<small>%</small></span>` : '')
       + `<i class="apop">▸</i></button>`,
     // 札の中身。renderShutuba20 が他の札と一緒に並べる
     popup: `
