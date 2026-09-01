@@ -381,10 +381,10 @@ function renderVerificationSection(site) {
 // 画面に出す数字は、それだけで意味が通じるものに限る（着順・人気・通過順・時計・払戻）。
 // 判定の根拠（件数・有意差・該当率）は仕様書に置き、ここには出さない。
 
-const REVIEW_CORNER_GAP = { '': 5, ',': 17, '-': 34, '=': 58 };
-
 // netkeibaのコーナー表記を [{sep, nums, lead}] に分解する。
-// 記号はすべて「前の馬との間隔」を表すので、記号のままではなく横のすき間で描く。
+// 記号（, - =）は前の馬との間隔だが、**横のすき間としては描かない**。
+// 2026-08-31 の段7で「前の馬との距離は消す」を本人が選んだため、sep は順番を決めるためだけに使う。
+// かたまり（1馬身未満・カッコ書き）は残す。
 function reviewParseCorner(txt) {
   const out = [];
   let sep = '';
@@ -412,33 +412,111 @@ function reviewParseCorner(txt) {
   return out;
 }
 
-function renderReviewCorners(review, byNumber, top3) {
+// 回顧の「コーナー通過順位」。デザイン部の正本（案4）をそのまま実装したもの。
+//   businesses/design/dept/finish/data/2026-08-31_race-review-corner/adopted.html
+//   決定メモは同フォルダの decision.md（2026-09-01 の段8で確定）
+// ・段は**あるだけ全部**（1角〜4角）＋ゴールの1段。ゴールを足したのは、4角→ゴールで
+//   51%の馬が3番手以上動くため（段2の実測）
+// ・横は4区画。割り方は keiba_review.style_of と同じ（1番手＝逃げ、以降は
+//   通過順÷出走頭数を 0.33 / 0.66 で切る）。同じ馬が段ごとに横へ平均25pxずれるのを止める形
+// ・1〜3着はネイビーの太枠＋上に着順。他の馬も今までどおり馬番で読める
+// ・上の帯＝最初のコーナーでその位置にいた馬の結果（最高着順と3着内の頭数）
+const REVIEW_ZONE_LABELS = ['逃げ', '先行', '差し', '追込'];
+
+function reviewZoneOf(rank, field) {
+  if (!rank || !field) return null;
+  if (rank === 1) return 0;
+  const r = rank / field;
+  return r <= 0.33 ? 1 : (r <= 0.66 ? 2 : 3);
+}
+
+// 1つの段の並びを4区画へ割る。かたまりが区画の境目をまたぐときは割って両側に置く
+// （先頭の (*2,11) は順位1と2なので必ず割れる。割った側それぞれに丸背景を出す）
+function reviewZonesOf(els, field) {
+  const z = [[], [], [], []];
+  let rank = 1;
+  for (const el of els) {
+    const buf = {};
+    for (const t of el.nums) {
+      const k = reviewZoneOf(rank, field);
+      rank += 1;
+      if (k === null) continue;
+      (buf[k] = buf[k] || []).push({ num: Number(t), lead: el.lead === t });
+    }
+    for (const k of Object.keys(buf)) z[k].push({ members: buf[k], multi: el.nums.length > 1 });
+  }
+  return z;
+}
+
+function reviewCornerPiece(m, byNumber, top3, showFin) {
+  const gate = (byNumber[m.num] || {}).gate;
+  const fin = top3[m.num];
+  const lead = m.lead ? '<i class="rc-lead">▸</i>' : '';
+  const lbl = showFin && fin ? `${fin}着` : '';
+  return `${lead}<span class="rc-pz${fin ? ' rc-top' : ''}"><span class="rc-fin">${escapeHtml(lbl)}</span>${umaBox(m.num, gate, 'sm')}</span>`;
+}
+
+function reviewCornerRow(label, els, field, byNumber, top3, showFin, cls) {
+  const cells = reviewZonesOf(els, field).map((groups) => {
+    const inner = groups.map((g) => {
+      const boxes = g.members.map((m) => reviewCornerPiece(m, byNumber, top3, showFin)).join('');
+      return g.multi ? `<span class="rc-grp">${boxes}</span>` : boxes;
+    }).join('');
+    return `<div class="rc-z"><div class="rc-hs">${inner}</div></div>`;
+  }).join('');
+  return `<div class="rc-row seq${cls ? ` ${cls}` : ''}">
+    <div class="rc-lab">${escapeHtml(label)}</div>
+    <div class="rc-zones">${cells}</div></div>`;
+}
+
+// 最初のコーナーでその区画にいた馬が、結局どうなったか
+function reviewCornerHead(els, field, finishOf) {
+  const cells = reviewZonesOf(els, field).map((groups, i) => {
+    const ns = groups.flatMap((g) => g.members.map((m) => m.num))
+      .filter((n) => finishOf[n]).sort((a, b) => finishOf[a] - finishOf[b]);
+    const all = groups.flatMap((g) => g.members.map((m) => m.num));
+    const best = ns.length ? finishOf[ns[0]] : null;
+    const t3 = ns.filter((n) => finishOf[n] <= 3).length;
+    const cls = best === 1 ? 'r-win' : (t3 ? 'r-top' : 'r-non');
+    const val = all.length
+      ? `<div class="rc-v"><span class="g${t3 ? '' : ' none'}">${best ? `<b>${best}</b><small>着</small>` : '<b>—</b>'}</span>
+          <span class="p">3着内 ${t3}/${all.length}</span></div>`
+      : '<div class="rc-v"><span class="g none"><b>—</b></span><span class="p">0頭</span></div>';
+    return `<div class="rc-z ${cls}"><span class="rc-b">${REVIEW_ZONE_LABELS[i]}<span class="c">${all.length}</span></span>${val}</div>`;
+  }).join('');
+  return `<div class="rc-row head"><div class="rc-lab"></div><div class="rc-zones">${cells}</div></div>`;
+}
+
+function renderReviewCorners(site, byNumber, top3) {
+  const review = site.review || {};
   const raw = (review.race && review.race.corners) || {};
   const keys = Object.keys(raw).sort();
+  // コーナーが0段のレース（直線だけ）はブロックごと出さない。285件中7件（2%）
   if (!keys.length) return '';
-  const rows = keys.map((k) => {
-    const parts = reviewParseCorner(raw[k]).map((el, idx) => {
-      const boxes = el.nums.map((t) => {
-        const n = Number(t);
-        const h = byNumber[n] || {};
-        const cls = top3[n] ? ' rv-top' : '';
-        return `${el.lead === t ? '<i class="rv-lead">▸</i>' : ''}<span class="rv-um${cls}">${umaBox(n, h.gate, 'sm')}</span>`;
-      }).join('');
-      const grp = `<span class="rv-grp${el.nums.length > 1 ? ' multi' : ''}">${boxes}</span>`;
-      if (idx === 0) return grp;
-      const w = REVIEW_CORNER_GAP[el.sep] ?? 5;
-      return `<span class="rv-gap" style="width:${w}px"></span>${el.sep === '=' ? '<span class="rv-far"></span>' : ''}${grp}`;
-    }).join('');
-    return `<tr><th class="l">${escapeHtml(k[0])}コーナー</th><td class="l rv-seq">${parts}</td></tr>`;
-  }).join('');
+  // 出走頭数。取消・除外を除いた頭数で、区画の切り方（0.33 / 0.66）の分母になる
+  const runners = (site.horses || []).filter((h) => !h.scratched);
+  const field = runners.length;
+  if (!field) return '';
+  const finishOf = {};
+  for (const h of runners) if (h.finish) finishOf[h.number] = h.finish;
+
+  const first = reviewParseCorner(raw[keys[0]]);
+  const rows = keys.map((k) => reviewCornerRow(`${k[0]}角`, reviewParseCorner(raw[k]), field, byNumber, top3, true, '')).join('');
+  // ゴールの段。着順順に並べ替えて同じ4区画へ流す。着順が無い馬（中止・失格）は載せない
+  const goalEls = runners.filter((h) => h.finish).sort((a, b) => a.finish - b.finish)
+    .map((h) => ({ sep: '', nums: [String(h.number)], lead: null }));
+  const goal = goalEls.length ? reviewCornerRow('ゴール', goalEls, field, byNumber, top3, false, 'goal') : '';
+
   return `<div class="rv-corner"><div class="rv-cap">コーナー通過順位</div>
-    <table class="rv-ctbl"><tbody>${rows}</tbody></table>
+    <div class="rc-map"><div class="rc-field"><div class="rc-rail"></div>
+      ${reviewCornerHead(first, field, finishOf)}${rows}${goal}</div></div>
     <details class="fold"><summary><span class="tri"></span>記号の見方</summary>
       <div class="fold-body"><table><tbody>
+        <tr><th class="l">横の区画</th><td class="l">その段での位置。左が前。分け方は最初のコーナーと同じ式（1番手＝逃げ、あとは通過順÷出走頭数）</td></tr>
+        <tr><th class="l">上の帯</th><td class="l">最初のコーナーでその位置にいた馬の結果。最高着順と3着内の頭数</td></tr>
         <tr><th class="l">かたまり</th><td class="l">1馬身未満で並んでいる馬群。内側の馬番から並べる</td></tr>
         <tr><th class="l">▸</th><td class="l">その馬群の中でいちばん前にいる馬</td></tr>
-        <tr><th class="l">すき間</th><td class="l">広いほど前の馬から離れている</td></tr>
-        <tr><th class="l">太い枠</th><td class="l">1〜3着の馬</td></tr>
+        <tr><th class="l">太い枠</th><td class="l">1〜3着の馬。上に着順を出す</td></tr>
       </tbody></table></div>
     </details></div>`;
 }
@@ -869,7 +947,7 @@ function renderReviewSection(site) {
     <div class="rv-facts">${facts}</div>
     ${factsNote}
     ${renderReviewLap(race.lap)}
-    ${renderReviewCorners(review, byNumber, top3)}
+    ${renderReviewCorners(site, byNumber, top3)}
 
     <div class="eyebrow">印と買い目</div>
     ${marked.length ? `<div class="rv-msum"><div class="rv-sbs">${markBand}</div>

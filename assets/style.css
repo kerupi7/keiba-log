@@ -1626,18 +1626,62 @@ details.fo-more .fold-body{padding-bottom:10px;}
 .rv-note{font-size:11.5px;color:var(--cap);margin-top:5px;}
 .rv-corner{margin-top:18px;border:1px solid var(--rule);padding:10px 12px;background:var(--sub-bg);}
 .rv-cap{font-size:11px;color:var(--cap);margin-bottom:4px;}
-.rv-ctbl{width:100%;border-collapse:collapse;}
-.rv-ctbl th{width:82px;font-size:11.5px;color:var(--cap);font-weight:400;border:none;
-  padding:3px 6px 3px 0;text-align:left;vertical-align:middle;}
-.rv-ctbl td{border:none;padding:4px 0;}
-.rv-seq{line-height:2.4;}
-.rv-grp{display:inline-block;white-space:nowrap;vertical-align:middle;}
-.rv-grp.multi{background:#E7ECF1;border-radius:11px;padding:2px 5px;}
-.rv-um{display:inline-block;}
-.rv-um.rv-top .uma{outline:2px solid var(--navy);outline-offset:1px;}
-.rv-gap{display:inline-block;height:1px;vertical-align:middle;}
-.rv-far{display:inline-block;width:1px;height:16px;background:#B9C4CD;
-  vertical-align:middle;margin-right:6px;}
+/* コーナー通過順位の地図（2026-09-01）。デザイン部の正本 案4をそのまま入れたもの。
+   businesses/design/dept/finish/data/2026-08-31_race-review-corner/adopted.html
+   芝の地・区画の破線・等級チップの作りは §5 脚質（.race20 .lmap）と同じ考え方だが、
+   段が5つ縦に並ぶぶん値が違うので、クラスは分けて置く（rc- ＝ review corner）。
+   旧版（横のすき間で距離を描く .rv-ctbl / .rv-seq / .rv-um / .rv-gap / .rv-far）は
+   段7で「前の馬との距離は消す」が選ばれたため、ここで削除した。
+   ※旧版の 1〜3着の太枠は `.rv-um.rv-top .uma` を狙っていたが、馬番の札が出すクラスは
+     `.hn` で `.uma` はページのどこにも無く、**太枠は1本も出ていなかった** */
+.rc-map{margin-top:4px;border:1px solid var(--rule);border-radius:8px;overflow:hidden;
+  background:var(--bg);}
+.rc-field{padding:0 0 8px;
+  background:linear-gradient(180deg,#DCEBF7 0%,#DCEBF7 7%,#93CB93 7%,#7FBF7F 100%);}
+.rc-rail{height:5px;margin-bottom:7px;
+  background:repeating-linear-gradient(90deg,#fff 0 7px,#cfd8d0 7px 12px);
+  border-top:1px solid #b8c6bc;border-bottom:1px solid #b8c6bc;}
+.rc-row{display:flex;align-items:stretch;}
+.rc-row.seq{border-top:1px solid rgba(255,255,255,.35);}
+.rc-row.goal{background:rgba(255,255,255,.5);}
+.rc-lab{flex:none;width:28px;padding:5px 0 0 4px;font-size:10px;font-weight:700;
+  color:#0B3D1E;line-height:1.25;}
+.rc-zones{display:flex;flex:1;min-width:0;padding:0 6px;}
+.rc-z{flex:1;text-align:center;min-width:0;padding:0 2px;}
+.rc-z+.rc-z{border-left:1px dashed rgba(255,255,255,.6);}
+.rc-row.head .rc-z{padding-bottom:6px;}
+.rc-z .rc-b{display:inline-flex;align-items:baseline;gap:4px;padding:2px 8px;
+  border-radius:999px;background:var(--rcg,#4E5862);color:#fff;font-size:10.5px;font-weight:700;}
+.rc-z .rc-b .c{font-size:9px;opacity:.85;font-weight:400;}
+.rc-z.r-win{--rcg:#0B5E2E;} .rc-z.r-top{--rcg:#1F6B3A;} .rc-z.r-non{--rcg:#4E5862;}
+.rc-v{margin-top:4px;}
+.rc-v .g{display:inline-flex;align-items:baseline;justify-content:center;gap:1px;
+  min-width:20px;height:20px;padding:0 6px;border-radius:6px;background:var(--rcg,#4E5862);
+  color:#fff;font-weight:800;line-height:20px;border:1.5px solid rgba(255,255,255,.85);}
+.rc-v .g b{font-size:12px;} .rc-v .g small{font-size:9.5px;font-weight:700;}
+.rc-v .g.none{background:#6B7B70;}
+.rc-v .p{display:block;font-size:9.5px;font-weight:700;color:#1B3D22;margin-top:2px;}
+.rc-hs{display:flex;flex-wrap:wrap;gap:3px;justify-content:center;padding:2px 0 3px;
+  min-height:22px;}
+.rc-pz{display:inline-flex;flex-direction:column;align-items:center;}
+/* 着順の文字。芝の緑(#7FBF7F)に対して #06421F は5.35で、4.5以上を満たす */
+.rc-fin{height:14px;line-height:10px;font-size:8.5px;font-weight:800;color:#06421F;}
+.rc-grp{display:inline-flex;gap:2px;background:rgba(255,255,255,.55);border-radius:11px;
+  padding:2px 4px;align-items:flex-start;}
+.rc-lead{font-style:normal;font-size:9px;color:#0B3D1E;font-weight:700;align-self:center;
+  margin-right:-1px;}
+.rc-top .hn{outline:2.5px solid var(--navy);outline-offset:1.5px;}
+/* 段8（2026-09-01 見直し）で直した2点。基準の1枚 #4・#5 の由来になっている
+   ①着順の箱は 10px では足りない。枠が札の外へ 2.5+1.5=4px 出るので文字と重なる
+     → 14px にして重なりを0にした（.rc-fin の height）
+   ②着順の箱は1〜3着以外にも同じ高さで持たせ、単独の札にもかたまりと同じ上の余白2pxを付ける
+     → 付けないと同じ段で馬番の上端が 0 / 2 / 6px の3段階に散る */
+.rc-hs>.rc-pz{padding:2px 0;}
+/* 「記号の見方」の説明文を折り返す。全体の th,td は nowrap（:124）なので、
+   325px幅の枠に対して表が672pxになり、.race20 .rv-corner の overflow:hidden で
+   右が切れていた（旧版の短い行のときから切れていた）。ここだけ折り返す */
+.rv-corner .fold-body td{white-space:normal;}
+.rv-corner .fold-body th{width:62px;}
 .rv-lead-mark,.rv-lead i{font-style:normal;}
 .rv-summ{font-size:13px;margin:14px 0 8px;} .rv-summ b{font-size:15px;}
 /* 印の的中サマリー。◎○▲△を横に並べ、3着以内だったものを緑で塗る。
@@ -2032,7 +2076,6 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
 .race20 .ahead .pj{display:inline-block;width:4em;flex:none}
 
 /* コーナー通過順位が枠からはみ出ないよう折り返す（馬群のかたまりは割らない） */
-.race20 .rv-ctbl td.rv-seq{white-space:normal}
 .race20 .rv-corner{overflow:hidden}
 
 /* 過去走の帯：勝ち＝金、僅差＝緑（芝0.4秒・ダート0.6秒以内。97-spec §9.9） */
