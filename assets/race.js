@@ -764,6 +764,11 @@ function renderReviewSection(site) {
   for (const t of (result.top3 || [])) top3[t.number] = t.finish;
 
   // ── 1. どんなレースだったか ──
+  // 「レースの型」は6マス（ペース × 勝ち馬の1コーナーの位置）で、馬名ポップアップの
+  // 「レースの型べつ成績」と同じ呼び名・同じ切り方（keiba_review.race_type_result）。
+  // **隣の「決着」とは別の見方**（あちらは上位3頭の4角平均位置）なので、
+  // 「差し有利 × 前が楽に残る」のように食い違うことがある。注記を facts の下に出す。
+  const rtype = race.race_type || {};
   const facts = [
     ['ペース', race.pace && race.pace.act ? paceWord(race.pace.act) : '—',
       race.pace && race.pace.hit === false ? `${paceWord(race.pace.pred)}と読んでいた` : (race.pace && race.pace.hit ? '読みと一致' : ''),
@@ -771,11 +776,22 @@ function renderReviewSection(site) {
     ['決着', race.bias && race.bias.act ? race.bias.act : '—',
       race.bias && race.bias.pred ? `${race.bias.pred}と読んでいた` : '',
       race.bias ? race.bias.hit : null],
+    // 型が無いのは 2026-09-01 より前に回顧を作ったページ。「—」のカードを出さず、
+    // カードごと消す（93-spec §7「過去に公開済みのレースは再生成しない」）
+    ...(rtype.act_label ? [['レースの型', rtype.act_label,
+      rtype.hit === false && rtype.pred_label ? `${rtype.pred_label}と読んでいた`
+        : (rtype.hit ? '読みと一致' : ''),
+      rtype.hit, 'long']] : []),
     ['ラップ', race.lap ? race.lap.label : '—', '', null],
     ['勝ち時計', race.winning_time || '—', winningTimeNote(race.winning_time_eval), null],
-  ].map(([lbl, val, sub, ok]) => `<div class="rv-fact${ok === false ? ' bad' : ''}">
-      <div class="rv-fl">${escapeHtml(lbl)}</div><div class="rv-fv">${escapeHtml(String(val))}</div>
+  ].map(([lbl, val, sub, ok, cls]) => `<div class="rv-fact${ok === false ? ' bad' : ''}">
+      <div class="rv-fl">${escapeHtml(lbl)}</div>
+      <div class="rv-fv${cls ? ` ${cls}` : ''}">${escapeHtml(String(val))}</div>
       <div class="rv-fs">${sub && sub.html ? sub.html : escapeHtml(sub || '')}</div></div>`).join('');
+  const factsNote = rtype.act_label
+    ? '<div class="rv-fnote">レースの型は、ペースと勝ち馬が1コーナーを何番手で通ったかの'
+      + '組み合わせです（6通り）。決着の欄は上位3頭の4角平均の位置で、別の見方です</div>'
+    : '';
 
   // ── 2. 印と買い目 ──
   // 印をつけた馬を ◎○▲△ の順に1本の配列にする。サマリーのバッジ列と下のカードで
@@ -851,6 +867,7 @@ function renderReviewSection(site) {
     <div class="eyebrow">どんなレースだったか</div>
     ${race.lead ? `<div class="rv-lead">${escapeHtml(race.lead)}</div>` : ''}
     <div class="rv-facts">${facts}</div>
+    ${factsNote}
     ${renderReviewLap(race.lap)}
     ${renderReviewCorners(review, byNumber, top3)}
 
@@ -1737,6 +1754,93 @@ function levelRecordTable(h) {
   `;
 }
 
+// ============================================================
+// レースの型べつ成績（handoff_2026-08-31_race-type-per-horse.md）
+//
+// 93-spec の6マス（ペース S/M/H × 決着 前残り／差し・追込）に、その馬の過去走を
+// 割り振ったもの。コース適性が「今日と同じ条件をどれだけ走ったか」なのに対し、
+// こちらは「どういう流れのレースで走れているか」。
+//
+// **画面にペース記号（S/M/H）と「前残り／差し・追込」は出さない**（決定①）。
+// 情景の言い切りだけを出す。並び順はデータ側で固定（消耗戦 → 一瞬勝負）。
+// 走数0のマスも行を消さない（「そのレースは走っていない」も情報のため）。
+//
+// 濃淡はその馬の**平常**の3着内率との差。全馬平均ではない（決定④）。
+// 平常が高い馬はどのマスも濃くなりようがないという穴は承知のうえで、
+// 代わりにブロックの最後に「この馬の平常」を必ず出す（中央の出走110,652件のうち
+// 平常8割以上は2,148件＝1.9%）。
+// ============================================================
+//
+// 今日の予想がどのマスに当たるかは `prediction.scenario` の main/sub/other から引く
+// （展開タブの renderScenarioGrid20 と同じ出どころ・同じ本命/対抗/3番手）。
+// **確率は目安で「この展開になります」の断定ではない**（展開タブの注記と同じ扱い）。
+// scenario_grid ではなく scenario を見るのは、6マス表示より前に公開したページにも
+// main/sub/other は入っているため（公開済み285レースを見て grid が無いのは1レース）。
+const RT_CUE_LABEL = { main: '本命', sub: '対抗', other: '3番手' };
+
+function raceTypeCues(pred) {
+  const sc = (pred || {}).scenario;
+  if (!sc) return {};
+  const out = {};
+  for (const key of ['main', 'sub', 'other']) {
+    const c = sc[key];
+    if (!c || !c.code || !c.side) continue;
+    const code = `${c.code}_${c.side === '前' ? '前残り' : '差し・追込'}`;
+    if (out[code]) continue;   // 同じマスに2つ付かない（先に見た本命側を残す）
+    out[code] = { key, label: RT_CUE_LABEL[key], pct: Math.round((c.prob || 0) * 100) };
+  }
+  return out;
+}
+
+function raceTypeTable(h, pred) {
+  const rt = h.race_type_record;
+  if (!rt || !rt.rows || !rt.rows.length) return '';
+  const ov = rt.overall || {};
+  const cues = raceTypeCues(pred);
+  // 2026-09-01（mockup-163 案D-1・ユーザー決定）: すぐ上のコース適性と同じ表にする。
+  // 列も並びも同じ 1着 / 2着 / 3着 / 着外 で、`table.crt` のCSSをそのまま使う。
+  // 前の形（`4走 ／2勝 2着内`）は「着内」が略語で、勝ちが3着以内に含まれる入れ子なのも
+  // 伝わらなかった。表にすると読み方を覚え直さなくて済み、2着と3着も分かれる。
+  // 濃さ（その馬の平常との差）は**型の名前のセルだけ**に付ける。数字のセルは白のまま。
+  const rows = rt.rows.map((r) => {
+    const c = cues[r.code];
+    const cls = [];
+    if (!r.n) cls.push('zero');
+    if (c) cls.push('aptx');   // 今日の3マス。コース適性の「今日の条件」と同じ帯
+    const cue = c ? `<span class="tcue ${c.key}">${c.label}<b>${c.pct}%</b></span>` : '';
+    const tds = (r.counts || [0, 0, 0, 0])
+      .map((v) => `<td class="${v === 0 ? 'c0' : ''}">${v}</td>`).join('');
+    return `<tr${cls.length ? ` class="${cls.join(' ')}"` : ''}>`
+      + `<td class="l ${r.shade}">${escapeHtml(r.label)}${cue}</td>${tds}</tr>`;
+  }).join('');
+  // 見出しの下に1行。今日どの型を見ているかを言葉で出す（3番手は出さない。
+  // 本命と対抗で7割前後を占め、3つ目まで並べると行が長くなるため）
+  const byKey = {};
+  rt.rows.forEach((r) => { if (cues[r.code]) byKey[cues[r.code].key] = { r, c: cues[r.code] }; });
+  const todayLine = byKey.main
+    ? `<div class="rtnow">今日の見立ては <b>${escapeHtml(byKey.main.r.label)}</b> ${byKey.main.c.pct}%`
+      + (byKey.sub ? `／次点は ${escapeHtml(byKey.sub.r.label)} ${byKey.sub.c.pct}%` : '')
+      + '<span class="rtnowc">確率は目安</span></div>'
+    : '';
+  // 型が付かない走は黙って消さない（2021年より前の走にはペースが入っていない）
+  const rest = rt.unlabeled
+    ? `<div class="lvn">型が付かない ${rt.unlabeled}走（ペースが取れていない走。2021年より前はほぼ全部）は入っていない</div>`
+    : '';
+  const base = ov.n
+    ? `<div class="rtbase">この馬の平常 3着内 ${Math.round(ov.top3_pct)}%（${ov.n}走）</div>`
+    : `<div class="crn">型の付いた走なし（中央 ${rt.central_starts}走）</div>`;
+  return `
+    <div class="crh">レースの型べつ成績（中央のみ・全走）</div>
+    ${todayLine}
+    ${rest}
+    <table class="crt rtt">
+      <thead><tr><th class="l">レースの型</th><th>1着</th><th>2着</th><th>3着</th><th>着外</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    ${base}
+  `;
+}
+
 // 126-spec §5: 札と新聞の面に出すコース適性。見出しは自分で出す（表は bare で取る）
 function courseBlock(h) {
   const t = courseRecordTable(h, true);
@@ -2236,7 +2340,7 @@ function popupRunsTable(h) {
     <div class="pthint">← 横にスクロールできます</div>`;
 }
 
-function popupBody(h) {
+function popupBody(h, site) {
   const kg = h.weight_carried != null ? String(h.weight_carried).replace(/\.0$/, '') : '—';
   // 札の見出しと同じ赤オッズにする（片方だけ黒だと不具合に見えるため）
   const oddsTxt = h.odds != null
@@ -2253,6 +2357,7 @@ function popupBody(h) {
       ${markWhyBlock(h)}
       ${itemWhyBlock(h)}
       ${courseRecordTable(h)}
+      ${raceTypeTable(h, (site || {}).prediction)}
       ${levelRecordTable(h)}
       ${popupRunsTable(h)}
     </div>`;
@@ -2694,7 +2799,7 @@ function renderPopups20(site) {
         <div class="pbody">${window.CourseTab.render(site)}</div>
       </div>` : '';
   return site.horses.filter((h) => !h.scratched)
-    .map((h) => `<div class="popup" id="pop-${h.number}">${popupBody(h)}</div>`).join('')
+    .map((h) => `<div class="popup" id="pop-${h.number}">${popupBody(h, site)}</div>`).join('')
     + (up ? up.popup : '') + crs;
 }
 
