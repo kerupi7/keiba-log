@@ -3655,7 +3655,7 @@ function renderCourseBabaBar20(site, g, iv, ov) {
       + `<span class="w">${escapeHtml(g.flat_label || '')}</span></div>`);
   }
 
-  // (3) 今日の馬場 ＋ (4)(5) 実測の見込み。中身は renderBaba20 と同じ元データ。
+  // (3) 今日の馬場 ＋ (4)(5) 実測の見込み。元データは prediction.baba_detail。
   const p = site.prediction;
   const bd = p.baba_detail || {};
   const disp = (p.display || {}).baba;
@@ -3800,20 +3800,11 @@ function renderWeekTrend20(site) {
     + `<div class="cbbar wk">${cells.join('')}</div>`;
 }
 
-function renderBaba20(site) {
-  // 馬場の青い枠は 2026-08-27 に無くなった。中身の行き先は次のとおり。
-  //   今日の馬場・平年との差・時計の一言 → 1本バー（renderCourseBabaBar20）
-  //   勝ちタイム・上がり3F             → 同じく1本バー
-  //   含水率の生の値・クッション値・目盛り → 削除（バーの1行が同じ話を読み下している）
-  //   仮柵                             → 1本バーの「今日の馬場」のマスの先頭
-  // 旧データ（level / normal を持たないぶん）は今も旧ブロックへ落とすので null を返す。
-  const p = site.prediction;
-  const bd = p.baba_detail;
-  const isTurf = String(site.race.surface || '').startsWith('芝');
-  const src = (bd || {})[isTurf ? 'cushion_detail' : 'moisture_detail'] || {};
-  if (!src.level || !src.normal) return null;   // 旧データ → 呼び出し側が旧ブロックへ落とす
-  return '';
-}
+// renderBaba20 は 2026-09-02 に削除した。呼ぶ所が無くなったため。中身の行き先は次のとおり。
+//   今日の馬場・平年との差・時計の一言 → 1本バー（renderCourseBabaBar20）
+//   勝ちタイム・上がり3F             → 同じく1本バー
+//   含水率の生の値・クッション値・目盛り → 削除（バーの1行が同じ話を読み下している）
+//   仮柵                             → 1本バーの「今日の馬場」のマスの先頭
 
 // §5 脚質 ────────────────────────────────────────────────
 // 判定の文言（2026-08-06）。旧「効きにくい／効く」は、そのコースでの複勝率が4脚質のうち
@@ -3945,76 +3936,17 @@ function renderOverview20(site) {
   const r = site.race;
   const p = site.prediction;
   const sections = [];
-  const byNumberOv = {};
-  for (const h of site.horses) byNumberOv[h.number] = h;
 
   // (a) 108-spec §2/T3: 基本情報4行（.info1）は renderHeader20 へ移した。ここでは出さない。
   //     代わりに先頭へ「コースの形」を置く（§3）。display が無い旧データでは空文字が返る。
   sections.push(renderCourseShape20(site));
 
-  // (b) 馬場踏み込み
-  // 2026-08-01: クッション値をJRA公式から測定時刻つきで取れるようになり、過去4年ぶんも
-  // 揃ったので「前日からの変化」「その競馬場の平年比」まで出す。いずれも観測された事実で、
-  // どの馬が有利かの主張はしない（馬場適性は予測力ゼロと確定しているため）。
-  // 108-spec §4/T5: display と新しい baba_detail がそろえば新ブロック。
-  // 無ければ下の旧ブロックへ落ちる（93-spec §7 と同じ縮退）。
-  const baba108 = renderBaba20(site);
-  if (baba108 !== null) {
-    if (baba108) sections.push(baba108);
-  } else if (p.baba_detail) {
-    const bd = p.baba_detail;
-    const favs = bd.favorites || [];
-    const favHtml = favs.map((f) => `<span class="fav"><span class="nm">${umaBox(Number(f.number), (byNumberOv[f.number] || {}).gate, 'sm')} ${escapeHtml(f.name)}</span> <span class="rs">（${escapeHtml(f.reason)}）</span></span>`).join('');
-    const l2Html = favs.length ? `<div class="l2"><span class="h">この馬場が得意:</span>${favHtml}</div>` : '';
-
-    // 見出し行。headline が無い旧データは display_text をそのまま出す（後方互換）
-    const headHtml = bd.headline
-      ? `<div class="l1">${escapeHtml(bd.headline)}</div>`
-      : `<div class="l1">${escapeHtml(bd.display_text || '')}</div>`;
-
-    const rows = [];
-    const cu = bd.cushion_detail;
-    if (cu && cu.value != null) {
-      const staleHtml = cu.stale ? '<span class="stale">前日以前の値</span>' : '';
-      rows.push(`<div class="mrow">
-        <span class="k">クッション値</span>
-        <span class="v">${escapeHtml(String(cu.value))}</span>
-        <span class="t">${escapeHtml(cu.measured_label || '')}</span>${staleHtml}
-      </div>`);
-      const sub = [];
-      if (cu.prev && cu.prev.value != null) {
-        sub.push(`<span class="k">前回 ${escapeHtml(cu.prev.label || '')}</span>
-          <span class="v">${escapeHtml(String(cu.prev.value))}</span>
-          <span class="d ${deltaCls(cu.prev.delta)}">${signed(cu.prev.delta)}</span>
-          <span class="w">${escapeHtml(cu.prev.trend || '')}</span>`);
-      }
-      if (cu.normal && cu.normal.mean != null) {
-        sub.push(`<span class="k">${escapeHtml(cu.normal.scope || '')}の平年</span>
-          <span class="v">${escapeHtml(String(cu.normal.mean))}</span>
-          <span class="d ${deltaCls(cu.normal.delta)}">${signed(cu.normal.delta)}</span>
-          <span class="w">${escapeHtml(cu.normal.label || '')}</span>
-          <span class="n">${cu.normal.n}回ぶん</span>`);
-      }
-      for (const s of sub) rows.push(`<div class="mrow sub">${s}</div>`);
-    }
-    const mo = bd.moisture_detail;
-    if (mo && mo.goal != null) {
-      rows.push(`<div class="mrow">
-        <span class="k">含水率 ${escapeHtml(mo.surface || '')}</span>
-        <span class="v">G前 ${escapeHtml(String(mo.goal))}% ／ 4C ${escapeHtml(String(mo.corner4))}%</span>
-        <span class="t">${escapeHtml(mo.measured_label || '')}</span>
-      </div>`);
-    }
-    const measureHtml = rows.length ? `<div class="l3">${rows.join('')}</div>` : '';
-
-    sections.push(`
-      <div class="babadetail">
-        ${headHtml}
-        ${measureHtml}
-        ${l2Html}
-      </div>
-    `);
-  }
+  // (b) 馬場の青い枠は 2026-09-02 に完全に削除した（ユーザー決定）。
+  // 2026-08-27 に廃止したはずだったが、平年（その競馬場のいつもの含水率）を出せない
+  // レースだけ旧ブロックへ落ちて生き残っていた。実測で 8/1〜8/30 の29レースが該当
+  // （札幌・中京のダート稍重など。同じ競馬場・同じ馬場状態の過去測定が20日に満たない日）。
+  // 中身の行き先は renderCourseBabaBar20 の (3) を見ること。平年が出ない日は
+  // 1本バーの「今日の馬場」のマスも出ないので、その日は馬場の行が1本も出ない。
 
   // (b-2) 今週の馬場。上の1本バーが「このコースの過去の平均」で、こちらが「今週の実測」。
   // 対になっているので隣に置く（2026-08-27 に枠順マップの下から移動）。
