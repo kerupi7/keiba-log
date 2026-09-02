@@ -2293,7 +2293,7 @@ function runNameSpan(raceName) {
 //   .vtab  走の見出し（前走・2走前…）。縦書き。横書きだと「3走前」で28px要るところが13pxで済む
 //
 // 2026-09-02: デザイン部の正本（見本H＋区切りB）どおりに、1走を上下2段へ作り直した。
-//   .vr1（上段）  着順17px・「着」・着差・勝ち馬・レースレベル。地色を敷いて線で下と切る
+//   .vr1（上段）  着順17px・「着」・着差・勝ち馬・相手の最高成績・レースレベル。地色を敷いて線で下と切る
 //   .vr2（下段）  4行。.l1 いつ・どこ ／ .l2 走りの数字 ／ .l2 人と体 ／ .l3 回顧メモのタグ
 // 直した3つ（デザイン部 decision.md §5）:
 //   1. 走の高さの跳ね（60〜87px）が、3行目の折り返しから来ていた → タグを独立した行にした
@@ -2309,6 +2309,24 @@ function runNameSpan(raceName) {
 // 枠色のボックスにせず文字で書くのは、色だけでは何枠か言えないため。
 // 代償は1行目のレース名で、375px幅・18頭の実測で81走中39走が「…」になる。
 // 切れた名前は馬名ポップアップの全戦績の表に全文が出る（mockup-52 案Bで決めた通り）。
+// 着順を争った相手（勝ち馬。自分が勝った回は2着馬）の、**今の時点での**最高成績。
+// 「出走した中でいちばん格の高いクラス × そのクラスでの最高着順」で、
+// 例＝1勝クラスを勝って2勝クラスで7着なら「2勝クラス7着」（2026-09-02 決定）。
+// 中央の平地だけを数える（地方・障害は入らない）。データは keiba_shutuba_columns.py が作る。
+// 表示だけで、点数にも印にも買い目にも入っていない。
+// compact=true（新聞の柱）はクラスの語を落として「3勝3着」にする。このページは
+// クラスのバッジ自体が「3勝」「OP」「G3」表記（shutubaRaceClass）なので、語を落としても
+// 同じ言葉のままになる。落とす理由は幅で、落とさないと柱214pxでは勝ち馬の名前が
+// 58走中38走で「…」に縮む（2026-09-02 実測。落とせば5走）。札の側は幅に余裕があるので
+// 「3勝クラス3着」と書ききる（同レースの札60走で名前が縮んだのは0走）。
+function winnerBestSpan(p, compact) {
+  if (!p.winner_best) return '';
+  const t = `${p.winner || 'この相手'}の現時点の最高成績 ${p.winner_best}`
+    + '（中央の平地・出走した中でいちばん上のクラスでの最高着順）';
+  const txt = compact ? p.winner_best.replace('クラス', '') : p.winner_best;
+  return `<span class="wb" title="${escapeHtml(t)}">${escapeHtml(txt)}</span>`;
+}
+
 function runWakuText(p) {
   // 旧い publish 済みページは馬番が `gate` という名前で入っている（中身は同じ）
   const uma = p.umaban ?? p.gate;
@@ -2336,7 +2354,7 @@ function runLine3(p, label) {
   const notes = runNoteTags(p.note_labels);
   const noteTitle = notes && p.note_text ? ` title="${escapeHtml(p.note_text)}"` : '';
   return `<div class="vrun${runBandClass(p)}"><span class="vtab">${escapeHtml(label)}</span><div class="vrb vsplit">
-    <div class="vr1">${shutubaFinBox(p.finish)}<span class="fu">着</span><span class="mg">(${marginText(p)})</span><span class="wn">${escapeHtml(p.winner || '')}</span>${levelBadge(p)}</div>
+    <div class="vr1">${shutubaFinBox(p.finish)}<span class="fu">着</span><span class="mg">(${marginText(p)})</span><span class="wn">${escapeHtml(p.winner || '')}</span>${winnerBestSpan(p)}${levelBadge(p)}</div>
     <div class="vr2">
       <div class="l1"><span class="dt">${shutubaMd(p.date)}</span><span class="tk">${escapeHtml(p.track || '')}</span>${classBadge(p.grade, p.race_name)}${runNameSpan(p.race_name)}</div>
       <div class="l2">${cond}${rankSpan(p.time ?? '—', p.time_grade || '', timeTitle, 'tm')}${cornersHtml(p.corners)}${rankSpan(p.last_3f ?? '—', rankCls, agTitle)}<span class="rgt">${scenarioHtml(p.scenario)}</span></div>
@@ -2479,8 +2497,10 @@ function spineHtml(h) {
 // 消（＝この馬は切る）と ー（＝見たうえで印なし）も印のひとつとして扱う。
 // 印を取り消すのは「いま付いている印をもう一度押す」（2026-08-06 ユーザー決定で
 // 「元に戻す」「閉じる」のボタンを外したため、消しゴム専用のボタンは持たない）。
-const MM_MARKS = ['◎', '○', '▲', '△', '☆', '消'];
-const MM_CLS = { '◎': 'm1', '○': 'm2', '▲': 'm3', '△': 'm4', '☆': 'm5', '消': 'm6' };
+// ✓（チェック）は 2026-09-02 追加。◎○▲△☆と同じ「買う側」の印で、頭数の上限は持たない
+// （◎○▲は1頭まで＝MM_SINGLE。✓ はそこに入れない）。並びは ☆ の次・消 の手前。
+const MM_MARKS = ['◎', '○', '▲', '△', '☆', '✓', '消'];
+const MM_CLS = { '◎': 'm1', '○': 'm2', '▲': 'm3', '△': 'm4', '☆': 'm5', '✓': 'm7', '消': 'm6' };
 const MM_SINGLE = new Set(['◎', '○', '▲']);   // 1頭までの印
 const MM = { key: '', marks: {}, target: null, by: {}, sheet: null, shade: null };
 
@@ -2774,7 +2794,7 @@ function npRunName(raceName) {
 
 // 過去走1走。札の runLine3 を柱の幅174pxに組み替えたもの（札も 2026-09-02 に上下2段になった）。
 // 2026-09-02: デザイン部の正本（上段＝見本C／下段＝見本E）どおりに作り直した。
-//   上段（.np1）  着順・着差・勝ち馬。着順は10.5px→18pxで柱の中でいちばん大きい文字になる
+//   上段（.np1）  着順・着差・勝ち馬・相手の最高成績。着順は10.5px→18pxで柱の中でいちばん大きい文字になる
 //   下段（.np2）  5行。間隔は4pxの倍数（近い2行4px・遠い2行8px）
 // 項目は1つも減らしていない。正本の見本には無かった**レース名（.rnm）だけ足してある**
 // ＝正本の見本データは3歳未勝利で過去走の71.7%がクラス名だけの走だったため、
@@ -2796,7 +2816,7 @@ function npRun(p) {
   const notes = runNoteTags((p.note_labels || []).slice(0, 1));
   const noteTitle = notes && p.note_text ? ` title="${escapeHtml(p.note_text)}"` : '';
   return `<div class="nprun${runBandClass(p)}">
-    <div class="np1">${shutubaFinBox(p.finish)}<span class="fu">着</span><span class="mg">(${marginText(p)})</span><span class="wn">${escapeHtml(p.winner || '')}</span></div>
+    <div class="np1">${shutubaFinBox(p.finish)}<span class="fu">着</span><span class="mg">(${marginText(p)})</span><span class="wn">${escapeHtml(p.winner || '')}</span>${winnerBestSpan(p, true)}</div>
     <div class="np2">
       <div class="r1">${levelBadge(p)}<span class="dt">${shutubaMd(p.date)}</span><span class="tk">${escapeHtml(p.track || '')}</span>${classBadge(p.grade, p.race_name)}</div>
       <div class="r3">${cond}<span class="nm hd">${escapeHtml(p.runners ?? '—')}頭</span>${runWakuText(p)}<span class="nm pp">${escapeHtml(p.popularity ?? '—')}人</span></div>
