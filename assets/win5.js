@@ -486,9 +486,10 @@ function w5pParseYen(text) {
 // ===== 印から配当を見る（順算）=====
 // 印の正本は出馬表側（race.js の localStorage mymark:{race_id}）。ここでは**読むだけ**で、
 // 書き戻さない。「消」は買わない印なので選択に入れない。
-const W5P_MY_OK = { '◎': 1, '○': 1, '▲': 1, '△': 1, '☆': 1 };
+// ✓ も買う側の印なので初期選択に入れる（2026-09-02 追加。消だけが外れる）
+const W5P_MY_OK = { '◎': 1, '○': 1, '▲': 1, '△': 1, '☆': 1, '✓': 1 };
 // 印の濃さは買い目アキネーターと同じ（.ak-mk hon/tai/tan/oku）。◎が一番濃い
-const W5P_MY_CLS = { '◎': 'hon', '○': 'tai', '▲': 'tan', '△': 'oku', '☆': 'oku' };
+const W5P_MY_CLS = { '◎': 'hon', '○': 'tai', '▲': 'tan', '△': 'oku', '☆': 'oku', '✓': 'oku' };
 
 function w5pMyMarks(raceId) {
   try {
