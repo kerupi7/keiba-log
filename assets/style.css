@@ -2085,8 +2085,9 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
 .race20 table.pastt tr.pb-close td:first-child{box-shadow:inset 4px 0 0 #3D7EBB}
 
 /* ============================================================
-   106-spec §5.3: 過去走1走（横3行）。105-spec の6行マス（幅168px固定）を、
-   画面幅を使い切る横3行に組み替えた。項目は12のままで1つも減らしていない。
+   106-spec §5.3: 過去走1走。105-spec の6行マス（幅168px固定）を、画面幅を
+   使い切る形に組み替えた。項目は12のままで1つも減らしていない。
+   2026-09-02: デザイン部の正本（見本H＋区切りB）どおりに、上下2段へ作り直した。
    ============================================================ */
 .race20 .vrun{display:flex;gap:0;border:1px solid var(--rule);border-radius:5px;background:#fff;
   overflow:hidden;margin-bottom:3px}
@@ -2097,6 +2098,38 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
   display:flex;align-items:center;justify-content:center}
 .race20 .vrun .vrb{flex:1 1 auto;min-width:0;padding:3px 5px;font-size:10px;line-height:1.55}
 .race20 .vrun .vrb>div{display:flex;gap:4px;align-items:center;white-space:nowrap}
+/* ── 上下2段（2026-09-02 デザイン部の正本・見本H＋区切りB）──
+   上段（.vr1）＝結果だけの段。着順17px・「着」・着差・勝ち馬・レースレベル。
+   地色（--sub-bg2）と下線で本文と切る。休養マス・空マスは1段のままなので、
+   分けた走だけ .vsplit を付けて .vrb の余白を外す。 */
+.race20 .vrun .vrb.vsplit{padding:0}
+.race20 .vrun .vrb>.vr1{padding:3px 5px;background:var(--sub-bg2);
+  border-bottom:1px solid var(--rule)}
+.race20 .vrun .vrb>.vr2{display:block;padding:3px 5px}
+.race20 .vrun .vr2>div{display:flex;gap:4px;align-items:center;white-space:nowrap}
+/* 下段の .l1 / .l2 は列間を1px詰める（4px→3px）。上下2段に割る前は .vrb の直下に
+   あって .vrb>.l1 / .vrb>.l2 が効いていたが、.vr2 の中へ入ったので書き直した */
+.race20 .vrun .vr2>.l1,.race20 .vrun .vr2>.l2{gap:3px}
+/* 着順の箱は走の中でいちばん大きい文字。26×21px・14px → 30×24px・17px。
+   17pxは「走の中で最大」を保つための代理指標で、行が入らなくなるなら
+   17pxのほうを落とす（幅は広げられないため。106-spec §2.1） */
+.race20 .vrun .vr1 .fb{flex:none;width:30px;height:24px;min-width:0;padding:0;font-size:17px}
+/* 着順の単位。数字より小さく薄くして、17pxの数字の読み取りを邪魔しない */
+.race20 .vrun .vr1 .fu{flex:none;font-size:9px;color:var(--cap)}
+.race20 .vrun .vr1 .mg{flex:none;font-variant-numeric:tabular-nums;color:var(--cap)}
+.race20 .vrun .vr1 .wn{overflow:hidden;text-overflow:ellipsis;max-width:9em}
+/* 斤量・馬体重の単位（新聞モードと同じ .uu） */
+.race20 .vrun .uu{font-style:normal;font-size:9px;color:var(--cap);margin-left:1px}
+/* 各行の右に102pxの欄を作り、その左に線を1本引く（区切りB）。
+   2行とも同じ幅・同じ位置なので、線が縦にそろって「ここから別の話」が読める。
+   96pxは「8枠18番 18頭 16人」の実測85.2pxに余白を足した代理指標で、
+   入らない走が出るなら幅ではなく中身の並びのほうを見直す（幅は広げられない）。
+   デザイン部の正本は102pxだが、正本の見本は札の外枠が本番より14px広く（見本300px・
+   本番286px）、102pxのままだと「走りの数字」の行が本番で全ての走で4.2pxはみ出した。
+   数値ではなく「行がはみ出さない」ほうを守った（数値ルールは代理指標）。 */
+.race20 .vrun .l2>.rgt{flex:none;width:96px;margin-left:auto;padding-left:6px;
+  border-left:1px solid #C9C9C4;display:flex;align-items:center;gap:3px;
+  justify-content:flex-start;overflow:hidden}
 /* §5.2.2: 勝ち＝金／僅差で負け＝青。色は2つだけ。
    2026-08-05: マスを面で塗るのをやめ、左端の見出し帯（もともと13px幅ある）だけを塗る。
    帯を別に足すと本文の幅が削られて騎手名が切れるので、既にある帯を色の置き場所に使う。 */
@@ -2114,9 +2147,11 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
    .l1 / .l3 まで書いているのは、既にある指定（.race20 .vrun .l1 .dt 等）と
    セレクタの数をそろえないと勝てないため（実測：省くと日付が #757575 のままだった）。 */
 .race20 .vrun.pb-win .l1 .dt,.race20 .vrun.pb-close .l1 .dt,
-.race20 .vrun.pb-win .l3 .mg,.race20 .vrun.pb-close .l3 .mg,
-.race20 .vrun.pb-win .l3 .nm,.race20 .vrun.pb-close .l3 .nm,
-.race20 .vrun.pb-win .l3 .sc,.race20 .vrun.pb-close .l3 .sc{color:#5C5C5C}
+.race20 .vrun.pb-win .vr1 .mg,.race20 .vrun.pb-close .vr1 .mg,
+.race20 .vrun.pb-win .l2 .nm,.race20 .vrun.pb-close .l2 .nm,
+.race20 .vrun.pb-win .l2 .sc,.race20 .vrun.pb-close .l2 .sc{color:#5C5C5C}
+/* 上段は地色を敷くので、勝ち・僅差の色は上段には広げない（線で切れている） */
+.race20 .vrun.pb-win .vrb>.vr1,.race20 .vrun.pb-close .vrb>.vr1{background:rgba(255,255,255,.45)}
 .race20 .vrun .l1 .dt{color:var(--cap);font-variant-numeric:tabular-nums}
 .race20 .vrun .l1 .tk{font-weight:700}
 /* レース名は1行目の余った幅だけ使い、入らない分は「…」（mockup-52 案B）。
@@ -2125,13 +2160,11 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
   white-space:nowrap;font-weight:700}
 /* 着順・頭数・人気は桁数がまちまちなので、幅を決めて縦に揃える。
    決めないと「7人」と「16人」の差だけ着順の箱が左右にずれて読みにくい */
-/* 着順は行の先頭。1桁と2桁で箱の幅が変わると左右にずれるので幅を決めて止める。
-   2026-08-05: 19×16px・文字10.5px → 26×21px・文字14px（面積1.8倍）に拡げた */
-.race20 .vrun .l1 .fb{flex:none;width:26px;height:21px;min-width:0;padding:0;font-size:14px}
+/* 着順は 2026-09-02 に上段（.vr1）へ移した。1行目に残っているのはバッジと日付だけ */
 /* バッジ類は幅が足りなくても縮ませない。縮むと中の文字が切れる
    （2026-08-18: iPhone縦で「未勝利」が「未勝禾」・「Lv B」が「Lv 」になっていた）。
    足りない分はレース名（.rnm）だけが引き受け、入らなければ「…」で丸める。 */
-.race20 .vrun .l1 .fb,.race20 .vrun .l1 .lv,.race20 .vrun .l1 .cb,
+.race20 .vrun .l1 .lv,.race20 .vrun .l1 .cb,
 .race20 .vrun .l1 .dt,.race20 .vrun .l1 .tk{flex:none}
 /* 1行目だけ列間を1px詰める。AI評価を外した2026-08-23以降は8か所 */
 .race20 .vrun .vrb>.l1{gap:3px}
@@ -2139,25 +2172,25 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
    59px足りない。折り返さないとレース名が幅0になって消える（「湯浜特別」のような
    特別戦では名前が主役なので、消すと読めなくなる）。
    折り返すのは幅460px未満だけで、PC・タブレットの見た目は変わらない。 */
-/* 枠番・頭数・人気（.nmg）は3行目の右端に置く（2026-08-18 ユーザー決定）。
-   1行目に置くと iPhone縦（親幅286px）で必要幅296pxに10px足りず、折り返して
-   「レース名の右」と「数字群の左」に穴が2つできていた。3行目は空きが30〜188pxあり、
-   たいていの走は1行に収まる（回顧メモが3つ付く走だけ2行になる。実測15本中3本）。
+/* 枠番・頭数・人気（.nmg）は 2026-09-02 に「人と体」の行の右の欄（.rgt）へ移した。
+   2026-08-18〜09-01 は3行目の右端に置いていたが、その3行目は回顧メモのタグと
+   同居していたため、タグが付く走（30.3%）で折り返して走の高さが跳ねていた。
    1つのまとまりにしてあるのは、バラバラに折り返すと走ごとに位置が変わるため。 */
-.race20 .vrun .l3 .nmg{display:flex;gap:3px;flex:none;margin-left:auto;align-items:center}
-.race20 .vrun .l1 .nm{color:var(--sub);font-variant-numeric:tabular-nums;
+.race20 .vrun .nmg{display:flex;gap:3px;flex:none;align-items:center}
+.race20 .vrun .nm{color:var(--sub);font-variant-numeric:tabular-nums;
   flex:none;text-align:right}
-.race20 .vrun .l1 .nm.hd{width:3.3em}
-.race20 .vrun .l1 .nm.pp{width:2.7em}
 /* 115-spec: その走の枠番・馬番。頭数の左に置き、頭数・人気と同じく幅を決めて縦に揃える。
    枠番が出せない走は「15番」だけになるので、右寄せにして馬番の桁を縦にそろえる。
    幅4.0em＝40px は、いちばん長い「8枠18番」の実測37.8px（10px・iPhone縦）に合わせた最小値。
    広く取るとその分だけレース名が短くなるので、余らせない */
-.race20 .vrun .l1 .wkn{flex:none;width:4em;text-align:right;color:var(--sub);
+.race20 .vrun .wkn{flex:none;text-align:right;color:var(--sub);
   font-variant-numeric:tabular-nums}
-.race20 .vrun .l1 .wkn b{font-weight:400;color:var(--text)}
-/* 2行目は「条件・タイム・通過順・上がり・騎手・斤量・馬体重」の7列。走ごとに
-   桁数や箱の有無で幅が変わると縦に揃わないので、騎手以外は幅を決める。
+.race20 .vrun .wkn b{font-weight:400;color:var(--text)}
+/* 下段の .l2 は2本ある。上が「走りの数字」（条件・タイム・通過順・上がり｜展開）、
+   下が「人と体」（騎手・斤量・馬体重｜枠番・頭数・人気）。
+   2026-09-01 までは7項目を1行に詰めており、53走すべてが幅286pxを使い切って
+   余白が1pxも無かった（デザイン部の実測）。2行に割って余白を作った。
+   走ごとに桁数や箱の有無で幅が変わると縦に揃わないので、騎手以外は幅を決める。
    余りは騎手が受け持つ（＝騎手の書き出しも結果的に揃う） */
 .race20 .vrun .l2{color:var(--sub)}
 /* 列の間隔だけ 4px→3px に詰める。騎手名4文字（40px）が入る幅を作るため。
@@ -2191,11 +2224,14 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
 .race20 .vrun .l2 .jk{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
 .race20 .vrun .l2 .kg,.race20 .vrun .l2 .bw{font-variant-numeric:tabular-nums;
   flex:none;text-align:right}
-.race20 .vrun .l2 .kg{width:2.6em}
-.race20 .vrun .l2 .bw{width:2.4em}
-.race20 .vrun .l3{color:var(--sub);flex-wrap:wrap}
-.race20 .vrun .l3 .wn{overflow:hidden;text-overflow:ellipsis;max-width:9em}
-.race20 .vrun .l3 .mg{font-variant-numeric:tabular-nums}
+/* 単位（kg）を足したぶん広げる。2.6em/2.4em のままだと「58kg」「492kg」が切れる */
+.race20 .vrun .l2 .kg{width:3.7em}
+.race20 .vrun .l2 .bw{width:3.5em}
+/* 3行目は回顧メモのタグだけの行にした（2026-09-02）。タグが無い走（69.7%）でも
+   15px空けておく。空けないと、タグの有無で走の高さが15px変わって隣とそろわない。
+   15pxはタグ1つぶんの高さの代理指標で、タグが2行になる走が出るなら
+   高さを固定するのではなく折り返させる（項目を減らさないほうが先） */
+.race20 .vrun .l3{color:var(--sub);flex-wrap:wrap;min-height:15px}
 .race20 .vrun .l3 .nt{margin:0 2px 1px 0}
 .race20 .vrun.rest{background:var(--sub-bg2)}
 .race20 .vrun.rest .vrb,.race20 .vrun.empty .vrb{color:var(--cap);text-align:center}
@@ -2222,7 +2258,7 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
 .race20 .sc{display:inline-block;font-size:9.5px;font-weight:700;border-radius:3px;padding:0 3px;
   background:var(--sub-bg2);color:var(--sub);flex:none;line-height:1.5}
 .race20 .sc.none{font-weight:400;color:var(--cap);background:none;padding:0}
-.race20 .vrun .l3 .sc{background:none;padding:0;color:var(--sub);font-weight:400}
+.race20 .vrun .l2 .sc{background:none;padding:0;color:var(--sub);font-weight:400}
 
 /* ============================================================
    111-spec: 自分の印（印のマスを押す → 下からシートが上がる）

@@ -2288,12 +2288,18 @@ function runNameSpan(raceName) {
   return `<span class="rnm" title="${escapeHtml(n)}">${escapeHtml(n)}</span>`;
 }
 
-// 106-spec §5.3: 過去走1走（横3行）。105-spec の6行マス（幅168px固定）を、画面幅を
-// 使い切る横3行に組み替えたもの。**項目は12のままで1つも減らしていない**。
+// 106-spec §5.3: 過去走1走。105-spec の6行マス（幅168px固定）を、画面幅を使い切る形に
+// 組み替えたもの。**項目は12のままで1つも減らしていない**。
 //   .vtab  走の見出し（前走・2走前…）。縦書き。横書きだと「3走前」で28px要るところが13pxで済む
-//   .l1    着順・日付・場・クラス・レース名・頭数・人気
-//   .l2    条件・タイム・通過順4マス・上がり3F・騎手・斤量・馬体重
-//   .l3    展開・勝ち馬・着差・回顧メモ
+//
+// 2026-09-02: デザイン部の正本（見本H＋区切りB）どおりに、1走を上下2段へ作り直した。
+//   .vr1（上段）  着順17px・「着」・着差・勝ち馬・レースレベル。地色を敷いて線で下と切る
+//   .vr2（下段）  4行。.l1 いつ・どこ ／ .l2 走りの数字 ／ .l2 人と体 ／ .l3 回顧メモのタグ
+// 直した3つ（デザイン部 decision.md §5）:
+//   1. 走の高さの跳ね（60〜87px）が、3行目の折り返しから来ていた → タグを独立した行にした
+//   2. 2行目が幅286pxを53走すべてで使い切っていた → 人と体を別の行へ移した
+//   3. 2行目の7項目が全部10pxで見分けが付かない → 各行の右に102pxの欄を作り、線を1本引いた
+// **幅は広げていない**（106-spec §2.1・横スクロールを0に保つ）。伸びるのは高さだけ。
 //
 // 着順は 2026-08-05 に行の先頭へ移し、箱を 19×16px→26×21px（文字10.5→14px）に拡げた。
 // 左端で全走そろうので、5走ぶんの着順が縦一列に読める（新聞の着順柱と同じ読み方）。
@@ -2318,8 +2324,10 @@ function runWakuText(p) {
 // データ側の ai_grade / ai_miss は生成も配信も続けており、消したのは戦績欄の表示だけ。
 function runLine3(p, label) {
   const cond = condHtml(p);
-  const bw = p.body_weight != null ? String(p.body_weight) : '—';
-  const kg = p.weight != null ? escapeHtml(String(p.weight)) : '—';
+  // 単位を書く（58 → 58kg）。単位が無いと斤量58と馬体重492が同じ「ただの数字」に見える。
+  // 値が無い走は「—」だけを出す（「—kg」にしない）
+  const bw = p.body_weight != null ? `${escapeHtml(String(p.body_weight))}<i class="uu">kg</i>` : '—';
+  const kg = p.weight != null ? `${escapeHtml(String(p.weight))}<i class="uu">kg</i>` : '—';
   const rankCls = { 1: 'f1', 2: 'f2', 3: 'f3' }[p.last3f_rank] || '';
   const agTitle = p.last3f_rank ? `このレースの上がり${p.last3f_rank}位` : '上がり3F';
   const timeTitle = p.time_grade
@@ -2327,10 +2335,14 @@ function runLine3(p, label) {
     : (p.time_note || '');
   const notes = runNoteTags(p.note_labels);
   const noteTitle = notes && p.note_text ? ` title="${escapeHtml(p.note_text)}"` : '';
-  return `<div class="vrun${runBandClass(p)}"><span class="vtab">${escapeHtml(label)}</span><div class="vrb">
-    <div class="l1">${shutubaFinBox(p.finish)}${levelBadge(p)}<span class="dt">${shutubaMd(p.date)}</span><span class="tk">${escapeHtml(p.track || '')}</span>${classBadge(p.grade, p.race_name)}${runNameSpan(p.race_name)}</div>
-    <div class="l2">${cond}${rankSpan(p.time ?? '—', p.time_grade || '', timeTitle, 'tm')}${cornersHtml(p.corners)}${rankSpan(p.last_3f ?? '—', rankCls, agTitle)}<span class="jk">${escapeHtml(p.jockey ?? '—')}</span><span class="kg">${kg}</span><span class="bw">${bw}</span></div>
-    <div class="l3"${noteTitle}>${scenarioHtml(p.scenario)}<span class="wn">${escapeHtml(p.winner || '')}</span><span class="mg">(${marginText(p)})</span>${notes}<span class="nmg">${runWakuText(p)}<span class="nm hd">${escapeHtml(p.runners ?? '—')}頭</span><span class="nm pp">${escapeHtml(p.popularity ?? '—')}人</span></span></div>
+  return `<div class="vrun${runBandClass(p)}"><span class="vtab">${escapeHtml(label)}</span><div class="vrb vsplit">
+    <div class="vr1">${shutubaFinBox(p.finish)}<span class="fu">着</span><span class="mg">(${marginText(p)})</span><span class="wn">${escapeHtml(p.winner || '')}</span>${levelBadge(p)}</div>
+    <div class="vr2">
+      <div class="l1"><span class="dt">${shutubaMd(p.date)}</span><span class="tk">${escapeHtml(p.track || '')}</span>${classBadge(p.grade, p.race_name)}${runNameSpan(p.race_name)}</div>
+      <div class="l2">${cond}${rankSpan(p.time ?? '—', p.time_grade || '', timeTitle, 'tm')}${cornersHtml(p.corners)}${rankSpan(p.last_3f ?? '—', rankCls, agTitle)}<span class="rgt">${scenarioHtml(p.scenario)}</span></div>
+      <div class="l2"><span class="jk">${escapeHtml(p.jockey ?? '—')}</span><span class="kg">${kg}</span><span class="bw">${bw}</span><span class="rgt nmg">${runWakuText(p)}<span class="nm hd">${escapeHtml(p.runners ?? '—')}頭</span><span class="nm pp">${escapeHtml(p.popularity ?? '—')}人</span></span></div>
+      <div class="l3"${noteTitle}>${notes}</div>
+    </div>
   </div></div>`;
 }
 
@@ -2760,7 +2772,7 @@ function npRunName(raceName) {
   return `<span class="rnm" title="${escapeHtml(n)}">${escapeHtml(n)}</span>`;
 }
 
-// 過去走1走。札の runLine3（横3行）を柱の幅174pxに組み替えたもの。
+// 過去走1走。札の runLine3 を柱の幅174pxに組み替えたもの（札も 2026-09-02 に上下2段になった）。
 // 2026-09-02: デザイン部の正本（上段＝見本C／下段＝見本E）どおりに作り直した。
 //   上段（.np1）  着順・着差・勝ち馬。着順は10.5px→18pxで柱の中でいちばん大きい文字になる
 //   下段（.np2）  5行。間隔は4pxの倍数（近い2行4px・遠い2行8px）
