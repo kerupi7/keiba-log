@@ -3034,7 +3034,7 @@ body.noscroll{position:fixed;width:100%;overflow:hidden}
 .race20 .shpaper{overflow-x:auto;overflow-y:hidden;margin-top:6px;
   -webkit-overflow-scrolling:touch}
 .race20 .npgrid{display:flex;align-items:flex-start;font-size:11px;width:max-content;
-  --nph-head:96px;--nph-run:92px}
+  --nph-head:96px;--nph-run:152px}
 /* 左端の目盛り列。柱を横に送っても残るよう貼り付ける */
 .race20 .nprail{position:sticky;left:0;z-index:3;flex:none;width:26px;
   background:var(--sub-bg);border-right:1px solid var(--rule-strong)}
@@ -3045,9 +3045,15 @@ body.noscroll{position:fixed;width:100%;overflow:hidden}
 .race20 .nprail .rlb{height:var(--nph-run);border-bottom:1px solid var(--rule);
   display:flex;align-items:center;justify-content:center;writing-mode:vertical-rl;
   font-size:10px;color:var(--cap);letter-spacing:.04em}
-/* 柱1本。幅154pxは375pxの画面で2本以上が同時に見えるための代理指標で、
-   過去走の行がはみ出すなら幅のほうを広げる（126-spec §4.1） */
-.race20 .npcol{flex:none;width:154px;border-right:1px solid var(--rule)}
+/* 柱1本。もとの幅154pxは「375pxの画面で2本以上が同時に見える」ための代理指標で、
+   過去走の行がはみ出すなら幅のほうを広げると決めてある（126-spec §4.1）。
+   2026-09-02: 154→214px。デザイン部の正本は174pxだが、正本の見本は通過順を
+   **2マス**で描いており、本番の4マス（CORNER_CELLS）だと3行目（.r4）が
+   174pxでは 204px 要って全ての走で切れる（4レース実測 203〜204px）。
+   214px＝204px＋左右の余白10px。数値ではなく「行が切れない」ほうを守った結果で、
+   代償は375pxの画面に丸ごと入る柱が2本→1本になること。
+   通過順を2マスに減らせば174pxに戻せるが、それは項目を減らす判断なのでしていない。 */
+.race20 .npcol{flex:none;width:214px;border-right:1px solid var(--rule)}
 /* 自分の印。好走条件は柱の頭（.nphead）だけを塗るので、頭から下は地が残る。 */
 .race20 .npcol.my-mark{background:#EFE9F7}
 .race20 .npcol.my-keshi{background:#F2F2F0}
@@ -3090,7 +3096,7 @@ body.noscroll{position:fixed;width:100%;overflow:hidden}
    消しの灰・AIの印の青）が過去走の行にも透けていた。勝ちでも僅差でもない走まで
    色が付いて見えるので、行は白で塗って柱の色を止める。
    勝ち・僅差・休養の行は下の指定が上書きするので、そちらの色は変わらない。 */
-.race20 .npcol .nprun{height:var(--nph-run);padding:3px 5px;line-height:1.35;
+.race20 .npcol .nprun{height:var(--nph-run);padding:0;line-height:1.35;
   border-bottom:1px solid var(--rule);overflow:hidden;background:#fff}
 /* 2026-08-27: 印モードと同じ濃さへ（#FFF9E8 / #F2F7FC から1段濃く）。
    薄い文字を濃くするのも同じ理由（上の .vrun のコメント参照）。 */
@@ -3099,14 +3105,32 @@ body.noscroll{position:fixed;width:100%;overflow:hidden}
 .race20 .npcol .nprun.pb-win .dt,.race20 .npcol .nprun.pb-close .dt,
 .race20 .npcol .nprun.pb-win .mg,.race20 .npcol .nprun.pb-close .mg,
 .race20 .npcol .nprun.pb-win .nm,.race20 .npcol .nprun.pb-close .nm,
-.race20 .npcol .nprun.pb-win .sc,.race20 .npcol .nprun.pb-close .sc,
-.race20 .npcol .nprun.pb-win .r6>.sc,.race20 .npcol .nprun.pb-close .r6>.sc,
-.race20 .npcol .nprun.pb-win .r6>.mg,.race20 .npcol .nprun.pb-close .r6>.mg{color:#5C5C5C}
+.race20 .npcol .nprun.pb-win .sc,.race20 .npcol .nprun.pb-close .sc{color:#5C5C5C}
 .race20 .npcol .nprun.rest{display:flex;align-items:center;justify-content:center;
   text-align:center;color:var(--cap);background:var(--sub-bg2)}
 .race20 .npcol .nprun.empty{background:repeating-linear-gradient(45deg,#fff,#fff 5px,#FAFAFA 5px,#FAFAFA 10px)}
-.race20 .npcol .nprun>div{display:flex;align-items:center;gap:3px;white-space:nowrap}
-.race20 .npcol .nprun .r2,.race20 .npcol .nprun .r6{color:var(--sub)}
+/* ── 過去走マスの上段と下段（2026-09-02 デザイン部の正本・見本C＋見本E） ──
+   上段（.np1）＝結果だけを独立した段にする。着順は柱の中でいちばん大きい文字（18px）。
+   38pxは着順の箱24px＋上下7pxの代理指標で、着順が柱の最大の文字でなくなるくらいなら
+   38pxのほうを捨てる。
+   下段（.np2）＝5行の間隔を4pxの倍数に固定する。近い2行は4px・遠い2行は8px。
+   4pxと8pxは「行の高さ×5＋間隔＝152px以内」に収めるための代理指標で、
+   はみ出して隠れる走が出るなら間隔ではなくマスの高さ（--nph-run）のほうを伸ばす。 */
+.race20 .npcol .nprun .np1{height:38px;padding:0 5px;border-bottom:1px solid var(--rule)}
+.race20 .npcol .nprun .np1 .fb{min-width:28px;height:24px;font-size:18px;margin-right:0}
+.race20 .npcol .nprun .np1 .fu{font-size:9.5px;color:var(--cap)}
+.race20 .npcol .nprun .np1 .mg{font-size:10.5px;flex:none}
+.race20 .npcol .nprun .np2{padding:4px 5px}
+.race20 .npcol .nprun .np2>div{margin-top:8px}
+.race20 .npcol .nprun .np2>div:first-child{margin-top:0}
+.race20 .npcol .nprun .np2>div:nth-child(2){margin-top:4px}
+/* 回顧メモのタグの行。タグが無い走（69.7%）でも高さを空けて、隣の馬と行がそろうようにする */
+.race20 .npcol .nprun .np2>.r2{min-height:15px}
+.race20 .npcol .nprun .np1,
+.race20 .npcol .nprun .np2>div{display:flex;align-items:center;gap:3px;white-space:nowrap}
+.race20 .npcol .nprun .r2{color:var(--sub)}
+/* 斤量・馬体重の単位。数字より小さく薄くして、数字の読み取りを邪魔しない */
+.race20 .npcol .nprun .uu{font-style:normal;font-size:9px;color:var(--cap);margin-left:1px}
 .race20 .npcol .nprun .r3{gap:2px;font-size:10.5px}
 .race20 .npcol .nprun .rnm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .race20 .npcol .nprun .jk{max-width:4.4em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -3114,7 +3138,9 @@ body.noscroll{position:fixed;width:100%;overflow:hidden}
    展開と着差は縮ませない（縮むと意味が読めなくなる） */
 .race20 .npcol .nprun .wn{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;
   white-space:nowrap;color:var(--cap)}
-.race20 .npcol .nprun .r6>.sc,.race20 .npcol .nprun .r6>.mg{flex:none}
+/* 3行目は数字の行。タイム・通過順・上がり・展開のどれも縮ませない
+   （縮むと数字が「…」で読めなくなる）。入らないときは柱の幅のほうを広げる */
+.race20 .npcol .nprun .r4>.sc,.race20 .npcol .nprun .r4>.val{flex:none}
 /* 回顧メモのタグはレース名の行。幅の上限は付けない（8.4emの上限を付けていたときは
    タグを出す3,611走のうち1,120走＝31.0%が切れていた）。名前（.rnm）が flex:1 なので
    取り合いになったら名前のほうが先に縮み、それでも入らないときだけタグが縮む */

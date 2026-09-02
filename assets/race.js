@@ -2760,27 +2760,38 @@ function npRunName(raceName) {
   return `<span class="rnm" title="${escapeHtml(n)}">${escapeHtml(n)}</span>`;
 }
 
-// 過去走1走（横6行・12項目）。札の runLine3（横3行）を柱の幅154pxに組み替えたもの
+// 過去走1走。札の runLine3（横3行）を柱の幅174pxに組み替えたもの。
+// 2026-09-02: デザイン部の正本（上段＝見本C／下段＝見本E）どおりに作り直した。
+//   上段（.np1）  着順・着差・勝ち馬。着順は10.5px→18pxで柱の中でいちばん大きい文字になる
+//   下段（.np2）  5行。間隔は4pxの倍数（近い2行4px・遠い2行8px）
+// 項目は1つも減らしていない。正本の見本には無かった**レース名（.rnm）だけ足してある**
+// ＝正本の見本データは3歳未勝利で過去走の71.7%がクラス名だけの走だったため、
+// 名前が出る28.3%の走が見本に1つも現れず、落ちたことが見えなかった。
+// 置き場所は回顧メモのタグと同じ行（従来と同じ組み合わせ）。
 function npRun(p) {
   const cond = condHtml(p);
-  const bw = p.body_weight != null ? String(p.body_weight) : '—';
-  const kg = p.weight != null ? escapeHtml(String(p.weight)) : '—';
+  // 単位を書く（57 → 57kg）。単位が無いと斤量57と馬体重432が同じ「ただの数字」に見える。
+  // 値が無い走は「—」だけを出す（「—kg」にしない）
+  const bw = p.body_weight != null ? `${escapeHtml(String(p.body_weight))}<i class="uu">kg</i>` : '—';
+  const kg = p.weight != null ? `${escapeHtml(String(p.weight))}<i class="uu">kg</i>` : '—';
   const rankCls = { 1: 'f1', 2: 'f2', 3: 'f3' }[p.last3f_rank] || '';
   const agTitle = p.last3f_rank ? `このレースの上がり${p.last3f_rank}位` : '上がり3F';
   const timeTitle = p.time_grade
     ? `基準比 ${p.time_resid > 0 ? '+' : ''}${p.time_resid}秒（当日の馬場差を補正後）・着差${marginText(p)}秒`
     : (p.time_note || '');
-  // 回顧メモのタグは1本だけ。柱の幅154pxに2本入れると勝ち馬が押し出される。
+  // 回顧メモのタグは1本だけ。柱の幅174pxに2本入れると勝ち馬が押し出される。
   // 全部は馬名ポップアップの回顧メモに出ている（126-spec §4.4）
   const notes = runNoteTags((p.note_labels || []).slice(0, 1));
   const noteTitle = notes && p.note_text ? ` title="${escapeHtml(p.note_text)}"` : '';
   return `<div class="nprun${runBandClass(p)}">
-    <div class="r1">${shutubaFinBox(p.finish)}${levelBadge(p)}<span class="dt">${shutubaMd(p.date)}</span><span class="tk">${escapeHtml(p.track || '')}</span>${classBadge(p.grade, p.race_name)}</div>
-    <div class="r2"${noteTitle}>${npRunName(p.race_name)}${notes}</div>
-    <div class="r3">${cond}<span class="nm hd">${escapeHtml(p.runners ?? '—')}頭</span>${runWakuText(p)}<span class="nm pp">${escapeHtml(p.popularity ?? '—')}人</span></div>
-    <div class="r4">${rankSpan(p.time ?? '—', p.time_grade || '', timeTitle, 'tm')}${cornersHtml(p.corners)}${rankSpan(p.last_3f ?? '—', rankCls, agTitle)}</div>
-    <div class="r5"><span class="jk">${escapeHtml(p.jockey ?? '—')}</span><span class="kg">${kg}</span><span class="bw">${bw}</span></div>
-    <div class="r6">${scenarioHtml(p.scenario)}<span class="mg">(${marginText(p)})</span><span class="wn">${escapeHtml(p.winner || '')}</span></div>
+    <div class="np1">${shutubaFinBox(p.finish)}<span class="fu">着</span><span class="mg">(${marginText(p)})</span><span class="wn">${escapeHtml(p.winner || '')}</span></div>
+    <div class="np2">
+      <div class="r1">${levelBadge(p)}<span class="dt">${shutubaMd(p.date)}</span><span class="tk">${escapeHtml(p.track || '')}</span>${classBadge(p.grade, p.race_name)}</div>
+      <div class="r3">${cond}<span class="nm hd">${escapeHtml(p.runners ?? '—')}頭</span>${runWakuText(p)}<span class="nm pp">${escapeHtml(p.popularity ?? '—')}人</span></div>
+      <div class="r4">${rankSpan(p.time ?? '—', p.time_grade || '', timeTitle, 'tm')}${cornersHtml(p.corners)}${rankSpan(p.last_3f ?? '—', rankCls, agTitle)}${scenarioHtml(p.scenario)}</div>
+      <div class="r3"><span class="jk">${escapeHtml(p.jockey ?? '—')}</span><span class="kg">${kg}</span><span class="bw">${bw}</span></div>
+      <div class="r2"${noteTitle}>${npRunName(p.race_name)}${notes}</div>
+    </div>
   </div>`;
 }
 
@@ -2807,7 +2818,7 @@ function npCol(h) {
   const kg = h.weight_carried != null ? String(h.weight_carried).replace(/\.0$/, '') : '—';
   // 柱の頭。押せるものが2つある（自分の印のマスと馬名）ので、頭ごとボタンにはできない。
   // 印は1マス（押すと下からシートが上がる）にした。札の7ボタン（mmInline）は
-  // 幅154pxだと1つ20pxを切って押しにくいため、一覧と同じシート方式にしている。
+  // 幅174pxだと1つ20pxを切って押しにくいため、一覧と同じシート方式にしている。
   return `<article class="npcol${h.ability_mark ? ' pred' : ''}" data-h="${h.number}">
     <div class="nphead">
       <div class="l1">${mmCell(h)}${markBadge20(h)}${umaBox(h.number, h.gate, 'sm')}</div>
