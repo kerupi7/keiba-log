@@ -2566,29 +2566,32 @@ function horseGradeBody(h) {
   // 文字の段（S〜E / A〜G）は使えない（既存の grade と見分けが付かない・依頼書 #1）。
   // 走数が足りない馬には出さない（既定は6走）。5走までは、いま出るランクが
   // 生涯のランクから中央値11ポイント以上ずれる。弱いのではなく固まっていないだけ。
+  // 星は**同じクラス帯の馬の中での位置**。帯を書かないと、未勝利で13%の馬が★★★★に
+  // なる理由が読めない（その帯の中では上位10%）。帯は札のすぐ横に出す。
   const rank = g.stars != null
-    ? `<span class="hgstars" title="上位${g.top_percent}％"><span class="hgst">★★★★★</span>`
+    ? `<span class="hgstars" title="${escapeHtml(g.band || '')}の中で上位${g.top_percent}％">`
+      + `<span class="hgst">★★★★★</span>`
       + `<span class="hgsf" style="width:${g.stars / 5 * 100}%">★★★★★</span></span>`
-    : `<span class="hgr none">ランクは${g.min_runs || 6}走から</span>`;
-  const min = g.min_runs || 6;
+      + `<span class="hgband">${escapeHtml(g.band || '')}の中で</span>`
+    : `<span class="hgr none">星は${g.min_runs || 3}走から</span>`;
+  const min = g.min_runs || 3;
   const runs = !g.runs
     ? 'まだ1走もしていないので、確かな分は0。棒は分からない分と伸びる分だけ。'
     : g.stars == null
-      ? `${g.runs}走ぶんの実績で出している。${min}走に届くまではランクを出さない`
-        + `（いまのランクは生涯のランクから中央値11ポイント以上ずれるため）。`
-      : `${g.runs}走ぶんの実績で出している。走が増えると真ん中の段が縮む。`;
+      ? `${g.runs}走ぶんの実績。直近${min}走がそろうまで星は出さない。`
+      : `直近${Math.min(g.runs, min)}走の成績で出している（通算${g.runs}走）。`;
   // ランクを出していない馬に「ランクは◯頭の中での位置」と書かない（言っていることが食い違う）
   // 星の元になった順位は、足の小さい文字にだけ残す（札には出さない）
   const pop = g.stars != null
-    ? `星は${min}走以上の${(g.population || 0).toLocaleString()}頭の中での位置`
-      + `（上位${g.top_percent}％）。` : '';
+    ? `星は${escapeHtml(g.band || '')}を走る${(g.band_horses || 0).toLocaleString()}頭の中での位置`
+      + `（上位${g.top_percent}％）。クラスをまたいだ強さは表さない。` : '';
   const local = g.local_starts ? `地方${g.local_starts}走は数えていない。` : '';
   const unscored = g.unscored
     ? `クラスが読めない${g.unscored}走は数えていない。` : '';
   return `
     <div class="crh">馬の格</div>
     <div class="hgnum"><b>${Math.round(g.pct)}</b><i>％</i>${rank}</div>
-    <div class="hgcap">競走馬として出せる力の上限を100％としたときの位置</div>
+    <div class="hgcap">直近の成績を、競走馬として出せる力の上限を100％として置いた位置</div>
     <div class="hgbar">
       ${seg('s1', g.sure, 'いま確かな分')}
       ${seg('s2', g.unknown, 'まだ分からない分')}
