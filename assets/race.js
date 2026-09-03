@@ -2178,6 +2178,8 @@ function itemDots(h) {
 // 上位側は実測で中位より複勝率が低く（7番人気以下で −1.3pt・−3.8σ）、絞り込みを
 // 18通り試しても人気3帯すべてでプラスになる条件が無かったため、良い側の印は作らない。
 // 見た目は「消せる理由」チップ（.idot.d-x）と同じにする＝専用のCSSを足さない。
+// 2026-09-03 ユーザー指示で戦績の札から外した（関数は残す）。**いまはどこにも出ていない。**
+// itemDots（近走×／血統×／斤量○）と itemWhyBlock も同日に外してある。
 function paceFitChip(h) {
   const pf = h.pace_fit;
   if (!pf || pf.flag !== 'poor') return '';
@@ -2986,7 +2988,7 @@ function shutubaCard(h) {
         <span class="tot">${fmtNum(dispScore(h), 1)}<i class="grade ${gradeClass(dispGrade(h))}">${gradeDisp(dispGrade(h))}</i></span>
         <span class="od${oddsHotClass(h.odds)}">${h.odds != null ? h.odds.toFixed(1) : '—'}<i>倍</i><i>${h.popularity ?? '—'}人</i></span>
       </div>
-      <div class="asub">${bw}${rot}${paceFitChip(h)}</div>
+      <div class="asub">${bw}${rot}</div>
       ${'' /* 2026-09-03 ユーザー指示:
              ・itemDots（近走×／血統×／斤量○）は戦績の札から外した
              ・自分の印を、コース適性の表より**上**に置いた（順番を入れ替えた） */}
