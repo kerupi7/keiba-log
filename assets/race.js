@@ -3159,100 +3159,121 @@ function setupPaperZoom(root) {
   const grid = box && box.querySelector('.npgrid');
   const rail = wrap && wrap.querySelector('.nprail');
   if (!wrap || !box || !grid) return;
-  let z = 1;
 
-  // **transform で拡げる。**zoom は中身を組み直すので、文字の折り返しや列の幅が
-  // 変わってしまう（2026-09-03 に一度 zoom にして戻した）。transform なら
-  // 絵をそのまま拡げるだけなので、見た目が変わらず動きもなめらか。
-  //
-  // transform の代償が2つあるので、それぞれ手当てしてある。
-  //   ① 場所を取らない → 外側の .npzoom に拡大後の大きさを持たせる
-  //   ② 中の position:sticky が効かなくなる → 左の帯は sticky をやめ、
-  //      横スクロールの量だけ自分で右へずらす（下の place）
-  // 帯は拡大する箱の外に居るので、position:sticky がそのまま効く。
-  // **JSで位置を追いかけない。**scroll の知らせや毎フレームの処理に頼ると、
-  // 画面が裏に回っているときに止まって置いていかれる。
-  // 帯自身は同じ倍率で拡げ、幅も倍率ぶん取り直す（列と行の高さを合わせるため）。
+  // **指を動かしているあいだは絵だけを動かす。**
+  // 2026-09-03 の最初の版は、指が動くたびに scrollLeft と window.scrollBy を書き、
+  // grid.offsetWidth を測り直していた。画面の中身を毎回組み直すことになるので、
+  // ピンチのあいだ画面がガタガタ揺れる。
+  // いまは transform（絵の移動と拡大）だけを書き、**指を離したときに一度だけ**
+  // スクロール位置へ移し替える。寸法も最初に1回測って使い回す。
   const RAIL_W = 26;
-  const place = () => {
-    if (!rail) return;
-    rail.style.transform = z === 1 ? '' : `scale(${z})`;
-    rail.style.transformOrigin = '0 0';
-    rail.style.width = z === 1 ? '' : `${RAIL_W}px`;
-    rail.style.marginRight = z === 1 ? '' : `${RAIL_W * (z - 1)}px`;
-  };
-  const apply = () => {
-    grid.style.transform = z === 1 ? '' : `scale(${z})`;
+  let W = 0, H = 0;                    // 等倍のときの中身の大きさ（組み直さないので変わらない）
+  let z = 1;                           // 確定している倍率
+  let tx = 0, ty = 0;                  // 指を動かしているあいだの、絵のずらし量
+  let live = false;
+
+  const measure = () => { W = grid.offsetWidth; H = grid.offsetHeight; };
+  measure();
+
+  const paint = (zz) => {
     grid.style.transformOrigin = '0 0';
-    box.style.width = z === 1 ? '' : `${grid.offsetWidth * z}px`;
-    box.style.height = z === 1 ? '' : `${grid.offsetHeight * z}px`;
-    place();
+    grid.style.transform = (zz === 1 && !tx && !ty) ? ''
+      : `translate3d(${tx}px, ${ty}px, 0) scale(${zz})`;
+    box.style.width = zz === 1 ? '' : `${W * zz}px`;
+    box.style.height = zz === 1 ? '' : `${H * zz}px`;
+    if (rail) {
+      rail.style.transformOrigin = '0 0';
+      rail.style.transform = zz === 1 ? '' : `scale(${zz})`;
+      rail.style.marginRight = zz === 1 ? '' : `${RAIL_W * (zz - 1)}px`;
+    }
   };
 
-  // 拡大しても、画面上の (px, py) にある中身が動かないようにスクロールを合わせる
-  const keep = (px, py, ux, uy) => {
-    const r = wrap.getBoundingClientRect();
-    wrap.scrollLeft = ux * z - (px - r.left);        // 横は入れ物の中で動かす
-    const dy = uy * z + r.top - py;                  // 縦はページごと動かす
-    if (dy) window.scrollBy(0, dy);
-    place();
-  };
-  const at = (px, py) => {                           // その点の、拡大していないときの位置
-    const r = wrap.getBoundingClientRect();
-    return [(px - r.left + wrap.scrollLeft) / z, (py - r.top) / z];
-  };
   const clamp = (v) => Math.min(NP_ZOOM.max, Math.max(NP_ZOOM.min, v));
 
+  // 指を離したとき、絵のずらし量をスクロール位置へ移し替える（ここでだけ画面が動く）
+  const commit = (zz) => {
+    z = zz;
+    const sl = wrap.scrollLeft - tx;
+    const dy = -ty;
+    tx = 0; ty = 0;
+    paint(z);
+    wrap.scrollLeft = Math.max(0, Math.min(sl, wrap.scrollWidth - wrap.clientWidth));
+    if (dy) window.scrollBy(0, dy);
+    live = false;
+  };
+
+  // つまんだ点の、等倍のときの位置。指を下ろした瞬間に1回だけ測る
+  let u = 0, v = 0, px0 = 0, py0 = 0, sl0 = 0, z0 = 1, rl = 0, rt = 0;
+  const grab = (px, py) => {
+    const r = wrap.getBoundingClientRect();
+    rl = r.left; rt = r.top; sl0 = wrap.scrollLeft; z0 = z;
+    px0 = px; py0 = py; live = true;
+    u = (px - rl + sl0) / z;
+    v = (py - rt) / z;
+  };
+  // つまんだ点が動かないように、絵のずらし量を決める（測り直さない）
+  const drag = (px, py, zz) => {
+    tx = px - rl + sl0 - u * zz;
+    ty = py - rt - v * zz;
+    paint(zz);
+  };
 
   // ── iPhone（Safari）のピンチ ───────────────────────────
   // Safari は2本指を touch ではなく **gesture** として扱う。touchmove の
   // preventDefault だけではページ全体の拡大に取られるので、こちらを止める。
   // あわせて CSS の touch-action: pan-x pan-y でこの要素のピンチを browser から外す。
-  let gz = 1, gx = 0, gy = 0, gpx = 0, gpy = 0;
+  let gz = 1;
   wrap.addEventListener('gesturestart', (e) => {
     e.preventDefault();
     gz = z;
-    gpx = e.clientX ?? e.pageX ?? 0;
-    gpy = e.clientY ?? e.pageY ?? 0;
-    [gx, gy] = at(gpx, gpy);
+    grab(e.clientX ?? e.pageX ?? 0, e.clientY ?? e.pageY ?? 0);
   });
   wrap.addEventListener('gesturechange', (e) => {
     e.preventDefault();
-    z = clamp(gz * e.scale);
-    apply();
-    keep(gpx, gpy, gx, gy);
+    if (!live) return;
+    drag(px0, py0, clamp(gz * e.scale));
   });
-  wrap.addEventListener('gestureend', (e) => { e.preventDefault(); });
+  wrap.addEventListener('gestureend', (e) => {
+    e.preventDefault();
+    if (live) commit(clamp(gz * e.scale));
+  });
 
   // ── gesture を持たないブラウザ（Android・PCのタッチ） ────────
-  let start = 0, base = 1, ux = 0, uy = 0;
+  let start = 0, base = 1, cur = 1;
   const dist = (t) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
   const mid = (t) => [(t[0].clientX + t[1].clientX) / 2, (t[0].clientY + t[1].clientY) / 2];
   wrap.addEventListener('touchstart', (e) => {
     if (e.touches.length !== 2) return;
-    start = dist(e.touches); base = z;
+    start = dist(e.touches); base = z; cur = z;
     const [mx, my] = mid(e.touches);
-    [ux, uy] = at(mx, my);
+    grab(mx, my);
   }, { passive: true });
   wrap.addEventListener('touchmove', (e) => {
-    if (e.touches.length !== 2 || !start) return;
+    if (e.touches.length !== 2 || !start || !live) return;
     e.preventDefault();          // 2本指のときだけ止める。1本指の横スクロールは残す
-    z = clamp(base * (dist(e.touches) / start));
-    apply();
+    cur = clamp(base * (dist(e.touches) / start));
     const [mx, my] = mid(e.touches);
-    keep(mx, my, ux, uy);
+    drag(mx, my, cur);
   }, { passive: false });
-  wrap.addEventListener('touchend', (e) => { if (e.touches.length < 2) start = 0; });
+  wrap.addEventListener('touchend', (e) => {
+    if (e.touches.length >= 2 || !start) return;
+    start = 0;
+    if (live) commit(cur);
+  });
 
-  // 指が使えない環境（PC）向け。Ctrl+ホイールはブラウザ標準の拡大と同じ持ち方
+  // 指が使えない環境（PC）向け。Ctrl+ホイールはブラウザ標準の拡大と同じ持ち方。
+  // 1回ずつ確定するので、そのまま commit まで走らせる
   wrap.addEventListener('wheel', (e) => {
     if (!e.ctrlKey) return;
     e.preventDefault();
-    const [wx, wy] = at(e.clientX, e.clientY);
-    z = clamp(z * (e.deltaY < 0 ? 1.1 : 0.9));
-    apply();
-    keep(e.clientX, e.clientY, wx, wy);
+    grab(e.clientX, e.clientY);
+    const zz = clamp(z * (e.deltaY < 0 ? 1.1 : 0.9));
+    drag(e.clientX, e.clientY, zz);
+    commit(zz);
   }, { passive: false });
+
+  // 面を切り替えた直後は幅が0で測れない。表示に切り替わったら測り直す
+  root.addEventListener('click', () => { if (z === 1) setTimeout(measure, 0); });
 }
 
 function renderShutuba20(site) {
