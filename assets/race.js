@@ -3202,11 +3202,9 @@ function setupPaperZoom(root) {
   const commit = (zz) => {
     z = zz;
     const sl = wrap.scrollLeft - tx;
-    const dy = -ty;
-    tx = 0; ty = 0;
+    tx = 0; ty = 0;                    // 縦はすでにページで合わせてあるので戻す量は無い
     paint(z, false);
     wrap.scrollLeft = Math.max(0, Math.min(sl, wrap.scrollWidth - wrap.clientWidth));
-    if (dy) window.scrollBy(0, dy);
     live = false;
   };
 
@@ -3224,15 +3222,23 @@ function setupPaperZoom(root) {
   // 縛らないと、右端でつまんで縮めたときに中身の右に隙間ができ、そこが白く光る
   // （2026-09-03 ユーザー報告「1番右端でピンチすると一瞬ホワイトアウトする」）。
   const drag = (px, py, zz) => {
+    // 横：絵をずらして合わせる。ただし**見かけのスクロール位置を 0〜端 に収める**。
+    // はみ出させると右端で中身の右に隙間ができ、そこが白く光る
     tx = px - rl + sl0 - u * zz;
-    ty = py - rt - v * zz;
-    // 横：見かけのスクロール位置 (sl0 - tx) を 0〜端 の中に収める
     const total = (RAIL_W + W) * zz;
     const maxX = Math.max(0, total - wrap.clientWidth);
     tx = Math.min(sl0, Math.max(sl0 - maxX, tx));
-    // 縦：箱の中に収める。箱は縮めない側なので、上には出さず下にも隙間を作らない
-    const room = Math.max(0, box.offsetHeight - H * zz);
-    ty = Math.min(room, Math.max(0, ty));
+
+    // 縦：**絵はずらさず、ページのほうを動かす**（2026-09-03 修正）。
+    // 絵を縦にずらすと、箱で切っている都合で上か下に白い帯が出る。かといって
+    // ずらさないと、上端を軸に拡がってしまう（ユーザー報告）。
+    // 新聞の入れ物は縦に巻き取らない作りで、縦に動くのはページのほうなので、
+    // ページを動かすのが筋。**位置は自分で覚えて追う**（毎回測ると重い）。
+    ty = 0;
+    const want = rt + v * zz;          // つまんだ点が、いま画面のどこに来ているか
+    const dy = want - py;              // 元の位置まで戻す量
+    if (dy) { window.scrollBy(0, dy); rt -= dy; }
+
     paint(zz, true);
   };
 
