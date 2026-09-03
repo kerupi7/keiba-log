@@ -3093,7 +3093,10 @@ body.noscroll{position:fixed;width:100%;overflow:hidden}
 .race20 .acrow table.crt{margin:2px 0 0;max-width:none}
 
 /* ── §4 新聞（馬柱・縦組み） ──────────────────────────────── */
-.race20 .shpaper{overflow-x:auto;overflow-y:hidden;margin-top:6px;
+/* 2026-09-03: 新聞だけ2本指で拡大縮小できる（setupPaperZoom）。
+   pan-x pan-y にすると、指1本のスクロールは残したまま**この要素のピンチだけ**を
+   ブラウザの手から外せる。none にすると横スクロールまで止まる。 */
+.race20 .shpaper{touch-action:pan-x pan-y;overflow-x:auto;overflow-y:hidden;margin-top:6px;
   -webkit-overflow-scrolling:touch}
 .race20 .npgrid{display:flex;align-items:flex-start;font-size:11px;width:max-content;
   --nph-head:96px;--nph-run:152px}

@@ -3151,55 +3151,76 @@ function setupPaperZoom(root) {
   const wrap = root.querySelector('.shpaper');
   const grid = wrap && wrap.querySelector('.npgrid');
   if (!wrap || !grid) return;
-  let scale = 1, start = 0, base = 1;
-  // 拡大の基点は左上（0 0）に固定しておき、**指の間の一点が動かないように
-  // 横スクロールと縦スクロールのほうをずらす**（2026-09-03 修正）。
-  // 基点そのものを指の位置へ動かすと、指を離して次にまたつまんだとき
-  // 前の基点との差で絵が飛ぶ。
-  grid.style.transformOrigin = '0 0';
-  const apply = () => {
-    grid.style.transform = scale === 1 ? '' : `scale(${scale})`;
-    // 縮めた分だけ入れ物の高さも詰める（余白が下に残らないように）
-    wrap.style.height = scale === 1 ? '' : `${grid.offsetHeight * scale}px`;
-  };
-  // 拡大しても、画面上の (px, py) にある中身が動かないようにスクロールを合わせる
+  let z = 1;
+
+  // **transform ではなく zoom を使う**（2026-09-03 修正）。
+  // transform を掛けると、その中の position:sticky が「拡大された箱」を基準に
+  // 貼り付くようになり、左端の目盛り列（.nprail「適性」「前走」…）が画面の
+  // 真ん中まで付いてくる。zoom は組み直し（レイアウト）ごと拡げるので sticky が生きる。
+  const apply = () => { grid.style.zoom = z === 1 ? '' : z; };
+
+  // 拡大しても、画面上の (px, py) にある中身が動かないようにスクロールを合わせる。
+  // 入れ物（.shpaper）自体は拡大していないので、その位置は基準にしてよい。
   const keep = (px, py, ux, uy) => {
     const r = wrap.getBoundingClientRect();
-    wrap.scrollLeft = ux * scale - (px - r.left);        // 横は入れ物の中で動かす
-    const dy = uy * scale + r.top - py;                  // 縦はページごと動かす
+    wrap.scrollLeft = ux * z - (px - r.left);        // 横は入れ物の中で動かす
+    const dy = uy * z + r.top - py;                  // 縦はページごと動かす
     if (dy) window.scrollBy(0, dy);
   };
+  const at = (px, py) => {                           // その点の、拡大していないときの位置
+    const r = wrap.getBoundingClientRect();
+    return [(px - r.left + wrap.scrollLeft) / z, (py - r.top) / z];
+  };
+  const clamp = (v) => Math.min(NP_ZOOM.max, Math.max(NP_ZOOM.min, v));
+
+  // ── iPhone（Safari）のピンチ ───────────────────────────
+  // Safari は2本指を touch ではなく **gesture** として扱う。touchmove の
+  // preventDefault だけではページ全体の拡大に取られるので、こちらを止める。
+  // あわせて CSS の touch-action: pan-x pan-y でこの要素のピンチを browser から外す。
+  let gz = 1, gx = 0, gy = 0;
+  wrap.addEventListener('gesturestart', (e) => {
+    e.preventDefault();
+    gz = z; [gx, gy] = at(e.clientX ?? e.pageX, e.clientY ?? e.pageY);
+    wrap.dataset.gpx = e.clientX ?? e.pageX;
+    wrap.dataset.gpy = e.clientY ?? e.pageY;
+  });
+  wrap.addEventListener('gesturechange', (e) => {
+    e.preventDefault();
+    z = clamp(gz * e.scale);
+    apply();
+    keep(+wrap.dataset.gpx, +wrap.dataset.gpy, gx, gy);
+  });
+  wrap.addEventListener('gestureend', (e) => { e.preventDefault(); });
+
+  // ── gesture を持たないブラウザ（Android・PCのタッチ） ────────
+  let start = 0, base = 1, ux = 0, uy = 0, mx = 0, my = 0;
   const dist = (t) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
-  const mid = (t) => [(t[0].clientX + t[1].clientX) / 2, (t[0].clientY + t[1].clientY) / 2];
-  let cx = 0, cy = 0;               // つまんだ点の、拡大していないときの位置
   wrap.addEventListener('touchstart', (e) => {
     if (e.touches.length !== 2) return;
-    start = dist(e.touches); base = scale;
-    const [mx, my] = mid(e.touches);
-    const r = wrap.getBoundingClientRect();
-    cx = (mx - r.left + wrap.scrollLeft) / scale;
-    cy = (my - r.top) / scale;
+    start = dist(e.touches); base = z;
+    mx = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+    my = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+    [ux, uy] = at(mx, my);
   }, { passive: true });
   wrap.addEventListener('touchmove', (e) => {
     if (e.touches.length !== 2 || !start) return;
     e.preventDefault();          // 2本指のときだけ止める。1本指の横スクロールは残す
-    scale = Math.min(NP_ZOOM.max, Math.max(NP_ZOOM.min, base * (dist(e.touches) / start)));
+    z = clamp(base * (dist(e.touches) / start));
     apply();
-    const [mx, my] = mid(e.touches);
-    keep(mx, my, cx, cy);
+    mx = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+    my = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+    keep(mx, my, ux, uy);
   }, { passive: false });
   wrap.addEventListener('touchend', (e) => { if (e.touches.length < 2) start = 0; });
-  // 指が使えない環境（PC）向け。Ctrl+ホイールはブラウザ標準の拡大と同じ持ち方。
-  // こちらもマウスの位置を動かさない
+
+  // 指が使えない環境（PC）向け。Ctrl+ホイールはブラウザ標準の拡大と同じ持ち方
   wrap.addEventListener('wheel', (e) => {
     if (!e.ctrlKey) return;
     e.preventDefault();
-    const r = wrap.getBoundingClientRect();
-    const ux = (e.clientX - r.left + wrap.scrollLeft) / scale;
-    const uy = (e.clientY - r.top) / scale;
-    scale = Math.min(NP_ZOOM.max, Math.max(NP_ZOOM.min, scale * (e.deltaY < 0 ? 1.1 : 0.9)));
+    const [wx, wy] = at(e.clientX, e.clientY);
+    z = clamp(z * (e.deltaY < 0 ? 1.1 : 0.9));
     apply();
-    keep(e.clientX, e.clientY, ux, uy);
+    keep(e.clientX, e.clientY, wx, wy);
   }, { passive: false });
 }
 
