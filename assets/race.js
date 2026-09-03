@@ -2538,17 +2538,19 @@ function popupBody(h, site) {
       <button type="button" class="pclose" data-close>閉じる</button>
     </div>
     <div class="pbody">
+      ${mmInline(h)}
+      <div class="pcareer">${careerLine(h)}</div>
+      ${markWhyBlock(h)}
+      ${panelButtons(h, site)}
+      ${'' /* 入れ替わるのは3つの表だけ。印・通算・地雷の理由・レース戦績は
+             どちらの面でも出したまま（2026-09-03 ユーザー指示） */}
       <div class="pmain">
-        ${mmInline(h)}
-        <div class="pcareer">${careerLine(h)}</div>
-        ${markWhyBlock(h)}
         ${courseRecordTable(h)}
         ${raceTypeTable(h, (site || {}).prediction)}
         ${levelRecordTable(h)}
-        ${panelButtons(h, site)}
-        ${popupRunsTable(h)}
       </div>
       ${panelBodies(h, site)}
+      ${popupRunsTable(h)}
     </div>`;
 }
 
@@ -2667,10 +2669,9 @@ function panelBodies(h, site) {
   return POPUP_PANELS.map((p) => {
     const body = p.render(h, site);
     if (!body) return '';
-    return `<div class="ppanel" data-panel-body="${p.key}" hidden>
-      <button type="button" class="ppback" data-panel="">← 戻る</button>
-      ${body}
-    </div>`;
+    // 「← 戻る」は置かない。**同じボタンをもう一度押すと表に戻る**形にしたので、
+    // 戻る手段が2つあると押しどころが分かれる。ボタンは表と入れ替わらない位置にある
+    return `<div class="ppanel" data-panel-body="${p.key}" hidden>${body}</div>`;
   }).join('');
 }
 
@@ -2682,6 +2683,15 @@ function showPanel(popup, key) {
   main.hidden = !!key;
   popup.querySelectorAll('[data-panel-body]').forEach((el) => {
     el.hidden = el.dataset.panelBody !== key;
+  });
+  // 同じボタンで行き来するので、いまどちらの面かをボタンの文字で示す
+  popup.querySelectorAll('.ppb').forEach((b) => {
+    const p = POPUP_PANELS.find((x) => x.key === b.dataset.panel);
+    const on = b.dataset.panel === key;
+    b.classList.toggle('on', on);
+    b.innerHTML = on
+      ? `<i class="apop">◂</i>${escapeHtml('表にもどす')}`
+      : `${escapeHtml((p && p.label) || '')}<i class="apop">▸</i>`;
   });
   const body = popup.querySelector('.pbody');
   if (body) body.scrollTop = 0;     // 入れ替えたら必ず上から読ませる
@@ -3185,7 +3195,11 @@ function setupShutuba20(site) {
     // 別画面の出し入れ。ポップアップは開いたままで中身だけ入れ替える
     const pb = e.target.closest('[data-panel]');
     if (pb && openPopup) {
-      showPanel(openPopup, pb.dataset.panel || '');
+      const key = pb.dataset.panel || '';
+      const cur = [...openPopup.querySelectorAll('[data-panel-body]')]
+        .find((x) => !x.hidden);
+      const now = cur ? cur.dataset.panelBody : '';
+      showPanel(openPopup, now === key ? '' : key);   // 同じボタンをもう一度押すと戻る
       return;
     }
     const nb = e.target.closest('[data-pop]');
