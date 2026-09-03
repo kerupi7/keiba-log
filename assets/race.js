@@ -2161,6 +2161,8 @@ function markBadge20(h) {
 
 // 106-spec §5.2: item_marks（10項目・順序固定・並べ替えない）を、札には
 // 「項目名＋○×」の点だけ出す。理由文は札には入らないので馬名ポップアップへ（§5.4）。
+// 2026-09-03 ユーザー指示で戦績の札からは外した（関数は残す）。
+// ポップアップ側の itemWhyBlock も同日に外してあるので、**いまはどこにも出ていない**。
 function itemDots(h) {
   const marks = h.item_marks;
   if (!marks) return '';                     // item_marks なし（取消・旧レース）→ 何も出さない
@@ -2984,9 +2986,12 @@ function shutubaCard(h) {
         <span class="tot">${fmtNum(dispScore(h), 1)}<i class="grade ${gradeClass(dispGrade(h))}">${gradeDisp(dispGrade(h))}</i></span>
         <span class="od${oddsHotClass(h.odds)}">${h.odds != null ? h.odds.toFixed(1) : '—'}<i>倍</i><i>${h.popularity ?? '—'}人</i></span>
       </div>
-      <div class="asub">${bw}${rot}${itemDots(h)}${paceFitChip(h)}</div>
-      ${courseBlock(h)}
+      <div class="asub">${bw}${rot}${paceFitChip(h)}</div>
+      ${'' /* 2026-09-03 ユーザー指示:
+             ・itemDots（近走×／血統×／斤量○）は戦績の札から外した
+             ・自分の印を、コース適性の表より**上**に置いた（順番を入れ替えた） */}
       ${mmInline(h)}
+      ${courseBlock(h)}
       ${runsBlock(h)}
     </div>
   </article>`;
