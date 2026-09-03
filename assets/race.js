@@ -3152,30 +3152,54 @@ function setupPaperZoom(root) {
   const grid = wrap && wrap.querySelector('.npgrid');
   if (!wrap || !grid) return;
   let scale = 1, start = 0, base = 1;
+  // 拡大の基点は左上（0 0）に固定しておき、**指の間の一点が動かないように
+  // 横スクロールと縦スクロールのほうをずらす**（2026-09-03 修正）。
+  // 基点そのものを指の位置へ動かすと、指を離して次にまたつまんだとき
+  // 前の基点との差で絵が飛ぶ。
+  grid.style.transformOrigin = '0 0';
   const apply = () => {
     grid.style.transform = scale === 1 ? '' : `scale(${scale})`;
-    grid.style.transformOrigin = '0 0';
     // 縮めた分だけ入れ物の高さも詰める（余白が下に残らないように）
     wrap.style.height = scale === 1 ? '' : `${grid.offsetHeight * scale}px`;
   };
+  // 拡大しても、画面上の (px, py) にある中身が動かないようにスクロールを合わせる
+  const keep = (px, py, ux, uy) => {
+    const r = wrap.getBoundingClientRect();
+    wrap.scrollLeft = ux * scale - (px - r.left);        // 横は入れ物の中で動かす
+    const dy = uy * scale + r.top - py;                  // 縦はページごと動かす
+    if (dy) window.scrollBy(0, dy);
+  };
   const dist = (t) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+  const mid = (t) => [(t[0].clientX + t[1].clientX) / 2, (t[0].clientY + t[1].clientY) / 2];
+  let cx = 0, cy = 0;               // つまんだ点の、拡大していないときの位置
   wrap.addEventListener('touchstart', (e) => {
     if (e.touches.length !== 2) return;
     start = dist(e.touches); base = scale;
+    const [mx, my] = mid(e.touches);
+    const r = wrap.getBoundingClientRect();
+    cx = (mx - r.left + wrap.scrollLeft) / scale;
+    cy = (my - r.top) / scale;
   }, { passive: true });
   wrap.addEventListener('touchmove', (e) => {
     if (e.touches.length !== 2 || !start) return;
     e.preventDefault();          // 2本指のときだけ止める。1本指の横スクロールは残す
     scale = Math.min(NP_ZOOM.max, Math.max(NP_ZOOM.min, base * (dist(e.touches) / start)));
     apply();
+    const [mx, my] = mid(e.touches);
+    keep(mx, my, cx, cy);
   }, { passive: false });
   wrap.addEventListener('touchend', (e) => { if (e.touches.length < 2) start = 0; });
-  // 指が使えない環境（PC）向け。Ctrl+ホイールはブラウザ標準の拡大と同じ持ち方
+  // 指が使えない環境（PC）向け。Ctrl+ホイールはブラウザ標準の拡大と同じ持ち方。
+  // こちらもマウスの位置を動かさない
   wrap.addEventListener('wheel', (e) => {
     if (!e.ctrlKey) return;
     e.preventDefault();
+    const r = wrap.getBoundingClientRect();
+    const ux = (e.clientX - r.left + wrap.scrollLeft) / scale;
+    const uy = (e.clientY - r.top) / scale;
     scale = Math.min(NP_ZOOM.max, Math.max(NP_ZOOM.min, scale * (e.deltaY < 0 ? 1.1 : 0.9)));
     apply();
+    keep(e.clientX, e.clientY, ux, uy);
   }, { passive: false });
 }
 

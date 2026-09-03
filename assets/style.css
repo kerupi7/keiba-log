@@ -2295,9 +2295,18 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
 .race20 .popup.wide .pbody{padding:12px 14px 14px}
 .race20 .popup.wide .cstats{margin:0}
 @media (max-width:480px){
-  .race20 .popup.wide{width:min(1080px,98vw);max-height:92vh}
+  /* **ここが直し漏れていた**（2026-09-03）。上の .popup を 86dvh に変えても、
+     コースの札はこの上書きの 92vh が勝っていて、上端の「閉じる」がアプリ内ブラウザの
+     バーに潜ったままだった。dvh に変え、さらに上下の余白を 88% までに減らす。 */
+  .race20 .popup.wide{width:min(1080px,98vw);max-height:88dvh}
   .race20 .popup.wide .pbody{padding:10px 10px 12px}
 }
+/* 「閉じる」を画面のいちばん上の端に置かない。iPhoneは上端の数mmを
+   システムの操作に取られるので、そこに来たボタンは押しづらい。
+   ノッチ・ホームバーぶんの余白も足す（safe-area）。 */
+.race20 .popup{margin-top:max(0px, env(safe-area-inset-top))}
+.race20 .popup .phead{padding-top:calc(10px + env(safe-area-inset-top, 0px))}
+.race20 .popup .pclose{min-height:34px;padding:0 12px}
 .race20 .mm-seg{display:inline-flex;border:1px solid var(--rule-strong);border-radius:6px;
   overflow:hidden;background:#fff;flex:none}
 .race20 .mm-seg button{border:0;background:#fff;font:inherit;font-size:12px;font-weight:700;
