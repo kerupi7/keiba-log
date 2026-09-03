@@ -2479,11 +2479,18 @@ function aptitudeGrid(h, site) {
   const axis = {};
   m.buckets.forEach((b) => { label[b.key] = b.label; axis[b.key] = b.axis; });
   const tick = m.baseline_pct;
+  // **今日のレースが当たる枠に帯を付ける。**色はコース適性の帯と同じ紺と淡い青
+  // （--aptc / --aptbg）。緑は的中とプラス回収、赤は不的中と地雷で使用中なので使わない。
+  // 流れだけは予想なので、軸の見出しを「流れ（予想）」にして区別する。
+  // 濃さはレース前には出ないので、帯が1つも付かない。
+  const today = new Set(m.today || []);
+  const guess = new Set((m.today || []).filter((k) => k.startsWith('flow:')));
   let prev = null;
   const rows = g.rows.map((r) => {
     const ax = axis[r.key];
     const head = ax !== prev
-      ? `<div class="axh">${escapeHtml(m.axis_labels[ax] || ax)}</div>` : '';
+      ? `<div class="axh">${escapeHtml(m.axis_labels[ax] || ax)}`
+        + `${ax === 'flow' && guess.size ? '（予想）' : ''}</div>` : '';
     prev = ax;
     // 走っていない枠も行を消さない（棒は血統だけで立つ）。空白は「無い」と読まれるため
     const rec = r.n
@@ -2492,7 +2499,7 @@ function aptitudeGrid(h, site) {
         + (r.more ? `<span class="more">+${r.more}</span>` : '')
       : '<span class="nr">未走</span>';
     const pct = r.pct == null ? 0 : r.pct;
-    return `${head}<div class="ar">
+    return `${head}<div class="ar${today.has(r.key) ? ' aptx' : ''}">
       <span class="nm">${escapeHtml(label[r.key] || r.key)}</span>
       <span class="bw"><span class="bf" style="width:${pct}%"></span>
         <span class="tk" style="left:${tick}%"></span></span>
