@@ -2187,6 +2187,9 @@ function paceFitChip(h) {
 
 // 106-spec §5.4: 札から追い出した理由文。ポップアップの中で全文を読ませる。
 // 文言は 105-spec §5.3 のチップと同じ（1文字も減らさない）。
+// 2026-09-03 ユーザー指示で、馬名ポップアップからは外した（関数は残す）。
+// 「買える／消せる」の札は出馬表の札（.asub の itemDots）に出ているので、
+// ポップアップで同じ話をもう一度出さない。
 function itemWhyBlock(h) {
   const marks = h.item_marks;
   if (!marks) return '';
@@ -2539,7 +2542,6 @@ function popupBody(h, site) {
         ${mmInline(h)}
         <div class="pcareer">${careerLine(h)}</div>
         ${markWhyBlock(h)}
-        ${itemWhyBlock(h)}
         ${courseRecordTable(h)}
         ${raceTypeTable(h, (site || {}).prediction)}
         ${levelRecordTable(h)}
@@ -2609,9 +2611,8 @@ function horseGradeBody(h) {
   // クラスが読めない走の断り）は消した。**帯（「1勝クラスの中で」）と星は残る**ので、
   // 何と比べた位置かは札の横で分かる。数えていない走の断りは画面から消えている。
   return `
-    <div class="crh">馬の格</div>
+    <div class="crh">馬の能力値</div>
     <div class="hgnum"><b>${Math.round(g.pct)}</b><i>％</i>${rank}</div>
-    <div class="hgcap">直近の成績を、競走馬として出せる力の上限を100％として置いた位置</div>
     <div class="hgbar">
       ${seg('s1', g.sure, 'いま確かな分')}
       ${seg('s2', g.unknown, 'まだ分からない分')}
@@ -2645,7 +2646,7 @@ function horseGradeBody(h) {
 const POPUP_PANELS = [
   {
     key: 'power',
-    label: 'この馬の力',
+    label: '馬の能力詳細',
     render: (h, site) => {
       const a = horseGradeBody(h);
       const b = aptitudeGrid(h, site);

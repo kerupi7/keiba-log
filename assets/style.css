@@ -3442,9 +3442,13 @@ body.noscroll{position:fixed;width:100%;overflow:hidden}
 .race20 .popup .ar .tk{position:absolute;top:0;bottom:0;width:1px;background:var(--apt-tick)}
 .race20 .popup .ar .pv{flex:0 0 30px;font-size:10px;font-weight:700;text-align:right;
   font-variant-numeric:tabular-nums}
-/* 幅66pxは正本の値。6つ＋「+N」で中身が75.8pxになりはみ出すが、はみ出しは棒の側が
-   短くなって吸収する（正本 §7-4 で実測済み。潰れも重なりも起きない）。 */
-.race20 .popup .ar .rec{flex:0 0 66px;display:flex;justify-content:flex-end;gap:1px;align-items:center}
+/* 幅は**76px固定**（2026-09-03 に66pxから広げた）。
+   正本の66pxだと、着順のマス6つ＋「+NN」で中身が73.7pxになって枠がその幅まで伸び、
+   **その行だけ％の数字が7.7px左へずれる**（他の行と揃わない＝ガタガタに見える原因）。
+   76pxは実測した最悪ケース73.7pxに余白を足した数。守りたいのは「％の左右位置が
+   全行でそろう」ことで、はみ出す行が出るならこの数のほうを増やす。
+   代わりに棒が10px短くなる。 */
+.race20 .popup .ar .rec{flex:0 0 76px;display:flex;justify-content:flex-end;gap:1px;align-items:center}
 .race20 .popup .sq{width:9px;height:11px;border-radius:1px;font-size:7px;line-height:11px;
   text-align:center;color:#fff;flex:0 0 auto}
 .race20 .popup .sq.g1{background:var(--apt-f1)}
