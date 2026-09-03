@@ -2532,16 +2532,67 @@ function popupBody(h, site) {
       <button type="button" class="pclose" data-close>閉じる</button>
     </div>
     <div class="pbody">
-      ${mmInline(h)}
-      <div class="pcareer">${careerLine(h)}</div>
-      ${markWhyBlock(h)}
-      ${itemWhyBlock(h)}
-      ${courseRecordTable(h)}
-      ${raceTypeTable(h, (site || {}).prediction)}
-      ${levelRecordTable(h)}
-      ${aptitudeGrid(h, site)}
-      ${popupRunsTable(h)}
+      <div class="pmain">
+        ${mmInline(h)}
+        <div class="pcareer">${careerLine(h)}</div>
+        ${markWhyBlock(h)}
+        ${itemWhyBlock(h)}
+        ${courseRecordTable(h)}
+        ${raceTypeTable(h, (site || {}).prediction)}
+        ${levelRecordTable(h)}
+        ${panelButtons(h, site)}
+        ${popupRunsTable(h)}
+      </div>
+      ${panelBodies(h, site)}
     </div>`;
+}
+
+// ── ポップアップの中身を入れ替える別画面 ────────────────────
+// 依頼書: businesses/design/dept/reception/data/briefs/2026-09-02_horse-level-rank.md
+//   質問9「ボタンを置いて、押したところに別画面で見れるようにしたい」
+//   質問10 ボタンはポップアップの中／質問11 重ねずに中身を入れ替える
+//   質問12 出すのは押した1頭だけ／質問13 縦に伸ばしてよい
+// 2026-09-03 ユーザー指示で「条件べつの見立て」もここへ移した（最初はふだんの面に
+// 直接出していた）。**馬の格（％とランク）は未実装。**出来たらこの表に1行足すだけで
+// ボタンが2つに増える。
+//
+// 閉じ方は既存のまま（「閉じる」ボタン・背景・Esc でポップアップごと閉じる）。
+// **別画面から戻る手段は依頼書に書かれていないので実装側で決めた**（「← 戻る」）。
+// 閉じるだけにすると、見るたびに馬名を押し直すことになるため。
+const POPUP_PANELS = [
+  { key: 'apt', label: '条件べつの見立て', render: (h, site) => aptitudeGrid(h, site) },
+];
+
+function panelButtons(h, site) {
+  const btns = POPUP_PANELS
+    .filter((p) => p.render(h, site))
+    .map((p) => `<button type="button" class="ppb" data-panel="${p.key}">`
+      + `${escapeHtml(p.label)}<i class="apop">▸</i></button>`).join('');
+  return btns ? `<div class="ppbrow">${btns}</div>` : '';
+}
+
+function panelBodies(h, site) {
+  return POPUP_PANELS.map((p) => {
+    const body = p.render(h, site);
+    if (!body) return '';
+    return `<div class="ppanel" data-panel-body="${p.key}" hidden>
+      <button type="button" class="ppback" data-panel="">← 戻る</button>
+      ${body}
+    </div>`;
+  }).join('');
+}
+
+// 開いている面を切り替える。key が空なら「ふだんの面」へ戻る。
+// ポップアップを開くたびに showPanel(p, '') で必ずふだんの面から始める。
+function showPanel(popup, key) {
+  const main = popup.querySelector('.pmain');
+  if (!main) return;
+  main.hidden = !!key;
+  popup.querySelectorAll('[data-panel-body]').forEach((el) => {
+    el.hidden = el.dataset.panelBody !== key;
+  });
+  const body = popup.querySelector('.pbody');
+  if (body) body.scrollTop = 0;     // 入れ替えたら必ず上から読ませる
 }
 
 // 赤オッズの境目（ODDS_HOT / oddsHotClass）は app.js に移した（2026-08-26）。
@@ -3020,6 +3071,7 @@ function setupShutuba20(site) {
     p.classList.add('on');
     bg.classList.add('on');
     openPopup = p;
+    showPanel(p, '');                 // 開き直したら必ずふだんの面から
     lockPageScroll();
     // コースは最初に開いた時だけ data/courses/*.json を読む（タブだった頃と同じ仕組み）
     if (id === 'course' && window.CourseTab) window.CourseTab.onShow(site);
@@ -3038,6 +3090,12 @@ function setupShutuba20(site) {
     unlockPageScroll();                 // 111-spec §3.8
   };
   root.addEventListener('click', (e) => {
+    // 別画面の出し入れ。ポップアップは開いたままで中身だけ入れ替える
+    const pb = e.target.closest('[data-panel]');
+    if (pb && openPopup) {
+      showPanel(openPopup, pb.dataset.panel || '');
+      return;
+    }
     const nb = e.target.closest('[data-pop]');
     if (nb) {
       // コースの中から馬番を押したときだけ、戻り先としてコースを覚える
