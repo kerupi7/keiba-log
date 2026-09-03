@@ -2288,6 +2288,10 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
    「クラス」「年代」の見出しが切れて見えた（実測：中身が8px〜382pxで余白ゼロ）。
    左右に余白を戻す。狭い画面では余白を詰めて、表に使える幅を残す。 */
 .race20 .popup.wide{width:min(1080px,96vw)}
+/* iPhoneのアプリ内ブラウザは、上下のバーのぶんだけ見える高さが vh より小さい。
+   vh のまま画面の中央に置くと**上端（「閉じる」の行）がバーに潜って押せなくなる**
+   （2026-09-03 実機で発生）。dvh はバーを除いた高さなので、これで中央に収まる。
+   dvh を知らないブラウザのために vh の指定を先に残してある。 */
 .race20 .popup.wide .pbody{padding:12px 14px 14px}
 .race20 .popup.wide .cstats{margin:0}
 @media (max-width:480px){
@@ -2474,7 +2478,7 @@ body.noscroll{position:fixed;width:100%;overflow:hidden}
 .race20 .pbg{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:40;display:none}
 .race20 .pbg.on{display:block}
 .race20 .popup{display:none;position:fixed;z-index:50;left:50%;top:50%;transform:translate(-50%,-50%);
-  width:min(760px,94vw);max-height:86vh;background:#fff;border-radius:10px;
+  width:min(760px,94vw);max-height:86dvh;background:#fff;border-radius:10px;
   box-shadow:0 12px 40px rgba(0,0,0,.28);overflow:hidden;flex-direction:column;text-align:left}
 .race20 .popup.on{display:flex}
 .race20 .popup .phead{display:flex;align-items:center;gap:8px;padding:10px 14px;
@@ -3542,3 +3546,19 @@ body.noscroll{position:fixed;width:100%;overflow:hidden}
   border-radius:2px}
 .race20 .popup .ar.aptx .nm{font-weight:700;color:var(--navy)}
 .race20 .popup .ar.aptx .pv{color:var(--navy)}
+
+/* 一覧の2行目（2026-09-03）。性齢・騎手・斤量・馬体重。
+   1行目に足せないのは、375px幅で 印30+AI30+馬番28+点数54+オッズ52 が固定で、
+   馬名に残るのが180px前後しか無いため。 */
+.race20 .mm-c .mm-nmwrap{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;
+  justify-content:center;gap:1px}
+.race20 .mm-c .mm-nmwrap .nm{flex:none;width:100%}
+/* 間隔3pxは、いちばん長い馬（牝4 角田和 56kg 426(+12)）で測って決めた。
+   6pxだと133pxになり枠128pxを5px超える。守りたいのは「切れないこと」なので、
+   入らない馬が出たら間隔ではなく font-size のほうを下げる。 */
+.race20 .mm-sub{display:flex;gap:3px;font-size:10px;color:var(--cap);
+  white-space:nowrap;overflow:hidden}
+.race20 .mm-row{min-height:46px}
+/* 全戦績の表（馬名ポップアップ）でも芝とダートを色分けする。
+   色は戦績の札と同じ #1F6B3A / #A05A12（白地でのコントラスト比 6.52 / 5.30）。 */
+.race20 table.pastt .cd{font-weight:700}

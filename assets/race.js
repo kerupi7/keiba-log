@@ -1970,7 +1970,7 @@ function pastRunRow(p) {
   const band = p.margin_band ? ` class="pb-${p.margin_band}"` : '';
   return `<tr${band}>
     <td class="l">${shutubaMd(p.date)}</td>
-    <td class="l">${escapeHtml(p.track ?? '')}<span class="mut"> ${escapeHtml(p.surface ?? '')}${escapeHtml(p.distance ?? '')}${escapeHtml(p.condition ?? '')}</span></td>
+    <td class="l">${escapeHtml(p.track ?? '')} <span class="cd ${String(p.surface || '').startsWith('ダ') ? 'dt' : 'tf'}">${escapeHtml(p.surface ?? '')}${escapeHtml(p.distance ?? '')}${escapeHtml(p.condition ?? '')}</span></td>
     <td class="l pname">${escapeHtml(stripClassSuffix(p.race_name))}</td>
     <td>${classBadge(p.grade, p.race_name)}${levelBadge(p)}</td>
     <td>${shutubaFinBox(p.finish)}</td>
@@ -2781,10 +2781,24 @@ function mmRow(h) {
   }
   return `<div class="mm-row${h.ability_mark ? ' pred' : ''}" data-n="${h.number}">${mmCell(h)}
     <span class="mm-ai">${markBadge20(h) || '<span class="none">—</span>'}</span>
-    <span class="mm-c">${umaBox(h.number, h.gate, 'sm')}<button type="button" class="nm" data-pop="${h.number}"><span class="t">${escapeHtml(h.name)}</span><i class="apop">▸</i></button>
+    <span class="mm-c">${umaBox(h.number, h.gate, 'sm')}<span class="mm-nmwrap"><button type="button" class="nm" data-pop="${h.number}"><span class="t">${escapeHtml(h.name)}</span><i class="apop">▸</i></button>${mmSub(h)}</span>
       <span class="tot">${fmtNum(dispScore(h), 1)}<i class="grade ${gradeClass(dispGrade(h))}">${gradeDisp(dispGrade(h))}</i></span>
       <span class="od${oddsHotClass(h.odds)}">${h.odds != null ? h.odds.toFixed(1) : '—'}<i>倍</i>
         <span class="pp">${h.popularity ?? '—'}人</span></span></span></div>`;
+}
+
+// 一覧の2行目（2026-09-03 ユーザー指示）。性齢・騎手・斤量・馬体重を出す。
+// **1行に足せない。**375px幅の1行目は 印30 + AI30 + 馬番28 + 点数54 + オッズ52 で
+// 埋まっており、馬名に残るのは180px前後しかない。名前の下に敷く。
+function mmSub(h) {
+  const kg = h.weight_carried != null ? String(h.weight_carried).replace(/\.0$/, '') : '—';
+  const bw = h.body_weight != null
+    ? `${h.body_weight}${h.body_weight_diff != null
+      ? `(${h.body_weight_diff > 0 ? '+' : ''}${h.body_weight_diff})` : ''}` : '';
+  const j = h.jockey && h.jockey !== 'N/A' ? h.jockey : '—';
+  return `<span class="mm-sub"><span>${escapeHtml(h.sex_age ?? '')}</span>`
+    + `<span>${escapeHtml(j)}</span><span>${escapeHtml(kg)}kg</span>`
+    + (bw ? `<span>${escapeHtml(bw)}</span>` : '') + '</span>';
 }
 
 // 111-spec §3.4（mockup-86 案C）: 札（戦績5走）の中の印の1行。
@@ -3122,6 +3136,49 @@ function renderPaper(site) {
   return `<div class="shpaper off"><div class="npgrid">${npRail()}${cols}</div></div>`;
 }
 
+// ── 新聞のピンチイン・アウト（2026-09-03 ユーザー指示） ─────────
+// **106-spec §2.2 で一度やめた拡大縮小を、新聞の面にだけ戻す。**
+// 当時やめた理由は「横スクロールが無くなり虫めがねで覗く必要が無くなった」だったが、
+// **新聞の面には横スクロールが残っている**ので、その前提は新聞に当てはまらない。
+// 印・戦績の面には付けない（横スクロールが無く、当時の判断がそのまま生きている）。
+//
+// ページ全体の拡大（viewport の user-scalable）は触らない。触ると出馬表も
+// 馬名ポップアップも一緒に拡大され、押しどころがずれる。
+const NP_ZOOM = { min: 0.6, max: 2.5 };   // 0.6は16頭が1画面に入る側、2.5は文字が読める上限。
+                                          // 守りたいのは「拡げても縮めても操作が壊れない」こと
+
+function setupPaperZoom(root) {
+  const wrap = root.querySelector('.shpaper');
+  const grid = wrap && wrap.querySelector('.npgrid');
+  if (!wrap || !grid) return;
+  let scale = 1, start = 0, base = 1;
+  const apply = () => {
+    grid.style.transform = scale === 1 ? '' : `scale(${scale})`;
+    grid.style.transformOrigin = '0 0';
+    // 縮めた分だけ入れ物の高さも詰める（余白が下に残らないように）
+    wrap.style.height = scale === 1 ? '' : `${grid.offsetHeight * scale}px`;
+  };
+  const dist = (t) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+  wrap.addEventListener('touchstart', (e) => {
+    if (e.touches.length !== 2) return;
+    start = dist(e.touches); base = scale;
+  }, { passive: true });
+  wrap.addEventListener('touchmove', (e) => {
+    if (e.touches.length !== 2 || !start) return;
+    e.preventDefault();          // 2本指のときだけ止める。1本指の横スクロールは残す
+    scale = Math.min(NP_ZOOM.max, Math.max(NP_ZOOM.min, base * (dist(e.touches) / start)));
+    apply();
+  }, { passive: false });
+  wrap.addEventListener('touchend', (e) => { if (e.touches.length < 2) start = 0; });
+  // 指が使えない環境（PC）向け。Ctrl+ホイールはブラウザ標準の拡大と同じ持ち方
+  wrap.addEventListener('wheel', (e) => {
+    if (!e.ctrlKey) return;
+    e.preventDefault();
+    scale = Math.min(NP_ZOOM.max, Math.max(NP_ZOOM.min, scale * (e.deltaY < 0 ? 1.1 : 0.9)));
+    apply();
+  }, { passive: false });
+}
+
 function renderShutuba20(site) {
   const up = renderUpset20(site.prediction.upset);
   const all = site.horses;
@@ -3163,7 +3220,10 @@ function setupShutuba20(site) {
 
   // 106-spec §2.2: ズーム操作（表の大きさ ±・ピンチ）は廃止した。横スクロールが
   // 無くなり、虫めがねで覗く必要そのものが無くなったため。
+  // **2026-09-03 に新聞の面だけ戻した**（setupPaperZoom）。新聞には横スクロールが
+  // 残っているので、当時の前提が当てはまらない。印・戦績の面には付けていない。
   // §5.4: 「買える／消せる」は札に常時出るので、開く／消すボタンも無い。
+  setupPaperZoom(root);
 
   // 105-spec §5.5: 馬名ポップアップ。閉じ方は「閉じる」ボタン・背景クリック・Esc の3つ
   const bg = document.createElement('div');
