@@ -3596,3 +3596,19 @@ body.noscroll{position:fixed;width:100%;overflow:hidden}
 /* 全戦績の表（馬名ポップアップ）でも芝とダートを色分けする。
    色は戦績の札と同じ #1F6B3A / #A05A12（白地でのコントラスト比 6.52 / 5.30）。 */
 .race20 table.pastt .cd{font-weight:700}
+
+/* 枠順成績の枠を押せるようにした（2026-09-03）。押すとその枠の馬名が下に出る。
+   見た目は元の .gz のまま（ボタンの既定の枠・背景・字体を消す）。 */
+.race20 .gzones .gz{font:inherit;color:inherit;border:0;background:none;padding:0;
+  cursor:pointer;-webkit-appearance:none}
+.race20 .gzones .gz:disabled{cursor:default;opacity:.55}
+.race20 .gzones .gz.on{outline:2px solid var(--navy);outline-offset:-2px;border-radius:6px}
+.race20 .gzlist{display:flex;flex-wrap:wrap;gap:6px;padding:8px 6px 2px;margin:6px 4px 0;
+  border-top:1px solid var(--rule)}
+.race20 .gzlist .gzn{display:inline-flex;align-items:center;gap:4px;font:inherit;font-size:12px;
+  border:1px solid var(--rule-strong);background:#fff;border-radius:6px;padding:4px 8px;
+  min-height:34px;cursor:pointer;color:var(--text)}
+.race20 .gzlist .gzn:hover{background:var(--sub-bg)}
+.race20 .gzlist .gzn .apop{font-style:normal;font-size:11px;color:var(--navy)}
+.race20 .gzlist .gzn.scr{color:var(--cap);cursor:default}
+.race20 .gzlist .gzn.scr i{font-style:normal;font-size:11px}
