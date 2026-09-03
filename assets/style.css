@@ -2298,8 +2298,14 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
   /* **ここが直し漏れていた**（2026-09-03）。上の .popup を 86dvh に変えても、
      コースの札はこの上書きの 92vh が勝っていて、上端の「閉じる」がアプリ内ブラウザの
      バーに潜ったままだった。dvh に変え、さらに上下の余白を 88% までに減らす。 */
-  .race20 .popup.wide{width:min(1080px,98vw);max-height:88dvh}
+  /* 2026-09-03: 88dvh → 94dvh。コースデータは中身が長く、縦の余白が惜しい。
+     94にすると上下の余白が3%ずつ（812pxの窓で24px）。
+     「閉じる」が画面の上端に貼り付かない下限がこのあたり。 */
+  .race20 .popup.wide{width:min(1080px,98vw);max-height:94dvh}
   .race20 .popup.wide .pbody{padding:10px 10px 12px}
+  /* 見出しの帯も詰める。ここで20px稼ぐと、そのぶん中身が縦に伸びる */
+  .race20 .popup.wide .phead{padding-top:calc(6px + env(safe-area-inset-top, 0px));
+    padding-bottom:6px}
 }
 /* 「閉じる」を画面のいちばん上の端に置かない。iPhoneは上端の数mmを
    システムの操作に取られるので、そこに来たボタンは押しづらい。

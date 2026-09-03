@@ -3276,6 +3276,30 @@ function setupPaperZoom(root) {
     commit(zz);
   }, { passive: false });
 
+  // ── ページ自体が拡大されるのを止める ─────────────────────
+  // **ピンチのあと右に白が続くのは、iOSがページごと拡大したまま残っているため。**
+  // ページが拡大されると、指で動かせる範囲が「組み直したときの紙の大きさ」まで広がり、
+  // 中身の右の空白までいくらでも送れる（2026-09-03 ユーザー報告）。
+  // 2本指が新聞の上に降りたときは、**書類ぜんぶ**で拡大を断る。
+  // .shpaper に付けた touch-action だけでは、指が入れ物の縁の外に降りたときに漏れる。
+  const overPaper = (e) => {
+    if (!wrap.offsetParent) return false;            // 新聞を見ていない
+    const r = wrap.getBoundingClientRect();
+    const x = e.clientX ?? e.pageX ?? 0;
+    const y = e.clientY ?? e.pageY ?? 0;
+    return x >= r.left - 40 && x <= r.right + 40 && y >= r.top - 40 && y <= r.bottom + 40;
+  };
+  ['gesturestart', 'gesturechange', 'gestureend'].forEach((t) => {
+    document.addEventListener(t, (e) => { if (overPaper(e)) e.preventDefault(); },
+      { passive: false });
+  });
+
+  // 行き過ぎたら戻す。**scrollWidth を超えて送れる環境がある**ので、念のため縛る
+  wrap.addEventListener('scroll', () => {
+    const max = wrap.scrollWidth - wrap.clientWidth;
+    if (wrap.scrollLeft > max) wrap.scrollLeft = max;
+  }, { passive: true });
+
   // 面を切り替えた直後は幅が0で測れない（.shpaper が display:none）。
   // **測れていないと箱の大きさを書けず、横スクロールの範囲がずれる。**
   // 新聞に切り替わったら測り直し、そのとき箱の大きさも書き直す。
