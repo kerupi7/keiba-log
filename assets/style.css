@@ -3096,11 +3096,18 @@ body.noscroll{position:fixed;width:100%;overflow:hidden}
 /* 2026-09-03: 新聞だけ2本指で拡大縮小できる（setupPaperZoom）。
    pan-x pan-y にすると、指1本のスクロールは残したまま**この要素のピンチだけ**を
    ブラウザの手から外せる。none にすると横スクロールまで止まる。 */
-.race20 .shpaper{touch-action:pan-x pan-y;overflow-x:auto;overflow-y:hidden;margin-top:6px;
-  -webkit-overflow-scrolling:touch}
+.race20 .npzoom{width:max-content;flex:none}
+/* 帯と柱を横に並べる。**帯は拡大する箱（.npzoom）の外**なので sticky が効く。 */
+.race20 .shpaper{display:flex;align-items:flex-start;
+  touch-action:pan-x pan-y;overflow-x:auto;overflow-y:hidden;margin-top:6px;
+  -webkit-overflow-scrolling:touch;--nph-head:96px;--nph-run:152px}
 .race20 .npgrid{display:flex;align-items:flex-start;font-size:11px;width:max-content;
   --nph-head:96px;--nph-run:152px}
 /* 左端の目盛り列。柱を横に送っても残るよう貼り付ける */
+/* 2026-09-03: 帯を .npzoom の外に出したので **sticky に戻した**。
+   中に入れたまま transform を掛けると、貼り付く基準が「拡大された箱」に変わって
+   帯が画面の真ん中まで付いてくる。外に出せば素の sticky がそのまま効き、
+   JSで位置を追いかける必要もない（裏に回ると止まる処理に頼らずに済む）。 */
 .race20 .nprail{position:sticky;left:0;z-index:3;flex:none;width:26px;
   background:var(--sub-bg);border-right:1px solid var(--rule-strong)}
 .race20 .nprail .rhd{height:var(--nph-head);border-bottom:1px solid var(--rule-strong)}

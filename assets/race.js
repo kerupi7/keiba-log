@@ -3133,7 +3133,13 @@ function npSyncRail(root) {
 
 function renderPaper(site) {
   const cols = [...site.horses].sort((a, b) => a.number - b.number).map(npCol).join('');
-  return `<div class="shpaper off"><div class="npgrid">${npRail()}${cols}</div></div>`;
+  // .npzoom は**拡大したぶんの大きさを持つだけ**の入れ物。
+  // transform は見た目を変えるが場所を取らないので、これが無いと拡げた側が
+  // スクロールで届かなくなる（横スクロールの幅が増えない）。
+  // 帯（.nprail）は**拡大する箱の外**に置く。中に入れたままだと、transform を掛けた
+  // 瞬間に position:sticky の基準が「拡大された箱」に変わり、帯が画面の真ん中まで
+  // 付いてくる（2026-09-03 実機で発生）。外に出せば sticky がそのまま効く。
+  return `<div class="shpaper off">${npRail()}<div class="npzoom"><div class="npgrid">${cols}</div></div></div>`;
 }
 
 // ── 新聞のピンチイン・アウト（2026-09-03 ユーザー指示） ─────────
@@ -3149,23 +3155,47 @@ const NP_ZOOM = { min: 0.6, max: 2.5 };   // 0.6は16頭が1画面に入る側�
 
 function setupPaperZoom(root) {
   const wrap = root.querySelector('.shpaper');
-  const grid = wrap && wrap.querySelector('.npgrid');
-  if (!wrap || !grid) return;
+  const box = wrap && wrap.querySelector('.npzoom');
+  const grid = box && box.querySelector('.npgrid');
+  const rail = wrap && wrap.querySelector('.nprail');
+  if (!wrap || !box || !grid) return;
   let z = 1;
 
-  // **transform ではなく zoom を使う**（2026-09-03 修正）。
-  // transform を掛けると、その中の position:sticky が「拡大された箱」を基準に
-  // 貼り付くようになり、左端の目盛り列（.nprail「適性」「前走」…）が画面の
-  // 真ん中まで付いてくる。zoom は組み直し（レイアウト）ごと拡げるので sticky が生きる。
-  const apply = () => { grid.style.zoom = z === 1 ? '' : z; };
+  // **transform で拡げる。**zoom は中身を組み直すので、文字の折り返しや列の幅が
+  // 変わってしまう（2026-09-03 に一度 zoom にして戻した）。transform なら
+  // 絵をそのまま拡げるだけなので、見た目が変わらず動きもなめらか。
+  //
+  // transform の代償が2つあるので、それぞれ手当てしてある。
+  //   ① 場所を取らない → 外側の .npzoom に拡大後の大きさを持たせる
+  //   ② 中の position:sticky が効かなくなる → 左の帯は sticky をやめ、
+  //      横スクロールの量だけ自分で右へずらす（下の place）
+  // 帯は拡大する箱の外に居るので、position:sticky がそのまま効く。
+  // **JSで位置を追いかけない。**scroll の知らせや毎フレームの処理に頼ると、
+  // 画面が裏に回っているときに止まって置いていかれる。
+  // 帯自身は同じ倍率で拡げ、幅も倍率ぶん取り直す（列と行の高さを合わせるため）。
+  const RAIL_W = 26;
+  const place = () => {
+    if (!rail) return;
+    rail.style.transform = z === 1 ? '' : `scale(${z})`;
+    rail.style.transformOrigin = '0 0';
+    rail.style.width = z === 1 ? '' : `${RAIL_W}px`;
+    rail.style.marginRight = z === 1 ? '' : `${RAIL_W * (z - 1)}px`;
+  };
+  const apply = () => {
+    grid.style.transform = z === 1 ? '' : `scale(${z})`;
+    grid.style.transformOrigin = '0 0';
+    box.style.width = z === 1 ? '' : `${grid.offsetWidth * z}px`;
+    box.style.height = z === 1 ? '' : `${grid.offsetHeight * z}px`;
+    place();
+  };
 
-  // 拡大しても、画面上の (px, py) にある中身が動かないようにスクロールを合わせる。
-  // 入れ物（.shpaper）自体は拡大していないので、その位置は基準にしてよい。
+  // 拡大しても、画面上の (px, py) にある中身が動かないようにスクロールを合わせる
   const keep = (px, py, ux, uy) => {
     const r = wrap.getBoundingClientRect();
     wrap.scrollLeft = ux * z - (px - r.left);        // 横は入れ物の中で動かす
     const dy = uy * z + r.top - py;                  // 縦はページごと動かす
     if (dy) window.scrollBy(0, dy);
+    place();
   };
   const at = (px, py) => {                           // その点の、拡大していないときの位置
     const r = wrap.getBoundingClientRect();
@@ -3173,33 +3203,35 @@ function setupPaperZoom(root) {
   };
   const clamp = (v) => Math.min(NP_ZOOM.max, Math.max(NP_ZOOM.min, v));
 
+
   // ── iPhone（Safari）のピンチ ───────────────────────────
   // Safari は2本指を touch ではなく **gesture** として扱う。touchmove の
   // preventDefault だけではページ全体の拡大に取られるので、こちらを止める。
   // あわせて CSS の touch-action: pan-x pan-y でこの要素のピンチを browser から外す。
-  let gz = 1, gx = 0, gy = 0;
+  let gz = 1, gx = 0, gy = 0, gpx = 0, gpy = 0;
   wrap.addEventListener('gesturestart', (e) => {
     e.preventDefault();
-    gz = z; [gx, gy] = at(e.clientX ?? e.pageX, e.clientY ?? e.pageY);
-    wrap.dataset.gpx = e.clientX ?? e.pageX;
-    wrap.dataset.gpy = e.clientY ?? e.pageY;
+    gz = z;
+    gpx = e.clientX ?? e.pageX ?? 0;
+    gpy = e.clientY ?? e.pageY ?? 0;
+    [gx, gy] = at(gpx, gpy);
   });
   wrap.addEventListener('gesturechange', (e) => {
     e.preventDefault();
     z = clamp(gz * e.scale);
     apply();
-    keep(+wrap.dataset.gpx, +wrap.dataset.gpy, gx, gy);
+    keep(gpx, gpy, gx, gy);
   });
   wrap.addEventListener('gestureend', (e) => { e.preventDefault(); });
 
   // ── gesture を持たないブラウザ（Android・PCのタッチ） ────────
-  let start = 0, base = 1, ux = 0, uy = 0, mx = 0, my = 0;
+  let start = 0, base = 1, ux = 0, uy = 0;
   const dist = (t) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+  const mid = (t) => [(t[0].clientX + t[1].clientX) / 2, (t[0].clientY + t[1].clientY) / 2];
   wrap.addEventListener('touchstart', (e) => {
     if (e.touches.length !== 2) return;
     start = dist(e.touches); base = z;
-    mx = (e.touches[0].clientX + e.touches[1].clientX) / 2;
-    my = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+    const [mx, my] = mid(e.touches);
     [ux, uy] = at(mx, my);
   }, { passive: true });
   wrap.addEventListener('touchmove', (e) => {
@@ -3207,8 +3239,7 @@ function setupPaperZoom(root) {
     e.preventDefault();          // 2本指のときだけ止める。1本指の横スクロールは残す
     z = clamp(base * (dist(e.touches) / start));
     apply();
-    mx = (e.touches[0].clientX + e.touches[1].clientX) / 2;
-    my = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+    const [mx, my] = mid(e.touches);
     keep(mx, my, ux, uy);
   }, { passive: false });
   wrap.addEventListener('touchend', (e) => { if (e.touches.length < 2) start = 0; });
