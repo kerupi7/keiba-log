@@ -2607,9 +2607,20 @@ function horseGradeBody(h) {
 // 閉じ方は既存のまま（「閉じる」ボタン・背景・Esc でポップアップごと閉じる）。
 // **別画面から戻る手段は依頼書に書かれていないので実装側で決めた**（「← 戻る」）。
 // 閉じるだけにすると、見るたびに馬名を押し直すことになるため。
+// **1画面にまとめてある**（2026-09-03 ユーザー指示「馬の格と条件べつの見立てを
+// ひとまとめに」）。最初はボタン2つ・別画面2つで作ったが、開いた先でさらに選ばせる形に
+// なっていた。基準の1枚 #18「畳むのは1階層まで。開いた先でさらに押させない」に揃えた。
+// 並びは 馬の格（この馬ぜんぶで1つの数）→ 条件べつの見立て（34枠の内訳）。全体 → 内訳の順。
 const POPUP_PANELS = [
-  { key: 'grade', label: '馬の格', render: (h) => horseGradeBody(h) },
-  { key: 'apt', label: '条件べつの見立て', render: (h, site) => aptitudeGrid(h, site) },
+  {
+    key: 'power',
+    label: 'この馬の力',
+    render: (h, site) => {
+      const a = horseGradeBody(h);
+      const b = aptitudeGrid(h, site);
+      return (a || b) ? a + b : '';
+    },
+  },
 ];
 
 function panelButtons(h, site) {
