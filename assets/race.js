@@ -2509,10 +2509,6 @@ function aptitudeGrid(h, site) {
     ? `／地方${g.local_starts}走は数えていない` : '';
   return `
     <div class="crh">条件べつの見立て（中央のみ・全走）</div>
-    <div class="acs">棒＝100回走って何回3着以内か（右端100%・どの馬も同じ物差し）。
-      縦線は全体の平均で100回に${Math.round(tick)}回。
-      走数が足りないぶんは血統で補ってある（${m.k}走で半々）。
-      <b>右のマスはこの馬の実際の着順</b>（古い順・${m.max_squares}つを超えると「+N」）。</div>
     ${rest}
     <div class="agrid">${rows}</div>
     <div class="akey">着順<span class="akw"><span class="sq g1">1</span>1着</span><span class="akw"><span class="sq g2">2</span>2〜3着</span><span class="akw"><span class="sq g3">5</span>4〜5着</span><span class="akw"><span class="sq g4">9</span>6着以下</span><span class="akw"><span class="nr">未走</span>＝走っていない（棒は血統だけ）</span></div>
@@ -2602,20 +2598,9 @@ function horseGradeBody(h) {
       + `<span class="hgsf" style="width:${g.stars / 5 * 100}%">★★★★★</span></span>`
       + `<span class="hgband">${escapeHtml(g.band || '')}クラスの中で</span>`
     : `<span class="hgr none">星は${g.min_runs || 3}走から</span>`;
-  const min = g.min_runs || 3;
-  const runs = !g.runs
-    ? 'まだ1走もしていないので、確かな分は0。棒は分からない分と伸びる分だけ。'
-    : g.stars == null
-      ? `${g.runs}走ぶんの実績。直近${min}走がそろうまで星は出さない。`
-      : `直近${Math.min(g.runs, min)}走の成績で出している（通算${g.runs}走）。`;
-  // ランクを出していない馬に「ランクは◯頭の中での位置」と書かない（言っていることが食い違う）
-  // 星の元になった順位は、足の小さい文字にだけ残す（札には出さない）
-  const pop = g.stars != null
-    ? `星は${escapeHtml(g.band || '')}クラスに出た${(g.band_horses || 0).toLocaleString()}件の中での位置`
-      + `（上位${g.top_percent}％）。クラスをまたいだ強さは表さない。` : '';
-  const local = g.local_starts ? `地方${g.local_starts}走は数えていない。` : '';
-  const unscored = g.unscored
-    ? `クラスが読めない${g.unscored}走は数えていない。` : '';
+  // 2026-09-03 ユーザー指示で、下の説明3行（濃さの読み方・母数と順位・地方や
+  // クラスが読めない走の断り）は消した。**帯（「1勝クラスの中で」）と星は残る**ので、
+  // 何と比べた位置かは札の横で分かる。数えていない走の断りは画面から消えている。
   return `
     <div class="crh">馬の格</div>
     <div class="hgnum"><b>${Math.round(g.pct)}</b><i>％</i>${rank}</div>
@@ -2631,8 +2616,6 @@ function horseGradeBody(h) {
       <span class="hgk"><i class="hgc s2"></i>まだ分からない分 ${Math.round(g.unknown)}</span>
       <span class="hgk"><i class="hgc s3"></i>まだ伸びる分 ${Math.round(g.growth)}</span>
     </div>
-    <div class="hgnote">濃いところが言い切れる分。薄くなるほど当てにならない。</div>
-    <div class="afoot">${runs}${pop}${local}${unscored}</div>
   `;
 }
 
