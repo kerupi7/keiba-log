@@ -3179,8 +3179,12 @@ function setupPaperZoom(root) {
     grid.style.transformOrigin = '0 0';
     grid.style.transform = (zz === 1 && !tx && !ty) ? ''
       : `translate3d(${tx}px, ${ty}px, 0) scale(${zz})`;
-    box.style.width = zz === 1 ? '' : `${W * zz}px`;
-    box.style.height = zz === 1 ? '' : `${H * zz}px`;
+    // **等倍でも大きさを書く。**max-content 任せにすると、拡大から戻したときに
+    // 前の幅が残る環境があり、最後の馬より右に白が続く原因になる
+    if (W && H) {
+      box.style.width = `${W * zz}px`;
+      box.style.height = `${H * zz}px`;
+    }
     if (rail) {
       rail.style.transformOrigin = '0 0';
       rail.style.transform = zz === 1 ? '' : `scale(${zz})`;
@@ -3272,8 +3276,15 @@ function setupPaperZoom(root) {
     commit(zz);
   }, { passive: false });
 
-  // 面を切り替えた直後は幅が0で測れない。表示に切り替わったら測り直す
-  root.addEventListener('click', () => { if (z === 1) setTimeout(measure, 0); });
+  // 面を切り替えた直後は幅が0で測れない（.shpaper が display:none）。
+  // **測れていないと箱の大きさを書けず、横スクロールの範囲がずれる。**
+  // 新聞に切り替わったら測り直し、そのとき箱の大きさも書き直す。
+  root.addEventListener('click', () => {
+    setTimeout(() => {
+      if (!wrap.offsetParent) return;         // まだ隠れている
+      if (z === 1 && !tx && !ty) { measure(); paint(1); }
+    }, 0);
+  });
 }
 
 function renderShutuba20(site) {

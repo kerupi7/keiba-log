@@ -3096,11 +3096,20 @@ body.noscroll{position:fixed;width:100%;overflow:hidden}
 /* 2026-09-03: 新聞だけ2本指で拡大縮小できる（setupPaperZoom）。
    pan-x pan-y にすると、指1本のスクロールは残したまま**この要素のピンチだけ**を
    ブラウザの手から外せる。none にすると横スクロールまで止まる。 */
-.race20 .npzoom{width:max-content;flex:none}
-/* 帯と柱を横に並べる。**帯は拡大する箱（.npzoom）の外**なので sticky が効く。 */
+/* overflow:hidden は「最後の馬より右に白が続く」対策（2026-09-03）。
+   中の .npgrid は transform で拡げているだけなので、**組み直し前の幅（等倍の幅）**を
+   持ったままはみ出している。縮めたときはそれが箱より広くなり、ブラウザによっては
+   その広いほうを横スクロールの範囲に入れてしまう。箱で切れば範囲は見た目どおりになる。
+   箱の大きさは JS が W×倍率 ちょうどに合わせているので、拡げた側が切れることはない。 */
+.race20 .npzoom{width:max-content;flex:none;overflow:hidden}
+/* 帯と柱を横に並べる。**帯は拡大する箱（.npzoom）の外**なので sticky が効く。
+   -webkit-overflow-scrolling:touch は外した（iOS17以降は既定で慣性が付く。
+   古い指定はスクロールの端の扱いが独自で、行き過ぎが戻らないことがある）。
+   overscroll-behavior-x:contain は、横に振り切ったときにページや
+   ブラウザの「戻る」へ動きが伝わらないようにする。 */
 .race20 .shpaper{display:flex;align-items:flex-start;
   touch-action:pan-x pan-y;overflow-x:auto;overflow-y:hidden;margin-top:6px;
-  -webkit-overflow-scrolling:touch;--nph-head:96px;--nph-run:152px}
+  overscroll-behavior-x:contain;--nph-head:96px;--nph-run:152px}
 .race20 .npgrid{display:flex;align-items:flex-start;font-size:11px;width:max-content;
   --nph-head:96px;--nph-run:152px}
 /* 左端の目盛り列。柱を横に送っても残るよう貼り付ける */
