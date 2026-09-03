@@ -3476,3 +3476,38 @@ body.noscroll{position:fixed;width:100%;overflow:hidden}
 .race20 .popup .ppback{border:0;background:none;font:inherit;font-size:12px;font-weight:700;
   color:var(--link);padding:2px 0;margin:0 0 6px;cursor:pointer}
 .race20 .popup .ppback:hover{text-decoration:underline}
+
+/* ── 馬の格（％とランク・馬名ポップアップの別画面） ────────────────
+   正本: Kelpie.Inc デザイン部 2026-09-03 段8完了・確定
+   businesses/design/dept/finish/data/2026-09-02_horse-level-rank/adopted.html
+   寸法・濃さの3段は正本の値をそのまま持ってきている。
+   **線も枠も足さない**（足すと1本の図が「内訳の表」に変わる。基準の1枚 #14）。
+   濃さは条件べつの見立てと同じ藍の濃淡を使い回す（--apt-f1 / --apt-f3 / --apt-f4）。 */
+.race20 .popup .hgnum{margin-top:8px;line-height:1}
+.race20 .popup .hgnum b{font-size:38px;font-weight:700;letter-spacing:-1.5px;
+  font-variant-numeric:tabular-nums;color:var(--text)}
+.race20 .popup .hgnum i{font-size:15px;font-style:normal;margin-left:2px;letter-spacing:0}
+.race20 .popup .hgr{display:inline-block;margin-left:8px;padding:3px 8px;background:var(--navy);
+  color:#fff;font-size:11px;font-weight:700;border-radius:3px;vertical-align:7px;
+  font-variant-numeric:tabular-nums}
+/* 走が無くてランクが出ない馬。塗りの札にすると「順位が付いた」と読まれるので枠だけにする */
+.race20 .popup .hgr.none{background:none;color:var(--cap);border:1px solid var(--rule);font-weight:400}
+.race20 .popup .hgcap{font-size:10px;color:var(--cap);margin:3px 0 0}
+.race20 .popup .hgbar{margin-top:11px;height:15px;background:var(--apt-track);
+  border-radius:2px;display:flex;overflow:hidden}
+.race20 .popup .hgs{display:block;height:100%}
+.race20 .popup .hgs.s1{background:var(--apt-f1)}   /* いま確かな分 */
+.race20 .popup .hgs.s2{background:var(--apt-f3)}   /* まだ分からない分 */
+.race20 .popup .hgs.s3{background:var(--apt-f4)}   /* まだ伸びる分 */
+.race20 .popup .hgends{display:flex;justify-content:space-between;font-size:9.5px;
+  color:var(--cap);margin-top:3px}
+.race20 .popup .hgkey{font-size:10px;color:var(--cap);margin-top:7px;display:flex;gap:9px;
+  flex-wrap:wrap;align-items:center}
+.race20 .popup .hgk{display:inline-flex;align-items:center;white-space:nowrap}
+.race20 .popup .hgc{display:inline-block;width:10px;height:10px;border-radius:2px;
+  margin-right:3px;flex:0 0 auto}
+.race20 .popup .hgc.s1{background:var(--apt-f1)}
+.race20 .popup .hgc.s2{background:var(--apt-f3)}
+.race20 .popup .hgc.s3{background:var(--apt-f4)}
+.race20 .popup .hgc.s4{background:var(--apt-track);border:1px solid var(--rule)}
+.race20 .popup .hgnote{font-size:10px;color:var(--cap);margin-top:6px}

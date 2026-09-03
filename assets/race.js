@@ -2547,6 +2547,54 @@ function popupBody(h, site) {
     </div>`;
 }
 
+// ── 馬の格（％とランク） ───────────────────────────────────
+// 正本: businesses/design/dept/finish/data/2026-09-02_horse-level-rank/adopted.html
+//       （Kelpie.Inc デザイン部 2026-09-03 段8完了・確定）
+// データ: shared/scripts/keiba_shutuba_columns.py の build_horse_grade()
+//        ／ 数字の作り方は shared/scripts/keiba_horse_grade.py
+//
+// 棒1本を濃さ3段で「いま確かな分・まだ分からない分・まだ伸びる分」に割り、残りが届かない分。
+// **線も枠も足さない。**足すと1本の図が「内訳の表」に変わる（基準の1枚 #14）。
+// 出す数字は％とランクの2つだけ（依頼書 質問8）。
+function horseGradeBody(h) {
+  const g = h.horse_grade;
+  if (!g) return '';
+  const seg = (cls, v, label) => v > 0
+    ? `<span class="hgs ${cls}" style="width:${v}%" title="${label} ${Math.round(v)}"></span>` : '';
+  // ランクは走が1つも無い馬には出さない。0%の馬を全頭「上位99%」と並べないため
+  const rank = g.top_percent != null
+    ? `<span class="hgr">上位${g.top_percent}％</span>`
+    : `<span class="hgr none">ランクはまだ出ない</span>`;
+  const runs = g.runs
+    ? `${g.runs}走ぶんの実績で出している。走が増えると真ん中の段が縮む。`
+    : 'まだ1走もしていないので、確かな分は0。棒は分からない分と伸びる分だけ。';
+  // ランクを出していない馬に「ランクは◯頭の中での位置」と書かない（言っていることが食い違う）
+  const pop = g.top_percent != null
+    ? `ランクは${(g.population || 0).toLocaleString()}頭の中での位置。` : '';
+  const local = g.local_starts ? `地方${g.local_starts}走は数えていない。` : '';
+  const unscored = g.unscored
+    ? `クラスが読めない${g.unscored}走は数えていない。` : '';
+  return `
+    <div class="crh">馬の格</div>
+    <div class="hgnum"><b>${Math.round(g.pct)}</b><i>％</i>${rank}</div>
+    <div class="hgcap">競走馬として出せる力の上限を100％としたときの位置</div>
+    <div class="hgbar">
+      ${seg('s1', g.sure, 'いま確かな分')}
+      ${seg('s2', g.unknown, 'まだ分からない分')}
+      ${seg('s3', g.growth, 'まだ伸びる分')}
+    </div>
+    <div class="hgends"><span>0％</span><span>能力の上限 100％</span></div>
+    <div class="hgkey">
+      <span class="hgk"><i class="hgc s1"></i>いま確かな分 ${Math.round(g.sure)}</span>
+      <span class="hgk"><i class="hgc s2"></i>まだ分からない分 ${Math.round(g.unknown)}</span>
+      <span class="hgk"><i class="hgc s3"></i>まだ伸びる分 ${Math.round(g.growth)}</span>
+      <span class="hgk"><i class="hgc s4"></i>届かない ${Math.round(g.short)}</span>
+    </div>
+    <div class="hgnote">濃いところが言い切れる分。薄くなるほど当てにならない。</div>
+    <div class="afoot">${runs}${pop}${local}${unscored}</div>
+  `;
+}
+
 // ── ポップアップの中身を入れ替える別画面 ────────────────────
 // 依頼書: businesses/design/dept/reception/data/briefs/2026-09-02_horse-level-rank.md
 //   質問9「ボタンを置いて、押したところに別画面で見れるようにしたい」
@@ -2560,6 +2608,7 @@ function popupBody(h, site) {
 // **別画面から戻る手段は依頼書に書かれていないので実装側で決めた**（「← 戻る」）。
 // 閉じるだけにすると、見るたびに馬名を押し直すことになるため。
 const POPUP_PANELS = [
+  { key: 'grade', label: '馬の格', render: (h) => horseGradeBody(h) },
   { key: 'apt', label: '条件べつの見立て', render: (h, site) => aptitudeGrid(h, site) },
 ];
 
