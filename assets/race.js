@@ -2566,13 +2566,14 @@ function horseGradeBody(h) {
   // 文字の段（S〜E / A〜G）は使えない（既存の grade と見分けが付かない・依頼書 #1）。
   // 走数が足りない馬には出さない（既定は6走）。5走までは、いま出るランクが
   // 生涯のランクから中央値11ポイント以上ずれる。弱いのではなく固まっていないだけ。
-  // 星は**同じクラス帯の馬の中での位置**。帯を書かないと、未勝利で13%の馬が★★★★に
-  // なる理由が読めない（その帯の中では上位10%）。帯は札のすぐ横に出す。
+  // 星は**今日のレースと同じクラスに出る馬の中での位置**。クラスを書かないと、
+  // 未勝利で13%の馬が★★★★になる理由が読めない（未勝利の中では上位10%）。
+  // 帯を馬ごとに決めていた頃は、同じレースで数字と星が逆を向く組が8.8%あった。
   const rank = g.stars != null
     ? `<span class="hgstars" title="${escapeHtml(g.band || '')}の中で上位${g.top_percent}％">`
       + `<span class="hgst">★★★★★</span>`
       + `<span class="hgsf" style="width:${g.stars / 5 * 100}%">★★★★★</span></span>`
-      + `<span class="hgband">${escapeHtml(g.band || '')}の中で</span>`
+      + `<span class="hgband">${escapeHtml(g.band || '')}クラスの中で</span>`
     : `<span class="hgr none">星は${g.min_runs || 3}走から</span>`;
   const min = g.min_runs || 3;
   const runs = !g.runs
@@ -2583,7 +2584,7 @@ function horseGradeBody(h) {
   // ランクを出していない馬に「ランクは◯頭の中での位置」と書かない（言っていることが食い違う）
   // 星の元になった順位は、足の小さい文字にだけ残す（札には出さない）
   const pop = g.stars != null
-    ? `星は${escapeHtml(g.band || '')}を走る${(g.band_horses || 0).toLocaleString()}頭の中での位置`
+    ? `星は${escapeHtml(g.band || '')}クラスに出た${(g.band_horses || 0).toLocaleString()}件の中での位置`
       + `（上位${g.top_percent}％）。クラスをまたいだ強さは表さない。` : '';
   const local = g.local_starts ? `地方${g.local_starts}走は数えていない。` : '';
   const unscored = g.unscored
