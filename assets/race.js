@@ -2561,21 +2561,27 @@ function horseGradeBody(h) {
   if (!g) return '';
   const seg = (cls, v, label) => v > 0
     ? `<span class="hgs ${cls}" style="width:${v}%" title="${label} ${Math.round(v)}"></span>` : '';
-  // ランクは走数が足りない馬には出さない（既定は6走）。5走までは、いま出るランクが
+  // ランクは星の数（半分刻みの10段）。**塗った星を重ねて幅で切る**——「★★☆」のように
+  // 文字を並べると、☆が「半分」なのか「空」なのかが読めないため。
+  // 文字の段（S〜E / A〜G）は使えない（既存の grade と見分けが付かない・依頼書 #1）。
+  // 走数が足りない馬には出さない（既定は6走）。5走までは、いま出るランクが
   // 生涯のランクから中央値11ポイント以上ずれる。弱いのではなく固まっていないだけ。
-  const rank = g.top_percent != null
-    ? `<span class="hgr">上位${g.top_percent}％</span>`
+  const rank = g.stars != null
+    ? `<span class="hgstars" title="上位${g.top_percent}％"><span class="hgst">★★★★★</span>`
+      + `<span class="hgsf" style="width:${g.stars / 5 * 100}%">★★★★★</span></span>`
     : `<span class="hgr none">ランクは${g.min_runs || 6}走から</span>`;
   const min = g.min_runs || 6;
   const runs = !g.runs
     ? 'まだ1走もしていないので、確かな分は0。棒は分からない分と伸びる分だけ。'
-    : g.top_percent == null
+    : g.stars == null
       ? `${g.runs}走ぶんの実績で出している。${min}走に届くまではランクを出さない`
         + `（いまのランクは生涯のランクから中央値11ポイント以上ずれるため）。`
       : `${g.runs}走ぶんの実績で出している。走が増えると真ん中の段が縮む。`;
   // ランクを出していない馬に「ランクは◯頭の中での位置」と書かない（言っていることが食い違う）
-  const pop = g.top_percent != null
-    ? `ランクは${min}走以上の${(g.population || 0).toLocaleString()}頭の中での位置。` : '';
+  // 星の元になった順位は、足の小さい文字にだけ残す（札には出さない）
+  const pop = g.stars != null
+    ? `星は${min}走以上の${(g.population || 0).toLocaleString()}頭の中での位置`
+      + `（上位${g.top_percent}％）。` : '';
   const local = g.local_starts ? `地方${g.local_starts}走は数えていない。` : '';
   const unscored = g.unscored
     ? `クラスが読めない${g.unscored}走は数えていない。` : '';
