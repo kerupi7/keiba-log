@@ -2448,6 +2448,78 @@ function popupRunsTable(h) {
     <div class="pthint">← 横にスクロールできます</div>`;
 }
 
+// ── 条件べつの見立て（34枠） ─────────────────────────────────
+// 正本: businesses/design/dept/finish/data/2026-09-02_horse-aptitude-visual/adopted.html
+//       （Kelpie.Inc デザイン部 2026-09-02 段8完了・確定）
+// データ: shared/scripts/keiba_shutuba_columns.py の build_aptitude_grid() / aptitude_meta()
+//        （実装記録は shared/keiba/handoff_2026-09-03_sire-aptitude.md）
+//
+// 棒＝100回走って何回3着以内か。右端が100%で**どの馬も同じ物差し**。
+// 走数が足りない枠は血統（父75%＋母父25%）で補ってあり、8走で実績と血統が半々になる。
+// 右のマスはその馬の実際の着順。**古い順**で、7つ目から「+N」に畳む。
+//
+// 着順のマスの4段。1着 / 2〜3着 / 4〜5着 / 6着以下。中止・除外は「−」（着外あつかい）。
+//
+// 凡例の5つは .akw で1つずつ包む。正本の段8で「『未走』と『＝走っていない』が
+// 行をまたいで割れる」が見つかり、実装側で詰める余地として残されていた（正本 §7-7）。
+// 包まないと 375px 幅で実際に割れることを 2026-09-03 に実測して確認した。
+function aptFinClass(f) {
+  if (f == null) return 'g4';
+  if (f === 1) return 'g1';
+  if (f <= 3) return 'g2';
+  if (f <= 5) return 'g3';
+  return 'g4';
+}
+
+function aptitudeGrid(h, site) {
+  const g = h.aptitude_grid;
+  const m = (site || {}).aptitude_meta;
+  if (!g || !m || !g.rows || !g.rows.length) return '';
+  const label = {};
+  const axis = {};
+  m.buckets.forEach((b) => { label[b.key] = b.label; axis[b.key] = b.axis; });
+  const tick = m.baseline_pct;
+  let prev = null;
+  const rows = g.rows.map((r) => {
+    const ax = axis[r.key];
+    const head = ax !== prev
+      ? `<div class="axh">${escapeHtml(m.axis_labels[ax] || ax)}</div>` : '';
+    prev = ax;
+    // 走っていない枠も行を消さない（棒は血統だけで立つ）。空白は「無い」と読まれるため
+    const rec = r.n
+      ? (r.finishes || []).map((f) =>
+          `<span class="sq ${aptFinClass(f)}">${f == null ? '−' : f}</span>`).join('')
+        + (r.more ? `<span class="more">+${r.more}</span>` : '')
+      : '<span class="nr">未走</span>';
+    const pct = r.pct == null ? 0 : r.pct;
+    return `${head}<div class="ar">
+      <span class="nm">${escapeHtml(label[r.key] || r.key)}</span>
+      <span class="bw"><span class="bf" style="width:${pct}%"></span>
+        <span class="tk" style="left:${tick}%"></span></span>
+      <span class="pv">${Math.round(pct)}%</span>
+      <span class="rec">${rec}</span>
+    </div>`;
+  }).join('');
+  const ped = [g.sire ? `父${escapeHtml(g.sire)}` : '', g.damsire ? `母父${escapeHtml(g.damsire)}` : '']
+    .filter(Boolean).join('／') || '血統なし';
+  // 枠が1つも付かなかった走は黙って消さない（2021年より前の走にはペースが入っていない）
+  const rest = g.unlabeled
+    ? `<div class="lvn">枠が付かない ${g.unlabeled}走は入っていない</div>` : '';
+  const local = g.local_starts
+    ? `／地方${g.local_starts}走は数えていない` : '';
+  return `
+    <div class="crh">条件べつの見立て（中央のみ・全走）</div>
+    <div class="acs">棒＝100回走って何回3着以内か（右端100%・どの馬も同じ物差し）。
+      縦線は全体の平均で100回に${Math.round(tick)}回。
+      走数が足りないぶんは血統で補ってある（${m.k}走で半々）。
+      <b>右のマスはこの馬の実際の着順</b>（古い順・${m.max_squares}つを超えると「+N」）。</div>
+    ${rest}
+    <div class="agrid">${rows}</div>
+    <div class="akey">着順<span class="akw"><span class="sq g1">1</span>1着</span><span class="akw"><span class="sq g2">2</span>2〜3着</span><span class="akw"><span class="sq g3">5</span>4〜5着</span><span class="akw"><span class="sq g4">9</span>6着以下</span><span class="akw"><span class="nr">未走</span>＝走っていない（棒は血統だけ）</span></div>
+    <div class="afoot">血統＝${ped}の産駒（父75%＋母父25%）。中央${g.central_starts}走${local}。</div>
+  `;
+}
+
 function popupBody(h, site) {
   const kg = h.weight_carried != null ? String(h.weight_carried).replace(/\.0$/, '') : '—';
   // 札の見出しと同じ赤オッズにする（片方だけ黒だと不具合に見えるため）
@@ -2467,6 +2539,7 @@ function popupBody(h, site) {
       ${courseRecordTable(h)}
       ${raceTypeTable(h, (site || {}).prediction)}
       ${levelRecordTable(h)}
+      ${aptitudeGrid(h, site)}
       ${popupRunsTable(h)}
     </div>`;
 }

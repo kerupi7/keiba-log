@@ -3413,3 +3413,50 @@ body.noscroll{position:fixed;width:100%;overflow:hidden}
    あるので触らない。馬名ポップアップ内の同じ表も範囲外なので触らない。 */
 .race20 .acard table.crt th.l,.race20 .acard table.crt td.l,
 .race20 .npgrid table.crt th.l,.race20 .npgrid table.crt td.l{font-weight:600}
+
+/* ── 条件べつの見立て（34枠・馬名ポップアップ） ─────────────────────
+   正本: Kelpie.Inc デザイン部 2026-09-02
+   businesses/design/dept/finish/data/2026-09-02_horse-aptitude-visual/adopted.html
+   数値・寸法はその正本の値をそのまま持ってきている（勝手に丸めない）。
+
+   色は既存トークンに寄せた。--apt-f1 は --navy と同値、--apt-f2 は --mk-tai と同値。
+   f3/f4/土台/縦線の4つだけサイトに無かったので、この節に限って足す。
+   **緑と赤は1色も使わない**（正本 §5-4。緑は的中、赤は地雷で別の意味を持つため）。 */
+.race20 .popup{
+  --apt-f1:#003E70;   /* 1着     ＝ --navy と同値 */
+  --apt-f2:#35617F;   /* 2〜3着  ＝ --mk-tai と同値 */
+  --apt-f3:#8AA2B5;   /* 4〜5着 */
+  --apt-f4:#DDE2E7;   /* 6着以下（文字は --apt-f4t） */
+  --apt-f4t:#7C858E;
+  --apt-track:#EFF1F3;  /* 棒の土台 */
+  --apt-tick:#B5B5AD;   /* 全体の平均を示す縦線 */
+  --apt-ped:#B9B2A2;    /* 「未走」の文字 */
+}
+.race20 .popup .acs{font-size:10px;color:var(--cap);margin:0 0 7px;line-height:1.5}
+.race20 .popup .axh{font-size:10px;color:var(--cap);margin:7px 0 3px}
+.race20 .popup .ar{display:flex;align-items:center;gap:4px;margin-bottom:4px}
+.race20 .popup .ar .nm{flex:0 0 42px;font-size:10px}
+.race20 .popup .ar .bw{flex:1 1 0;height:11px;background:var(--apt-track);
+  border-radius:2px;position:relative;overflow:hidden}
+.race20 .popup .ar .bf{position:absolute;left:0;top:0;bottom:0;background:var(--navy);border-radius:2px}
+.race20 .popup .ar .tk{position:absolute;top:0;bottom:0;width:1px;background:var(--apt-tick)}
+.race20 .popup .ar .pv{flex:0 0 30px;font-size:10px;font-weight:700;text-align:right;
+  font-variant-numeric:tabular-nums}
+/* 幅66pxは正本の値。6つ＋「+N」で中身が75.8pxになりはみ出すが、はみ出しは棒の側が
+   短くなって吸収する（正本 §7-4 で実測済み。潰れも重なりも起きない）。 */
+.race20 .popup .ar .rec{flex:0 0 66px;display:flex;justify-content:flex-end;gap:1px;align-items:center}
+.race20 .popup .sq{width:9px;height:11px;border-radius:1px;font-size:7px;line-height:11px;
+  text-align:center;color:#fff;flex:0 0 auto}
+.race20 .popup .sq.g1{background:var(--apt-f1)}
+.race20 .popup .sq.g2{background:var(--apt-f2)}
+.race20 .popup .sq.g3{background:var(--apt-f3)}
+.race20 .popup .sq.g4{background:var(--apt-f4);color:var(--apt-f4t)}
+.race20 .popup .more{font-size:7.5px;color:var(--cap)}
+.race20 .popup .nr{font-size:8.5px;color:var(--apt-ped)}
+.race20 .popup .akey{font-size:9px;color:var(--cap);margin:7px 0 0;
+  display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.race20 .popup .afoot{font-size:9px;color:var(--cap);margin:6px 0 0;line-height:1.5;
+  border-top:1px solid var(--rule);padding-top:5px}
+/* 凡例の5つ（1着・2〜3着・4〜5着・6着以下・未走）は、マスと言葉の間で折り返さない。
+   正本 §7-7 が実装側の宿題として残していた件。375px幅で割れることを実測して包んだ。 */
+.race20 .popup .akey .akw{display:inline-flex;gap:2px;align-items:center;white-space:nowrap}
