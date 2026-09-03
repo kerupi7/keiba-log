@@ -3499,8 +3499,15 @@ body.noscroll{position:fixed;width:100%;overflow:hidden}
 .race20 .popup .hgs.s1{background:var(--apt-f1)}   /* いま確かな分 */
 .race20 .popup .hgs.s2{background:var(--apt-f3)}   /* まだ分からない分 */
 .race20 .popup .hgs.s3{background:var(--apt-f4)}   /* まだ伸びる分 */
-.race20 .popup .hgends{display:flex;justify-content:space-between;font-size:9.5px;
-  color:var(--cap);margin-top:3px}
+/* 棒の下の目盛り。足し上げた数を、区切りの真下に置く（2026-09-03）。
+   .hgends（0％ と 能力の上限100％ を両端に置くだけの行）は .hgcum に置き換えた。 */
+.race20 .popup .hgcum{position:relative;height:22px;margin-top:1px}
+.race20 .popup .hgcum i{position:absolute;top:0;width:1px;height:4px;background:var(--apt-tick)}
+.race20 .popup .hgcum b{position:absolute;top:5px;font-size:11px;font-weight:700;color:var(--text);
+  transform:translateX(-50%);font-variant-numeric:tabular-nums;white-space:nowrap}
+.race20 .popup .hgcum b.l0{transform:none;left:0;font-weight:400;color:var(--cap);font-size:9.5px}
+.race20 .popup .hgcum s{position:absolute;top:5px;right:0;font-size:9.5px;color:var(--cap);
+  text-decoration:none}
 .race20 .popup .hgkey{font-size:10px;color:var(--cap);margin-top:7px;display:flex;gap:9px;
   flex-wrap:wrap;align-items:center}
 .race20 .popup .hgk{display:inline-flex;align-items:center;white-space:nowrap}

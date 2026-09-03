@@ -2556,6 +2556,33 @@ function popupBody(h, site) {
 // 棒1本を濃さ3段で「いま確かな分・まだ分からない分・まだ伸びる分」に割り、残りが届かない分。
 // **線も枠も足さない。**足すと1本の図が「内訳の表」に変わる（基準の1枚 #14）。
 // 出す数字は％とランクの2つだけ（依頼書 質問8）。
+// 棒の下の目盛り。**足し上げた数**を2つだけ置く（2026-09-03 ユーザー決定）。
+//   39 … ここまでは確か   ／   54 … ここまではあり得る（確か＋分からない＋伸びる）
+// 途中の51（確か＋分からない）は出さない。そこで止まる意味が無く、
+// 走の少ない馬では3つの数字が左に寄って重なるため（13%の馬で 13・27・30）。
+//
+// **棒の上に名前は置かない。**幅3%の段（まだ伸びる分）に文字が入らず、
+// 隣の名前と詰まって読めなくなる。名前は下の凡例だけに出す。
+//
+// 「届かない」は凡例から外した（残りの余白そのもので、数えるものではない）。
+// 「いま確かな分」の数字も外した——大きい数字と左の目盛りに同じ値が2回出るため。
+function gaugeTicks(g) {
+  const reach = Math.min(100, g.sure + g.unknown + g.growth);
+  const t = [];
+  // 0の位置は「0」の文字と重なるので、確かな分がごく短い馬では目盛りを出さない
+  if (g.sure >= 5) {
+    t.push(`<i style="left:${g.sure}%"></i>`
+      + `<b style="left:${g.sure}%">${Math.round(g.sure)}</b>`);
+  }
+  // 右端は「能力の上限 100」と重なるので、そこへ寄った馬では出さない
+  if (reach - g.sure >= 5 && reach <= 88) {
+    t.push(`<i style="left:${reach}%"></i>`
+      + `<b style="left:${reach}%">${Math.round(reach)}</b>`);
+  }
+  return `<div class="hgcum"><b class="l0">0</b>${t.join('')}`
+    + `<s>能力の上限 100</s></div>`;
+}
+
 function horseGradeBody(h) {
   const g = h.horse_grade;
   if (!g) return '';
@@ -2598,12 +2625,11 @@ function horseGradeBody(h) {
       ${seg('s2', g.unknown, 'まだ分からない分')}
       ${seg('s3', g.growth, 'まだ伸びる分')}
     </div>
-    <div class="hgends"><span>0％</span><span>能力の上限 100％</span></div>
+    ${gaugeTicks(g)}
     <div class="hgkey">
-      <span class="hgk"><i class="hgc s1"></i>いま確かな分 ${Math.round(g.sure)}</span>
+      <span class="hgk"><i class="hgc s1"></i>いま確かな分</span>
       <span class="hgk"><i class="hgc s2"></i>まだ分からない分 ${Math.round(g.unknown)}</span>
       <span class="hgk"><i class="hgc s3"></i>まだ伸びる分 ${Math.round(g.growth)}</span>
-      <span class="hgk"><i class="hgc s4"></i>届かない ${Math.round(g.short)}</span>
     </div>
     <div class="hgnote">濃いところが言い切れる分。薄くなるほど当てにならない。</div>
     <div class="afoot">${runs}${pop}${local}${unscored}</div>
