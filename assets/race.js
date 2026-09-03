@@ -3175,15 +3175,19 @@ function setupPaperZoom(root) {
   const measure = () => { W = grid.offsetWidth; H = grid.offsetHeight; };
   measure();
 
-  const paint = (zz) => {
+  // grow=true（指を動かしている最中）は箱を縮めない。
+  // **縮めるとブラウザが横スクロールの位置を勝手に戻し**、こちらが決めた
+  // ずらし量と食い違って絵が飛ぶ。縮めるのは指を離したときだけ。
+  const paint = (zz, grow) => {
     grid.style.transformOrigin = '0 0';
     grid.style.transform = (zz === 1 && !tx && !ty) ? ''
       : `translate3d(${tx}px, ${ty}px, 0) scale(${zz})`;
     // **等倍でも大きさを書く。**max-content 任せにすると、拡大から戻したときに
     // 前の幅が残る環境があり、最後の馬より右に白が続く原因になる
     if (W && H) {
-      box.style.width = `${W * zz}px`;
-      box.style.height = `${H * zz}px`;
+      const w = W * zz, h = H * zz;
+      box.style.width = `${grow ? Math.max(w, box.offsetWidth) : w}px`;
+      box.style.height = `${grow ? Math.max(h, box.offsetHeight) : h}px`;
     }
     if (rail) {
       rail.style.transformOrigin = '0 0';
@@ -3200,7 +3204,7 @@ function setupPaperZoom(root) {
     const sl = wrap.scrollLeft - tx;
     const dy = -ty;
     tx = 0; ty = 0;
-    paint(z);
+    paint(z, false);
     wrap.scrollLeft = Math.max(0, Math.min(sl, wrap.scrollWidth - wrap.clientWidth));
     if (dy) window.scrollBy(0, dy);
     live = false;
@@ -3215,11 +3219,21 @@ function setupPaperZoom(root) {
     u = (px - rl + sl0) / z;
     v = (py - rt) / z;
   };
-  // つまんだ点が動かないように、絵のずらし量を決める（測り直さない）
+  // つまんだ点が動かないように、絵のずらし量を決める（測り直さない）。
+  // **ただし中身が箱からはみ出す量までしか動かさない。**
+  // 縛らないと、右端でつまんで縮めたときに中身の右に隙間ができ、そこが白く光る
+  // （2026-09-03 ユーザー報告「1番右端でピンチすると一瞬ホワイトアウトする」）。
   const drag = (px, py, zz) => {
     tx = px - rl + sl0 - u * zz;
     ty = py - rt - v * zz;
-    paint(zz);
+    // 横：見かけのスクロール位置 (sl0 - tx) を 0〜端 の中に収める
+    const total = (RAIL_W + W) * zz;
+    const maxX = Math.max(0, total - wrap.clientWidth);
+    tx = Math.min(sl0, Math.max(sl0 - maxX, tx));
+    // 縦：箱の中に収める。箱は縮めない側なので、上には出さず下にも隙間を作らない
+    const room = Math.max(0, box.offsetHeight - H * zz);
+    ty = Math.min(room, Math.max(0, ty));
+    paint(zz, true);
   };
 
   // ── iPhone（Safari）のピンチ ───────────────────────────
@@ -3306,7 +3320,7 @@ function setupPaperZoom(root) {
   root.addEventListener('click', () => {
     setTimeout(() => {
       if (!wrap.offsetParent) return;         // まだ隠れている
-      if (z === 1 && !tx && !ty) { measure(); paint(1); }
+      if (z === 1 && !tx && !ty) { measure(); paint(1, false); }
     }, 0);
   });
 }
