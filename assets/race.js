@@ -3361,9 +3361,28 @@ function renderPopups20(site) {
           <button type="button" class="pclose" data-close>閉じる</button></div>
         <div class="pbody">${window.CourseTab.render(site)}</div>
       </div>` : '';
+  // 枠順成績の枠を押したときに出す「その枠の馬」（2026-09-03）。
+  // **2頭以上の枠だけ作る。**1頭の枠は枠のマスから直接その馬の戦績を開くので、
+  // 名前が1つだけ並ぶ札を間にはさまない。
+  const byGate = new Map();
+  site.horses.filter((h) => !h.scratched).forEach((h) => {
+    const g = Number(h.gate);
+    if (!byGate.has(g)) byGate.set(g, []);
+    byGate.get(g).push(h);
+  });
+  const gates = [...byGate.entries()].filter(([, hs]) => hs.length >= 2)
+    .sort((a, b) => a[0] - b[0])
+    .map(([g, hs]) => `<div class="popup" id="pop-gate-${g}">
+        <div class="phead"><span class="pname">${g}枠の馬</span>
+          <button type="button" class="pclose" data-close>閉じる</button></div>
+        <div class="pbody"><div class="gzlist">${hs.map((h) =>
+          `<button type="button" class="gzn" data-pop="${h.number}">`
+          + `${umaBox(h.number, h.gate, 'sm')}<span class="t">${escapeHtml(h.name)}</span>`
+          + '<i class="apop">▸</i></button>').join('')}</div></div>
+      </div>`).join('');
   return site.horses.filter((h) => !h.scratched)
     .map((h) => `<div class="popup" id="pop-${h.number}">${popupBody(h, site)}</div>`).join('')
-    + (up ? up.popup : '') + crs;
+    + (up ? up.popup : '') + crs + gates;
 }
 
 function setupShutuba20(site) {
@@ -3410,19 +3429,6 @@ function setupShutuba20(site) {
     bg.classList.remove('on');
     unlockPageScroll();                 // 111-spec §3.8
   };
-  // 枠を押すと、その枠の馬の名前を出す（もう一度押すと閉じる）。
-  // 名前そのものは data-pop なので、下の入口がそのまま戦績を開く。
-  root.addEventListener('click', (e) => {
-    const gz = e.target.closest('[data-gz]');
-    const map = gz && gz.closest('.gmap');
-    if (!map) return;
-    const open = map.querySelector(`[data-gz-list="${gz.dataset.gz}"]`);
-    const wasOpen = open && !open.hidden;
-    map.querySelectorAll('[data-gz-list]').forEach((el) => { el.hidden = true; });
-    map.querySelectorAll('[data-gz]').forEach((b) => b.classList.remove('on'));
-    if (open && !wasOpen) { open.hidden = false; gz.classList.add('on'); }
-  });
-
   root.addEventListener('click', (e) => {
     // 別画面の出し入れ。ポップアップは開いたままで中身だけ入れ替える
     const pb = e.target.closest('[data-panel]');
@@ -3437,8 +3443,10 @@ function setupShutuba20(site) {
     const nb = e.target.closest('[data-pop]');
     if (nb) {
       // コースの中から馬番を押したときだけ、戻り先としてコースを覚える
-      const from = openPopup && openPopup.id === 'pop-course' && nb.dataset.pop !== 'course'
-        ? 'course' : null;
+      // 2026-09-03: 枠のポップアップからも同じように戻り先を覚える
+      const cur = openPopup && openPopup.id.replace(/^pop-/, '');
+      const from = cur && cur !== nb.dataset.pop
+        && (cur === 'course' || cur.startsWith('gate-')) ? cur : null;
       backTo = null;                    // 閉じる処理に戻り先を拾わせない
       closePopup();
       backTo = from;
@@ -4463,26 +4471,22 @@ function renderOverview20(site) {
       // ratio が null の枠＝コースの走数不足で比率を出せない枠。セルごと消すと
       // 「枠順が全部出ていない」ように見えるので、'—' のまま並べる
       const grade = gateGrade(g.ratio);
-      // 2026-09-03: 枠を押せるようにした。押すとその枠の馬の名前が下に出て、
-      // 名前を押すと戦績（馬名ポップアップ）が開く。**馬名は data-pop なので、
-      // 出馬表や新聞の馬名と同じ入口**（開閉の仕組みを二重に持たない）。
-      const inGate = (site.horses || []).filter((h) => Number(h.gate) === Number(g.gate));
+      // 2026-09-03: 枠を押せるようにした。**行き先は頭数で変える。**
+      //   2頭以上 … その枠の馬の名前を出す札（#pop-gate-N）
+      //   1頭     … その馬の戦績（#pop-N）。名前が1つだけの札を間にはさまない
+      //   0頭     … 押せない
+      // どちらも [data-pop] なので、出馬表・新聞の馬名と同じ入口を通る
+      // （開け閉めの仕組みを二重に持たない）。
+      const inGate = (site.horses || [])
+        .filter((h) => Number(h.gate) === Number(g.gate) && !h.scratched);
+      const to = inGate.length >= 2 ? `gate-${g.gate}`
+        : (inGate.length === 1 ? String(inGate[0].number) : '');
       return `<button type="button" class="gz${grade ? ` g-${grade}` : ' nd'}"${
-        grade ? '' : ' title="このコースの走数が足りず判定できません"'} data-gz="${g.gate}"${
-        inGate.length ? '' : ' disabled'}>
+        grade ? '' : ' title="このコースの走数が足りず判定できません"'}${
+        to ? ` data-pop="${to}"` : ' disabled'}>
         ${wakuBox(g.gate, 'sm')}
         <div><span class="g">${grade || '—'}</span></div>
       </button>`;
-    }).join('');
-    // 押した枠の馬を出す場所。中身は押されたときに setupShutuba20 が入れる
-    const gateNames = (p.inner_outer_bias.gates || []).map((g) => {
-      const inGate = (site.horses || []).filter((h) => Number(h.gate) === Number(g.gate));
-      if (!inGate.length) return '';
-      const list = inGate.map((h) => `<button type="button" class="gzn${
-        h.scratched ? ' scr' : ''}"${h.scratched ? ' disabled' : ` data-pop="${h.number}"`}>`
-        + `${umaBox(h.number, h.gate, 'sm')}<span class="t">${escapeHtml(h.name)}</span>`
-        + `${h.scratched ? '<i>（取消）</i>' : '<i class="apop">▸</i>'}</button>`).join('');
-      return `<div class="gzlist" data-gz-list="${g.gate}" hidden>${list}</div>`;
     }).join('');
     // 内回り／外回りが混在するコース（京都芝1600/1400・新潟芝2000）では、どちらの
     // 数字を見ているのかを出す。混在しないコースでは scope が無く、何も足さない。
@@ -4498,7 +4502,6 @@ function renderOverview20(site) {
       <div class="gmap">
         <div class="gbar"></div>
         <div class="gzones">${cellsHtml}</div>
-        ${gateNames}
       </div>
     `);
   }
