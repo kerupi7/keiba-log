@@ -3599,9 +3599,11 @@ body.noscroll{position:fixed;width:100%;overflow:hidden}
 
 /* 枠順成績の枠を押せるようにした（2026-09-03）。
    2頭以上の枠は「N枠の馬」の札（#pop-gate-N）、1頭の枠はその馬の戦績へ直行する。
-   見た目は元の .gz のまま（ボタンの既定の枠・背景・字体を消す）。 */
-.race20 .gzones .gz{font:inherit;color:inherit;border:0;background:none;padding:0;
-  cursor:pointer;-webkit-appearance:none}
+   見た目は元の .gz のまま（ボタンの既定の枠・字体を消す）。
+   **背景と余白はここで触らない。**触ると上の .gz が持っている
+   マスの地色（#F4F6F8）と、判定なしの斜線（.gz.nd）まで消える。 */
+.race20 .gzones .gz{font:inherit;color:inherit;border:0;cursor:pointer;
+  -webkit-appearance:none;appearance:none}
 .race20 .gzones .gz:disabled{cursor:default;opacity:.55}
 /* 「N枠の馬」の札の中身。名前は1行1頭で縦に並べる（押す的を横幅いっぱいに取る） */
 .race20 .gzlist{display:flex;flex-direction:column;gap:8px}
