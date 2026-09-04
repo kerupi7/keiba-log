@@ -3718,13 +3718,19 @@ body.noscroll{position:fixed;width:100%;overflow:hidden}
 .container.top #races-list .race:last-child{margin-bottom:0}
 .container.top #races-list .race.pred{border-left:1px solid var(--rule);margin-left:0;padding-left:8px}
 
-/* 買い目の金額は必ず次の行の右端に置く（2026-09-04）。
-   `.amt` は元は `margin-left:auto` の右寄せで、幅が足りれば同じ行、足りなければ次の行に落ちていた。
+/* 買い目は「札 ／ ◎馬名 ／ 金額」を必ず1行に収める（2026-09-04・2回目の直し）。
+   1回目は金額を必ず次の行へ落としたが、2段になるのをやめたいとの判断で戻した。
    実測（2026-08-30 中京）: 必要な幅は 5R 281px・6R 269px・12R 254px。
-   画面幅375pxでは使える幅252pxで3件とも2段だが、幅393pxの端末では
-   6R・12Rだけ1段になり、5Rだけ2段になる。端末によって形が変わるのをやめる。
-   縦は幅の広い端末で1レースあたり25px伸びる。揃うことを優先した。 */
-.container.top #races-list .rpick .amt{flex-basis:100%;margin-left:0;text-align:right}
+   画面幅375pxで使えるのは252pxなので、いちばん長い5Rで29px足りない。
+   足りない分は**馬名の末尾を「…」で切って**吸収する。札と金額は幅を固定して切らない。
+   金額は右端に固定するので、レースをまたいで縦に揃う。
+   「1行に収める」ほうが目的で、馬名を最後まで出すことは代理の目的。
+   衝突したら馬名の末尾を捨てる（全文は詳細ページで読める）。 */
+.container.top #races-list .rpick{flex-wrap:nowrap;gap:6px}
+.container.top #races-list .rpick .pill{flex:none}
+.container.top #races-list .rpick .pk{flex:1 1 auto;min-width:0;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis}
+.container.top #races-list .rpick .amt{flex:none;flex-basis:auto;margin-left:auto;text-align:right}
 
 /* WIN5の脚番号の札を画像にする（2026-09-04）。
    青い塗り（--win5）と白抜き文字をやめ、透過PNGをそのまま置く。
