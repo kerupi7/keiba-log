@@ -203,7 +203,8 @@ function renderRaceRow(race) {
   } else {
     metaSurface = `<span class="d">ダ${race.distance}m</span>`;
   }
-  const meta = `${metaSurface} ・ ${race.field_size}頭 ・ ${race.post_time || '—'}`;
+  // 2026-09-04: 発走時刻はメタ行から外し、左の柱（.col1）へ移した。デザイン部の正本 案5。
+  const meta = `${metaSurface} ・ ${race.field_size}頭`;
   const badge = race.grade ? ` <span class="gbadge">${escapeHtml(race.grade)}</span>` : '';
   // メンバー札と荒れ度札は1つの箱に入れて右端へ寄せる。別々に右寄せすると横位置が
   // 行ごとにズレ、幅が足りない画面では片方だけ次の行へ落ちる（style.css の .rtags 参照）
@@ -239,13 +240,19 @@ function renderRaceRow(race) {
   }
 
   const w5 = win5LabelHtml(race.win5);
-  const rnHtml = w5
-    ? `<div class="rn ${rnClass} stack"><div class="num">${race.race_number}R</div>${w5}</div>`
-    : `<div class="rn ${rnClass}">${race.race_number}R</div>`;
+  // 2026-09-04: 左の柱。上から 発走時刻 / R番号 / WIN5の脚番号。
+  // 柱と中身の間の縦罫線が、行と行を分ける唯一の区切りになる（横罫線は無くした）。
+  // クラス名は .rn ではなく .rno にしてある。.rn は詳細ページ・成績・コースタブ・
+  // モック19枚が同じ名前で使っており、44px角の箱として書かれているため。
+  const col1 = `<div class="col1">`
+    + `<b class="tm">${escapeHtml(race.post_time || '—')}</b>`
+    + `<span class="rno ${rnClass}">${race.race_number}R</span>`
+    + w5
+    + `</div>`;
 
   return `
     <a class="race pred" href="race.html?id=${race.race_id}">
-      ${rnHtml}
+      ${col1}
       <div class="rmain">
         <div class="rname">${escapeHtml(race.race_name)}${badge}${tags}</div>
         <div class="rmeta">${meta}</div>

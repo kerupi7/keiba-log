@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>5Rの札の落ち方（変更前 / いま / B案） — 2026-09-04</title>
+<link rel="stylesheet" href="assets/style.css?v=20260904a">
+<style>
+  body{background:#ECECE7}
+  .doc{max-width:1240px;margin:0 auto;padding:20px 16px 60px}
+  .doc h1{font-size:17px;margin:0 0 6px}
+  .doc p.n{font-size:12px;color:#5C5C5C;margin:0 0 4px;line-height:1.7}
+  .cols{display:flex;gap:16px;flex-wrap:wrap;margin-top:20px;align-items:flex-start}
+  .col{width:377px}
+  .col h2{font-size:13px;margin:0 0 2px}
+  .col p.d{font-size:11.5px;color:#5C5C5C;margin:0 0 8px;line-height:1.7;min-height:56px}
+  .frame{width:377px;background:#fff;border:1px solid #C9C9C4}
+  .frame .container{padding-bottom:0}
+  .h{font-size:11px;color:#757575;padding:6px 0 2px}
+  /* B案だけの指定。札をレース名の行から「ダ1800m ・ 13頭」の行へ移す */
+  .bplan .rmeta{display:flex;align-items:center;gap:6px}
+  .bplan .rmeta .rtags{margin-left:auto;flex:none;display:flex;align-items:center;gap:6px}
+  .bplan .rmeta .mchip{flex:none;font-size:11.5px;font-weight:700;line-height:1;
+    padding:3px 6px;border-radius:3px;background:#fff;border:1.5px solid currentColor;
+    letter-spacing:.02em;white-space:nowrap;min-width:70px;text-align:center}
+  .bplan .rmeta .mchip.g-d{color:#9A93A4}
+  .bplan .rmeta .uchip{flex:none;font-size:11.5px;font-weight:700;line-height:1;
+    padding:4px 7px;border-radius:3px;color:#fff;letter-spacing:.02em;min-width:82px;text-align:center}
+  .bplan .rmeta .uchip.u-naka{background:var(--up-chip-naka)}
+  .bplan .rmeta .uchip .pv{margin-left:5px}
+  .bplan .rmeta .uchip .pv small{font-size:9.5px;margin-left:1px}
+  .measure{font-size:11.5px;color:#5C5C5C;margin-top:8px;line-height:1.8}
+  .measure b{color:#333}
+</style>
+</head>
+<body>
+<div class="doc">
+<h1>5Rの札が2段になる件（2026-09-04）</h1>
+<p class="n">中京 5R「3歳以上1勝クラス」の1行だけを、3つの作りで並べたもの。色も文字も本物の <code>assets/style.css</code> を読んでいる。幅は375px。</p>
+<p class="n"><b>見るところ：「メンバーD」と「中荒れ59%」の2つの札が、レース名と同じ行にいるか、下の行に落ちているか。</b></p>
+<p class="n" style="background:#FBF7EC;border-left:3px solid #B9B2A2;padding:8px 10px;color:#5a4f38">
+<b>先に訂正：この折り返しは、柱を入れる前から起きていた。</b>公開中の旧版で測ったところ、
+12レース中 5R・10R・12R の3行が既に2段になっていた（いずれもレース名が「3歳以上1勝クラス」）。
+<b>柱を入れて新しく落ちた行は0件。</b>私が最初に「5Rが新たに落ちた」と書いたのは誤りで、
+中身の幅も「313px → 288px」ではなく <b>292px → 299px</b>（旧版より7px広い）だった。</p>
+
+<div class="cols">
+
+  <div class="col">
+    <h2>① 変更前（8/30まで公開していた形）</h2>
+    <p class="d">左はR番号の箱だけ。発走時刻は「ダ1800m ・ 13頭 ・ 11:55」の3番目。<b>この時点で既に札2つは下の行に落ちている。</b></p>
+    <div class="frame"><div class="container">
+      <div class="h">① 変更前</div>
+      <a class="race pred" href="#">
+        <div class="rn fin">5R</div>
+        <div class="rmain">
+          <div class="rname">3歳以上1勝クラス<span class="rtags"><span class="mchip g-d">メンバーD</span><span class="uchip u-naka">中荒れ<span class="pv">59<small>%</small></span></span></span></div>
+          <div class="rmeta"><span class="d">ダ1800m</span> ・ 13頭 ・ 11:55</div>
+          <div class="rpick"><span class="pill miss">不的中</span><span class="pk">◎<span class="hn wk3 sm">3</span> ブームバップビート</span><span class="amt miss">−300円</span></div>
+          <div class="rmeta">勝ち馬: <span class="hn wk7 sm">10</span>（2人気）</div>
+        </div>
+      </a>
+    </div></div>
+    <p class="measure">中身の幅 <b>292px</b>／行の高さ <b>146px</b>／札は2段</p>
+  </div>
+
+  <div class="col">
+    <h2>② いまの実装（案5・そのまま）</h2>
+    <p class="d">左に時刻の柱（57px）が立った。中身の幅はむしろ7px広い。<b>札の落ち方は①と同じ。</b>行の高さの差は+4pxだけ。</p>
+    <div class="frame"><div class="container top">
+      <div class="h">② いま</div>
+      <div id="races-list">
+        <a class="race pred" href="#">
+          <div class="col1"><b class="tm">11:55</b><span class="rno fin">5R</span></div>
+          <div class="rmain">
+            <div class="rname">3歳以上1勝クラス<span class="rtags"><span class="mchip g-d">メンバーD</span><span class="uchip u-naka">中荒れ<span class="pv">59<small>%</small></span></span></span></div>
+            <div class="rmeta"><span class="d">ダ1800m</span> ・ 13頭</div>
+            <div class="rpick"><span class="pill miss">不的中</span><span class="pk">◎<span class="hn wk3 sm">3</span> ブームバップビート</span><span class="amt miss">−300円</span></div>
+            <div class="rmeta">勝ち馬: <span class="hn wk7 sm">10</span>（2人気）</div>
+          </div>
+        </a>
+      </div>
+    </div></div>
+    <p class="measure">中身の幅 <b>299px</b>／行の高さ <b>150px</b>／札は2段</p>
+  </div>
+
+  <div class="col bplan">
+    <h2>③ B案（札を1段下げる）</h2>
+    <p class="d">札2つを「ダ1800m ・ 13頭」の行の右端へ移した。<b>レース名が299px全部を使えるので、札は1段で収まる。</b>①②に元からある折り返しを消す案。</p>
+    <div class="frame"><div class="container top">
+      <div class="h">③ B案</div>
+      <div id="races-list">
+        <a class="race pred" href="#">
+          <div class="col1"><b class="tm">11:55</b><span class="rno fin">5R</span></div>
+          <div class="rmain">
+            <div class="rname">3歳以上1勝クラス</div>
+            <div class="rmeta"><span class="d">ダ1800m</span> ・ 13頭<span class="rtags"><span class="mchip g-d">メンバーD</span><span class="uchip u-naka">中荒れ<span class="pv">59<small>%</small></span></span></span></div>
+            <div class="rpick"><span class="pill miss">不的中</span><span class="pk">◎<span class="hn wk3 sm">3</span> ブームバップビート</span><span class="amt miss">−300円</span></div>
+            <div class="rmeta">勝ち馬: <span class="hn wk7 sm">10</span>（2人気）</div>
+          </div>
+        </a>
+      </div>
+    </div></div>
+    <p class="measure">中身の幅 <b>299px</b>／行の高さ <span id="h3">—</span>／札は1段</p>
+  </div>
+
+</div>
+</div>
+<script>
+document.getElementById('h3').textContent =
+  Math.round(document.querySelector('.bplan .race').getBoundingClientRect().height) + 'px';
+</script>
+</body>
+</html>

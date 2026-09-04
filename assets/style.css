@@ -3613,3 +3613,56 @@ body.noscroll{position:fixed;width:100%;overflow:hidden}
 .race20 .gzlist .gzn .t{flex:1 1 auto}
 .race20 .gzlist .gzn:hover{background:var(--sub-bg)}
 .race20 .gzlist .gzn .apop{font-style:normal;font-size:13px;color:var(--navy)}
+
+/* ===== 2026-09-04: トップページ 案5「時刻の柱を立てて2列にする」 =====
+   正本: Kelpie.Inc/businesses/design/dept/finish/data/2026-09-04_ans-top-page/adopted.html
+   決定メモ: 同フォルダの decision.md
+
+   直した中身:
+     区切る手段を「1pxの線15本だけ」から「縦の柱1本＋すき間」に変えた。
+     画面を横切る線は 15本 → 3本（帯の下・通算成績の下・凡例の下）。行と行の間の線は0本。
+     左端は 4/12/14/15px の4本 → 16px の1本。
+
+   16 / 8 / 24 は「揃って見えること」を守るための代わりの数であって目的ではない。
+   中身が入りきらない箇所が出たら、刻みのほうを捨てて中身を優先する。
+
+   セレクタは .container.top と #races-list に閉じてある。
+   .race .rn .roi .eyebrow .mini はいずれも他ページ・モックが同じ名前で使っており、
+   閉じずに書くと race.html / stats.html / courses.html / win5.html とモック20枚に波及する。 */
+.container.top{padding:0 16px 32px}
+.container.top .eyebrow{border-bottom:0;padding:16px 0 0;margin-bottom:0}
+.container.top div.roi{padding:8px 0 16px;border-bottom:1px solid var(--rule)}
+.container.top .mini{gap:16px;margin-top:16px}
+.container.top .datetabs{padding:16px 0 8px}
+.container.top .tracks{padding:0 0 8px}
+.container.top .legend{padding:8px 0 16px;border-bottom:1px solid var(--rule)}
+
+/* 一覧だけ左右いっぱいに出す。柱を画面の端から始めるため
+   （左端が2本になるのは承知のうえ。decision.md §5 に記録がある） */
+.container.top #races-list{margin:0 -16px}
+.container.top #races-list .race{gap:0;padding:12px 16px 12px 0;border-bottom:0;align-items:stretch}
+.container.top #races-list .race.pred{margin-left:0;padding-left:0;
+  border-left:3px solid var(--navy);background:var(--pred-race)}
+
+/* 柱の幅 57px の根拠: 発走時刻「11:55」の実測幅が44.3pxで、左右の余白4+6を足すと54.3px。
+   57はその上の最小値。**中身の幅を旧版の292pxより下げない**ことが条件で、
+   57pxなら 375−3(左線)−57−16(右余白)＝299px と旧版より7px広い。
+   最初に75px→68pxで作ったところ、5Rの買い目の行
+   「不的中 ◎3 ブームバップビート −300円」が2行になった（22px→51px）。幅を詰めて解決した。
+   57は「旧版より狭くしない」を守るための代わりの数であって目的ではない。
+   時刻の文字が入りきらなくなったら、57のほうを捨てて広げる。 */
+.container.top #races-list .col1{flex:0 0 57px;display:flex;flex-direction:column;
+  align-items:center;padding:0 6px 0 4px;border-right:1px solid var(--rule)}
+.container.top #races-list .col1 .tm{font-size:15px;font-weight:700;line-height:1.3;
+  font-variant-numeric:tabular-nums}
+.container.top #races-list .col1 .rno{margin-top:4px;width:100%;border-radius:3px;
+  color:#fff;font-weight:700;font-size:12.5px;line-height:1.5;text-align:center;
+  font-variant-numeric:tabular-nums}
+.container.top #races-list .col1 .rno.fin{background:var(--finished)}
+.container.top #races-list .col1 .rno.up{background:var(--upcoming)}
+.container.top #races-list .col1 .w5{margin-top:4px;width:100%;height:15px;border-radius:2px;
+  background:var(--win5);color:#fff;font-size:10.5px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;letter-spacing:.02em}
+.container.top #races-list .rmain{padding-left:16px}
+.container.top #races-list .rpick{margin-top:8px}
+.container.top #races-list .rmeta{margin-top:4px}
