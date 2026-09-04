@@ -3747,3 +3747,28 @@ body.noscroll{position:fixed;width:100%;overflow:hidden}
    画像は背景が白のJPEG。暗い配色を入れるときは白い四角が浮くので作り直しが要る */
 .site-header nav .w5nav{display:inline-flex;align-items:center}
 .site-header nav .w5nav img{height:17px;width:auto;display:block}
+
+/* ===== 2026-09-04: レース詳細の地をトップページと同じ灰色にする（案B・3枚） =====
+   試作: mock-race-card.html（4案を切り替えて比べたもの）
+   トップページと同じ --sub-bg2（#F1F1F0）を地にして、
+   「見出し」「タブの帯」「中身」の3つを白いカードにする。角丸12px・すき間12px。
+
+   12 は「トップページと同じ見え方にする」ための代わりの数であって目的ではない。
+   中身が入りきらない箇所が出たら、刻みのほうを捨てて中身を優先する。
+
+   `.race20` を持つのはレース詳細だけなので、他4ページとモックには波及しない。
+   `.secthead`（紺の帯）の背景は触らない。上書きすると帯が消える（試作の案Cで実際に消した）。 */
+/* 目印は race.html の `<div class="container racepage">`。
+   `:has()` を使うと古いブラウザで効かないので、クラスを足す形にした。
+   地はページ全体を塗る必要があるので body に当てる（`.racepage` がある時だけ効く指定は
+   CSSだけでは書けないため、body の塗りは race.html 側の1行に頼らず :has で二重に持たせる） */
+.racepage{background:var(--sub-bg2);padding:0 16px 16px;max-width:var(--max-width);
+  margin:0 auto;min-height:100vh}
+.racepage .back-link{display:inline-block;padding:10px 0 6px}
+body:has(.racepage){background:var(--sub-bg2)}
+.race20 .rhead{background:var(--bg);border:1px solid var(--rule);border-radius:12px;
+  padding:12px;margin-bottom:12px}
+.race20 .tabbar{background:var(--bg);border:1px solid var(--rule);border-radius:12px;
+  padding:0 8px;margin-bottom:12px}
+.race20 .tabpane{background:var(--bg);border:1px solid var(--rule);border-radius:12px;
+  padding:8px 12px 12px}

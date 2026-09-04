@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>レース詳細の地色 試作 — Ans.</title>
+<link rel="stylesheet" href="assets/style.css?v=20260904g">
+<style id="cardmock">
+/* ===== トップページの地色をレース詳細に当てたらどうなるか（2026-09-04・試作） =====
+   本番には入っていない。このファイルだけの実験。
+   地は --sub-bg2（#F1F1F0）。トップページのカードと同じ角丸12px・すき間12px。 */
+#mockbar{position:sticky;top:0;z-index:99;display:flex;gap:6px;padding:8px 12px;
+  background:#333;color:#fff;font:12px/1.4 -apple-system,sans-serif;flex-wrap:wrap;align-items:center}
+#mockbar b{font-weight:700;margin-right:4px}
+#mockbar button{font:12px/1 -apple-system,sans-serif;padding:6px 10px;border-radius:999px;
+  border:1px solid #777;background:#fff;color:#333;cursor:pointer}
+#mockbar button.on{background:#0068BC;border-color:#0068BC;color:#fff;font-weight:700}
+
+/* --- 共通（案A・B・C） --- */
+body.mA,body.mB,body.mC{background:var(--sub-bg2)}
+body.mA .container,body.mB .container,body.mC .container{padding:0 16px 16px}
+body.mA .site-header,body.mB .site-header,body.mC .site-header{background:var(--bg)}
+body.mA .back-link,body.mB .back-link,body.mC .back-link{display:inline-block;padding:10px 0 6px}
+
+/* --- 案A：見出しと中身の2枚 --- */
+body.mA .rhead{background:var(--bg);border:1px solid var(--rule);border-radius:12px;
+  padding:12px;margin-bottom:12px}
+body.mA .tabbar{background:var(--bg);border:1px solid var(--rule);border-bottom:0;
+  border-radius:12px 12px 0 0;padding:0 8px;margin-bottom:0}
+body.mA .tabpane{background:var(--bg);border:1px solid var(--rule);border-top:0;
+  border-radius:0 0 12px 12px;padding:8px 12px 12px}
+
+/* --- 案B：見出し・タブ・中身の3枚 --- */
+body.mB .rhead{background:var(--bg);border:1px solid var(--rule);border-radius:12px;
+  padding:12px;margin-bottom:12px}
+body.mB .tabbar{background:var(--bg);border:1px solid var(--rule);border-radius:12px;
+  padding:0 8px;margin-bottom:12px}
+body.mB .tabpane{background:var(--bg);border:1px solid var(--rule);border-radius:12px;
+  padding:8px 12px 12px}
+
+/* --- 案C：案A ＋ 出馬表の1頭ずつもカード --- */
+body.mC .rhead{background:var(--bg);border:1px solid var(--rule);border-radius:12px;
+  padding:12px;margin-bottom:12px}
+body.mC .tabbar{background:var(--bg);border:1px solid var(--rule);border-bottom:0;
+  border-radius:12px 12px 0 0;padding:0 8px}
+body.mC .tabpane{background:transparent;border:0;padding:0}
+/* .secthead は紺の帯（出馬表 / メンバー / 荒れ度）。背景を上書きすると帯が消えるので触らない */
+body.mC .mm-bar{background:var(--bg);border-left:1px solid var(--rule);
+  border-right:1px solid var(--rule);padding-left:12px;padding-right:12px}
+body.mC .secthead{margin-left:8px;margin-right:8px;border-radius:8px}
+body.mC .mm-list{background:transparent;padding-top:8px}
+body.mC .mm-hd{background:var(--bg);border:1px solid var(--rule);border-radius:8px;
+  padding-left:8px;padding-right:8px;margin-bottom:6px}
+body.mC .mm-row{background:var(--bg);border:1px solid var(--rule);border-radius:8px;
+  margin-bottom:6px;padding-left:8px;padding-right:8px}
+</style>
+<script>
+document.addEventListener('DOMContentLoaded',function(){
+  var bar=document.createElement('div'); bar.id='mockbar';
+  bar.innerHTML='<b>地を灰色にする試作</b>'+
+    '<button data-m="">いま（白地）</button>'+
+    '<button data-m="mA">案A 2枚</button>'+
+    '<button data-m="mB">案B 3枚</button>'+
+    '<button data-m="mC">案C 1頭1枚</button>';
+  document.body.insertBefore(bar,document.body.firstChild);
+  bar.addEventListener('click',function(e){
+    var b=e.target.closest('button'); if(!b) return;
+    document.body.className=b.dataset.m;
+    [].forEach.call(bar.querySelectorAll('button'),function(x){x.classList.toggle('on',x===b)});
+  });
+  bar.querySelector('button').classList.add('on');
+});
+</script>
+</head>
+<body>
+<header id="site-header"></header>
+<div class="container">
+  <a class="back-link" href="index.html">← 一覧へ</a>
+  <div id="race-content"></div>
+</div>
+<script src="assets/vendor/marked.min.js"></script>
+<script src="assets/app.js?v=20260904e"></script>
+<script src="assets/coursecore.js?v=20260828x"></script>
+<script src="assets/coursetab.js?v=20260828x"></script>
+<script src="assets/harville.js?v=20260828x"></script>
+<script src="assets/akinator.js?v=20260828x"></script>
+<script src="assets/simulator.js?v=20260828x"></script>
+<script src="assets/race.js?v=20260903aa"></script>
+</body>
+</html>
