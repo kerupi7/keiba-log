@@ -65,6 +65,30 @@ function w5GateNote(gate) {
     + '荒れ度の札はレースの性格を見るためのもので、おすすめの選び方には使っていません。</p>';
 }
 
+// ===== 当週のWIN5対象レース（2026-09-04追加）=====
+// win5.json の legs をそのまま並べるだけ。行をタップすると そのレースの詳細へ飛ぶ。
+// 対象5鞍の特定は 121-spec（金曜）で済んでいるので、ここでは判定をしない。
+function w5RaceRowHtml(lg) {
+  const rc = `${escapeHtml(lg.track || '')}${lg.race_number || ''}R`;
+  return `<a class="w5lrow" href="race.html?id=${encodeURIComponent(lg.race_id)}">`
+    + `<img class="w5lb" src="assets/win5-${lg.leg}.png" alt="WIN${lg.leg}" width="188" height="74">`
+    + `<span class="w5lt">${escapeHtml(lg.post_time || '—')}</span>`
+    + `<span class="w5lc">${rc}</span>`
+    + `<span class="w5ln">${escapeHtml(lg.race_name || '—')}</span>`
+    + '<span class="w5lgo">›</span></a>';
+}
+
+function w5RaceListHtml(days) {
+  if (!days || !days.length) return '';
+  return days.map(day => {
+    const d = fmtDateTab(day.date);
+    const head = '<div class="w5lhead">'
+      + `<span class="w5ldate">${d.label}<span class="${d.dowClass}">（${d.dow}）</span>の対象レース</span>`
+      + `<span class="w5ldl">締切 ${escapeHtml(day.deadline || '—')}</span></div>`;
+    return `<div class="w5list">${head}${(day.legs || []).map(w5RaceRowHtml).join('')}</div>`;
+  }).join('');
+}
+
 // 2026-08-24: オッズ帯別おすすめの一覧（122-spec）は画面から外した。
 // データ（data/win5.json）も組み立て（w5DayHtml / w5GateNote）も残してあるので、
 // この関数を元に戻せば一覧はそのまま戻る。
@@ -75,7 +99,7 @@ async function render() {
   try {
     days = (await getData('data/win5.json')).days || [];
   } catch (e) { /* 5鞍がまだ無い週。逆算の側だけ出す */ }
-  el.innerHTML = '';
+  el.innerHTML = w5RaceListHtml(days);
   renderPayoutAkinator(el, days);
 }
 
