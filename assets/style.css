@@ -3666,3 +3666,40 @@ body.noscroll{position:fixed;width:100%;overflow:hidden}
 .container.top #races-list .rmain{padding-left:16px}
 .container.top #races-list .rpick{margin-top:8px}
 .container.top #races-list .rmeta{margin-top:4px}
+
+/* ===== 2026-09-04（2回目）: トップページをカードにする =====
+   モック: mock-planA-2026-09-04.html / mock-nowrap-2026-09-04.html
+   決めた中身（すべて実測つき・375px幅・8/30(日)中京の12レース）:
+     1. 1レース1枚のカード。左右16px・角丸12px・地は --sub-bg2
+     2. 左の青い3pxの線をやめる。index.js は全行に .pred を固定で付けており区別していなかった。
+        凡例の「左線＝予想済み」も同時に外した（指すものが無くなるため）
+     3. 不的中の「勝ち馬: 10（2人気）」の行を外した（掲載285レース中67レース・23.5%）
+     4. メンバーレベルの札を一覧から外した。詳細ページには残る
+     5. カードの右の余白は8px。12pxだと4R・9R・11Rが必要248px/使える247pxの
+        **1px差**で折り返した
+
+   16 / 12 / 8 は「揃って見えること」を守るための代わりの数であって目的ではない。
+   中身が入りきらない箇所が出たら、刻みのほうを捨てて中身を優先する。
+
+   セレクタは .container.top と #races-list に閉じてある（他4ページとモック20枚に波及させないため）。 */
+.container.top{background:var(--sub-bg2)}
+.container.top .summary-section,
+.container.top #summary-section,
+.container.top .opsblock{background:var(--bg);border:1px solid var(--rule);border-radius:12px;
+  margin:0 0 12px;padding:0 12px 12px;overflow:hidden}
+.container.top{padding:12px 16px 16px}
+.container.top #summary-section .eyebrow{padding-top:12px;border-bottom:0;margin-bottom:0}
+.container.top div.roi{border-bottom:0;padding-bottom:0}
+.container.top .legend{border-bottom:0;padding:8px 0 4px}
+.container.top #races-list{margin:0;background:transparent}
+.container.top #races-list .race{background:var(--bg);border:1px solid var(--rule);border-radius:12px;
+  margin-bottom:12px;padding:12px 8px 12px 8px}
+.container.top #races-list .race:last-child{margin-bottom:0}
+.container.top #races-list .race.pred{border-left:1px solid var(--rule);margin-left:0;padding-left:8px}
+
+/* ナビのWIN5をJRA公式ロゴ（assets/4d4276812e368.jpg・250x123px）にする。
+   高さ17pxで幅35px。ナビの文字11.5pxより5.5px大きい。
+   矢印5本は1本2px弱になり形は残るが読めない。承知のうえ（2026-09-04 決定A）。
+   画像は背景が白のJPEG。暗い配色を入れるときは白い四角が浮くので作り直しが要る */
+.site-header nav .w5nav{display:inline-flex;align-items:center}
+.site-header nav .w5nav img{height:17px;width:auto;display:block}

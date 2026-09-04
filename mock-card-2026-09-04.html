@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="ja"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>カード枠の取り方6案 — Ans. トップページ（2026-09-04）</title>
+<link rel="stylesheet" href="assets/style.css?v=20260904a">
+<style>
+body{background:#ECECE7;margin:0;font:13px/1.6 -apple-system,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;color:#333}
+.doc{max-width:2100px;margin:0 auto;padding:20px 12px 60px}
+.doc h1{font-size:17px;margin:0 0 6px}
+.doc p.n{font-size:12px;color:#5C5C5C;margin:0 0 4px;line-height:1.7}
+.cols{display:flex;gap:14px;flex-wrap:wrap;margin-top:20px;align-items:flex-start}
+.col{width:377px}
+.col h2{font-size:13px;margin:0 0 2px}
+.col p.d{font-size:11.5px;color:#5C5C5C;margin:0 0 8px;line-height:1.7;min-height:56px}
+.col p.sp{font-size:11px;color:#757575;margin:0 0 8px}
+.frame{width:377px;background:#fff;border:1px solid #C9C9C4;overflow:hidden}
+.frame .site-header{max-width:none;background:#fff}
+.frame .container{padding-bottom:16px}
+.measure{font-size:11.5px;color:#5C5C5C;margin-top:8px;line-height:1.9}
+.measure b{color:#333}
+.w5nav{display:inline-flex;align-items:center}
+.w5nav img{height:17px;width:auto;display:block}
+
+/* ---- カードの共通 ---- */
+.card .container.top{background:var(--sub-bg2)}
+.card .summary-section,.card .opsblock,.card .container.top #races-list{background:#fff;overflow:hidden}
+.card .eyebrow{padding-top:12px}
+.card div.roi{border-bottom:0}
+.card .legend{border-bottom:0;padding-bottom:8px}
+.card .container.top #races-list .race.pred{border-left-width:3px}
+
+/* ② 左右16px・角丸8px */
+.c1 .container.top{padding:12px 16px 16px}
+.c1 .summary-section,.c1 .opsblock,.c1 .container.top #races-list{border:1px solid var(--rule);border-radius:8px;margin:0 0 12px}
+.c1 .summary-section,.c1 .opsblock{padding:0 12px 12px}
+.c1 .container.top #races-list{margin-bottom:0}
+
+/* ③ 左右24px・角丸12px */
+.c2 .container.top{padding:12px 24px 24px}
+.c2 .summary-section,.c2 .opsblock,.c2 .container.top #races-list{border:1px solid var(--rule);border-radius:12px;margin:0 0 12px}
+.c2 .summary-section,.c2 .opsblock{padding:0 12px 12px}
+.c2 .container.top #races-list{margin-bottom:0}
+
+/* ④ 1レース1枚・左右24px */
+.c3 .container.top{padding:12px 24px 24px}
+.c3 .summary-section,.c3 .opsblock{border:1px solid var(--rule);border-radius:12px;margin:0 0 12px;padding:0 12px 12px}
+.c3 .container.top #races-list{margin:0;background:transparent}
+.c3 .container.top #races-list .race{background:#fff;border:1px solid var(--rule);border-radius:12px;
+  margin-bottom:12px;padding:12px 12px 12px 0}
+.c3 .container.top #races-list .race:last-child{margin-bottom:0}
+.c3 .container.top #races-list .race.pred{border-left:3px solid var(--navy)}
+
+/* ⑤ 影あり・左右20px */
+.c4 .container.top{padding:12px 20px 20px}
+.c4 .summary-section,.c4 .opsblock,.c4 .container.top #races-list{border:1px solid #EDEDEA;border-radius:12px;
+  margin:0 0 12px;box-shadow:0 1px 3px rgba(0,0,0,.06),0 4px 12px rgba(0,0,0,.04)}
+.c4 .summary-section,.c4 .opsblock{padding:0 12px 12px}
+.c4 .container.top #races-list{margin-bottom:0}
+
+/* ⑥ 左右24px・カード ＋ 札を「ダ1800m ・ 13頭」の行へ下ろす */
+.c5 .container.top{padding:12px 24px 24px}
+.c5 .summary-section,.c5 .opsblock,.c5 .container.top #races-list{border:1px solid var(--rule);border-radius:12px;margin:0 0 12px}
+.c5 .summary-section,.c5 .opsblock{padding:0 12px 12px}
+.c5 .container.top #races-list{margin-bottom:0}
+.c5 .rmeta{display:flex;align-items:center;gap:6px}
+.c5 .rmeta .rtags{margin-left:auto;flex:none;display:flex;align-items:center;gap:6px}
+.c5 .rmeta .mchip{flex:none;font-size:11.5px;font-weight:700;line-height:1;padding:3px 6px;
+  border-radius:3px;background:#fff;border:1.5px solid currentColor;letter-spacing:.02em;
+  white-space:nowrap;min-width:70px;text-align:center}
+.c5 .rmeta .mchip.g-d{color:#9A93A4}
+.c5 .rmeta .mchip.g-b{color:#A07FBE}
+.c5 .rmeta .uchip{flex:none;font-size:11.5px;font-weight:700;line-height:1;padding:4px 7px;
+  border-radius:3px;color:#fff;letter-spacing:.02em;min-width:82px;text-align:center}
+.c5 .rmeta .uchip.u-kata{background:var(--up-chip-kata)}
+.c5 .rmeta .uchip.u-naka{background:var(--up-chip-naka)}
+.c5 .rmeta .uchip .pv{margin-left:5px}
+.c5 .rmeta .uchip .pv small{font-size:9.5px;margin-left:1px}
+
+</style></head><body>
+<div class="doc">
+<h1>カード枠の取り方6案 — Ans. トップページ（2026-09-04）</h1>
+<p class="n">色も文字も本物の <code>assets/style.css</code> を読んでいる。文字は 2026-08-30(日) 中京の1R・2R・4R・5R・6R。中身の幅は実物と同じ375px。</p>
+<p class="n"><b>見るところ：左右を広く取るほど、レース名に使える幅が狭くなり、札（メンバーD・中荒れ59%）が2段目に落ちる行が増える。</b>各案の下に実測を出している。<b>札の幅は固定で、メンバー札70px＋荒れ度札82px＋間6px＝158px使う。</b>これがカードを広げられる限界を決めている。</p>
+<p class="n">ナビの「WIN5」は5案とも <code>assets/4d4276812e368.jpg</code>（250×123px）を高さ17pxで表示している。</p>
+<div class="cols"><div class="col">
+<h2>① いま公開中</h2>
+<p class="d">枠なし。一覧が左右いっぱい。</p>
+<p class="sp">左右0px</p>
+<div class="frame c0"><header class="site-header">
+    <a class="logo" href="#">Ans<span class="g">.</span></a>
+    <nav>
+      <a href="#" class="active">TOP</a>
+      <a href="#" class="w5nav"><img src="assets/4d4276812e368.jpg" alt="WIN5"></a>
+      <a href="#">成績</a>
+      <a href="#">コースデータ</a>
+    </nav>
+  </header><div class="container top"><section class="summary-section">
+    <div class="eyebrow">通算成績</div>
+    <div class="roi">
+      <div class="lab">回収率</div>
+      <div class="num neg">−35.1%</div>
+      <div class="sub">払戻 34,400円 ／ 投資 53,000円</div>
+      <div class="mini">
+        <div><div class="k">的中</div><div class="v">27 / 205点</div></div>
+        <div><div class="k">◎3着内率</div><div class="v">54%</div></div>
+        <div><div class="k">対象レース</div><div class="v">284</div></div>
+      </div>
+    </div>
+  </section><div class="opsblock">
+<div class="datetabs"><span class="arw prev ">‹</span><div class="dt">8/29<span class="sat">(土)</span></div><div class="dt active">8/30<span class="sun">(日)</span></div><span class="arw next disabled">›</span></div>
+<div class="tracks"><span class="trk on">中京</span><span class="trk">札幌</span><span class="trk">新潟</span></div>
+<div class="legend">
+      <span><span class="sw" style="background:var(--upcoming)"></span>発走前</span>
+      <span><span class="sw" style="background:var(--finished)"></span>終了</span>
+      <span><span class="sw" style="background:var(--navy);opacity:.2"></span>左線＝予想済み</span>
+    </div>
+</div><div id="races-list"><a class="race pred" href="#">
+      <div class="col1"><b class="tm">09:50</b><span class="rno fin">1R</span></div>
+      <div class="rmain">
+        <div class="rname">2歳未勝利<span class="rtags"><span class="uchip u-kata">堅い<span class="pv">65<small>%</small></span></span></span></div>
+        <div class="rmeta"><span class="t">芝1400m</span> ・ 10頭</div>
+        <div class="rpick"><span class="pill pass">見送り</span></div>
+      </div>
+    </a><a class="race pred" href="#">
+      <div class="col1"><b class="tm">10:25</b><span class="rno fin">2R</span></div>
+      <div class="rmain">
+        <div class="rname">2歳新馬<span class="rtags"><span class="uchip u-naka">中荒れ<span class="pv">60<small>%</small></span></span></span></div>
+        <div class="rmeta"><span class="t">芝1600m</span> ・ 10頭</div>
+        <div class="rpick"><span class="pill pass">見送り</span></div>
+      </div>
+    </a><a class="race pred" href="#">
+      <div class="col1"><b class="tm">11:25</b><span class="rno fin">4R</span></div>
+      <div class="rmain">
+        <div class="rname">3歳未勝利<span class="rtags"><span class="mchip g-d">メンバーD</span><span class="uchip u-naka">中荒れ<span class="pv">51<small>%</small></span></span></span></div>
+        <div class="rmeta"><span class="d">ダ1400m</span> ・ 16頭</div>
+        <div class="rpick"><span class="pill pass">見送り</span></div>
+      </div>
+    </a><a class="race pred" href="#">
+      <div class="col1"><b class="tm">11:55</b><span class="rno fin">5R</span></div>
+      <div class="rmain">
+        <div class="rname">3歳以上1勝クラス<span class="rtags"><span class="mchip g-d">メンバーD</span><span class="uchip u-naka">中荒れ<span class="pv">59<small>%</small></span></span></span></div>
+        <div class="rmeta"><span class="d">ダ1800m</span> ・ 13頭</div>
+        <div class="rpick"><span class="pill miss">不的中</span><span class="pk">◎<span class="hn wk3 sm">3</span> ブームバップビート</span><span class="amt miss">−300円</span></div><div class="rmeta">勝ち馬: <span class="hn wk7 sm">10</span>（2人気）</div>
+      </div>
+    </a><a class="race pred" href="#">
+      <div class="col1"><b class="tm">15:00</b><span class="rno fin">6R</span><div class="w5">WIN1</div></div>
+      <div class="rmain">
+        <div class="rname">白川郷S<span class="rtags"><span class="mchip g-b">メンバーB</span><span class="uchip u-naka">中荒れ<span class="pv">47<small>%</small></span></span></span></div>
+        <div class="rmeta"><span class="d">ダ1900m</span> ・ 16頭</div>
+        <div class="rpick"><span class="pill hit">的中</span><span class="pk">◎<span class="hn wk3 sm">6</span> ビービークローサー</span><span class="amt hit">−210円</span></div>
+      </div>
+    </a></div></div></div>
+<p class="measure" data-for="c0">中身の幅 <b class="w">—</b>／札が2段の行 <b class="p">—</b>／高さ <b class="h">—</b></p>
+</div>
+<div class="col">
+<h2>② カード・左右16px</h2>
+<p class="d">地を薄い灰にして、3つの塊を角丸8pxのカードにする。</p>
+<p class="sp">左右16px／角丸8px</p>
+<div class="frame card c1"><header class="site-header">
+    <a class="logo" href="#">Ans<span class="g">.</span></a>
+    <nav>
+      <a href="#" class="active">TOP</a>
+      <a href="#" class="w5nav"><img src="assets/4d4276812e368.jpg" alt="WIN5"></a>
+      <a href="#">成績</a>
+      <a href="#">コースデータ</a>
+    </nav>
+  </header><div class="container top"><section class="summary-section">
+    <div class="eyebrow">通算成績</div>
+    <div class="roi">
+      <div class="lab">回収率</div>
+      <div class="num neg">−35.1%</div>
+      <div class="sub">払戻 34,400円 ／ 投資 53,000円</div>
+      <div class="mini">
+        <div><div class="k">的中</div><div class="v">27 / 205点</div></div>
+        <div><div class="k">◎3着内率</div><div class="v">54%</div></div>
+        <div><div class="k">対象レース</div><div class="v">284</div></div>
+      </div>
+    </div>
+  </section><div class="opsblock">
+<div class="datetabs"><span class="arw prev ">‹</span><div class="dt">8/29<span class="sat">(土)</span></div><div class="dt active">8/30<span class="sun">(日)</span></div><span class="arw next disabled">›</span></div>
+<div class="tracks"><span class="trk on">中京</span><span class="trk">札幌</span><span class="trk">新潟</span></div>
+<div class="legend">
+      <span><span class="sw" style="background:var(--upcoming)"></span>発走前</span>
+      <span><span class="sw" style="background:var(--finished)"></span>終了</span>
+      <span><span class="sw" style="background:var(--navy);opacity:.2"></span>左線＝予想済み</span>
+    </div>
+</div><div id="races-list"><a class="race pred" href="#">
+      <div class="col1"><b class="tm">09:50</b><span class="rno fin">1R</span></div>
+      <div class="rmain">
+        <div class="rname">2歳未勝利<span class="rtags"><span class="uchip u-kata">堅い<span class="pv">65<small>%</small></span></span></span></div>
+        <div class="rmeta"><span class="t">芝1400m</span> ・ 10頭</div>
+        <div class="rpick"><span class="pill pass">見送り</span></div>
+      </div>
+    </a><a class="race pred" href="#">
+      <div class="col1"><b class="tm">10:25</b><span class="rno fin">2R</span></div>
+      <div class="rmain">
+        <div class="rname">2歳新馬<span class="rtags"><span class="uchip u-naka">中荒れ<span class="pv">60<small>%</small></span></span></span></div>
+        <div class="rmeta"><span class="t">芝1600m</span> ・ 10頭</div>
+        <div class="rpick"><span class="pill pass">見送り</span></div>
+      </div>
+    </a><a class="race pred" href="#">
+      <div class="col1"><b class="tm">11:25</b><span class="rno fin">4R</span></div>
+      <div class="rmain">
+        <div class="rname">3歳未勝利<span class="rtags"><span class="mchip g-d">メンバーD</span><span class="uchip u-naka">中荒れ<span class="pv">51<small>%</small></span></span></span></div>
+        <div class="rmeta"><span class="d">ダ1400m</span> ・ 16頭</div>
+        <div class="rpick"><span class="pill pass">見送り</span></div>
+      </div>
+    </a><a class="race pred" href="#">
+      <div class="col1"><b class="tm">11:55</b><span class="rno fin">5R</span></div>
+      <div class="rmain">
+        <div class="rname">3歳以上1勝クラス<span class="rtags"><span class="mchip g-d">メンバーD</span><span class="uchip u-naka">中荒れ<span class="pv">59<small>%</small></span></span></span></div>
+        <div class="rmeta"><span class="d">ダ1800m</span> ・ 13頭</div>
+        <div class="rpick"><span class="pill miss">不的中</span><span class="pk">◎<span class="hn wk3 sm">3</span> ブームバップビート</span><span class="amt miss">−300円</span></div><div class="rmeta">勝ち馬: <span class="hn wk7 sm">10</span>（2人気）</div>
+      </div>
+    </a><a class="race pred" href="#">
+      <div class="col1"><b class="tm">15:00</b><span class="rno fin">6R</span><div class="w5">WIN1</div></div>
+      <div class="rmain">
+        <div class="rname">白川郷S<span class="rtags"><span class="mchip g-b">メンバーB</span><span class="uchip u-naka">中荒れ<span class="pv">47<small>%</small></span></span></span></div>
+        <div class="rmeta"><span class="d">ダ1900m</span> ・ 16頭</div>
+        <div class="rpick"><span class="pill hit">的中</span><span class="pk">◎<span class="hn wk3 sm">6</span> ビービークローサー</span><span class="amt hit">−210円</span></div>
+      </div>
+    </a></div></div></div>
+<p class="measure" data-for="c1">中身の幅 <b class="w">—</b>／札が2段の行 <b class="p">—</b>／高さ <b class="h">—</b></p>
+</div>
+<div class="col">
+<h2>③ カード・左右24px</h2>
+<p class="d">②の左右をもっと広げたもの。カードが浮いて見える。</p>
+<p class="sp">左右24px／角丸12px</p>
+<div class="frame card c2"><header class="site-header">
+    <a class="logo" href="#">Ans<span class="g">.</span></a>
+    <nav>
+      <a href="#" class="active">TOP</a>
+      <a href="#" class="w5nav"><img src="assets/4d4276812e368.jpg" alt="WIN5"></a>
+      <a href="#">成績</a>
+      <a href="#">コースデータ</a>
+    </nav>
+  </header><div class="container top"><section class="summary-section">
+    <div class="eyebrow">通算成績</div>
+    <div class="roi">
+      <div class="lab">回収率</div>
+      <div class="num neg">−35.1%</div>
+      <div class="sub">払戻 34,400円 ／ 投資 53,000円</div>
+      <div class="mini">
+        <div><div class="k">的中</div><div class="v">27 / 205点</div></div>
+        <div><div class="k">◎3着内率</div><div class="v">54%</div></div>
+        <div><div class="k">対象レース</div><div class="v">284</div></div>
+      </div>
+    </div>
+  </section><div class="opsblock">
+<div class="datetabs"><span class="arw prev ">‹</span><div class="dt">8/29<span class="sat">(土)</span></div><div class="dt active">8/30<span class="sun">(日)</span></div><span class="arw next disabled">›</span></div>
+<div class="tracks"><span class="trk on">中京</span><span class="trk">札幌</span><span class="trk">新潟</span></div>
+<div class="legend">
+      <span><span class="sw" style="background:var(--upcoming)"></span>発走前</span>
+      <span><span class="sw" style="background:var(--finished)"></span>終了</span>
+      <span><span class="sw" style="background:var(--navy);opacity:.2"></span>左線＝予想済み</span>
+    </div>
+</div><div id="races-list"><a class="race pred" href="#">
+      <div class="col1"><b class="tm">09:50</b><span class="rno fin">1R</span></div>
+      <div class="rmain">
+        <div class="rname">2歳未勝利<span class="rtags"><span class="uchip u-kata">堅い<span class="pv">65<small>%</small></span></span></span></div>
+        <div class="rmeta"><span class="t">芝1400m</span> ・ 10頭</div>
+        <div class="rpick"><span class="pill pass">見送り</span></div>
+      </div>
+    </a><a class="race pred" href="#">
+      <div class="col1"><b class="tm">10:25</b><span class="rno fin">2R</span></div>
+      <div class="rmain">
+        <div class="rname">2歳新馬<span class="rtags"><span class="uchip u-naka">中荒れ<span class="pv">60<small>%</small></span></span></span></div>
+        <div class="rmeta"><span class="t">芝1600m</span> ・ 10頭</div>
+        <div class="rpick"><span class="pill pass">見送り</span></div>
+      </div>
+    </a><a class="race pred" href="#">
+      <div class="col1"><b class="tm">11:25</b><span class="rno fin">4R</span></div>
+      <div class="rmain">
+        <div class="rname">3歳未勝利<span class="rtags"><span class="mchip g-d">メンバーD</span><span class="uchip u-naka">中荒れ<span class="pv">51<small>%</small></span></span></span></div>
+        <div class="rmeta"><span class="d">ダ1400m</span> ・ 16頭</div>
+        <div class="rpick"><span class="pill pass">見送り</span></div>
+      </div>
+    </a><a class="race pred" href="#">
+      <div class="col1"><b class="tm">11:55</b><span class="rno fin">5R</span></div>
+      <div class="rmain">
+        <div class="rname">3歳以上1勝クラス<span class="rtags"><span class="mchip g-d">メンバーD</span><span class="uchip u-naka">中荒れ<span class="pv">59<small>%</small></span></span></span></div>
+        <div class="rmeta"><span class="d">ダ1800m</span> ・ 13頭</div>
+        <div class="rpick"><span class="pill miss">不的中</span><span class="pk">◎<span class="hn wk3 sm">3</span> ブームバップビート</span><span class="amt miss">−300円</span></div><div class="rmeta">勝ち馬: <span class="hn wk7 sm">10</span>（2人気）</div>
+      </div>
+    </a><a class="race pred" href="#">
+      <div class="col1"><b class="tm">15:00</b><span class="rno fin">6R</span><div class="w5">WIN1</div></div>
+      <div class="rmain">
+        <div class="rname">白川郷S<span class="rtags"><span class="mchip g-b">メンバーB</span><span class="uchip u-naka">中荒れ<span class="pv">47<small>%</small></span></span></span></div>
+        <div class="rmeta"><span class="d">ダ1900m</span> ・ 16頭</div>
+        <div class="rpick"><span class="pill hit">的中</span><span class="pk">◎<span class="hn wk3 sm">6</span> ビービークローサー</span><span class="amt hit">−210円</span></div>
+      </div>
+    </a></div></div></div>
+<p class="measure" data-for="c2">中身の幅 <b class="w">—</b>／札が2段の行 <b class="p">—</b>／高さ <b class="h">—</b></p>
+</div>
+<div class="col">
+<h2>④ 1レース1枚のカード・左右24px</h2>
+<p class="d">レースごとに1枚のカード。カードの間は12px。</p>
+<p class="sp">左右24px／角丸12px</p>
+<div class="frame card c3"><header class="site-header">
+    <a class="logo" href="#">Ans<span class="g">.</span></a>
+    <nav>
+      <a href="#" class="active">TOP</a>
+      <a href="#" class="w5nav"><img src="assets/4d4276812e368.jpg" alt="WIN5"></a>
+      <a href="#">成績</a>
+      <a href="#">コースデータ</a>
+    </nav>
+  </header><div class="container top"><section class="summary-section">
+    <div class="eyebrow">通算成績</div>
+    <div class="roi">
+      <div class="lab">回収率</div>
+      <div class="num neg">−35.1%</div>
+      <div class="sub">払戻 34,400円 ／ 投資 53,000円</div>
+      <div class="mini">
+        <div><div class="k">的中</div><div class="v">27 / 205点</div></div>
+        <div><div class="k">◎3着内率</div><div class="v">54%</div></div>
+        <div><div class="k">対象レース</div><div class="v">284</div></div>
+      </div>
+    </div>
+  </section><div class="opsblock">
+<div class="datetabs"><span class="arw prev ">‹</span><div class="dt">8/29<span class="sat">(土)</span></div><div class="dt active">8/30<span class="sun">(日)</span></div><span class="arw next disabled">›</span></div>
+<div class="tracks"><span class="trk on">中京</span><span class="trk">札幌</span><span class="trk">新潟</span></div>
+<div class="legend">
+      <span><span class="sw" style="background:var(--upcoming)"></span>発走前</span>
+      <span><span class="sw" style="background:var(--finished)"></span>終了</span>
+      <span><span class="sw" style="background:var(--navy);opacity:.2"></span>左線＝予想済み</span>
+    </div>
+</div><div id="races-list"><a class="race pred" href="#">
+      <div class="col1"><b class="tm">09:50</b><span class="rno fin">1R</span></div>
+      <div class="rmain">
+        <div class="rname">2歳未勝利<span class="rtags"><span class="uchip u-kata">堅い<span class="pv">65<small>%</small></span></span></span></div>
+        <div class="rmeta"><span class="t">芝1400m</span> ・ 10頭</div>
+        <div class="rpick"><span class="pill pass">見送り</span></div>
+      </div>
+    </a><a class="race pred" href="#">
+      <div class="col1"><b class="tm">10:25</b><span class="rno fin">2R</span></div>
+      <div class="rmain">
+        <div class="rname">2歳新馬<span class="rtags"><span class="uchip u-naka">中荒れ<span class="pv">60<small>%</small></span></span></span></div>
+        <div class="rmeta"><span class="t">芝1600m</span> ・ 10頭</div>
+        <div class="rpick"><span class="pill pass">見送り</span></div>
+      </div>
+    </a><a class="race pred" href="#">
+      <div class="col1"><b class="tm">11:25</b><span class="rno fin">4R</span></div>
+      <div class="rmain">
+        <div class="rname">3歳未勝利<span class="rtags"><span class="mchip g-d">メンバーD</span><span class="uchip u-naka">中荒れ<span class="pv">51<small>%</small></span></span></span></div>
+        <div class="rmeta"><span class="d">ダ1400m</span> ・ 16頭</div>
+        <div class="rpick"><span class="pill pass">見送り</span></div>
+      </div>
+    </a><a class="race pred" href="#">
+      <div class="col1"><b class="tm">11:55</b><span class="rno fin">5R</span></div>
+      <div class="rmain">
+        <div class="rname">3歳以上1勝クラス<span class="rtags"><span class="mchip g-d">メンバーD</span><span class="uchip u-naka">中荒れ<span class="pv">59<small>%</small></span></span></span></div>
+        <div class="rmeta"><span class="d">ダ1800m</span> ・ 13頭</div>
+        <div class="rpick"><span class="pill miss">不的中</span><span class="pk">◎<span class="hn wk3 sm">3</span> ブームバップビート</span><span class="amt miss">−300円</span></div><div class="rmeta">勝ち馬: <span class="hn wk7 sm">10</span>（2人気）</div>
+      </div>
+    </a><a class="race pred" href="#">
+      <div class="col1"><b class="tm">15:00</b><span class="rno fin">6R</span><div class="w5">WIN1</div></div>
+      <div class="rmain">
+        <div class="rname">白川郷S<span class="rtags"><span class="mchip g-b">メンバーB</span><span class="uchip u-naka">中荒れ<span class="pv">47<small>%</small></span></span></span></div>
+        <div class="rmeta"><span class="d">ダ1900m</span> ・ 16頭</div>
+        <div class="rpick"><span class="pill hit">的中</span><span class="pk">◎<span class="hn wk3 sm">6</span> ビービークローサー</span><span class="amt hit">−210円</span></div>
+      </div>
+    </a></div></div></div>
+<p class="measure" data-for="c3">中身の幅 <b class="w">—</b>／札が2段の行 <b class="p">—</b>／高さ <b class="h">—</b></p>
+</div>
+<div class="col">
+<h2>⑤ カード＋影・左右20px</h2>
+<p class="d">③に薄い影を足したもの。<b>影はこのサイトで初めて使う</b>（いま3ページとも0個）。</p>
+<p class="sp">左右20px／角丸12px／影</p>
+<div class="frame card c4"><header class="site-header">
+    <a class="logo" href="#">Ans<span class="g">.</span></a>
+    <nav>
+      <a href="#" class="active">TOP</a>
+      <a href="#" class="w5nav"><img src="assets/4d4276812e368.jpg" alt="WIN5"></a>
+      <a href="#">成績</a>
+      <a href="#">コースデータ</a>
+    </nav>
+  </header><div class="container top"><section class="summary-section">
+    <div class="eyebrow">通算成績</div>
+    <div class="roi">
+      <div class="lab">回収率</div>
+      <div class="num neg">−35.1%</div>
+      <div class="sub">払戻 34,400円 ／ 投資 53,000円</div>
+      <div class="mini">
+        <div><div class="k">的中</div><div class="v">27 / 205点</div></div>
+        <div><div class="k">◎3着内率</div><div class="v">54%</div></div>
+        <div><div class="k">対象レース</div><div class="v">284</div></div>
+      </div>
+    </div>
+  </section><div class="opsblock">
+<div class="datetabs"><span class="arw prev ">‹</span><div class="dt">8/29<span class="sat">(土)</span></div><div class="dt active">8/30<span class="sun">(日)</span></div><span class="arw next disabled">›</span></div>
+<div class="tracks"><span class="trk on">中京</span><span class="trk">札幌</span><span class="trk">新潟</span></div>
+<div class="legend">
+      <span><span class="sw" style="background:var(--upcoming)"></span>発走前</span>
+      <span><span class="sw" style="background:var(--finished)"></span>終了</span>
+      <span><span class="sw" style="background:var(--navy);opacity:.2"></span>左線＝予想済み</span>
+    </div>
+</div><div id="races-list"><a class="race pred" href="#">
+      <div class="col1"><b class="tm">09:50</b><span class="rno fin">1R</span></div>
+      <div class="rmain">
+        <div class="rname">2歳未勝利<span class="rtags"><span class="uchip u-kata">堅い<span class="pv">65<small>%</small></span></span></span></div>
+        <div class="rmeta"><span class="t">芝1400m</span> ・ 10頭</div>
+        <div class="rpick"><span class="pill pass">見送り</span></div>
+      </div>
+    </a><a class="race pred" href="#">
+      <div class="col1"><b class="tm">10:25</b><span class="rno fin">2R</span></div>
+      <div class="rmain">
+        <div class="rname">2歳新馬<span class="rtags"><span class="uchip u-naka">中荒れ<span class="pv">60<small>%</small></span></span></span></div>
+        <div class="rmeta"><span class="t">芝1600m</span> ・ 10頭</div>
+        <div class="rpick"><span class="pill pass">見送り</span></div>
+      </div>
+    </a><a class="race pred" href="#">
+      <div class="col1"><b class="tm">11:25</b><span class="rno fin">4R</span></div>
+      <div class="rmain">
+        <div class="rname">3歳未勝利<span class="rtags"><span class="mchip g-d">メンバーD</span><span class="uchip u-naka">中荒れ<span class="pv">51<small>%</small></span></span></span></div>
+        <div class="rmeta"><span class="d">ダ1400m</span> ・ 16頭</div>
+        <div class="rpick"><span class="pill pass">見送り</span></div>
+      </div>
+    </a><a class="race pred" href="#">
+      <div class="col1"><b class="tm">11:55</b><span class="rno fin">5R</span></div>
+      <div class="rmain">
+        <div class="rname">3歳以上1勝クラス<span class="rtags"><span class="mchip g-d">メンバーD</span><span class="uchip u-naka">中荒れ<span class="pv">59<small>%</small></span></span></span></div>
+        <div class="rmeta"><span class="d">ダ1800m</span> ・ 13頭</div>
+        <div class="rpick"><span class="pill miss">不的中</span><span class="pk">◎<span class="hn wk3 sm">3</span> ブームバップビート</span><span class="amt miss">−300円</span></div><div class="rmeta">勝ち馬: <span class="hn wk7 sm">10</span>（2人気）</div>
+      </div>
+    </a><a class="race pred" href="#">
+      <div class="col1"><b class="tm">15:00</b><span class="rno fin">6R</span><div class="w5">WIN1</div></div>
+      <div class="rmain">
+        <div class="rname">白川郷S<span class="rtags"><span class="mchip g-b">メンバーB</span><span class="uchip u-naka">中荒れ<span class="pv">47<small>%</small></span></span></span></div>
+        <div class="rmeta"><span class="d">ダ1900m</span> ・ 16頭</div>
+        <div class="rpick"><span class="pill hit">的中</span><span class="pk">◎<span class="hn wk3 sm">6</span> ビービークローサー</span><span class="amt hit">−210円</span></div>
+      </div>
+    </a></div></div></div>
+<p class="measure" data-for="c4">中身の幅 <b class="w">—</b>／札が2段の行 <b class="p">—</b>／高さ <b class="h">—</b></p>
+</div>
+</div>
+<div class="col">
+<h2>⑥ カード・左右24px ＋ 札を1段下げる</h2>
+<p class="d">③と同じ左右24pxで、札2つを下の行へ移してみたもの。<b>うまくいかなかった。</b>「ダ1400m ・ 16頭」＋札2つで268px要るのに248pxしかなく、札が3行目へ落ちて逆に高くなった。</p>
+<p class="sp">左右24px／角丸12px／札は下の行</p>
+<div class="frame card c5"><header class="site-header">
+    <a class="logo" href="#">Ans<span class="g">.</span></a>
+    <nav>
+      <a href="#" class="active">TOP</a>
+      <a href="#" class="w5nav"><img src="assets/4d4276812e368.jpg" alt="WIN5"></a>
+      <a href="#">成績</a>
+      <a href="#">コースデータ</a>
+    </nav>
+  </header><div class="container top"><section class="summary-section">
+    <div class="eyebrow">通算成績</div>
+    <div class="roi">
+      <div class="lab">回収率</div>
+      <div class="num neg">−35.1%</div>
+      <div class="sub">払戻 34,400円 ／ 投資 53,000円</div>
+      <div class="mini">
+        <div><div class="k">的中</div><div class="v">27 / 205点</div></div>
+        <div><div class="k">◎3着内率</div><div class="v">54%</div></div>
+        <div><div class="k">対象レース</div><div class="v">284</div></div>
+      </div>
+    </div>
+  </section><div class="opsblock">
+<div class="datetabs"><span class="arw prev ">‹</span><div class="dt">8/29<span class="sat">(土)</span></div><div class="dt active">8/30<span class="sun">(日)</span></div><span class="arw next disabled">›</span></div>
+<div class="tracks"><span class="trk on">中京</span><span class="trk">札幌</span><span class="trk">新潟</span></div>
+<div class="legend">
+      <span><span class="sw" style="background:var(--upcoming)"></span>発走前</span>
+      <span><span class="sw" style="background:var(--finished)"></span>終了</span>
+      <span><span class="sw" style="background:var(--navy);opacity:.2"></span>左線＝予想済み</span>
+    </div>
+</div><div id="races-list"><a class="race pred" href="#">
+      <div class="col1"><b class="tm">09:50</b><span class="rno fin">1R</span></div>
+      <div class="rmain">
+        <div class="rname">2歳未勝利</div>
+        <div class="rmeta"><span class="t">芝1400m</span> ・ 10頭<span class="rtags"><span class="uchip u-kata">堅い<span class="pv">65<small>%</small></span></span></span></div>
+        <div class="rpick"><span class="pill pass">見送り</span></div>
+      </div>
+    </a><a class="race pred" href="#">
+      <div class="col1"><b class="tm">10:25</b><span class="rno fin">2R</span></div>
+      <div class="rmain">
+        <div class="rname">2歳新馬</div>
+        <div class="rmeta"><span class="t">芝1600m</span> ・ 10頭<span class="rtags"><span class="uchip u-naka">中荒れ<span class="pv">60<small>%</small></span></span></span></div>
+        <div class="rpick"><span class="pill pass">見送り</span></div>
+      </div>
+    </a><a class="race pred" href="#">
+      <div class="col1"><b class="tm">11:25</b><span class="rno fin">4R</span></div>
+      <div class="rmain">
+        <div class="rname">3歳未勝利</div>
+        <div class="rmeta"><span class="d">ダ1400m</span> ・ 16頭<span class="rtags"><span class="mchip g-d">メンバーD</span><span class="uchip u-naka">中荒れ<span class="pv">51<small>%</small></span></span></span></div>
+        <div class="rpick"><span class="pill pass">見送り</span></div>
+      </div>
+    </a><a class="race pred" href="#">
+      <div class="col1"><b class="tm">11:55</b><span class="rno fin">5R</span></div>
+      <div class="rmain">
+        <div class="rname">3歳以上1勝クラス</div>
+        <div class="rmeta"><span class="d">ダ1800m</span> ・ 13頭<span class="rtags"><span class="mchip g-d">メンバーD</span><span class="uchip u-naka">中荒れ<span class="pv">59<small>%</small></span></span></span></div>
+        <div class="rpick"><span class="pill miss">不的中</span><span class="pk">◎<span class="hn wk3 sm">3</span> ブームバップビート</span><span class="amt miss">−300円</span></div><div class="rmeta">勝ち馬: <span class="hn wk7 sm">10</span>（2人気）</div>
+      </div>
+    </a><a class="race pred" href="#">
+      <div class="col1"><b class="tm">15:00</b><span class="rno fin">6R</span><div class="w5">WIN1</div></div>
+      <div class="rmain">
+        <div class="rname">白川郷S</div>
+        <div class="rmeta"><span class="d">ダ1900m</span> ・ 16頭<span class="rtags"><span class="mchip g-b">メンバーB</span><span class="uchip u-naka">中荒れ<span class="pv">47<small>%</small></span></span></span></div>
+        <div class="rpick"><span class="pill hit">的中</span><span class="pk">◎<span class="hn wk3 sm">6</span> ビービークローサー</span><span class="amt hit">−210円</span></div>
+      </div>
+    </a></div></div></div>
+<p class="measure" data-for="c5">中身の幅 <b class="w">—</b>／札が2段の行 <b class="p">—</b>／高さ <b class="h">—</b></p>
+</div>
+</div>
+</div>
+<script>
+document.querySelectorAll('.measure').forEach(function(m){
+  var f=document.querySelector('.frame.'+m.dataset.for);
+  m.querySelector('.w').textContent=Math.round(f.querySelector('.rmain').getBoundingClientRect().width)+'px';
+  var n=0;
+  f.querySelectorAll('.race').forEach(function(r){
+    var a=r.querySelector('.rname'), b=r.querySelector('.rtags');
+    if(b && Math.abs(b.getBoundingClientRect().top-a.getBoundingClientRect().top)>=10) n++;
+  });
+  m.querySelector('.p').textContent=n+' / 5行';
+  m.querySelector('.h').textContent=Math.round(f.getBoundingClientRect().height)+'px';
+});
+</script>
+</body></html>

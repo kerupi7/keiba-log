@@ -157,7 +157,6 @@ function renderLegend() {
     <div class="legend">
       <span><span class="sw" style="background:var(--upcoming)"></span>発走前</span>
       <span><span class="sw" style="background:var(--finished)"></span>終了</span>
-      <span><span class="sw" style="background:var(--navy);opacity:.2"></span>左線＝予想済み</span>
     </div>
   `;
 }
@@ -208,9 +207,12 @@ function renderRaceRow(race) {
   const badge = race.grade ? ` <span class="gbadge">${escapeHtml(race.grade)}</span>` : '';
   // メンバー札と荒れ度札は1つの箱に入れて右端へ寄せる。別々に右寄せすると横位置が
   // 行ごとにズレ、幅が足りない画面では片方だけ次の行へ落ちる（style.css の .rtags 参照）
-  const mchip = memberChipHtml(race.member);
+  // 2026-09-04: メンバーレベルの札は一覧から外した（詳細ページには残る）。
+  // レース名「3歳以上1勝クラス」142px＋メンバー札70px＋荒れ度札82px＋すき間12px＝306px 必要なのに
+  // カード化で使えるのが251pxになり、12レース中3レースで札がレース名の下へ落ちていたため。
+  // 外すと88px空いて、8/30中京の12レースすべてが1行に収まる。
   const uchip = upsetChipHtml(race.upset);
-  const tags = (mchip || uchip) ? `<span class="rtags">${mchip}${uchip}</span>` : '';
+  const tags = uchip ? `<span class="rtags">${uchip}</span>` : '';
 
   let pickHtml = '';
   if (race.status === 'prediction') {
@@ -231,9 +233,8 @@ function renderRaceRow(race) {
       const net = (outcome.bets_return ?? 0) - (outcome.bets_cost ?? 0);
       const honmeiBox = pick.honmei_number != null ? umaBox(pick.honmei_number, pick.honmei_gate, 'sm') : '—';
       pickHtml = `<div class="rpick">${hit ? pillHtml('hit', '的中') : pillHtml('miss', '不的中')}<span class="pk">◎${honmeiBox} ${escapeHtml(pick.honmei_name ?? '')}</span><span class="amt ${hit ? 'hit' : 'miss'}">${fmtNet(net)}</span></div>`;
-      if (!hit && outcome.winner_number) {
-        pickHtml += `<div class="rmeta">勝ち馬: ${umaBox(outcome.winner_number, outcome.winner_gate, 'sm')}（${outcome.winner_popularity}人気）</div>`;
-      }
+      // 2026-09-04: 「勝ち馬: 10（2人気）」の行は一覧から外した。
+      // 出るのは買って外したレースだけで、掲載285レース中67レース（23.5%）。1行あたり25px。
     }
   } else if (race.status === 'cancelled') {
     pickHtml = `<div class="rpick">${pillHtml('cancel', '中止')}</div>`;
