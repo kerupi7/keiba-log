@@ -3762,13 +3762,27 @@ body.noscroll{position:fixed;width:100%;overflow:hidden}
    `:has()` を使うと古いブラウザで効かないので、クラスを足す形にした。
    地はページ全体を塗る必要があるので body に当てる（`.racepage` がある時だけ効く指定は
    CSSだけでは書けないため、body の塗りは race.html 側の1行に頼らず :has で二重に持たせる） */
-.racepage{background:var(--sub-bg2);padding:0 16px 16px;max-width:var(--max-width);
+.racepage{background:var(--sub-bg2);padding:0 12px 16px;max-width:var(--max-width);
   margin:0 auto;min-height:100vh}
 .racepage .back-link{display:inline-block;padding:10px 0 6px}
 body:has(.racepage){background:var(--sub-bg2)}
-.race20 .rhead{background:var(--bg);border:1px solid var(--rule);border-radius:12px;
-  padding:12px;margin-bottom:12px}
+/* `.race20 .rhead.h2{padding:14px 2px 0}` が既にあり、そちらのほうが強い。
+   カードにすると左右2pxでは文字が枠に張り付くので、同じ強さで書いて12pxにする。 */
+.race20 .rhead,.race20 .rhead.h2{background:var(--bg);border:1px solid var(--rule);
+  border-radius:12px;padding:14px 12px 12px;margin-bottom:12px}
+
+/* コーナー通過順位の左のラベル。28pxだと「ゴール」が3文字で入りきらず
+   縦に折り返していた（「ゴー」「ル」の2行・行の高さ80px）。
+   これはカード化より前からの状態で、幅が固定されているため画面幅に関係なく起きる。
+   36pxにして1行に収める。図の側は8px狭くなる。 */
+.rc-lab{width:36px}
 .race20 .tabbar{background:var(--bg);border:1px solid var(--rule);border-radius:12px;
   padding:0 8px;margin-bottom:12px}
 .race20 .tabpane{background:var(--bg);border:1px solid var(--rule);border-radius:12px;
-  padding:8px 12px 12px}
+  padding:8px 0 12px}
+/* カードの内側の余白は8pxだけ持たせ、出馬表の表（.mm-list）だけは端まで使わせる。
+   2026-09-04 の1回目は container 16px ＋ tabpane 12px ＋ 枠1px で
+   中身の幅が 347px → 317px と30px減り、馬名が余計に省略された。
+   カードの見た目より、表に使える幅のほうを優先する。 */
+.race20 .tabpane > *{margin-left:8px;margin-right:8px}
+.race20 .tabpane > .mm-list{margin-left:0;margin-right:0}
