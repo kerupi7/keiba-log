@@ -3697,6 +3697,23 @@ body.noscroll{position:fixed;width:100%;overflow:hidden}
 .container.top #races-list .race:last-child{margin-bottom:0}
 .container.top #races-list .race.pred{border-left:1px solid var(--rule);margin-left:0;padding-left:8px}
 
+/* 買い目の金額は必ず次の行の右端に置く（2026-09-04）。
+   `.amt` は元は `margin-left:auto` の右寄せで、幅が足りれば同じ行、足りなければ次の行に落ちていた。
+   実測（2026-08-30 中京）: 必要な幅は 5R 281px・6R 269px・12R 254px。
+   画面幅375pxでは使える幅252pxで3件とも2段だが、幅393pxの端末では
+   6R・12Rだけ1段になり、5Rだけ2段になる。端末によって形が変わるのをやめる。
+   縦は幅の広い端末で1レースあたり25px伸びる。揃うことを優先した。 */
+.container.top #races-list .rpick .amt{flex-basis:100%;margin-left:0;text-align:right}
+
+/* WIN5の脚番号の札を画像にする（2026-09-04）。
+   青い塗り（--win5）と白抜き文字をやめ、透過PNGをそのまま置く。
+   台紙の縦横比は 188:74 ＝ 2.541。柱の幅47pxに合わせると高さ18.5pxで、
+   文字だった頃の15pxより3.5px高い。1レースあたりの増分はその分だけ。
+   画像が読めなかった場合は alt の「WIN1」が出るので、意味は消えない。 */
+.container.top #races-list .col1 .w5{background:transparent;height:auto;border-radius:0;
+  width:100%;margin-top:4px;display:block;line-height:0}
+.container.top #races-list .col1 .w5 img{width:100%;height:auto;display:block}
+
 /* ナビのWIN5をJRA公式ロゴ（assets/4d4276812e368.jpg・250x123px）にする。
    高さ17pxで幅35px。ナビの文字11.5pxより5.5px大きい。
    矢印5本は1本2px弱になり形は残るが読めない。承知のうえ（2026-09-04 決定A）。

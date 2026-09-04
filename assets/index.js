@@ -191,7 +191,9 @@ function memberChipHtml(grade) {
 function win5LabelHtml(win5) {
   const leg = win5 && win5.leg;
   if (!leg) return '';
-  return `<div class="w5" title="WIN5の${leg}レース目">WIN${leg}</div>`;
+  // 2026-09-04: 文字「WIN1」から画像へ。assets/win5-1.png 〜 win5-5.png（188x74px・透過PNG）。
+  // 5枚とも同じ台紙（563x223px から縮小）に載せてあるので、幅を揃えると字の大きさも揃う。
+  return `<div class="w5"><img src="assets/win5-${leg}.png" alt="WIN${leg}" title="WIN5の${leg}レース目" width="188" height="74"></div>`;
 }
 
 function renderRaceRow(race) {
