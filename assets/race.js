@@ -919,11 +919,24 @@ function renderReviewSection(site) {
     const line = list.map((p) => `${comboBoxes(label, p.combination, byNumber)} ${fmtYen(p.payout)}${p.popularity ? `（${p.popularity}人気）` : ''}`).join(' ／ ');
     return `<tr><th class="l">${escapeHtml(label)}</th><td class="l">${line}</td></tr>`;
   }).join('');
-  const live = site.horses.filter((h) => !h.scratched && h.rank && h.finish);
-  const under = live.filter((h) => h.rank >= 7 && h.finish <= 3).sort((a, b) => (b.rank - b.finish) - (a.rank - a.finish)).slice(0, 2);
-  const over = live.filter((h) => h.rank <= 3 && h.finish >= 8).sort((a, b) => (b.finish - b.rank) - (a.finish - a.rank)).slice(0, 2);
+  // 2026-09-07: 「評価N番手」の土台を出馬表と同じ dispScore（勝率モデルの換算点）に揃えた。
+  // それまでは h.rank（8観点の合計順位）で、印も出馬表の点数も勝率順なのにここだけ別の
+  // 並びだった（例: 202609040212 の13番フェンダーは勝率では8番手なのに「評価12番手」と出る）。
+  // win_score を持たない 2026-08-12 より前のレースは dispScore が total に落ちるので、
+  // 過去ページの表示は従来のまま変わらない。
+  const evalRankByNumber = {};
+  [...site.horses]
+    .filter((h) => dispScore(h) !== null && dispScore(h) !== undefined)
+    .sort((a, b) => (dispScore(b) - dispScore(a)) || (a.number - b.number))
+    .forEach((h, i) => { evalRankByNumber[h.number] = i + 1; });
+  const evalRank = (h) => evalRankByNumber[h.number];
+  const live = site.horses.filter((h) => !h.scratched && evalRank(h) && h.finish);
+  const under = live.filter((h) => evalRank(h) >= 7 && h.finish <= 3)
+    .sort((a, b) => (evalRank(b) - b.finish) - (evalRank(a) - a.finish)).slice(0, 2);
+  const over = live.filter((h) => evalRank(h) <= 3 && h.finish >= 8)
+    .sort((a, b) => (b.finish - evalRank(b)) - (a.finish - evalRank(a))).slice(0, 2);
   const gapList = (rs, word, cls) => (rs.length ? `<div class="rv-blk ${cls}"><div class="rv-bh">${word}</div><ul>${
-    rs.map((h) => `<li>${umaBox(h.number, h.gate, 'sm')}${escapeHtml(h.name)}<span class="rv-ls">評価${h.rank}番手 → ${h.finish}着</span></li>`).join('')}</ul></div>` : '');
+    rs.map((h) => `<li>${umaBox(h.number, h.gate, 'sm')}${escapeHtml(h.name)}<span class="rv-ls">評価${evalRank(h)}番手 → ${h.finish}着</span></li>`).join('')}</ul></div>` : '');
 
   // ── 3. 気になった馬 ──
   const notes = (review.horses || []).map((c) => {
