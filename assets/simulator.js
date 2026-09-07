@@ -635,7 +635,11 @@
       var mkHtml = mkCls ? '<span class="sim-mk ' + mkCls + '">' + h.ability_mark + '</span>' : '<span class="sim-mk none">–</span>';
       var oddsVal = (t.arity === 1 && state.tanFuku === 'fukusho') ? fukushoOddsFor(h, oddsAll) : h.odds;
       var hot = (oddsVal !== null && oddsVal !== undefined && oddsVal < 10) ? ' hot' : '';
-      var gradeHtml = h.grade ? ' <span class="sim-grade ' + gradeClass(h.grade) + '">' + escapeHtml(gradeDisp(h.grade)) + '</span>' : '';
+      // 2026-09-07: 点数と評価を出馬表と同じ dispScore/dispGrade（勝率モデルの換算点）に揃えた。
+      // 2026-08-12 に出馬表を勝率側へ寄せた時、ここだけ h.total/h.grade（8観点）のままで、
+      // 同じ馬に2つの点数が出ていた（例: モカラマーズ 出馬表58.2 C＋ / ここ62.2 B）。
+      var gradeVal = dispGrade(h);
+      var gradeHtml = gradeVal ? ' <span class="sim-grade ' + gradeClass(gradeVal) + '">' + escapeHtml(gradeDisp(gradeVal)) + '</span>' : '';
       var gflag = isGreen ? ' <span class="sim-gflag">買い</span>' : '';
       var oddsHtml = (oddsVal !== null && oddsVal !== undefined)
         ? '<span class="' + hot.trim() + '">' + oddsVal.toFixed(1) + '</span>' : '—';
@@ -645,7 +649,7 @@
         : '';
       var nameCell = '<td class="l"><div style="display:flex;align-items:center;gap:5px">'
         + umaBox(h.number, h.gate) + mkHtml
-        + '<div><div class="sim-hname">' + escapeHtml(h.name) + gradeHtml + ' ' + fmtNum(h.total, 1) + gflag + '</div>'
+        + '<div><div class="sim-hname">' + escapeHtml(h.name) + gradeHtml + ' ' + fmtNum(dispScore(h), 1) + gflag + '</div>'
         + '<div class="sim-hodds">' + oddsHtml + popHtml + '</div>'
         + metaHtml + '</div></div></td>';
       var cells = cols.map(function (c) {
