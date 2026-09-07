@@ -774,6 +774,67 @@ function setupFinishOrder() {
 // タブを開いた時に描き直して印を読み直させる（state は保つので、進んだところは戻らない）
 let akRefresh = null;
 
+// ── 読んでいた位置を覚えて戻す（2026-09-07）──────────────────────
+// 戦績の面は18頭で 14,308px（375×812 の画面で17.6枚ぶん・中京11R の実測）ある。
+// 印や新聞、他のタブへ寄り道して戻るたび先頭へ落とされると読み直しになるので、
+// 面ごと・タブごとに「最後に読んでいた位置」を預けておき、戻った時にそこへ返す。
+// キーは出馬表タブだけ面まで分ける（他のタブに面は無い）。
+// 覚えるのはページを開いている間だけ。読み込み直したら先頭から始まる。
+const RACE20_Y = new Map();
+let race20Tab = null;                    // show() が入れる（RACE20_TAB_DEFAULT はこの下で定義）
+let race20View = 'mark';                 // 出馬表タブでいま出している面。既定は印（mmBar と揃える）
+
+function race20Key() {
+  if (!race20Tab) return null;
+  return race20Tab === 'shutuba' ? `shutuba:${race20View}` : race20Tab;
+}
+
+function race20SaveY() {
+  const k = race20Key();
+  if (k) RACE20_Y.set(k, window.scrollY);
+}
+
+// sticky で貼り付いている要素の「本来の位置」。貼り付いている間は
+// getBoundingClientRect も offsetTop も貼り付いた先の値を返す
+// （Chrome 実測 2026-09-07: scrollY=8000 のとき .tabbar の offsetTop も 8000）。
+// 一瞬 static に戻して測る。sticky と static は同じ場所を同じだけ占めるので画面は動かない。
+function race20NaturalTop(el) {
+  const keep = el.style.position;
+  el.style.position = 'static';
+  const y = el.getBoundingClientRect().top + window.scrollY;
+  el.style.position = keep;
+  return y;
+}
+
+// 面の先頭＝切替バーが貼り付く位置。タブバーのぶんだけ上を空ける
+function race20FaceTop(root) {
+  const mb = root.querySelector('.mm-bar');
+  if (!mb) return 0;
+  const tb = root.querySelector('.tabbar');
+  return Math.max(0, race20NaturalTop(mb) - (tb ? tb.getBoundingClientRect().height : 0));
+}
+
+// 貼り付ける切替バーの上位置を、タブバーの実測値で決める。
+// 文言やフォントが変わって行が高くなっても追随させる（CSS 側の既定は 43px）。
+function race20SyncBarTop(root) {
+  const tb = root.querySelector('.tabbar');
+  if (tb) root.style.setProperty('--mmtop', Math.round(tb.getBoundingClientRect().height) + 'px');
+}
+
+// 戻す。預けた位置が無ければ「その面・そのタブの先頭」へ。
+// 先頭より上（まだ読み始めていない位置）に居るなら動かさない。
+function race20RestoreY(topY) {
+  const y = RACE20_Y.get(race20Key());
+  if (y == null) {
+    if (window.scrollY > topY) window.scrollTo(0, topY);
+    return;
+  }
+  // 面ごとに本文の長さが違うので、いま行ける範囲に収める
+  const max = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+  window.scrollTo(0, Math.min(y, max));
+}
+
+
 function setupTabs20(site) {
   const root = document.querySelector('#race-content .race20');
   if (!root) return;
@@ -790,6 +851,7 @@ function setupTabs20(site) {
       b.setAttribute('aria-selected', on ? 'true' : 'false');
     }
     for (const p of panes) p.classList.toggle('on', p.dataset.pane === key);
+    race20Tab = key;                     // 位置を預けるキーに使う（race20Key）
     // 回顧タブは開いた瞬間に初めて幅が確定するので測り直す（折りたたみと同じ理由）
     if (key === 'kaiko') setupFinishOrder();
     // 111-spec: 出馬表で付けた印をアキネーターにも出すため、開くたびに描き直す
@@ -799,16 +861,19 @@ function setupTabs20(site) {
 
   bar.addEventListener('click', (e) => {
     const b = e.target.closest('.t20');
-    if (!b) return;
+    if (!b || b.dataset.tab === race20Tab) return;
+    race20SaveY();                       // 離れるタブに、いま読んでいた位置を預ける
     show(b.dataset.tab, true);
-    // タブより下まで読んでいたら、切り替え先の先頭に戻す（上には戻しすぎない）
-    const y = bar.getBoundingClientRect().top + window.scrollY;
-    if (window.scrollY > y) window.scrollTo(0, y);
+    // そのタブを前に読んでいればその位置へ、初めてなら先頭へ（上には戻しすぎない）。
+    // 2026-09-07 まで、ここは貼り付いた .tabbar の rect を見ていたので条件が
+    // 一度も成立せず、先頭に戻す処理が効いていなかった（race20NaturalTop で直した）。
+    race20RestoreY(race20NaturalTop(bar));
   });
   // 共有リンクの #tab=... で直接そのタブを開く
   window.addEventListener('hashchange', () => show(race20TabFromHash(), false));
 
   root.classList.add('tabs-ready');
+  race20SyncBarTop(root);
   show(race20TabFromHash(), false);
 }
 
@@ -817,6 +882,9 @@ let foResizeTimer = null;
 window.addEventListener('resize', () => {
   clearTimeout(foResizeTimer);
   foResizeTimer = setTimeout(setupFinishOrder, 150);
+  // タブバーが2行に折れると貼り付ける切替バーの位置も変わる
+  const root = document.querySelector('.race20');
+  if (root) race20SyncBarTop(root);
 });
 
 // 勝ち時計カードの2行目（91-race-review-spec.md §7-3）。
@@ -2982,6 +3050,8 @@ function setupMyMarks(site) {
     const b = e.target.closest('[data-view]');
     if (!b) return;
     const v = b.dataset.view;
+    if (v === race20View) return;              // 出ている面をもう一度押しただけなら動かさない
+    race20SaveY();                             // 離れる面に、いま読んでいた位置を預ける
     root.querySelectorAll('[data-view]').forEach((x) => x.classList.toggle('on', x === b));
     root.querySelector('.shlist').classList.toggle('off', v !== 'runs');
     root.querySelector('.mm-list').classList.toggle('off', v !== 'mark');
@@ -2990,6 +3060,9 @@ function setupMyMarks(site) {
       paper.classList.toggle('off', v !== 'paper');
       if (v === 'paper') npSyncRail(root);   // 隠れている間は測れないので、出した直後に測る
     }
+    race20View = v;
+    // その面を前に読んでいればその位置へ、初めてなら面の先頭へ
+    race20RestoreY(race20FaceTop(root));
   });
 
   mmPaint();

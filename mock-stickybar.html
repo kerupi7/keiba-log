@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>切替バー固定モック — Ans.</title>
+<link rel="stylesheet" href="assets/style.css?v=20260907b">
+<style>
+/* =========================================================================
+   mock-stickybar — 出馬表の「印／戦績／新聞」の切替バーを、下端からでも
+   押せるようにする3案のモック。
+   本番の race.js が描いた DOM を1ノードも作らず・消さず、CSS だけ足す。
+   モック専用の見た目（.mockbar / .lenmeter）は採用時に本番へ持ち込まない。
+   ========================================================================= */
+
+/* --- モック説明バー（採用時に削除）--- */
+/* sticky にしない：モック用の帯が画面を食うと、貼り付けたバーの位置が本番とズレるため */
+.mockbar{position:static;background:#1d1d1d;color:#fff;font-size:11.5px;line-height:1.6;
+  padding:8px 12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.mockbar b{color:#ffd400}
+.mockbar .g{display:inline-flex;gap:0;border:1px solid #666;border-radius:5px;overflow:hidden}
+.mockbar .g button{background:#3a3a3a;color:#fff;border:0;border-right:1px solid #666;
+  font:700 11.5px/1 inherit;padding:7px 10px;cursor:pointer;font-family:inherit}
+.mockbar .g button:last-child{border-right:0}
+.mockbar .g button.on{background:#fff;color:#1d1d1d}
+.mockbar label{display:inline-flex;align-items:center;gap:4px;cursor:pointer}
+.mockbar .m{margin-left:auto;font-variant-numeric:tabular-nums;color:#bbb}
+.mockbar .m b{color:#ffd400}
+
+/* =========================================================================
+   ここから下の2ブロックだけが「採用したら本番へ入るCSS」
+   ========================================================================= */
+
+/* --- 案A・C: 切替バーをタブバーの真下に貼り付ける ---
+   2026-09-07 に案Aを本番へ入れたので、貼り付けは style.css 側が既定になった。
+   ここは逆に「現状（＝貼り付ける前）」を再現するための打ち消し。比較用に残す。 */
+body:not(.mk-stick) .race20 .mm-bar{position:static;margin:8px 0 0;padding:0;box-shadow:none}
+/* 「自分の印 ◎3 ○5」の要約行を貼り付け側から外す版（高さ -17px） */
+body.mk-stick.mk-nosum .race20 .mm-bar .mm-sum{display:none}
+
+/* --- 案B・C: 右下に浮く「切替へ」ボタン --- */
+#tobar{display:none;position:fixed;right:12px;bottom:16px;z-index:60;
+  align-items:center;gap:5px;border:1px solid var(--navy,#1b2a4a);background:#fff;
+  color:var(--navy,#1b2a4a);font:700 13px/1 inherit;font-family:inherit;
+  padding:12px 15px;border-radius:23px;box-shadow:0 3px 10px rgba(0,0,0,.2);cursor:pointer}
+body.mk-float #tobar{display:flex}
+
+/* --- 実測メーター（モック専用・採用時に削除）--- */
+.lenmeter{border:1px solid var(--rule,#ddd);border-radius:8px;padding:10px 12px;margin:16px 0;
+  font-size:12px;background:#fff}
+.lenmeter h4{margin:0 0 8px;font-size:12.5px}
+.lenmeter table{width:100%;border-collapse:collapse}
+.lenmeter td,.lenmeter th{padding:4px 2px;border-bottom:1px solid #eee;text-align:left}
+.lenmeter .n{text-align:right;font-variant-numeric:tabular-nums}
+.lenmeter .note{margin:8px 0 0;font-size:11px;color:var(--cap,#888);line-height:1.6}
+</style>
+</head>
+<body>
+<div class="mockbar">
+  <span class="g" id="mkg">
+    <button data-m="now" class="on">現状</button>
+    <button data-m="stick">A 固定</button>
+    <button data-m="float">B 浮き</button>
+    <button data-m="both">C 両方</button>
+  </span>
+  <label><input type="checkbox" id="nosum"> 要約行を隠す</label>
+  <span class="m" id="mkm">—</span>
+</div>
+<header id="site-header"></header>
+<div class="container">
+  <a class="back-link" href="index.html">← 一覧へ</a>
+  <div id="race-content"></div>
+</div>
+<button type="button" id="tobar">▲ 切替へ</button>
+<script src="assets/vendor/marked.min.js"></script>
+<script src="assets/app.js?v=20260828x"></script>
+<script src="assets/coursecore.js?v=20260828x"></script>
+<script src="assets/coursetab.js?v=20260828x"></script>
+<script src="assets/harville.js?v=20260828x"></script>
+<script src="assets/akinator.js?v=20260828x"></script>
+<script src="assets/simulator.js?v=20260828x"></script>
+<script src="assets/race.js?v=20260907b"></script>
+<script>
+/* =========================================================================
+   モックのロジック。本番の描画には一切触らない（CSSクラスの付け外しだけ）
+   ========================================================================= */
+const MODES = {
+  now:   [],
+  stick: ['mk-stick'],
+  float: ['mk-float'],
+  both:  ['mk-stick', 'mk-float'],
+};
+
+function applyMode(key) {
+  document.body.classList.remove('mk-stick', 'mk-float');
+  (MODES[key] || []).forEach((c) => document.body.classList.add(c));
+  document.querySelectorAll('#mkg button').forEach((b) => b.classList.toggle('on', b.dataset.m === key));
+  syncTop();
+  measure();
+}
+
+/* 貼り付けたバーの上位置＝タブバーの実測高。フォントや文言が変わっても追随させる */
+function syncTop() {
+  const tb = document.querySelector('.race20 .tabbar');
+  if (!tb) return;
+  document.body.style.setProperty('--mmtop', Math.round(tb.getBoundingClientRect().height) + 'px');
+}
+
+/* 実測：いま画面の上何pxが常時ふさがるか／下端から切替バーまで何px戻るか */
+function measure() {
+  const el = document.getElementById('mkm');
+  const tb = document.querySelector('.race20 .tabbar');
+  const mb = document.querySelector('.race20 .mm-bar');
+  if (!el || !tb || !mb) return;
+  const vh = window.innerHeight || 812;
+  const stuck = document.body.classList.contains('mk-stick');
+  const fixed = Math.round(tb.getBoundingClientRect().height + (stuck ? mb.getBoundingClientRect().height : 0));
+  const back = stuck ? 0 : Math.round(document.body.scrollHeight - (mb.getBoundingClientRect().top + scrollY));
+  el.innerHTML = `上部の固定 <b>${fixed}px</b>（画面の${(fixed / vh * 100).toFixed(1)}%）`
+    + ` ／ 最下部から切替バーまで <b>${back.toLocaleString()}px</b>`;
+  updateMeter();
+}
+
+/* 縦の長さの実測表（面ごと） */
+function buildMeter() {
+  if (document.getElementById('lenmeter')) return;
+  const race = document.querySelector('#race-content .race20');
+  if (!race) return;
+  const box = document.createElement('div');
+  box.className = 'lenmeter'; box.id = 'lenmeter';
+  box.innerHTML = '<h4>この画面の実測</h4><table><tbody id="lenrows"></tbody></table>'
+    + '<p class="note">「戻る距離」は、その面をいちばん下まで読んだ状態から、'
+    + '印／戦績／新聞のバーまで戻すのに要るスクロール量。案Aと案Cではバーが画面に'
+    + '残るので 0 になります。</p>';
+  const pane = race.querySelector('.tabpane[data-pane="shutuba"]') || race;
+  pane.appendChild(box);
+}
+
+function updateMeter() {
+  const rows = document.getElementById('lenrows');
+  if (!rows) return;
+  const vh = window.innerHeight || 812;
+  const stuck = document.body.classList.contains('mk-stick');
+  const faces = [
+    ['印',   '.mm-list'],
+    ['戦績', '.shlist'],
+    ['新聞', '.shpaper'],
+  ];
+  const data = faces.map(([label, sel]) => {
+    const el = document.querySelector('.race20 ' + sel);
+    if (!el) return { label, h: 0 };
+    const off = el.classList.contains('off');
+    if (off) { el.classList.remove('off'); el.style.visibility = 'hidden'; }
+    const h = Math.round(el.getBoundingClientRect().height);
+    if (off) { el.classList.add('off'); el.style.visibility = ''; }
+    return { label, h, on: !off };
+  });
+  const max = Math.max(...data.map((d) => d.h), 1);
+  rows.innerHTML = '<tr><th>面</th><th class="n">縦の長さ</th><th class="n">画面</th><th class="n">戻る距離</th></tr>'
+    + data.map((d) => `<tr${d.on ? ' style="font-weight:700"' : ''}><td>${d.label}${d.on ? '（表示中）' : ''}</td>`
+      + `<td class="n">${d.h.toLocaleString()}px</td>`
+      + `<td class="n">${(d.h / vh).toFixed(1)}枚</td>`
+      + `<td class="n">${stuck ? '0px' : d.h.toLocaleString() + 'px'}</td></tr>`).join('');
+}
+
+/* 浮きボタン：切替バーの位置まで戻す。タブバーのぶんだけ上に余白を残す */
+document.getElementById('tobar').addEventListener('click', () => {
+  const mb = document.querySelector('.race20 .mm-bar');
+  const tb = document.querySelector('.race20 .tabbar');
+  if (!mb) return;
+  const off = tb ? tb.getBoundingClientRect().height + 4 : 46;
+  scrollTo({ top: mb.getBoundingClientRect().top + scrollY - off, behavior: 'smooth' });
+});
+
+document.getElementById('mkg').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-m]');
+  if (b) applyMode(b.dataset.m);
+});
+document.getElementById('nosum').addEventListener('change', (e) => {
+  document.body.classList.toggle('mk-nosum', e.target.checked);
+  measure();
+});
+window.addEventListener('resize', () => { syncTop(); measure(); });
+window.addEventListener('scroll', () => { /* 表示だけの更新なので間引く */ }, { passive: true });
+
+/* race.js の描画完了を待つ（fetch 後に #race-content へ挿入される）。
+   出そろったら「戦績」の面を開いておく（この不便が起きるのが戦績の面なので） */
+(function wait(n) {
+  const bar = document.querySelector('.race20 .mm-bar');
+  if (bar) {
+    const runs = document.querySelector('.race20 [data-view="runs"]');
+    if (runs) runs.click();
+    buildMeter();
+    applyMode('now');
+    return;
+  }
+  if (n > 300) return;
+  setTimeout(() => wait(n + 1), 50);
+})(0);
+</script>
+</body>
+</html>

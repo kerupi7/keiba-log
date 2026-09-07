@@ -2276,7 +2276,14 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
    ============================================================ */
 
 /* ── 表示の切り替え（印を付ける ／ 戦績5走）＋いま付いている印の要約 ── */
-.race20 .mm-bar{display:flex;align-items:center;gap:8px;margin:8px 0 0;flex-wrap:wrap}
+/* 印／戦績／新聞の切替バーを、タブバーの真下に貼り付ける（2026-09-07）。
+   戦績の面は18頭で 14,308px（375×812 の画面で17.6枚ぶん・中京11R の実測）あり、
+   下まで読んでから印や新聞へ移るのに約14,700px スクロールして戻る必要があった。
+   貼り付けると上部の固定は 43px → 108px（画面の13.3%）に増えるが、戻る距離は0になる。
+   --mmtop は .tabbar の実測高（race20SyncBarTop が入れる）。既定の43pxは実測値。 */
+.race20 .mm-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  position:sticky;top:var(--mmtop,43px);z-index:29;background:var(--bg);
+  margin:0;padding:5px 0 6px;box-shadow:0 3px 6px -3px rgba(0,0,0,.25)}
 /* コースのボタン（2026-08-27）。印／戦績／新聞 の帯の右に置く。
    帯の中に入れないのは、表示を切り替えるものではなく別の画面を開くボタンだから。 */
 .race20 .crsb{flex:none;border:1px solid var(--rule-strong);background:#fff;border-radius:6px;
