@@ -4371,10 +4371,14 @@ function renderWeekTrend20(site) {
   if (io) {
     const L = 50 + Math.max(-1, Math.min(1, io.diff / WK_IO_FULL)) * 40;
     const cls = io.label === '大きな偏りなし' ? 't0' : (io.diff >= 0 ? 't1' : 'u1');
-    cells.push(`<div class="cell"><span class="k">内と外</span>`
+    // 見出しに「3着内率」を入れ、数字には%を付ける（2026-09-07）。
+    // それまでは見出し「内と外」・数字「内26.7 外19.2」で、何の26.7かが画面のどこにも
+    // 書いていなかった。数字の行に「3着内」を足すと102pxを超えて2行に折れるので、
+    // 見出しの側に置いた（数字の行は76px・実測）。
+    cells.push(`<div class="cell"><span class="k">内と外の3着内率</span>`
       + seesawHtml(L, 50, ['内', '外'])
       + `<span class="w ${cls}">${escapeHtml(io.label)}</span>`
-      + `<span class="n">内${io.inner_pct.toFixed(1)} 外${io.outer_pct.toFixed(1)}</span></div>`);
+      + `<span class="n">内${io.inner_pct.toFixed(1)}% 外${io.outer_pct.toFixed(1)}%</span></div>`);
   }
   if (legs) {
     // 白い目盛りは50%ではなく平年値（前62.2%）に置く。前と後ろは半々が中立ではないため。
