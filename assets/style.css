@@ -495,18 +495,49 @@ details.fold.om-fold>summary .cnt{color:#fff;opacity:.85;font-size:11px}
 .sim-band.umatan{background:#e59300}.sim-band.sanrenpuku{background:#4aa3d6}
 .sim-band.sanrentan{background:#e57d1e}
 
-.sim-sel{width:100%;border-collapse:collapse;font-size:12.5px}
+/* 2026-09-07: table-layout を fixed にした。印を2列足したことで、320px幅では
+   馬名・オッズ・騎手の3行の「これ以上縮まない幅」が効いて表が容器から44〜75pxはみ出し、
+   ページに横スクロールが出た（印なしでは出ない＝この変更で出た退行）。
+   fixed にすると選択列を先に確定でき、余りが本文に回って3行が省略記号で収まる。 */
+.sim-sel{width:100%;table-layout:fixed;border-collapse:collapse;font-size:12.5px}
+.sim-sel th:not(.l),.sim-sel td:not(.l){width:30px}
 .sim-sel th{background:var(--sub-bg2);color:var(--cap);font-size:10.5px;font-weight:700;
   padding:5px 2px;border-bottom:1px solid var(--rule);text-align:center}
 .sim-sel th.l{text-align:left}
 .sim-sel td{border-bottom:1px solid var(--rule);padding:6px 2px;text-align:center;vertical-align:middle}
 .sim-sel td.l{text-align:left;padding-left:4px}
 .sim-sel tr.green td{background:var(--green-row)}
-/* 45-spec §2.8: 印は既存の色トークンを流用（.n-honなどの命名は使わず新規スコープ） */
-.sim-mk{font-weight:700;font-size:12px;min-width:13px;display:inline-block;text-align:center}
-.sim-mk.hon{color:var(--mk-hon)}.sim-mk.tai{color:var(--mk-tai)}
-.sim-mk.tan{color:var(--mk-tan)}.sim-mk.oku{color:var(--mk-oku)}
-.sim-mk.none{color:#ccc}
+/* 45-spec §2.8: 印は既存の色トークンを流用（.n-honなどの命名は使わず新規スコープ）。
+   2026-09-07: 能力印だけの1列（.sim-mk）をやめ、「自分の印（.sim-my）＋AIの印（.sim-ai）」の
+   2列にした。.sim-mk は出す所が無くなったので削除。 */
+
+/* 自分の印。読むだけで、押すと出馬表タブのその馬へ飛ぶ。
+   見た目は隣タブ（アキネーター）の .ak-my と同じ「紺の枠＋薄青の地＋印ごとの文字色」。
+   出馬表の .mm-my（32px・その場で付け替える）とは幅も役目も違う。 */
+.sim-my{flex:none;display:inline-flex;align-items:center;justify-content:center;
+  min-width:16px;height:19px;padding:0 2px;border:1px solid var(--rule);border-radius:4px;
+  background:#fff;font:inherit;font-size:12px;font-weight:700;line-height:1;
+  color:#C4C4BF;cursor:pointer}
+.sim-my.set{border-color:var(--navy);background:#F4F8FC}
+.sim-my i{font-style:normal;font-size:9px;font-weight:400}
+.sim-my:disabled{opacity:.35;cursor:not-allowed}
+.sim-my.m1{color:var(--mk-hon)} .sim-my.m2{color:var(--mk-tai)}
+.sim-my.m3{color:var(--mk-tan)} .sim-my.m4{color:var(--mk-oku)}
+.sim-my.m5{color:var(--orange)}
+.sim-my.m7{color:var(--mk-chk)}
+.sim-my.m6{color:var(--cap);font-size:10.5px}
+
+/* AIの印。出馬表の .mm-ai と同じ30pxの器で、中身は markBadge20（能力印＋穴／地雷／消し）。
+   器が無いと .mkstack（能力印＋地雷の2段）が横に伸びて、表が34pxはみ出す（実測） */
+.sim-ai{flex:none;width:30px;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:1px}
+.sim-ai .none{font-size:9px;color:#C4C4BF}
+.sim-ai .mkb{margin-right:0}
+.sim-ai .mkstack{display:flex;flex-direction:column;align-items:center;gap:1px}
+.sim-ai .mkstack .mkb{font-size:10.5px;line-height:14px;padding:0 4px;min-width:15px}
+.sim-ai .mkstack .mkb.sub{font-size:8.5px;line-height:11px;padding:0 3px;min-width:0}
+/* 馬名・オッズ・騎手の3行。印2列と馬番のぶん残りが狭いので、はみ出さずに詰める */
+.sim-hbody{min-width:0}
 /* 45-spec §2.8: 評価バッジは既存.race20 .gradeと同色だが、Block Bは1.xページでは.race20外に
    出るためスコープなしで複製（.race20 .gradeは変更しない） */
 .sim-grade{display:inline-block;min-width:22px;text-align:center;font-weight:700;
@@ -515,8 +546,13 @@ details.fold.om-fold>summary .cnt{color:#fff;opacity:.85;font-size:11px}
 .sim-grade.g-bp{background:#5a9bd4} .sim-grade.g-b{background:#8aadc9}
 .sim-grade.g-cp{background:#b0b0a8} .sim-grade.g-c{background:#c2c2ba}
 .sim-grade.g-d{background:#d8b48a} .sim-grade.g-e{background:#d89a9a}
+/* 2026-09-07: 幅が足りないときは折り返さず「…」で切る。折り返すと行の高さが馬ごとに
+   変わって、右の選択欄と目が合わなくなるため（table-layout:fixed とセットで効く） */
+.sim-hname,.sim-hodds,.sim-hmeta{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sim-hname{font-weight:700;font-size:12.5px;line-height:1.25}
 .sim-hodds{font-size:10.5px;color:var(--cap)}
+/* 2026-09-07: 点数はオッズの行の右へ移した（案A）。行の中で一番読ませたい数字なので本文色 */
+.sim-hsc{color:var(--text);font-variant-numeric:tabular-nums}
 .sim-hodds .hot{color:var(--live);font-weight:700}
 .sim-hmeta{font-size:10px;color:var(--sub)}
 .sim-gflag{display:inline-block;font-size:9.5px;font-weight:700;color:var(--hit);
@@ -2404,6 +2440,10 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
 .race20 .mm-row{display:flex;align-items:stretch;border-bottom:1px solid var(--rule);
   background:#fff;min-height:40px}
 .race20 .mm-row:last-child{border-bottom:0}
+/* 2026-09-07: 買い目タブの自分の印から飛んで来たとき、どの馬に着いたのかを1.2秒だけ光らせる。
+   印／戦績／新聞のどの面でも行に data-n が付くので、面を選ばず当たるようにスコープは .race20 直下 */
+.race20 .mm-flash{animation:mmFlash 1.2s ease-out}
+@keyframes mmFlash{0%,60%{background:#FFF3C4}100%{background:transparent}}
 /* 自分の印。好走条件の色（.mm-row.tpN .mm-c）は後に書いてあるので、
    色を乗せている間はそちらが勝つ（自分の印は左端のマスで読める）。 */
 .race20 .mm-row.my-mark{background:#EFE9F7}

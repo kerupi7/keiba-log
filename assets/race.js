@@ -773,6 +773,35 @@ function setupFinishOrder() {
 // 出馬表タブで自分の印を付けてから買い目タブへ来ると、アキネーターは前に描いたままなので、
 // タブを開いた時に描き直して印を読み直させる（state は保つので、進んだところは戻らない）
 let akRefresh = null;
+// 手動シミュレーター側も同じ理由で描き直す（2026-09-07・自分の印を出すようになったため）。
+// 選んだ馬（state.cols）は Simulator 側に残るので、組みかけの買い目は消えない
+let simRefresh = null;
+
+// 111-spec: シミュレーターの自分の印を押したとき、出馬表タブのその馬へ飛ぶ。
+// 印を付け替えるのは出馬表の仕事なので、こちらは「連れて行く」だけ。
+// 出馬表は「印／戦績／新聞」で中身が入れ替わるが、どの面でも行に data-n が付いているので、
+// いま出ている面の中から探す（見つからなければタブを開くところまでで止める）。
+function jumpToShutuba(n) {
+  const tab = document.querySelector('.race20 .t20[data-tab="shutuba"]');
+  if (!tab) return;
+  // タブの切り替え（show → race20RestoreY の位置戻し）はクリックの中で同期に終わるので、
+  // ここは requestAnimationFrame を挟まず続けて動かす。rAF にすると、ページが裏に回っている間は
+  // 発火せず飛べない（実測で空振りした）うえ、位置戻しに上書きされる順番も読みにくくなる。
+  if (!tab.classList.contains('on')) tab.click();
+  const pane = document.querySelector('.race20 .tabpane.on');
+  if (!pane) return;
+  // 出馬表は「印／戦績／新聞」で中身が入れ替わる。いま出ている面の行だけを拾う（高さ0は裏の面）。
+  // 印と戦績の行は data-n、新聞の柱（.npcol）だけ data-h なので両方を見る
+  const row = [...pane.querySelectorAll(`[data-n="${n}"], [data-h="${n}"]`)]
+    .find((el) => el.getBoundingClientRect().height > 0);
+  if (!row) return;
+  // smooth では届かない（タブを切り替えた直後は位置戻しの window.scrollTo と競合して、
+  // 実測で scrollY が 0 のまま動かなかった）。一気に飛ばして、着いた先は下の光りで示す
+  row.scrollIntoView({ behavior: 'auto', block: 'center' });
+  // どの馬に来たのかを1.2秒だけ光らせて示す（印を付ける前に見失わないように）
+  row.classList.add('mm-flash');
+  setTimeout(() => row.classList.remove('mm-flash'), 1200);
+}
 
 // ── 読んでいた位置を覚えて戻す（2026-09-07）──────────────────────
 // 戦績の面は18頭で 14,308px（375×812 の画面で17.6枚ぶん・中京11R の実測）ある。
@@ -854,8 +883,12 @@ function setupTabs20(site) {
     race20Tab = key;                     // 位置を預けるキーに使う（race20Key）
     // 回顧タブは開いた瞬間に初めて幅が確定するので測り直す（折りたたみと同じ理由）
     if (key === 'kaiko') setupFinishOrder();
-    // 111-spec: 出馬表で付けた印をアキネーターにも出すため、開くたびに描き直す
-    if (key === 'kaime' && akRefresh) akRefresh();
+    // 111-spec: 出馬表で付けた印をアキネーターにも出すため、開くたびに描き直す。
+    // 2026-09-07: 手動シミュレーターにも印を出すようにしたので、同じところで描き直す
+    if (key === 'kaime') {
+      if (akRefresh) akRefresh();
+      if (simRefresh) simRefresh();
+    }
     if (pushHash) history.replaceState(null, '', `${location.pathname}${location.search}#tab=${key}`);
   };
 
@@ -1314,10 +1347,15 @@ function setupOddsMasterPanel(site, oddsAll) {
   const state = Simulator.initialState();
 
   function rerender() {
-    body.innerHTML = Simulator.renderBlockB(site, probs, heads, oddsAll, state);
+    // markBadge20 は race.js のIIFEの中にあってグローバルに出ていないので、ここで渡す
+    body.innerHTML = Simulator.renderBlockB(site, probs, heads, oddsAll, state, { aiMark: markBadge20 });
   }
 
   body.addEventListener('click', (ev) => {
+    // 2026-09-07: 自分の印のマスは「読むだけ＋導線」。押されたら出馬表タブのその馬へ飛ぶ。
+    // 付け替えの仕組みをここに二重に持たないため、シミュレーターの state は動かさない。
+    const jump = ev.target.closest('[data-sim-jump]');
+    if (jump) { if (!jump.disabled) jumpToShutuba(Number(jump.dataset.simJump)); return; }
     if (Simulator.handleClick(state, ev.target)) rerender();
   });
   body.addEventListener('change', (ev) => {
@@ -1325,6 +1363,8 @@ function setupOddsMasterPanel(site, oddsAll) {
   });
 
   rerender();
+  // 出馬表で印を付け替えてから買い目タブへ戻る動きに追いつかせる（アキネーターの akRefresh と同じ理由）
+  simRefresh = rerender;
 
   return {
     applyPlan(plan) {

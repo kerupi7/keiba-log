@@ -11,6 +11,10 @@
  *   app.js:      umaBox, wakuBox, gradeClass, gradeDisp, escapeHtml, fmtNum, MARK_CLASS
  *   harville.js: window.Harville（probTansho/probFukusho/probWide/probUmaren/probUmatan/
  *                probSanrenpuku/probSanrentan/normKey/oddsUsed/buyLine/ev/P_MIN/buildProbs）
+ *
+ * AIの印（能力印＋穴／地雷／消し）を描く markBadge20 は race.js のIIFEの中にあってグローバルに
+ * 出ていないので、**呼び手が opts.aiMark で渡す**（2026-09-07）。渡されなければ「—」を出す。
+ * ここで同じ描き分けを書き写すと、印の定義が2か所になって必ずずれる。
  */
 (function () {
   'use strict';
@@ -617,7 +621,40 @@
     return '<div class="sim-band ' + t.band + '">' + escapeHtml(bandLabel(state)) + '</div>';
   }
 
-  function renderHorseTable(site, state, probs, heads, oddsAll) {
+  // ===== 印の2列（2026-09-07 ユーザー決定・111-spec §3.5 と同じ読み方） =====
+  // 自分の印の正本は出馬表側（race.js の MM ＝ localStorage の mymark:{race_id}）。
+  // ここでは**読むだけ**で、押すと出馬表タブのその馬へ飛ぶ（飛ばすのは race.js 側）。
+  // 付け替えの仕組みを二重に持たないための形で、確率にも買い方の計算にも一切入らない。
+  // 寸法は隣タブ（アキネーター）の .ak-my と同じ16px幅。出馬表と同じ32px幅にすると
+  // 3連単フォーメーション（選択3列）で表が容器から24pxはみ出し、ページに横スクロールが出る
+  // （375px・16頭で実測。16px幅なら +4px に収まる）。
+  var MY_CLS = { '◎': 'm1', '○': 'm2', '▲': 'm3', '△': 'm4', '☆': 'm5', '✓': 'm7', '消': 'm6' };
+  function loadMyMarks(site) {
+    var out = {};
+    try {
+      var id = site && site.race ? site.race.race_id : null;
+      if (!id || typeof localStorage === 'undefined') return out;
+      var o = JSON.parse(localStorage.getItem('mymark:' + id)) || {};
+      // 知らない印（廃止した ー・壊れた値）は出さない。読み捨ては出馬表側 mmLoad の仕事
+      Object.keys(o).forEach(function (k) { if (MY_CLS[o[k]]) out[String(k)] = o[k]; });
+    } catch (e) { /* localStorage が使えない環境では印なしで描く */ }
+    return out;
+  }
+  // 印が無い馬にも「—」を置く（アキネーターは何も出さないが、こちらは表で列が縦に揃うため）
+  function myCell(h, myMarks) {
+    var mk = myMarks[String(h.number)];
+    var cls = 'sim-my' + (mk ? ' set ' + MY_CLS[mk] : '');
+    var body = mk ? escapeHtml(mk) : '<i>—</i>';
+    return '<button type="button" class="' + cls + '" data-sim-jump="' + h.number + '"'
+      + (h.scratched ? ' disabled' : '') + ' title="出馬表でこの馬に印を付ける">' + body + '</button>';
+  }
+  // AIの印は出馬表に揃える（能力印の塗りチップ＋穴／地雷／消し）。描くのは呼び手が渡す関数
+  function aiCell(h, aiMark) {
+    var inner = (typeof aiMark === 'function') ? aiMark(h) : '';
+    return '<span class="sim-ai">' + (inner || '<span class="none">—</span>') + '</span>';
+  }
+
+  function renderHorseTable(site, state, probs, heads, oddsAll, opts) {
     var t = typeOf(state.betType);
     if (t.arity === 1 && state.tanFuku === 'fukusho' && heads <= 4) {
       return '<div class="om-empty">5頭未満のため複勝は発売されません</div>';
@@ -625,14 +662,14 @@
     var cols = columns(state);
     var g = greenSet(state, site, probs, heads, oddsAll);
     var horses = site.horses.slice().sort(function (a, b) { return a.number - b.number; });
-    var head = '<tr><th class="l">馬番 / 印 / 馬名・騎手・評価</th>'
+    var myMarks = loadMyMarks(site);   // 描画のたびに読み直す（出馬表で付け替えて戻る動きに追いつく）
+    var head = '<tr><th class="l">自分 / AI / 馬番・馬名・騎手・評価</th>'
       + cols.map(function (c) { return '<th>' + escapeHtml(c.label) + '</th>'; }).join('') + '</tr>';
     var body = horses.map(function (h) {
       var id = t.frame ? h.gate : h.number;
       var disabled = h.scratched || !(h.number in probs);
       var isGreen = !!g[h.number];
-      var mkCls = MARK_CLASS[h.ability_mark];
-      var mkHtml = mkCls ? '<span class="sim-mk ' + mkCls + '">' + h.ability_mark + '</span>' : '<span class="sim-mk none">–</span>';
+      var mkHtml = myCell(h, myMarks) + aiCell(h, opts && opts.aiMark);
       var oddsVal = (t.arity === 1 && state.tanFuku === 'fukusho') ? fukushoOddsFor(h, oddsAll) : h.odds;
       var hot = (oddsVal !== null && oddsVal !== undefined && oddsVal < 10) ? ' hot' : '';
       // 2026-09-07: 点数と評価を出馬表と同じ dispScore/dispGrade（勝率モデルの換算点）に揃えた。
@@ -647,10 +684,14 @@
       var metaHtml = h.jockey
         ? '<div class="sim-hmeta">' + escapeHtml(h.jockey) + (h.weight_carried !== null && h.weight_carried !== undefined ? ' ・ ' + h.weight_carried.toFixed(1) + 'kg' : '') + '</div>'
         : '';
+      // 2026-09-07（ユーザー決定・mock-sim-marks.html 案A）: 点数は馬名の行ではなくオッズの行に置く。
+      // 印を2列足したぶん馬名の行が狭くなり、3連単・3連複（選択3列）では行の末尾＝点数から
+      // 「…」で消えていた（375px・16頭で9頭が該当）。オッズの行は空きが多いのでここが入る。
+      var scoreHtml = ' ・ <b class="sim-hsc">' + fmtNum(dispScore(h), 1) + '</b>';
       var nameCell = '<td class="l"><div style="display:flex;align-items:center;gap:5px">'
-        + umaBox(h.number, h.gate) + mkHtml
-        + '<div><div class="sim-hname">' + escapeHtml(h.name) + gradeHtml + ' ' + fmtNum(dispScore(h), 1) + gflag + '</div>'
-        + '<div class="sim-hodds">' + oddsHtml + popHtml + '</div>'
+        + mkHtml + umaBox(h.number, h.gate)
+        + '<div class="sim-hbody"><div class="sim-hname">' + escapeHtml(h.name) + gradeHtml + gflag + '</div>'
+        + '<div class="sim-hodds">' + oddsHtml + popHtml + scoreHtml + '</div>'
         + metaHtml + '</div></div></td>';
       var cells = cols.map(function (c) {
         var arr = state.cols[c.key] || [];
@@ -729,12 +770,13 @@
       + '<span class="rng">' + range + '</span></div>' + bodyHtml + '</div>' + moreLine;
   }
 
-  function renderBlockB(site, probs, heads, oddsAll, state) {
+  // opts = { aiMark: 馬 → AIの印のHTML }（race.js の markBadge20。無ければAI印は「—」）
+  function renderBlockB(site, probs, heads, oddsAll, state, opts) {
     return '<div class="sim-types">' + renderTypes(state, heads) + '</div>'
       + '<div class="sim-methods">' + renderMethods(state) + '</div>'
       + renderAxisPosAndMulti(state)
       + renderBand(state)
-      + renderHorseTable(site, state, probs, heads, oddsAll)
+      + renderHorseTable(site, state, probs, heads, oddsAll, opts)
       + renderConfirm(state, site, probs, heads, oddsAll);
   }
 

@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>買い目シミュレーター 印2列 — 点数が切れる件の5案</title>
+<!-- 本番のCSSをそのまま読む（.sim-* / .mkb / .hn は本番の定義で描く） -->
+<link rel="stylesheet" href="assets/style.css?v=20260907g">
+<style>
+  body{margin:0;padding:16px;background:#EDEDE8;font-family:system-ui,-apple-system,"Hiragino Sans",sans-serif}
+  h1{font-size:17px;margin:0 0 4px}
+  .lead{font-size:13px;color:#555;line-height:1.7;margin:0 0 18px;max-width:900px}
+  .lead b{color:#111}
+  .cols{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start}
+  .col{width:375px;background:#fff;border-radius:10px;padding:10px;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+  .col h2{font-size:13px;margin:0 0 2px;display:flex;align-items:center;gap:6px}
+  .tag{font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:#E8E8E2;color:#555}
+  .tag.now{background:#FBE3E3;color:#A33}
+  .tag.ok{background:#DCEFDF;color:#256B33}
+  .why{font-size:11.5px;color:#666;line-height:1.6;margin:4px 0 8px;min-height:52px}
+  .num{font-size:11.5px;font-weight:700;margin:8px 0 0;padding:6px 8px;border-radius:6px;background:#F4F4F0}
+  .num.bad{background:#FBE3E3;color:#A33}
+  .num.good{background:#DCEFDF;color:#256B33}
+  .wrap{width:333px;overflow:hidden}      /* 本番の #om-panel-body の実測内寸（375px端末） */
+  .note{font-size:12px;color:#666;margin:22px 0 0;line-height:1.8;max-width:900px}
+  #sum{border-collapse:collapse;font-size:13px;margin:0 0 20px;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.1)}
+  #sum th,#sum td{padding:8px 12px;border-bottom:1px solid #E4E4DE;text-align:left}
+  #sum th{background:#F4F4F0;font-size:11.5px;color:#666}
+  #sum td.n{font-weight:700}
+  #sum tr.now td{background:#FDF0F0}
+  #sum td.n.ok{color:#256B33} #sum td.n.ng{color:#A33}
+</style>
+</head>
+<body>
+
+<h1>買い目シミュレーター「自分の印＋AIの印」— 3連単で点数が切れる件</h1>
+<p class="lead">
+2026-09-06 札幌7R（16頭）・幅375px・<b>3連単フォーメーション（選択3列）</b>。
+印を2列足したぶん本文が狭くなり、馬名の長い馬で<b>行の末尾＝点数</b>が「…」で切れる。
+単勝・馬連（1〜2列）では切れないので、これは3列のときだけの話。
+下の頭数はこのページを開いた時に実測した値（見た目の幅を測っている）。
+</p>
+
+<table id="sum"><thead><tr><th>案</th><th>変えるところ</th><th>点数が切れる馬</th><th>代わりに失うもの</th></tr></thead><tbody></tbody></table>
+
+<div class="cols" id="cols"></div>
+
+<p class="note">
+※ 5案とも「自分の印16px＋AIの印30px」は共通で、変えているのは本文の中身か選択列の幅だけ。<br>
+※ 案Dは前に勝手に決めて撤回したものなので、比べるために並べただけ。推していない。
+</p>
+
+<script src="assets/app.js?v=20260904e"></script>
+<script>
+/* 実データ（data/races/202601020607.json から必要な項目だけ抜いたもの） */
+const HORSES = [
+{"number":1,"gate":1,"name":"ネネキリマル","jockey":"鮫島駿","weight_carried":56.0,"odds":18.9,"popularity":9,"ability_mark":null,"bet_mark":null,"keshi":false,"win_score":57.2,"win_grade":"C"},
+{"number":2,"gate":1,"name":"ダブルチャレンジ","jockey":"吉田隼","weight_carried":54.0,"odds":14.5,"popularity":6,"ability_mark":null,"bet_mark":null,"keshi":false,"win_score":57.6,"win_grade":"C"},
+{"number":3,"gate":2,"name":"ライトニングロッド","jockey":"横山琉","weight_carried":54.0,"odds":15.4,"popularity":8,"ability_mark":"▲","bet_mark":null,"keshi":false,"win_score":61.1,"win_grade":"B"},
+{"number":4,"gate":2,"name":"スプリングデイ","jockey":"黛","weight_carried":56.0,"odds":22.3,"popularity":11,"ability_mark":null,"bet_mark":null,"keshi":false,"win_score":53.2,"win_grade":"D"},
+{"number":5,"gate":3,"name":"ペガサスノース","jockey":"小沢","weight_carried":56.0,"odds":33.5,"popularity":13,"ability_mark":null,"bet_mark":null,"keshi":false,"win_score":55.9,"win_grade":"D"},
+{"number":6,"gate":3,"name":"バレンタインビスタ","jockey":"長浜","weight_carried":53.0,"odds":14.7,"popularity":7,"ability_mark":"△","bet_mark":null,"keshi":false,"win_score":60.0,"win_grade":"C+"},
+{"number":7,"gate":4,"name":"フレンドモナコ","jockey":"松本","weight_carried":56.0,"odds":93.8,"popularity":16,"ability_mark":null,"bet_mark":null,"keshi":false,"win_score":47.1,"win_grade":"E"},
+{"number":8,"gate":4,"name":"コスモファーブロス","jockey":"小林美","weight_carried":52.0,"odds":6.5,"popularity":2,"ability_mark":"○","bet_mark":null,"keshi":false,"win_score":61.6,"win_grade":"B"},
+{"number":9,"gate":5,"name":"レッドアイスピア","jockey":"和田陽","weight_carried":53.0,"odds":27.8,"popularity":12,"ability_mark":null,"bet_mark":null,"keshi":false,"win_score":58.3,"win_grade":"C+"},
+{"number":10,"gate":5,"name":"クレセントウイング","jockey":"落合玄","weight_carried":58.0,"odds":6.7,"popularity":3,"ability_mark":null,"bet_mark":null,"keshi":false,"win_score":55.8,"win_grade":"D"},
+{"number":11,"gate":6,"name":"カリヨンアヴォン","jockey":"古川吉","weight_carried":54.0,"odds":45.2,"popularity":15,"ability_mark":null,"bet_mark":null,"keshi":false,"win_score":54.2,"win_grade":"D"},
+{"number":12,"gate":6,"name":"ウィングブルー","jockey":"斎藤","weight_carried":54.0,"odds":3.6,"popularity":1,"ability_mark":"◎","bet_mark":null,"keshi":false,"win_score":65.4,"win_grade":"A"},
+{"number":13,"gate":7,"name":"ジャンヌローサ","jockey":"丹内","weight_carried":56.0,"odds":20.7,"popularity":10,"ability_mark":null,"bet_mark":null,"keshi":false,"win_score":58.4,"win_grade":"C+"},
+{"number":14,"gate":7,"name":"ディーズメンフィス","jockey":"河原田","weight_carried":50.0,"odds":7.6,"popularity":4,"ability_mark":"△","bet_mark":"地雷","keshi":false,"win_score":59.3,"win_grade":"C+"},
+{"number":15,"gate":8,"name":"ルージュナリッシュ","jockey":"小野楓","weight_carried":56.0,"odds":43.3,"popularity":14,"ability_mark":null,"bet_mark":"穴","keshi":false,"win_score":56.0,"win_grade":"C"},
+{"number":16,"gate":8,"name":"ラヴノー","jockey":"佐々木","weight_carried":54.0,"odds":13.6,"popularity":5,"ability_mark":null,"bet_mark":null,"keshi":false,"win_score":57.3,"win_grade":"C"}
+];
+/* 出馬表で付けた想定の自分の印 */
+const MY = {1:'◎',3:'▲',5:'✓',7:'消',8:'○',12:'☆',14:'△'};
+const MY_CLS = {'◎':'m1','○':'m2','▲':'m3','△':'m4','☆':'m5','✓':'m7','消':'m6'};
+const ABILITY_CLS = {'◎':'m-hon','○':'m-tai','▲':'m-tan','△':'m-oku'};
+
+/* race.js の markBadge20 と同じ描き分け（モックなのでここに写す） */
+function aiBadge(h){
+  const sub = h.bet_mark === '地雷' ? '<span class="mkb m-jir sub">地雷</span>'
+            : (h.bet_mark === '穴' ? '<span class="mkb m-ana sub">穴</span>' : '');
+  if (h.ability_mark) {
+    const b = `<span class="mkb ${ABILITY_CLS[h.ability_mark]}">${h.ability_mark}</span>`;
+    return sub ? `<span class="mkstack">${b}${sub}</span>` : b;
+  }
+  if (h.bet_mark === '地雷') return '<span class="mkb m-jir">地雷</span>';
+  if (h.keshi) return '<span class="mkb m-kes">消</span>';
+  if (h.bet_mark === '穴') return '<span class="mkb m-ana">穴</span>';
+  return '';
+}
+
+/* 5案。opt で本文の組み方だけ変える */
+const PLANS = [
+  { id:'now', tag:'いまの実装', tagCls:'now', title:'現状',
+    why:'点数を馬名と同じ行の末尾に置いたまま。幅が足りると「…」で切れ、いちばん最初に消えるのが点数。' },
+  { id:'A', tag:'案A', tagCls:'', title:'点数をオッズの行へ移す',
+    why:'馬名の行は名前と評価だけにし、点数は2行目の「オッズ（人気）」の右へ。オッズ行は空きが多い。' },
+  { id:'B', tag:'案B', tagCls:'', title:'点数の小数を落とす',
+    why:'60.0 → 60。8段の評価バッジが隣にあるので、小数第1位まで要るかは別の話になる。' },
+  { id:'C', tag:'案C', tagCls:'', title:'選択列を30→26pxに詰める',
+    why:'本文は一切いじらず、右の選択列だけ細くして3列で12px稼ぐ。押す的も4px小さくなる。' },
+  { id:'D', tag:'案D（撤回済み）', tagCls:'', title:'評価バッジを落とす',
+    why:'評価は点数を8段に丸めたもの（公開3,052頭で段の重なり0件）。26px空くが、これは前に勝手に決めて撤回した案。' },
+];
+
+function bodyHtml(h, plan){
+  const grade = h.win_grade;
+  const gradeHtml = `<span class="sim-grade ${gradeClass(grade)}">${gradeDisp(grade)}</span>`;
+  const score1 = h.win_score.toFixed(1);
+  const score0 = String(Math.round(h.win_score));
+  const odds = `<span class="${h.odds < 10 ? 'hot' : ''}">${h.odds.toFixed(1)}</span> (${h.popularity}人気)`;
+  const meta = `${h.jockey} ・ ${h.weight_carried.toFixed(1)}kg`;
+
+  if (plan === 'A') {
+    return `<div class="sim-hname">${h.name} ${gradeHtml}</div>`
+         + `<div class="sim-hodds">${odds} ・ <b style="color:#111">${score1}</b></div>`
+         + `<div class="sim-hmeta">${meta}</div>`;
+  }
+  if (plan === 'B') {
+    return `<div class="sim-hname">${h.name} ${gradeHtml} ${score0}</div>`
+         + `<div class="sim-hodds">${odds}</div><div class="sim-hmeta">${meta}</div>`;
+  }
+  if (plan === 'D') {
+    return `<div class="sim-hname">${h.name} ${score1}</div>`
+         + `<div class="sim-hodds">${odds}</div><div class="sim-hmeta">${meta}</div>`;
+  }
+  // now / C は本文そのまま
+  return `<div class="sim-hname">${h.name} ${gradeHtml} ${score1}</div>`
+       + `<div class="sim-hodds">${odds}</div><div class="sim-hmeta">${meta}</div>`;
+}
+
+function tableHtml(plan){
+  const narrow = plan === 'C' ? ' style="width:26px"' : '';
+  const head = `<tr><th class="l">自分 / AI / 馬番・馬名・騎手・評価</th>`
+    + ['1着','2着','3着'].map(l => `<th${narrow}>${l}</th>`).join('') + '</tr>';
+  const body = HORSES.map(h => {
+    const mk = MY[h.number];
+    const my = `<button type="button" class="sim-my${mk ? ' set ' + MY_CLS[mk] : ''}">${mk || '<i>—</i>'}</button>`;
+    const ai = `<span class="sim-ai">${aiBadge(h) || '<span class="none">—</span>'}</span>`;
+    const cells = [0,1,2].map(() => `<td${narrow}><button type="button" class="sim-pick"></button></td>`).join('');
+    return `<tr><td class="l"><div style="display:flex;align-items:center;gap:5px">${my}${ai}`
+      + `${umaBox(h.number, h.gate)}<div class="sim-hbody">${bodyHtml(h, plan)}</div></div></td>${cells}</tr>`;
+  }).join('');
+  return `<table class="sim-sel"><thead>${head}</thead><tbody>${body}</tbody></table>`;
+}
+
+document.getElementById('cols').innerHTML = PLANS.map(p => `
+  <div class="col">
+    <h2><span class="tag ${p.tagCls}">${p.tag}</span>${p.title}</h2>
+    <div class="why">${p.why}</div>
+    <div class="wrap"><div class="sim-band sanrentan">3連単</div>${tableHtml(p.id)}</div>
+    <div class="num" data-for="${p.id}">測定中…</div>
+  </div>`).join('');
+
+/* 実測: 何頭で行が切れているか・表が容器からはみ出していないか。
+   requestAnimationFrame はページが裏に回っていると発火せず「測定中…」のまま止まるので使わない */
+setTimeout(() => {
+  PLANS.forEach(p => {
+    const col = [...document.querySelectorAll('.col')].find(c => c.querySelector(`[data-for="${p.id}"]`));
+    const rows = [...col.querySelectorAll('.sim-sel tbody tr')];
+    const cut = rows.filter(r => [...r.querySelectorAll('.sim-hname,.sim-hodds,.sim-hmeta')]
+      .some(e => e.scrollWidth > e.clientWidth + 1));
+    const tbl = col.querySelector('.sim-sel');
+    const wrap = col.querySelector('.wrap');
+    const over = Math.round(tbl.getBoundingClientRect().right - wrap.getBoundingClientRect().right);
+    const box = col.querySelector(`[data-for="${p.id}"]`);
+    const ok = cut.length === 0;
+    box.className = 'num ' + (ok ? 'good' : 'bad');
+    box.textContent = ok
+      ? `切れる馬 0頭 / 16頭　（はみ出し ${over}px）`
+      : `切れる馬 ${cut.length}頭 / 16頭 — ${cut.slice(0,3).map(r => r.querySelector('.sim-hname').textContent.trim().split(' ')[0]).join('・')}${cut.length > 3 ? ' ほか' : ''}　（はみ出し ${over}px）`;
+  });
+  // 上のまとめ表を、いま測った値で埋める
+  const LOSE = { now:'—（いまの姿）', A:'オッズの行が少し混む', B:'点数の小数（60.0→60）',
+                 C:'押す的が4px小さくなる', D:'評価バッジ（＝点数の8段丸め）' };
+  document.querySelector('#sum tbody').innerHTML = PLANS.map(p => {
+    const txt = document.querySelector(`[data-for="${p.id}"]`).textContent;
+    const cut = (txt.match(/切れる馬 (\d+)頭/) || [])[1];
+    return `<tr class="${p.id === 'now' ? 'now' : ''}"><td>${p.tag}</td><td>${p.title}</td>`
+      + `<td class="n ${cut === '0' ? 'ok' : 'ng'}">${cut}頭 / 16頭</td><td>${LOSE[p.id]}</td></tr>`;
+  }).join('');
+}, 120);
+</script>
+</body>
+</html>
