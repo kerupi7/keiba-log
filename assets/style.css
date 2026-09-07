@@ -2863,6 +2863,11 @@ body.noscroll{position:fixed;width:100%;overflow:hidden}
    守りたいのは1文字だけ次の行に落ちないことで、ここが崩れたら文言のほうを短くする */
 .race20 .cbbar .cell .w{display:block;font-size:9px;color:var(--cap);line-height:1.4;
   margin-top:1px;letter-spacing:-.02em}
+/* 狙う馬が変わる日だけ出す一言（2026-09-07）。10px・黒・太字。
+   1行に収まる上限がこの大きさ。マス幅107pxに対し「逃げが残る 普段+3.9%」が104px（実測）で、
+   10.5pxにすると109pxになって2行に折れる。守りたいのは1行に収まることなので、
+   これより大きくしたい時は文字の大きさではなく**文言のほうを短くする**。 */
+.race20 .cbbar .cell .w.aim{font-size:10px;font-weight:700;color:var(--text)}
 .race20 .cbbar .cell.p1 .v,.race20 .cbbar .cell.p1 .w{color:#0F6A34}
 .race20 .cbbar .cell.m1 .v,.race20 .cbbar .cell.m1 .w{color:#A8632B}
 /* 今日の馬場。色の意味は青＝軟らかい/湿っている、橙＝硬い/乾いている */

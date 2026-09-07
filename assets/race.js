@@ -4214,6 +4214,33 @@ const TILT_CLS = ['t2', 't1', 't0', 'u1', 'u2'];
 // シーソーの傾きは差そのものを写す。0.30以上は端で止める（それ以上傾けても読めない）
 const TILT_FULL = 0.30;
 
+// 「今日の馬場」の札の下に出す一言（2026-09-07）。
+// **狙う馬が変わる日だけ出す。**全10帯のうち出すのは2つだけで、残り8帯は何も出さない。
+//
+//   ダート・湿っている（平年より+3以上）… 逃げ馬の3着内 28.8% → 32.7%（+3.9pt）
+//     ダート7,547レースの実測。偶然でこうなる確率0.7%
+//   芝・軟らかい（平年より-0.3未満）    … 1番人気の勝率 33.8% → 29.9%（-3.9pt）
+//     芝7,261レースの実測。偶然でこうなる確率0.5%
+//
+// 出さない8帯では、脚質も内外の枠も人気も幅1ポイント前後で横並びだった。
+// 内枠の3着内率はダートの5帯すべてで20.0〜20.3%、芝でも22.2〜23.3%しか動かない。
+// それまでここに出していた「札幌の平年より +3.1」は、読んでも狙う馬が変わらない
+// 数字だったので置き換えた（何の+3.1かも画面に書いていなかった）。
+//
+// 残り8帯には「大きな偏りなし」を出す（2026-09-07 ユーザー決定）。空にすると
+// マスの高さが日によって2px変わるのと、読み手が「出ていない」のか「偏りが無い」
+// のか判別できないため。こちらは目立たせない（.aim を付けない＝9pxの薄い字）。
+//
+// 集計は research/baba_aim_scan.py（8頭立て以上・含水率は489日ぶん）。
+// 数字を更新するときはあれを走らせてから、この関数の2つの文言を書き替える。
+const BABA_AIM_FLAT = '大きな偏りなし';
+function babaAim20(isTurf, delta) {
+  if (isTurf) {
+    return delta < -0.3 ? { t: '人気が飛ぶ 普段-3.9%', on: true } : { t: BABA_AIM_FLAT, on: false };
+  }
+  return delta >= 3 ? { t: '逃げが残る 普段+3.9%', on: true } : { t: BABA_AIM_FLAT, on: false };
+}
+
 function renderCourseBabaBar20(site, g, iv, ov) {
   const cells = [];
 
@@ -4248,7 +4275,6 @@ function renderCourseBabaBar20(site, g, iv, ov) {
   const norm = isTurf ? src.normal : null;
   const delta = isTurf ? (norm || {}).delta : src.normal_delta;
   if (lv && delta != null) {
-    const sign = `${delta > 0 ? '+' : ''}${Number(delta).toFixed(1)}`;
     // 仮柵は「今日の馬場」のマスの先頭に入れる（2026-08-27・ユーザー決定）。
     // それまでは下に青い枠を作って1行だけ置いていたが、クッション値を消したことで
     // 枠の中身が1行だけになり浮いていた。マスを6つに増やすと 351px を分け合う関係で
@@ -4259,9 +4285,12 @@ function renderCourseBabaBar20(site, g, iv, ov) {
       ? `<span class="rl">${escapeHtml(rail.course)}`
         + (rail.weeks ? `・${rail.weeks}週目` : '') + '</span>'
       : '';
+    // 下の一言は 2026-09-07 に「◯◯の平年より +3.1」から狙いへ差し替えた。
+    // 平年との差は、読んでも狙う馬が変わらない数字だった（babaAim20 のコメント）。
+    const aim = babaAim20(isTurf, delta);
     cells.push(`<div class="cell wide"><span class="k">今日の馬場</span>${railHtml}`
       + `<span class="lv ${lv.cls || 'z0'}">${escapeHtml(lv.label)}</span>`
-      + `<span class="w">${escapeHtml(site.race.track)}の平年より ${sign}</span></div>`);
+      + `<span class="w${aim.on ? ' aim' : ''}">${escapeHtml(aim.t)}</span></div>`);
   }
   if (disp) {
     // 上がり3F（勝ち馬のゴール前3ハロン）のマスは 2026-08-27 に削除した。

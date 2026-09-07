@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>今日の馬場マスの作り替え — Ans.</title>
+<link rel="stylesheet" href="assets/style.css?v=20260907d">
+<style>
+/* =========================================================================
+   mock-babacell — 「今日の馬場」のマスを、狙う馬が決まる一言に差し替える案。
+   本番の race.js が描いた .cbbar の中の .cell.wide だけを書き換える。
+   出す条件は実測で差が出た2つだけ（2026-09-07 の集計）:
+     ダート・湿っている（平年より+3以上） … 逃げ馬 3着内 28.8% → 32.7%
+     芝・軟らかい（平年より-0.3未満）     … 1番人気 勝率 33.8% → 29.9%
+   どちらでもない日はマスごと出さない（狙いが変わらないため）。
+   モック専用の見た目（.mockbar）は採用時に本番へ持ち込まない。
+   ========================================================================= */
+.mockbar{position:static;background:#1d1d1d;color:#fff;font-size:11.5px;line-height:1.6;
+  padding:8px 12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.mockbar b{color:#ffd400}
+.mockbar .g{display:inline-flex;border:1px solid #666;border-radius:5px;overflow:hidden}
+.mockbar .g a,.mockbar .g button{background:#3a3a3a;color:#fff;border:0;border-right:1px solid #666;
+  font:700 11.5px/1 inherit;font-family:inherit;padding:7px 10px;cursor:pointer;text-decoration:none}
+.mockbar .g a:last-child,.mockbar .g button:last-child{border-right:0}
+.mockbar .g a.on,.mockbar .g button.on{background:#fff;color:#1d1d1d}
+.mockbar .m{margin-left:auto;color:#bbb}
+
+/* --- 案のマス ---
+   見た目は現行のまま（.lv は z0 のグレー）。色も太字も足さない。
+   2026-09-07: 紺のベタ塗りと根拠の小さい字を入れたら「主張が激しい」と却下された。 */
+</style>
+</head>
+<body>
+<div class="mockbar">
+  <span class="g" id="rr">
+    <a href="?id=202601010401" data-r="202601010401">ダート・湿っている</a>
+    <a href="?id=202609040102" data-r="202609040102">芝・軟らかい</a>
+    <a href="?id=202601010602" data-r="202601010602">どちらでもない</a>
+  </span>
+  <span class="g" id="mm">
+    <button data-m="now" class="on">現状</button>
+    <button data-m="aim">案</button>
+  </span>
+  <span class="m" id="note">—</span>
+</div>
+<header id="site-header"></header>
+<div class="container">
+  <a class="back-link" href="index.html">← 一覧へ</a>
+  <div id="race-content"></div>
+</div>
+<script src="assets/vendor/marked.min.js"></script>
+<script src="assets/app.js?v=20260904e"></script>
+<script src="assets/coursecore.js?v=20260828x"></script>
+<script src="assets/coursetab.js?v=20260828x"></script>
+<script src="assets/harville.js?v=20260828x"></script>
+<script src="assets/akinator.js?v=20260828x"></script>
+<script src="assets/simulator.js?v=20260828x"></script>
+<script src="assets/race.js?v=20260907d"></script>
+<script>
+/* 実測（2026-09-07 集計・8頭立て以上）。ここが判定の正本 */
+const AIM = {
+  /* 硬い／軟らかい／湿っている の札（.lv）は現行のまま**どんな日でも出す**
+     （2026-09-07 ユーザー指示）。差し替えるのは下の説明行（.w）だけ。
+     説明は1行に収める。マスの幅107px・文字9px の実測で 94px / 92px。
+     「前が残りやすい 普段+3.9%」は112pxで2行に折れたため語を詰めた。 */
+  dirt_wet:  { need: (d) => d >= 3, w: '逃げが残る 普段+3.9%' },
+  turf_soft: { need: (d) => d < -0.3, w: '人気が飛ぶ 普段-3.9%' },
+};
+
+let ORIG = null;      /* 現状のマスの中身を控える */
+
+function pick(site) {
+  const bd = (site.prediction || {}).baba_detail || {};
+  const turf = String(site.race.surface || '').startsWith('芝');
+  const d = turf
+    ? ((bd.cushion_detail || {}).normal || {}).delta
+    : (bd.moisture_detail || {}).normal_delta;
+  if (d == null) return { d: null, hit: null };
+  const a = turf ? AIM.turf_soft : AIM.dirt_wet;
+  return { d, hit: a.need(d) ? a : null, turf };
+}
+
+function apply(mode, site) {
+  const cell = document.querySelector('.race20 .cbbar .cell.wide');
+  const bar = document.querySelector('.race20 .cbbar');
+  if (!bar) return;
+  if (ORIG === null && cell) ORIG = { html: cell.outerHTML, next: cell.nextElementSibling };
+  const { d, hit, turf } = pick(site);
+  const note = document.getElementById('note');
+
+  if (mode === 'now') {
+    if (!document.querySelector('.race20 .cbbar .cell.wide') && ORIG) {
+      bar.insertBefore(cellFrom(ORIG.html), ORIG.next);
+    }
+    const c = document.querySelector('.race20 .cbbar .cell.wide');
+    if (c) { c.classList.remove('aim'); c.innerHTML = tmp(ORIG.html); }
+    note.innerHTML = `平年との差 <b>${d == null ? '—' : d}</b> ／ マスは <b>${bar.children.length}</b> つ`;
+    return;
+  }
+  /* 案。マスも仮柵（Aコース等）も札（湿っている等）もそのまま。
+     差し替えるのは説明行（.w）だけ。狙いが変わらない日は説明行を出さない。 */
+  let c = document.querySelector('.race20 .cbbar .cell.wide');
+  if (!c && ORIG) { c = cellFrom(ORIG.html); bar.insertBefore(c, ORIG.next); }
+  c.className = 'cell wide';
+  c.innerHTML = tmp(ORIG.html);                    // まず現行の中身へ戻す
+  const wEl = c.querySelector('.w');
+  if (hit) {
+    if (wEl) wEl.textContent = hit.w;
+    note.innerHTML = `平年との差 <b>${d}</b> → 説明行を狙いに差し替え`
+      + ` ／ 札「${(c.querySelector('.lv') || {}).textContent || '—'}」は現行のまま`;
+  } else {
+    if (wEl) wEl.remove();
+    note.innerHTML = `平年との差 <b>${d == null ? '—' : d}</b> → 狙いが変わらないので説明行は出さない`
+      + ` ／ 札「${(c.querySelector('.lv') || {}).textContent || '—'}」は現行のまま`;
+  }
+  note.innerHTML = `平年との差 <b>${d}</b> → ${turf ? '芝・軟らかい' : 'ダート・湿っている'}`
+    + ` ／ マスは <b>${bar.children.length}</b> つ`;
+}
+
+/* 現行のマスに入っている仮柵（.rl）をそのまま持ってくる。無ければ空文字 */
+function railOf() {
+  if (!ORIG) return '';
+  const t = document.createElement('div');
+  t.innerHTML = ORIG.html;
+  const rl = t.querySelector('.rl');
+  return rl ? rl.outerHTML : '';
+}
+
+function cellFrom(html) {
+  const t = document.createElement('div');
+  t.innerHTML = html;
+  return t.firstElementChild;
+}
+function tmp(html) {
+  const t = document.createElement('div');
+  t.innerHTML = html;
+  return t.firstElementChild.innerHTML;
+}
+
+/* race.js が site を握っているので、公開JSONを自分でも読む（描画には触らない） */
+(function wait(n) {
+  const bar = document.querySelector('.race20 .cbbar');
+  if (bar) {
+    const id = new URLSearchParams(location.search).get('id');
+    fetch(`data/races/${id}.json`).then((r) => r.json()).then((site) => {
+      document.querySelectorAll('#rr a').forEach((a) => a.classList.toggle('on', a.dataset.r === id));
+      document.getElementById('mm').addEventListener('click', (e) => {
+        const b = e.target.closest('[data-m]');
+        if (!b) return;
+        document.querySelectorAll('#mm button').forEach((x) => x.classList.toggle('on', x === b));
+        apply(b.dataset.m, site);
+      });
+      apply('now', site);
+      /* 展開タブを開いておく（このマスがあるのは展開タブ） */
+      const t = document.querySelector('.t20[data-tab="tenkai"]');
+      if (t) t.click();
+    });
+    return;
+  }
+  if (n > 300) return;
+  setTimeout(() => wait(n + 1), 50);
+})(0);
+</script>
+</body>
+</html>
