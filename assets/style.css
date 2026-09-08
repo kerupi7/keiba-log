@@ -514,13 +514,12 @@ details.fold.om-fold>summary .cnt{color:#fff;opacity:.85;font-size:11px}
 /* 自分の印。読むだけで、押すと出馬表タブのその馬へ飛ぶ。
    見た目は隣タブ（アキネーター）の .ak-my と同じ「紺の枠＋薄青の地＋印ごとの文字色」。
    出馬表の .mm-my（32px・その場で付け替える）とは幅も役目も違う。 */
+/* 2026-09-08: 読むだけの札にした（押しても何も起きない）。押す先は馬名に一本化 */
 .sim-my{flex:none;display:inline-flex;align-items:center;justify-content:center;
   min-width:16px;height:19px;padding:0 2px;border:1px solid var(--rule);border-radius:4px;
-  background:#fff;font:inherit;font-size:12px;font-weight:700;line-height:1;
-  color:#C4C4BF;cursor:pointer}
+  background:#fff;font-size:12px;font-weight:700;line-height:1;color:#C4C4BF}
 .sim-my.set{border-color:var(--navy);background:#F4F8FC}
 .sim-my i{font-style:normal;font-size:9px;font-weight:400}
-.sim-my:disabled{opacity:.35;cursor:not-allowed}
 .sim-my.m1{color:var(--mk-hon)} .sim-my.m2{color:var(--mk-tai)}
 .sim-my.m3{color:var(--mk-tan)} .sim-my.m4{color:var(--mk-oku)}
 .sim-my.m5{color:var(--orange)}
@@ -550,6 +549,12 @@ details.fold.om-fold>summary .cnt{color:#fff;opacity:.85;font-size:11px}
    変わって、右の選択欄と目が合わなくなるため（table-layout:fixed とセットで効く） */
 .sim-hname,.sim-hodds,.sim-hmeta{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sim-hname{font-weight:700;font-size:12.5px;line-height:1.25}
+/* 2026-09-08: 馬名を押すと戦績のポップアップ（#pop-N）。出馬表の .nm と同じ作りで、
+   ボタンの地・枠・余白を消して見た目は文字のまま。取消馬は span で出るので押せない */
+.sim-nm{border:0;background:transparent;padding:0;margin:0;font:inherit;color:inherit;
+  text-align:left;cursor:pointer}
+.sim-nm .apop{font-style:normal;font-size:9px;color:var(--cap);margin-left:2px;vertical-align:2px}
+span.sim-nm{cursor:default}
 .sim-hodds{font-size:10.5px;color:var(--cap)}
 /* 2026-09-07: 点数はオッズの行の右へ移した（案A）。行の中で一番読ませたい数字なので本文色 */
 .sim-hsc{color:var(--text);font-variant-numeric:tabular-nums}
@@ -2440,10 +2445,6 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
 .race20 .mm-row{display:flex;align-items:stretch;border-bottom:1px solid var(--rule);
   background:#fff;min-height:40px}
 .race20 .mm-row:last-child{border-bottom:0}
-/* 2026-09-07: 買い目タブの自分の印から飛んで来たとき、どの馬に着いたのかを1.2秒だけ光らせる。
-   印／戦績／新聞のどの面でも行に data-n が付くので、面を選ばず当たるようにスコープは .race20 直下 */
-.race20 .mm-flash{animation:mmFlash 1.2s ease-out}
-@keyframes mmFlash{0%,60%{background:#FFF3C4}100%{background:transparent}}
 /* 自分の印。好走条件の色（.mm-row.tpN .mm-c）は後に書いてあるので、
    色を乗せている間はそちらが勝つ（自分の印は左端のマスで読める）。 */
 .race20 .mm-row.my-mark{background:#EFE9F7}

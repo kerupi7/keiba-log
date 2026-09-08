@@ -640,13 +640,13 @@
     } catch (e) { /* localStorage が使えない環境では印なしで描く */ }
     return out;
   }
-  // 印が無い馬にも「—」を置く（アキネーターは何も出さないが、こちらは表で列が縦に揃うため）
+  // 印が無い馬にも「—」を置く（アキネーターは何も出さないが、こちらは表で列が縦に揃うため）。
+  // 2026-09-08: 押すと出馬表へ飛ぶ導線をやめ、読むだけの札にした（ユーザー決定）。
+  // 押す先は馬名（戦績のポップアップ）に一本化してある。
   function myCell(h, myMarks) {
     var mk = myMarks[String(h.number)];
     var cls = 'sim-my' + (mk ? ' set ' + MY_CLS[mk] : '');
-    var body = mk ? escapeHtml(mk) : '<i>—</i>';
-    return '<button type="button" class="' + cls + '" data-sim-jump="' + h.number + '"'
-      + (h.scratched ? ' disabled' : '') + ' title="出馬表でこの馬に印を付ける">' + body + '</button>';
+    return '<span class="' + cls + '">' + (mk ? escapeHtml(mk) : '<i>—</i>') + '</span>';
   }
   // AIの印は出馬表に揃える（能力印の塗りチップ＋穴／地雷／消し）。描くのは呼び手が渡す関数
   function aiCell(h, aiMark) {
@@ -688,9 +688,14 @@
       // 印を2列足したぶん馬名の行が狭くなり、3連単・3連複（選択3列）では行の末尾＝点数から
       // 「…」で消えていた（375px・16頭で9頭が該当）。オッズの行は空きが多いのでここが入る。
       var scoreHtml = ' ・ <b class="sim-hsc">' + fmtNum(dispScore(h), 1) + '</b>';
+      // 取消馬にはポップアップそのものが無い（renderPopups が live だけ作る）ので押せない
+      var nameHtml = h.scratched
+        ? '<span class="sim-nm">' + escapeHtml(h.name) + '</span>'
+        : '<button type="button" class="sim-nm" data-pop="' + h.number + '">'
+          + escapeHtml(h.name) + '<i class="apop">▸</i></button>';
       var nameCell = '<td class="l"><div style="display:flex;align-items:center;gap:5px">'
         + mkHtml + umaBox(h.number, h.gate)
-        + '<div class="sim-hbody"><div class="sim-hname">' + escapeHtml(h.name) + gradeHtml + gflag + '</div>'
+        + '<div class="sim-hbody"><div class="sim-hname">' + nameHtml + gradeHtml + gflag + '</div>'
         + '<div class="sim-hodds">' + oddsHtml + popHtml + scoreHtml + '</div>'
         + metaHtml + '</div></div></td>';
       var cells = cols.map(function (c) {

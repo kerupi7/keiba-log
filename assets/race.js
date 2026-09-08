@@ -777,32 +777,6 @@ let akRefresh = null;
 // 選んだ馬（state.cols）は Simulator 側に残るので、組みかけの買い目は消えない
 let simRefresh = null;
 
-// 111-spec: シミュレーターの自分の印を押したとき、出馬表タブのその馬へ飛ぶ。
-// 印を付け替えるのは出馬表の仕事なので、こちらは「連れて行く」だけ。
-// 出馬表は「印／戦績／新聞」で中身が入れ替わるが、どの面でも行に data-n が付いているので、
-// いま出ている面の中から探す（見つからなければタブを開くところまでで止める）。
-function jumpToShutuba(n) {
-  const tab = document.querySelector('.race20 .t20[data-tab="shutuba"]');
-  if (!tab) return;
-  // タブの切り替え（show → race20RestoreY の位置戻し）はクリックの中で同期に終わるので、
-  // ここは requestAnimationFrame を挟まず続けて動かす。rAF にすると、ページが裏に回っている間は
-  // 発火せず飛べない（実測で空振りした）うえ、位置戻しに上書きされる順番も読みにくくなる。
-  if (!tab.classList.contains('on')) tab.click();
-  const pane = document.querySelector('.race20 .tabpane.on');
-  if (!pane) return;
-  // 出馬表は「印／戦績／新聞」で中身が入れ替わる。いま出ている面の行だけを拾う（高さ0は裏の面）。
-  // 印と戦績の行は data-n、新聞の柱（.npcol）だけ data-h なので両方を見る
-  const row = [...pane.querySelectorAll(`[data-n="${n}"], [data-h="${n}"]`)]
-    .find((el) => el.getBoundingClientRect().height > 0);
-  if (!row) return;
-  // smooth では届かない（タブを切り替えた直後は位置戻しの window.scrollTo と競合して、
-  // 実測で scrollY が 0 のまま動かなかった）。一気に飛ばして、着いた先は下の光りで示す
-  row.scrollIntoView({ behavior: 'auto', block: 'center' });
-  // どの馬に来たのかを1.2秒だけ光らせて示す（印を付ける前に見失わないように）
-  row.classList.add('mm-flash');
-  setTimeout(() => row.classList.remove('mm-flash'), 1200);
-}
-
 // ============================================================
 // 128-spec: 買い目シート。画面の下に要約バーを貼り、押すと下から重なって開く（案C）。
 // 保存・集計・描画は betsheet.js。ここは DOM への出し入れとイベントだけ。
@@ -1475,10 +1449,9 @@ function setupOddsMasterPanel(site, oddsAll) {
   }
 
   body.addEventListener('click', (ev) => {
-    // 2026-09-07: 自分の印のマスは「読むだけ＋導線」。押されたら出馬表タブのその馬へ飛ぶ。
-    // 付け替えの仕組みをここに二重に持たないため、シミュレーターの state は動かさない。
-    const jump = ev.target.closest('[data-sim-jump]');
-    if (jump) { if (!jump.disabled) jumpToShutuba(Number(jump.dataset.simJump)); return; }
+    // 2026-09-08: 自分の印は読むだけ（押しても何も起きない）。押す先は馬名に一本化し、
+    // 戦績のポップアップ（#pop-N）を開く。ポップアップは .race20 直下にあり、
+    // [data-pop] の受け口も .race20 なので、ここでは何もしないで通す。
     // 128-spec: いま組んでいるものをシートへ。state は betsheet.js が写しを取る
     if (ev.target.closest('[data-sim-add]')) { addCurrentToSheet(site, state); return; }
     if (Simulator.handleClick(state, ev.target)) rerender();
