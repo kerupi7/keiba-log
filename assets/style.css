@@ -3874,6 +3874,9 @@ body.has-bsbar{padding-bottom:78px}
 
 /* 開いたところ */
 #bs-drawer{position:fixed;inset:0;z-index:70;display:flex;flex-direction:column;justify-content:flex-end}
+/* display:flex は ID 指定なので、ブラウザ既定の [hidden]{display:none} に勝ってしまう。
+   閉じているときは必ずここで消す（これが無いと開きっぱなしで画面が暗いままになる） */
+#bs-drawer[hidden]{display:none}
 .bs-scrim{position:absolute;inset:0;background:rgba(0,0,0,.42)}
 .bs-panel{position:relative;background:var(--sub-bg);border-radius:12px 12px 0 0;
   max-height:82vh;display:flex;flex-direction:column;overflow:hidden;
