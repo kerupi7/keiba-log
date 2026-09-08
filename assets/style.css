@@ -3838,3 +3838,100 @@ body:has(.racepage){background:var(--sub-bg2)}
    カードの見た目より、表に使える幅のほうを優先する。 */
 .race20 .tabpane > *{margin-left:8px;margin-right:8px}
 .race20 .tabpane > .mm-list{margin-left:0;margin-right:0}
+
+/* ============================================================
+   128-spec 買い目シート（2026-09-08）
+   画面の下に要約バーを貼り、押すと下から重なって開く（案C・ユーザー決定）。
+   バーは .race20 の外（body直下）に置くので、タブを移っても消えない。
+   数字は Futura。Apple の端末には入っているので本物が出る。無い端末（Windows・
+   Android）は Google Fonts の Jost へ落ちる（Futura のリバイバルとして作られた書体）。
+   ============================================================ */
+.bs-card .n,.bsbar .n,.bs-head .n,.bs-foot .n{
+  font-family:Futura,Jost,'Century Gothic',system-ui,sans-serif;
+  font-variant-numeric:tabular-nums;font-weight:600;letter-spacing:.02em}
+/* 「点」「円」だけは本文の書体に戻す（Futura に和文が無く、別の書体へ勝手に落ちるため） */
+.bs-card .n i,.bsbar .n i,.bs-head .n i,.bs-foot .n i{
+  font-style:normal;font-family:system-ui,-apple-system,"Hiragino Sans",sans-serif;
+  font-weight:700;font-size:.8em;margin-left:1px}
+
+/* 「シートに入れる」。確定買い目リストの直下に置く */
+.sim-add{display:block;width:100%;margin-top:10px;padding:11px;border:0;border-radius:7px;
+  background:var(--cta);color:#fff;font:inherit;font-size:14px;font-weight:700;cursor:pointer}
+.sim-add:active{opacity:.85}
+
+/* 下に貼り付く要約バー。iPhone のホームバーぶんの余白を safe-area で取る */
+#bs-bar-host{position:fixed;left:0;right:0;bottom:0;z-index:60;
+  padding:0 10px calc(10px + env(safe-area-inset-bottom));pointer-events:none}
+.bsbar{pointer-events:auto;width:100%;display:flex;align-items:center;gap:9px;
+  background:var(--navy);color:#fff;border:0;border-radius:8px;padding:12px 14px;
+  font:inherit;font-size:13.5px;font-weight:700;cursor:pointer;
+  box-shadow:0 3px 14px rgba(0,0,0,.28)}
+.bsbar .lb{flex:1;text-align:left}
+.bsbar .n{font-size:15px}
+.bsbar .ar{font-size:17px;opacity:.7}
+/* バーが本文の末尾を隠さないよう、body 側に下余白を足す */
+body.has-bsbar{padding-bottom:78px}
+
+/* 開いたところ */
+#bs-drawer{position:fixed;inset:0;z-index:70;display:flex;flex-direction:column;justify-content:flex-end}
+.bs-scrim{position:absolute;inset:0;background:rgba(0,0,0,.42)}
+.bs-panel{position:relative;background:var(--sub-bg);border-radius:12px 12px 0 0;
+  max-height:82vh;display:flex;flex-direction:column;overflow:hidden;
+  box-shadow:0 -6px 24px rgba(0,0,0,.3)}
+.bs-head{background:var(--navy);color:#fff;display:flex;align-items:center;gap:10px;
+  padding:11px 13px;font-weight:700;font-size:14px;flex:none}
+.bs-head .n{margin-left:auto;font-size:15px}
+.bs-x{border:0;background:transparent;color:#fff;font:inherit;font-size:16px;opacity:.8;
+  cursor:pointer;padding:0 2px}
+.bs-scroll{overflow-y:auto;-webkit-overflow-scrolling:touch;
+  padding:11px 11px calc(14px + env(safe-area-inset-bottom))}
+body.bs-locked{overflow:hidden}
+
+.bs-empty{background:#fff;border:1px solid var(--rule);border-radius:8px;padding:22px 16px;
+  text-align:center;font-size:13px;color:var(--cap);line-height:1.9}
+.bs-empty b{color:var(--text)}
+.bs-list{display:flex;flex-direction:column;gap:9px}
+.bs-card{background:#fff;border:1px solid var(--rule);border-radius:8px;overflow:hidden}
+.bs-card .sim-band{border-radius:0;margin:0;font-size:13px;padding:6px 10px;
+  display:flex;align-items:center;gap:8px}
+.bs-del{margin-left:auto;border:0;background:rgba(255,255,255,.22);color:#fff;font:inherit;
+  font-size:12px;line-height:1;width:22px;height:22px;border-radius:5px;cursor:pointer;padding:0}
+.bs-body{display:flex;gap:9px;padding:9px 10px 7px}
+.bs-left{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:5px}
+.bs-pos{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.bs-pos .lb{font-size:10.5px;font-weight:700;color:#fff;background:var(--keshi);
+  border-radius:3px;padding:1px 6px;margin-right:2px}
+.bs-rng{font-size:12px;color:var(--cap)}
+.bs-amt{flex:0 0 auto;display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+.bs-stepper{display:flex;align-items:center;gap:6px}
+.bs-stepper button{width:30px;height:30px;border-radius:50%;border:1px solid var(--rule);
+  background:#fff;font-size:16px;line-height:1;color:var(--text);cursor:pointer;padding:0}
+.bs-stepper .v{min-width:38px;text-align:right;font-size:17px}
+.bs-unit{font-size:10.5px;color:var(--cap)}
+.bs-buy{font-size:15px}
+.bs-pay{display:flex;justify-content:space-between;align-items:baseline;gap:8px;
+  padding:6px 10px;background:var(--sub-bg2);border-top:1px solid var(--rule);font-size:12px}
+.bs-pay .lb{color:var(--cap)}
+.bs-pay .v{color:var(--hit)}
+.bs-toggle{width:100%;border:0;border-top:1px solid var(--rule);background:#FAFAF7;padding:8px;
+  font:inherit;font-size:11.5px;color:var(--cap);cursor:pointer}
+.bs-tbl{border-top:1px solid var(--rule);font-size:12px}
+.bs-thead,.bs-trow{display:grid;grid-template-columns:1fr 86px;align-items:center;gap:6px;padding:5px 10px}
+.bs-thead{background:var(--sub-bg2);color:var(--cap);font-size:10.5px;font-weight:700}
+.bs-trow{border-top:1px solid var(--rule)}
+.bs-trow .od{text-align:right;font-size:13px}
+.bs-sep{color:var(--cap);margin:0 1px}
+.bs-ab{font-size:9.5px;color:var(--cap);margin:0 3px 0 1px}
+.bs-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;
+  padding:11px 2px 0;font-size:12.5px;color:var(--cap);font-weight:700}
+.bs-clear{border:1px solid var(--rule);background:#fff;color:var(--cap);font:inherit;
+  font-size:12px;border-radius:6px;padding:6px 11px;cursor:pointer}
+
+/* 入れた・入らなかったの知らせ。バーの上に出す */
+#bs-toast{position:fixed;left:50%;transform:translateX(-50%) translateY(8px);
+  bottom:calc(84px + env(safe-area-inset-bottom));z-index:80;
+  background:rgba(20,20,20,.92);color:#fff;font-size:12.5px;font-weight:700;
+  padding:9px 15px;border-radius:20px;opacity:0;pointer-events:none;
+  transition:opacity .18s ease,transform .18s ease}
+#bs-toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+@media (prefers-reduced-motion:reduce){ #bs-toast{transition:none} }

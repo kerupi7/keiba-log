@@ -803,6 +803,129 @@ function jumpToShutuba(n) {
   setTimeout(() => row.classList.remove('mm-flash'), 1200);
 }
 
+// ============================================================
+// 128-spec: 買い目シート。画面の下に要約バーを貼り、押すと下から重なって開く（案C）。
+// 保存・集計・描画は betsheet.js。ここは DOM への出し入れとイベントだけ。
+// タブを移っても消えないので、バーは .race20 の外（body直下）に置く。
+// ============================================================
+const BS = { raceId: null, site: null, probs: null, heads: 0, oddsAll: null, open: [] };
+
+function bsCtx() { return BS.site && BS.raceId; }
+
+// バーは中身が変わるたびに描き直す。1本も無ければ要素ごと消す（場所を取らない）
+function bsPaintBar() {
+  if (!bsCtx()) return;
+  let host = document.getElementById('bs-bar-host');
+  const html = BetSheet.renderBar(BS.raceId, BS.site, BS.probs, BS.heads, BS.oddsAll);
+  if (!html) { if (host) host.remove(); document.body.classList.remove('has-bsbar'); return; }
+  if (!host) {
+    host = document.createElement('div');
+    host.id = 'bs-bar-host';
+    document.body.appendChild(host);
+  }
+  host.innerHTML = html;
+  document.body.classList.add('has-bsbar');
+}
+
+function bsPaintList() {
+  const body = document.getElementById('bs-drawer-body');
+  if (!body || !bsCtx()) return;
+  body.innerHTML = BetSheet.renderList(BS.raceId, BS.site, BS.probs, BS.heads, BS.oddsAll, BS.open);
+  const t = BetSheet.totals(BetSheet.load(BS.raceId), BS.site, BS.probs, BS.heads, BS.oddsAll);
+  const sum = document.getElementById('bs-drawer-sum');
+  if (sum) sum.innerHTML = `${t.points}<i>点</i>　${String(t.buy).replace(/\B(?=(\d{3})+$)/g, ',')}<i>円</i>`;
+}
+
+function bsOpen() {
+  const dr = document.getElementById('bs-drawer');
+  if (!dr) return;
+  bsPaintList();
+  dr.hidden = false;
+  document.body.classList.add('bs-locked');
+}
+function bsClose() {
+  const dr = document.getElementById('bs-drawer');
+  if (!dr) return;
+  dr.hidden = true;
+  document.body.classList.remove('bs-locked');
+}
+
+// 「シートに入れる」。1頭も選んでいなければ入れない（0点の行が溜まるだけなので）
+function addCurrentToSheet(site, state) {
+  if (!bsCtx()) return;
+  const rows = Simulator.rowsFor(state, site, BS.probs, BS.heads, BS.oddsAll);
+  if (!rows.length) { bsToast('馬を選んでから押してください'); return; }
+  const r = BetSheet.add(BS.raceId, state, BetSheet.UNITS[0]);
+  if (!r.ok) { bsToast(`シートは${BetSheet.MAX_LINES}本まで`); return; }
+  bsPaintBar();
+  bsToast(`シートに入れました（${rows.length}点）`);
+}
+
+// 入れた・入らなかったを1.6秒だけ知らせる。押した指の近く（バーの上）に出す
+let bsToastTimer = null;
+function bsToast(text) {
+  let el = document.getElementById('bs-toast');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'bs-toast';
+    el.setAttribute('role', 'status');
+    document.body.appendChild(el);
+  }
+  el.textContent = text;
+  el.classList.add('on');
+  clearTimeout(bsToastTimer);
+  bsToastTimer = setTimeout(() => el.classList.remove('on'), 1600);
+}
+
+function setupBetSheet(site, oddsAll) {
+  if (typeof BetSheet === 'undefined') return;
+  const built = Harville.buildProbs(site.horses);
+  BS.raceId = site.race && site.race.race_id;
+  BS.site = site; BS.probs = built.probs; BS.heads = built.heads; BS.oddsAll = oddsAll;
+  BS.open = [];
+  if (!BS.raceId) return;
+
+  const dr = document.createElement('div');
+  dr.id = 'bs-drawer';
+  dr.hidden = true;
+  dr.innerHTML = `<div class="bs-scrim" data-bs-close></div>
+    <div class="bs-panel" role="dialog" aria-modal="true" aria-label="買い目シート">
+      <div class="bs-head"><span>買い目シート</span>
+        <span class="n" id="bs-drawer-sum"></span>
+        <button type="button" class="bs-x" data-bs-close aria-label="閉じる">✕</button></div>
+      <div class="bs-scroll" id="bs-drawer-body"></div>
+    </div>`;
+  document.body.appendChild(dr);
+
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('[data-bs-bar]')) { bsOpen(); return; }
+    if (e.target.closest('[data-bs-close]')) { bsClose(); return; }
+    const del = e.target.closest('[data-bs-del]');
+    if (del) { BetSheet.remove(BS.raceId, del.dataset.bsDel); bsPaintList(); bsPaintBar(); return; }
+    const step = e.target.closest('[data-bs-step]');
+    if (step) {
+      BetSheet.stepUnit(BS.raceId, step.dataset.id, Number(step.dataset.bsStep));
+      bsPaintList(); bsPaintBar(); return;
+    }
+    const op = e.target.closest('[data-bs-open]');
+    if (op) {
+      const id = op.dataset.bsOpen;
+      const i = BS.open.indexOf(id);
+      if (i === -1) BS.open.push(id); else BS.open.splice(i, 1);
+      bsPaintList(); return;
+    }
+    if (e.target.closest('[data-bs-clear]')) {
+      // 消すと戻せないので一度だけ確かめる
+      if (window.confirm('シートの買い目をすべて消します。よろしいですか。')) {
+        BetSheet.clear(BS.raceId); bsPaintList(); bsPaintBar();
+      }
+    }
+  });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') bsClose(); });
+
+  bsPaintBar();
+}
+
 // ── 読んでいた位置を覚えて戻す（2026-09-07）──────────────────────
 // 戦績の面は18頭で 14,308px（375×812 の画面で17.6枚ぶん・中京11R の実測）ある。
 // 印や新聞、他のタブへ寄り道して戻るたび先頭へ落とされると読み直しになるので、
@@ -1356,6 +1479,8 @@ function setupOddsMasterPanel(site, oddsAll) {
     // 付け替えの仕組みをここに二重に持たないため、シミュレーターの state は動かさない。
     const jump = ev.target.closest('[data-sim-jump]');
     if (jump) { if (!jump.disabled) jumpToShutuba(Number(jump.dataset.simJump)); return; }
+    // 128-spec: いま組んでいるものをシートへ。state は betsheet.js が写しを取る
+    if (ev.target.closest('[data-sim-add]')) { addCurrentToSheet(site, state); return; }
     if (Simulator.handleClick(state, ev.target)) rerender();
   });
   body.addEventListener('change', (ev) => {
@@ -4913,6 +5038,7 @@ async function main() {
   const simCtl = setupOddsMasterPanel(site, oddsAll);
   setupAkinatorPanel(site, oddsAll, simCtl);
   setupOddsMasterTabs();
+  setupBetSheet(site, oddsAll);   // 128-spec: 下に貼る要約バーとドロワー
   if (is20) setupShutuba20(site);
   if (is20) setupTopping(site);   // 102-spec: トッピング（データが無ければ何もしない）
   if (is20) setupUpset20();

@@ -765,9 +765,12 @@
       : '';
     var moreLine = restCount > 0 ? '<div class="sim-more">…他' + restCount + '点</div>' : '';
 
+    // 128-spec: 組んだものをシートに残す。押した時の state を betsheet.js が写し取る
+    var addBtn = '<button type="button" class="sim-add" data-sim-add>シートに入れる</button>';
+
     return summary
       + '<div class="sim-confirm"><div class="ch"><span>' + escapeHtml(bandLabel(state) + ' ' + methodLabel(state) + ' ' + rows.length + '点') + '</span>'
-      + '<span class="rng">' + range + '</span></div>' + bodyHtml + '</div>' + moreLine;
+      + '<span class="rng">' + range + '</span></div>' + bodyHtml + '</div>' + moreLine + addBtn;
   }
 
   // opts = { aiMark: 馬 → AIの印のHTML }（race.js の markBadge20。無ければAI印は「—」）
@@ -800,9 +803,48 @@
     return false;
   }
 
+  // ===== 128-spec: 買い目シート（betsheet.js）へ渡す取り出し口 =====
+  // シートは組み合わせ・確率・オッズの計算を一切持たない。ここで作った結果だけを描く。
+  // 保存したstateからその時のオッズで組み直すので、古いオッズが残ることがない。
+  function rowsFor(state, site, probs, heads, oddsAll) {
+    var groups = frameGroups(site.horses);
+    var items = enumerate(state, site, heads);
+    var rows = items.map(function (item) {
+      return rowDataFor(state, item, probs, heads, oddsAll, groups);
+    }).filter(Boolean);
+    sortRows(rows);
+    return rows;
+  }
+  // シートのカード見出しとポジション行に要る材料。state の読み替えはここに集約する
+  function describe(state) {
+    var t = typeOf(state.betType);
+    return {
+      band: t.band,
+      bandLabel: bandLabel(state),
+      methodLabel: methodLabel(state),
+      ordered: t.ordered,
+      frame: t.frame,
+      cols: columns(state).map(function (c) {
+        return { key: c.key, label: c.label, ids: (state.cols[c.key] || []).slice() };
+      }),
+    };
+  }
+  // 保存する形。cols は参照を渡すと後から書き換わるので必ず写しを取る
+  function snapshot(state) {
+    var cols = {};
+    Object.keys(state.cols).forEach(function (k) { cols[k] = (state.cols[k] || []).slice(); });
+    return {
+      betType: state.betType, tanFuku: state.tanFuku, method: state.method,
+      axisPos: state.axisPos, multi: !!state.multi, cols: cols,
+    };
+  }
+
   var Simulator = {
     initialState: initialState,
     renderBlockB: renderBlockB,
+    rowsFor: rowsFor,
+    describe: describe,
+    snapshot: snapshot,
     handleClick: handleClick,
     handleChange: handleChange,
     applyPlan: applyPlan,
