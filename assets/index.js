@@ -214,7 +214,10 @@ function renderRaceRow(race) {
   // カード化で使えるのが251pxになり、12レース中3レースで札がレース名の下へ落ちていたため。
   // 外すと88px空いて、8/30中京の12レースすべてが1行に収まる。
   const uchip = upsetChipHtml(race.upset);
-  const tags = uchip ? `<span class="rtags">${uchip}</span>` : '';
+  // 2026-09-08: 自分で付けた「買いレース」の札。付け外しは詳細ページだけで、ここは出すだけ。
+  // AI側の「見送り」（stance:'pass'）とは別物なので、下の .rpick ではなくレース名の横に置く
+  const bchip = isBuyRace(race.race_id) ? '<span class="brtag">買い</span>' : '';
+  const tags = (uchip || bchip) ? `<span class="rtags">${bchip}${uchip}</span>` : '';
 
   let pickHtml = '';
   if (race.status === 'prediction') {

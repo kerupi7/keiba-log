@@ -3939,3 +3939,17 @@ body.bs-locked{overflow:hidden}
   transition:opacity .18s ease,transform .18s ease}
 #bs-toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
 @media (prefers-reduced-motion:reduce){ #bs-toast{transition:none} }
+
+/* 買いレース（2026-09-08）。付け外しはレース詳細のヘッダーだけ。一覧は札を出すだけ */
+.race20 .rhead.h2 .brchk{margin-left:auto;flex:none;display:inline-flex;align-items:center;gap:6px;
+  border:1px solid var(--rule);background:#fff;border-radius:6px;padding:5px 10px;
+  font:inherit;font-size:12px;font-weight:700;color:var(--cap);cursor:pointer;line-height:1}
+.race20 .rhead.h2 .brchk .bx{width:15px;height:15px;border:1.5px solid #BBB;border-radius:4px;
+  display:inline-block;position:relative}
+.race20 .rhead.h2 .brchk.on{border-color:var(--cta);color:var(--cta);background:#F1F7FD}
+.race20 .rhead.h2 .brchk.on .bx{background:var(--cta);border-color:var(--cta)}
+.race20 .rhead.h2 .brchk.on .bx::after{content:"";position:absolute;left:4px;top:0;width:5px;height:9px;
+  border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
+/* 一覧の札。荒れ度の札（.rtags の中）と横に並ぶ */
+.brtag{display:inline-block;font-size:10.5px;font-weight:700;color:#fff;background:var(--cta);
+  border-radius:4px;padding:1px 6px;margin-right:4px;white-space:nowrap}

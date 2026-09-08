@@ -178,3 +178,36 @@ function comboBoxes(typeLabel, numbers, byNumber) {
     isWaku ? wakuBox(n, 'sm') : umaBox(n, (byNumber[n] || {}).gate, 'sm')
   ).join(sep);
 }
+
+// ============================================================
+// 買いレース（2026-09-08）— 「このレースは買う」を自分で付ける。
+// 付け外しはレース詳細ページだけ（ユーザー決定）。一覧は札を出すだけで触れない。
+// パイプラインが出す stance:'pass'（見送り）はAIの判断で、これとは別物。
+// 保存は localStorage の buyrace（レースIDの並び）。印・シートと同じで端末内・同期なし。
+// ============================================================
+const BUYRACE_KEY = 'buyrace';
+const BUYRACE_SCHEMA = 1;
+
+// localStorage が使えない環境（プライベートブラウズ等）では空として扱う。落とさない
+function buyRaceIds() {
+  try {
+    if (typeof localStorage === 'undefined') return [];
+    const o = JSON.parse(localStorage.getItem(BUYRACE_KEY));
+    if (!o || o.v !== BUYRACE_SCHEMA || !Array.isArray(o.ids)) return [];
+    return o.ids.filter((x) => typeof x === 'string');
+  } catch (e) { return []; }
+}
+function isBuyRace(raceId) {
+  return !!raceId && buyRaceIds().indexOf(String(raceId)) !== -1;
+}
+// 付いていれば外す、無ければ付ける。返り値は付けた後の状態
+function toggleBuyRace(raceId) {
+  const id = String(raceId);
+  const ids = buyRaceIds();
+  const i = ids.indexOf(id);
+  if (i === -1) ids.push(id); else ids.splice(i, 1);
+  try {
+    localStorage.setItem(BUYRACE_KEY, JSON.stringify({ v: BUYRACE_SCHEMA, ids }));
+  } catch (e) { /* 保存しないだけ */ }
+  return i === -1;
+}

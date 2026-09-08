@@ -851,6 +851,17 @@ function bsToast(text) {
   bsToastTimer = setTimeout(() => el.classList.remove('on'), 1600);
 }
 
+// 2026-09-08: 「買いレース」の付け外し。押した所だけ塗り替える（ページは描き直さない）
+function setupBuyRace(site) {
+  const btn = document.querySelector('[data-buyrace]');
+  if (!btn || !site.race || !site.race.race_id) return;
+  btn.addEventListener('click', () => {
+    const on = toggleBuyRace(site.race.race_id);
+    btn.classList.toggle('on', on);
+    btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+  });
+}
+
 function setupBetSheet(site, oddsAll) {
   if (typeof BetSheet === 'undefined') return;
   const built = Harville.buildProbs(site.horses);
@@ -1806,9 +1817,16 @@ function renderHeader20(site) {
     `<div class="sp"><span class="k">${escapeHtml(k)}</span><span class="v">${v}</span></div>`).join('');
   const meta = `${r.date} ${r.track}${r.race_number}R`
     + (r.post_time ? `<span class="dot">・</span>発走 ${escapeHtml(r.post_time)}` : '');
+  // 2026-09-08: 「買いレース」のチェック。付け外しはこのページだけで、一覧は札を出すだけ。
+  // パイプラインの stance:'pass'（見送り）はAIの判断なので、こちらとは並べず別の行に置く。
+  const buyOn = isBuyRace(r.race_id);
+  const buyBtn = `<button type="button" class="brchk${buyOn ? ' on' : ''}" data-buyrace`
+    + ` aria-pressed="${buyOn ? 'true' : 'false'}">`
+    + `<span class="bx" aria-hidden="true"></span>買いレース</button>`;
+
   return `
     <div class="rhead h2">
-      <div class="ttlrow">${r.grade ? `<span class="gb2">${escapeHtml(r.grade)}</span>` : ''}<span class="ttl">${escapeHtml(r.race_name)}</span></div>
+      <div class="ttlrow">${r.grade ? `<span class="gb2">${escapeHtml(r.grade)}</span>` : ''}<span class="ttl">${escapeHtml(r.race_name)}</span>${buyBtn}</div>
       <div class="meta">${meta}</div>
       <div class="specrow">${cells}</div>
       <div class="pt">予想: ${fmtDateTimeShort(p.predicted_at)}（${escapeHtml(p.odds_basis)}基準）</div>
@@ -5029,6 +5047,7 @@ async function main() {
   setupAkinatorPanel(site, oddsAll, simCtl);
   setupOddsMasterTabs();
   setupBetSheet(site, oddsAll);   // 128-spec: 下に貼る要約バーとドロワー
+  setupBuyRace(site);             // 買いレースのチェック
   if (is20) setupShutuba20(site);
   if (is20) setupTopping(site);   // 102-spec: トッピング（データが無ければ何もしない）
   if (is20) setupUpset20();
