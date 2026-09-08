@@ -1412,14 +1412,15 @@ function renderOddsMasterSection(site, oddsAll) {
   const hasAki = (typeof Akinator !== 'undefined' && Akinator.eligible(oddsAll));
   // アキネーターが出せないレースではタブを出さず、手動シミュレーターだけを従来どおり表示する
   const panels = hasAki
-    // 2026-09-08: 並びを「自分で組む → 質問で決める」に入れ替えた（ユーザー指示）。
-    // 最初に出るのは従来どおり「質問で決める」のまま（並びだけを変えている）。
+    // 2026-09-08: 並びを「自分で組む → 質問で決める」に入れ替え、最初に出るのも
+    // 「自分で組む」にした（ユーザー指示）。印・シート・戦績のポップアップが
+    // 全部こちら側にあるので、開いた所がそのまま作業場になる。
     ? `<div class="om-tabs" role="tablist">
-         <button type="button" class="om-tab" data-om-tab="sim" role="tab" aria-selected="false">自分で組む</button>
-         <button type="button" class="om-tab active" data-om-tab="aki" role="tab" aria-selected="true">質問で決める</button>
+         <button type="button" class="om-tab active" data-om-tab="sim" role="tab" aria-selected="true">自分で組む</button>
+         <button type="button" class="om-tab" data-om-tab="aki" role="tab" aria-selected="false">質問で決める</button>
        </div>
-       <div id="ak-panel-body" class="om-pane active" role="tabpanel"></div>
-       <div id="om-panel-body" class="om-pane" role="tabpanel" hidden></div>`
+       <div id="ak-panel-body" class="om-pane" role="tabpanel" hidden></div>
+       <div id="om-panel-body" class="om-pane active" role="tabpanel"></div>`
     : '<div id="om-panel-body"></div>';
 
   return `
