@@ -3054,6 +3054,7 @@ function mmBar(site) {
       <button type="button" data-view="mark" class="on">印</button>
       <button type="button" data-view="runs">戦績</button>
       <button type="button" data-view="paper">新聞</button>
+      <button type="button" data-view="tenkai">展開</button>
       <button type="button" data-view="baken">馬券</button>
     </span>
     <span class="mm-tp"></span>
@@ -3214,7 +3215,12 @@ function setupMyMarks(site) {
       paper.classList.toggle('off', v !== 'paper');
       if (v === 'paper') npSyncRail(root);   // 隠れている間は測れないので、出した直後に測る
     }
-    // 2026-09-08: 4つ目の面＝馬券（買い目シミュレーター）
+    // 2026-09-08: 4つ目の面＝展開（コースの形・馬場・脚質・ペース）。
+    // 他の4つは「16頭をどう見るか」だが、これだけはレースの性質なので中身の種類が違う
+    // （ユーザー決定。幅は5つで333pxちょうどのため、ボタンの左右を8pxに詰めてある）
+    const tenkai = root.querySelector('.tenkaiview');
+    if (tenkai) tenkai.classList.toggle('off', v !== 'tenkai');
+    // 2026-09-08: 5つ目の面＝馬券（買い目シミュレーター）
     const baken = root.querySelector('.bakenview');
     if (baken) {
       baken.classList.toggle('off', v !== 'baken');
@@ -3594,6 +3600,7 @@ function renderShutuba20(site) {
     <div class="shlist off">${cards}</div>
     ${renderPaper(site)}
     ${mmList(site)}
+    <div class="tenkaiview off">${renderOverview20(site)}</div>
     <div id="om-panel-body" class="om-pane bakenview off"></div>
   `;
 }
@@ -3800,9 +3807,9 @@ function renderBets20(site) {
    ============================================================ */
 const RACE20_TABS = [
   { key: 'shutuba', label: '出馬表' },
-  { key: 'tenkai', label: '展開' },
   // コースは 2026-08-27 にタブをやめ、出馬表の「印／戦績／新聞」の右のボタンから
-  // 開くポップアップ（#pop-course）へ移した。タブは5枚から4枚になる。
+  // 開くポップアップ（#pop-course）へ移した。2026-09-08 にそのボタンも帯へ移した。
+  // 展開は 2026-09-08 に出馬表の5つ目の面（.tenkaiview）へ移したので、タブは3枚になる。
   { key: 'kaime', label: '買い目' },
   // 回顧タブの見出しは中身に合わせる。レース前は renderVerification20 が
   // 「答え合わせ／結果はレース後に反映されます」を出すので、タブ名も同じ言葉にする
@@ -3860,7 +3867,6 @@ function buildRace20Html(site, oddsAll) {
       ${renderShinbaNote20(site)}
       <div class="tabbar" role="tablist">${bar}</div>
       ${pane('shutuba', renderMitate20(site) + renderShutuba20(site))}
-      ${pane('tenkai', renderOverview20(site))}
       ${pane('kaime', renderBets20(site) + renderOddsMasterSection(site, oddsAll))}
       ${pane('kaiko', renderVerification20(site))}
       ${renderPopups20(site)}
