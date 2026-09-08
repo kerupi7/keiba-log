@@ -991,12 +991,10 @@ function setupTabs20(site) {
     race20Tab = key;                     // 位置を預けるキーに使う（race20Key）
     // 回顧タブは開いた瞬間に初めて幅が確定するので測り直す（折りたたみと同じ理由）
     if (key === 'kaiko') setupFinishOrder();
-    // 111-spec: 出馬表で付けた印をアキネーターにも出すため、開くたびに描き直す。
-    // 2026-09-07: 手動シミュレーターにも印を出すようにしたので、同じところで描き直す
-    if (key === 'kaime') {
-      if (akRefresh) akRefresh();
-      if (simRefresh) simRefresh();
-    }
+    // 111-spec: 出馬表で付けた印をアキネーターにも出すため、開くたびに描き直す
+    if (key === 'kaime' && akRefresh) akRefresh();
+    // 2026-09-08: シミュレーターは出馬表タブへ移ったので、そちらを開いた時に描き直す
+    if (key === 'shutuba' && simRefresh) simRefresh();
     if (pushHash) history.replaceState(null, '', `${location.pathname}${location.search}#tab=${key}`);
   };
 
@@ -1421,18 +1419,12 @@ function renderOddsMasterSection(site, oddsAll) {
   const openAttr = oddsAll ? ' open' : '';
   // 88-akinator-spec.md §7: schema_version odds_all-1.x かつ単勝以外に発売中オッズがある場合のみ表示
   const hasAki = (typeof Akinator !== 'undefined' && Akinator.eligible(oddsAll));
-  // アキネーターが出せないレースではタブを出さず、手動シミュレーターだけを従来どおり表示する
+  // 2026-09-08: 「自分で組む」は出馬表タブの4つ目の面（馬券）へ移した。ここに残るのは
+  // 「質問で決める」だけなので、2択の切り替えバー（om-tabs）は外した。
+  // 同じ表を2か所に出さない（買い目タブからは消す・ユーザー決定）。
+  // アキネーターが出せないレースでは、この折りたたみごと出さない。
   const panels = hasAki
-    // 2026-09-08: 並びを「自分で組む → 質問で決める」に入れ替え、最初に出るのも
-    // 「自分で組む」にした（ユーザー指示）。印・シート・戦績のポップアップが
-    // 全部こちら側にあるので、開いた所がそのまま作業場になる。
-    ? `<div class="om-tabs" role="tablist">
-         <button type="button" class="om-tab active" data-om-tab="sim" role="tab" aria-selected="true">自分で組む</button>
-         <button type="button" class="om-tab" data-om-tab="aki" role="tab" aria-selected="false">質問で決める</button>
-       </div>
-       <div id="ak-panel-body" class="om-pane" role="tabpanel" hidden></div>
-       <div id="om-panel-body" class="om-pane active" role="tabpanel"></div>`
-    : '<div id="om-panel-body"></div>';
+    ? '<div id="ak-panel-body" class="om-pane active" role="tabpanel"></div>' : '';
 
   return `
     <details class="fold om-fold"${openAttr}>
@@ -1482,7 +1474,8 @@ function setupOddsMasterPanel(site, oddsAll) {
     applyPlan(plan) {
       Simulator.applyPlan(state, plan);
       rerender();
-      body.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      // smooth はタブを切り替えた直後の位置戻しと競合して届かない（2026-09-07 実測）
+      body.scrollIntoView({ behavior: 'auto', block: 'start' });
     },
   };
 }
@@ -1490,33 +1483,16 @@ function setupOddsMasterPanel(site, oddsAll) {
 // 88-akinator-spec.md T9: 買い目アキネーターのマウント・イベント委譲。描画・stateは
 // Akinator（assets/akinator.js）に一任。テキスト入力(予算)とスライダーのドラッグ中だけは
 // フォーカス/カーソル位置を保つため、全体rerenderせずピンポイントでDOMを更新する。
-// タブ切替。中身は再描画せず表示だけ入れ替える（両方のstateを保つため）
-function setupOddsMasterTabs() {
-  const bar = document.querySelector('.om-tabs');
-  if (!bar) return;
-  bar.addEventListener('click', (e) => {
-    const btn = e.target.closest('[data-om-tab]');
-    if (!btn) return;
-    const key = btn.dataset.omTab;
-    bar.querySelectorAll('.om-tab').forEach((b) => {
-      const on = b.dataset.omTab === key;
-      b.classList.toggle('active', on);
-      b.setAttribute('aria-selected', on ? 'true' : 'false');
-    });
-    const map = { aki: 'ak-panel-body', sim: 'om-panel-body' };
-    Object.keys(map).forEach((k) => {
-      const el = document.getElementById(map[k]);
-      if (!el) return;
-      el.hidden = (k !== key);
-      el.classList.toggle('active', k === key);
-    });
-  });
-}
+// 2026-09-08: fold の中が「質問で決める」1つになったので、om-tabs の切り替え配線
+// （setupOddsMasterTabs）は削除した。
 
-// 買い目アキネーターの「シミュレーターに入れる」から呼ぶ。手動タブへ切り替える
+// 買い目アキネーターの「シミュレーターに入れる」から呼ぶ。
+// 2026-09-08: 行き先が出馬表タブの「馬券」の面になった。タブと面を続けて切り替える。
 function switchToSimulatorTab() {
-  const btn = document.querySelector('[data-om-tab="sim"]');
-  if (btn) btn.click();
+  const tab = document.querySelector('.race20 .t20[data-tab="shutuba"]');
+  if (tab && !tab.classList.contains('on')) tab.click();
+  const view = document.querySelector('.race20 [data-view="baken"]');
+  if (view && !view.classList.contains('on')) view.click();
 }
 
 function setupAkinatorPanel(site, oddsAll, simCtl) {
@@ -1538,7 +1514,9 @@ function setupAkinatorPanel(site, oddsAll, simCtl) {
   body.addEventListener('click', (ev) => {
     const result = Akinator.handleClick(ctx, state, ev.target);
     if (!result) return;
-    if (result.plan && simCtl) { simCtl.applyPlan(result.plan); switchToSimulatorTab(); }
+    // 2026-09-08: 行き先が別タブ（出馬表の馬券の面）になったので、**先に切り替えてから**流し込む。
+    // 逆にすると、隠れている間に scrollIntoView が走って何も動かない
+    if (result.plan && simCtl) { switchToSimulatorTab(); simCtl.applyPlan(result.plan); }
     rerender();
   });
 
@@ -3059,16 +3037,25 @@ function mmInline(h) {
 // 「コース」は 2026-08-27 にタブからここへ移した。押すとポップアップ（#pop-course）が開く。
 // 印／戦績／新聞 と違って表示を切り替えるものではないので、3つの帯の中には入れない。
 // course_entities が無いレース（コースが確定できなかったぶん）はボタンごと出さない。
+// 2026-09-08: 4つ目「馬券」（買い目シミュレーター）を足した。買い目タブからは外し、
+// ここが唯一の入口になる。あわせて「コース」を上の帯（.secthead）へ移した。
+// 4つ目を足すと1段目が 351px になってバーが2段から3段に増えるため（333pxに対し余り16px）。
+// コース55pxを帯へ逃がすと 286px に収まり、高さは今までどおり（実測）。
+// 帯の中のコース（2026-09-08・案A）。メンバー札の右・荒れ度の左に置く。
+// 見た目は帯の決まりどおり白の枠線＋白文字。押した先は今までと同じ #pop-course。
+function crsBand(site) {
+  return (site && site.course_entities)
+    ? '<button type="button" class="crsb2" data-pop="course">コース</button>' : '';
+}
+
 function mmBar(site) {
-  const crs = site && site.course_entities
-    ? '<button type="button" class="crsb" data-pop="course">コース</button>' : '';
   return `<div class="mm-bar">
     <span class="mm-seg">
       <button type="button" data-view="mark" class="on">印</button>
       <button type="button" data-view="runs">戦績</button>
       <button type="button" data-view="paper">新聞</button>
+      <button type="button" data-view="baken">馬券</button>
     </span>
-    ${crs}
     <span class="mm-tp"></span>
     <span class="mm-sum"></span>
   </div>`;
@@ -3232,6 +3219,13 @@ function setupMyMarks(site) {
     if (paper) {
       paper.classList.toggle('off', v !== 'paper');
       if (v === 'paper') npSyncRail(root);   // 隠れている間は測れないので、出した直後に測る
+    }
+    // 2026-09-08: 4つ目の面＝馬券（買い目シミュレーター）
+    const baken = root.querySelector('.bakenview');
+    if (baken) {
+      baken.classList.toggle('off', v !== 'baken');
+      // 隠れている間に印を変えていることがあるので、出した瞬間に読み直す
+      if (v === 'baken' && simRefresh) simRefresh();
     }
     race20View = v;
     // その面を前に読んでいればその位置へ、初めてなら面の先頭へ
@@ -3600,12 +3594,13 @@ function renderShutuba20(site) {
   // タブは display:none で切り替えるので、出馬表タブの中に置くと展開タブから
   // 馬番を押しても中身が組み上がらず、幅も高さも0のまま開いていた。
   return `
-    <div class="secthead">出馬表${memberLevelBand(site.prediction)}${up ? up.band : ''}</div>
+    <div class="secthead">出馬表${memberLevelBand(site.prediction)}${crsBand(site)}${up ? up.band : ''}</div>
     <div class="shctl"></div>
     ${mmBar(site)}
     <div class="shlist off">${cards}</div>
     ${renderPaper(site)}
     ${mmList(site)}
+    <div id="om-panel-body" class="om-pane bakenview off"></div>
   `;
 }
 
@@ -5045,7 +5040,6 @@ async function main() {
   document.getElementById('race-content').innerHTML = html;
   const simCtl = setupOddsMasterPanel(site, oddsAll);
   setupAkinatorPanel(site, oddsAll, simCtl);
-  setupOddsMasterTabs();
   setupBetSheet(site, oddsAll);   // 128-spec: 下に貼る要約バーとドロワー
   setupBuyRace(site);             // 買いレースのチェック
   if (is20) setupShutuba20(site);

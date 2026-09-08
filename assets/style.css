@@ -450,13 +450,13 @@ details.fold.om-fold[open]>summary{font-size:15px;border-bottom:none;padding-bot
 details.fold.om-fold>summary .tri::before{color:#fff}
 details.fold.om-fold>summary .cnt{color:#fff;opacity:.85;font-size:11px}
 
-.om-tabs{display:grid;grid-template-columns:1fr 1fr;gap:0;margin:12px 0 0;
-  border-bottom:2px solid var(--rule)}
-.om-tab{font-size:13px;font-weight:700;padding:10px 6px;border:none;background:none;
-  color:var(--cap);cursor:pointer;font-family:inherit;border-bottom:2px solid transparent;margin-bottom:-2px}
-.om-tab.active{color:var(--cta);border-bottom-color:var(--cta)}
+/* 2026-09-08: .om-tabs / .om-tab は「自分で組む」が出馬表へ移って出す所が無くなったので削除した。
+   買い目タブの折りたたみの中は「質問で決める」1つだけになっている。 */
 .om-pane{padding-top:2px}
 .om-pane[hidden]{display:none}
+/* 2026-09-08: 出馬表の4つ目の面（馬券）。印・戦績・新聞と同じく .off で隠す */
+.race20 .bakenview.off{display:none}
+.race20 .bakenview{padding-top:10px}
 .om-subhead{font-size:13px;font-weight:700;color:var(--sub);margin:12px 0 8px}
 .om-subhead:first-child{margin-top:2px}
 .om-note{font-size:12px;color:var(--cap);margin:4px 0 6px}
@@ -2366,10 +2366,20 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
 .race20 .popup{margin-top:max(0px, env(safe-area-inset-top))}
 .race20 .popup .phead{padding-top:calc(10px + env(safe-area-inset-top, 0px))}
 .race20 .popup .pclose{min-height:34px;padding:0 12px}
+/* 2026-09-08: コースを上のバーから帯へ移した（案A・メンバーの右／荒れ度の左）。
+   帯の中は白の枠線＋白文字で一律というのが既定（メンバー札 .mlv と同じ考え方）。
+   押した先は今までと同じ #pop-course。 */
+.race20 .secthead .crsb2{flex:none;border:1px solid rgba(255,255,255,.75);background:transparent;
+  color:#fff;font:inherit;font-size:12px;font-weight:700;line-height:1;padding:4px 9px;
+  border-radius:5px;cursor:pointer}
+.race20 .secthead .crsb2:active{background:rgba(255,255,255,.16)}
+
 .race20 .mm-seg{display:inline-flex;border:1px solid var(--rule-strong);border-radius:6px;
   overflow:hidden;background:#fff;flex:none}
+/* 2026-09-08: 4つ目「馬券」が入ったので左右を12px→10pxに詰める。
+   コースを帯へ逃がしたぶんと合わせて、バーは今までどおり2段に収まる */
 .race20 .mm-seg button{border:0;background:#fff;font:inherit;font-size:12px;font-weight:700;
-  color:var(--sub);padding:6px 12px;cursor:pointer;line-height:1.3;
+  color:var(--sub);padding:6px 10px;cursor:pointer;line-height:1.3;
   border-right:1px solid var(--rule)}
 .race20 .mm-seg button:last-child{border-right:0}
 .race20 .mm-seg button.on{background:var(--navy);color:#fff}
