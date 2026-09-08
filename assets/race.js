@@ -3122,6 +3122,20 @@ function mmOpenSheet(n) {
 }
 
 // シートは .race20 の外（body直下）に置く。position:fixed を親の影響から切り離すため
+// 2026-09-08: 印を変えたら、その印を出している所を全部塗り直す。
+// mmPaint が塗るのは出馬表の [data-my] のマスだけで、買い目タブ側（シミュレーター・
+// アキネーター）は localStorage を自分で読み直さないと古い印のまま残る。
+// 戦績のポップアップ（.mm-in の1行）からも印を変えられるので、そこも同じ道を通す。
+function mmChanged() {
+  mmPaint();
+  // シミュレーターは描き直しても選んだ馬（state.cols）が残る
+  if (simRefresh) simRefresh();
+  // アキネーターは開いている時だけ。隠れている間に描き直すと、
+  // 予算の入力欄へフォーカスが飛んで読んでいる位置がずれる
+  const ak = document.getElementById('ak-panel-body');
+  if (akRefresh && ak && !ak.hidden) akRefresh();
+}
+
 function setupMyMarks(site) {
   const root = document.querySelector('.race20');
   if (!root || !root.querySelector('.mm-list')) return;
@@ -3157,7 +3171,7 @@ function setupMyMarks(site) {
   sheet.querySelectorAll('.mks button').forEach((b) => b.addEventListener('click', () => {
     if (MM.target == null) return;
     mmSet(MM.target, b.dataset.mk);
-    mmPaint();
+    mmChanged();
     close();
   }));
 
@@ -3170,7 +3184,7 @@ function setupMyMarks(site) {
       e.preventDefault();
       e.stopPropagation();
       mmSet(ib.closest('.mm-in').dataset.n, ib.dataset.mk);
-      mmPaint();
+      mmChanged();
       return;
     }
     const b = e.target.closest('[data-my]');
