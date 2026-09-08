@@ -3057,7 +3057,6 @@ function mmBar(site) {
       <button type="button" data-view="baken">馬券</button>
     </span>
     <span class="mm-tp"></span>
-    <span class="mm-sum"></span>
   </div>`;
 }
 
@@ -3099,15 +3098,10 @@ function mmPaint() {
     if (mk === '消') el.classList.add('my-keshi');
     else if (mk) el.classList.add('my-mark');
   });
-  const sum = document.querySelector('.race20 .mm-sum');
-  if (!sum) return;
-  const by = {};
-  Object.entries(MM.marks).forEach(([n, mk]) => { (by[mk] = by[mk] || []).push(Number(n)); });
-  const parts = MM_MARKS.filter((mk) => by[mk])
-    .map((mk) => `<b>${mk}</b>${by[mk].sort((a, b) => a - b).join('・')}`);
-  sum.innerHTML = parts.length
-    ? `自分の印　${parts.join('　')}`
-    : '<span class="e">自分の印はまだありません</span>';
+  // 2026-09-08: 「自分の印　◎1　消3・7…」の要約行（.mm-sum）は外した（ユーザー指示）。
+  // 111-spec §3.5 では、ボトムシートが説明文を出さずに閉じるので、印のマスと
+  // この行の2つで「何が起きたか」を示していた。マスの方は残っているので、
+  // 付けた印がその場で変わることは今までどおり分かる。
 }
 
 function mmOpenSheet(n) {
