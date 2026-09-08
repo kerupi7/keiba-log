@@ -507,6 +507,11 @@ details.fold.om-fold>summary .cnt{color:#fff;opacity:.85;font-size:11px}
 .sim-sel td{border-bottom:1px solid var(--rule);padding:6px 2px;text-align:center;vertical-align:middle}
 .sim-sel td.l{text-align:left;padding-left:4px}
 .sim-sel tr.green td{background:var(--green-row)}
+/* 2026-09-08（案C）: 自分の印が「消」の行を沈める。出馬表の .my-keshi と同じ値。
+   tr.green より後に書いて、両方立った時は「消」を勝たせる（実際には simulator.js が
+   消の馬に green を付けないので重ならないが、順番で意図を残しておく） */
+.sim-sel tr.my-keshi td{background:#F2F2F0}
+.sim-sel tr.my-keshi .sim-hbody,.sim-sel tr.my-keshi .sim-ai{opacity:.62}
 /* 45-spec §2.8: 印は既存の色トークンを流用（.n-honなどの命名は使わず新規スコープ）。
    2026-09-07: 能力印だけの1列（.sim-mk）をやめ、「自分の印（.sim-my）＋AIの印（.sim-ai）」の
    2列にした。.sim-mk は出す所が無くなったので削除。 */

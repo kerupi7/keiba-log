@@ -668,7 +668,12 @@
     var body = horses.map(function (h) {
       var id = t.frame ? h.gate : h.number;
       var disabled = h.scratched || !(h.number in probs);
-      var isGreen = !!g[h.number];
+      // 2026-09-08（案C・ユーザー決定）: 自分の印が「消」の馬は行を沈め、緑と「買い」を出さない。
+      // 自分で切った馬に「買い」と出続けるのは矛盾なので、自分の判断を勝たせる。
+      // 沈める塗りは出馬表の .my-keshi と同じ値（新しい色は作らない）。
+      // 緑判定そのもの（greenSet）は変えていない。他の馬の緑は今までどおり出る。
+      var isKeshi = myMarks[String(h.number)] === '消';
+      var isGreen = !isKeshi && !!g[h.number];
       var mkHtml = myCell(h, myMarks) + aiCell(h, opts && opts.aiMark);
       var oddsVal = (t.arity === 1 && state.tanFuku === 'fukusho') ? fukushoOddsFor(h, oddsAll) : h.odds;
       var hot = (oddsVal !== null && oddsVal !== undefined && oddsVal < 10) ? ' hot' : '';
@@ -704,7 +709,8 @@
         var shape = c.type === 'radio' ? ' radio' : '';
         return '<td><button type="button" class="sim-pick' + shape + (on ? ' on' : '') + '" data-sim-pick data-col="' + c.key + '" data-id="' + id + '" data-radio="' + (c.type === 'radio' ? '1' : '0') + '"' + (disabled ? ' disabled' : '') + '></button></td>';
       }).join('');
-      return '<tr class="' + (isGreen ? 'green' : '') + '">' + nameCell + cells + '</tr>';
+      var trCls = (isGreen ? 'green' : '') + (isKeshi ? ' my-keshi' : '');
+      return '<tr class="' + trCls.trim() + '">' + nameCell + cells + '</tr>';
     }).join('');
     return '<table class="sim-sel"><thead>' + head + '</thead><tbody>' + body + '</tbody></table>';
   }
