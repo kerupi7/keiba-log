@@ -3854,9 +3854,12 @@ function renderBetRules(site) {
   const secs = BETRULE_ORDER.map((name) => {
     const pl = br.plans[name];
     if (!pl) return '';
-    const head = `<div class="secthead">${name}`
-      + `<span class="cnt">${escapeHtml(pl.desc)} ${pl.n_rules}ルール</span></div>`;
-    if (!pl.points) return head + '<div class="conf">本レースは見送り（買い目なし）</div>';
+    // 2026-09-09 ユーザー決定: 帯の右の材料の説明（例「オッズ帯・頭数… 129ルール」）は出さない。
+    // 代わりに点数（確定後は払戻）を出し、帯を押すと表が開く形にする（既定は閉じる）
+    if (!pl.points) {
+      return `<div class="secthead">${name}</div>`
+        + '<div class="conf">本レースは見送り（買い目なし）</div>';
+    }
     // 2026-09-09 ユーザー決定: 券種は行ごとに書かず、券種ごとの見出し行でまとめる
     const header = showResult
       ? '<tr><th class="l">買い目</th><th>金額</th><th>結果</th><th>払戻</th></tr>'
@@ -3918,10 +3921,14 @@ function renderBetRules(site) {
         + `<td>${fmtYen(ret)}</td></tr>`
       : `<tr><td class="l">合計 ${pl.points}点</td>`
         + `<td>${fmtYen(pl.stake)}</td></tr>`;
-    return head
+    // 折りたたみは <details>。開け閉めの処理を書かずに済み、印刷や検索にも素直
+    const cap = showResult
+      ? `${pl.points}点 ${fmtYen(pl.stake)} → ${fmtYen(ret)}`
+      : `${pl.points}点 ${fmtYen(pl.stake)}`;
+    return `<details class="brdet"><summary class="secthead">${name}`
+      + `<span class="cnt">${cap}</span></summary>`
       + `<table class="fixed betstbl"><thead>${header}</thead>`
-      + `<tbody>${rows}</tbody><tfoot>${foot}</tfoot></table>`
-      ;
+      + `<tbody>${rows}</tbody><tfoot>${foot}</tfoot></table></details>`;
   }).join('');
   const sum = showResult
     ? `<div class="betrule-sum"><span>5案の合計（重複を除かず単純合計）</span>`

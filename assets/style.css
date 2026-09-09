@@ -398,6 +398,13 @@ div.roi{padding:12px 0 14px;border-bottom:1px solid var(--rule)}
 .betstbl th:nth-child(2){width:5.2em}
 .betstbl th:nth-child(3){width:2.6em}
 .betstbl th:nth-child(4){width:5.2em}
+/* 五街道5案の折りたたみ（2026-09-09 ユーザー決定）。既定は閉じる。
+   帯（summary）を押すと開く。右端には点数と、確定後は払戻を出す */
+.race20 .brdet>summary.secthead{cursor:pointer;list-style:none}
+.race20 .brdet>summary.secthead::-webkit-details-marker{display:none}
+.race20 .brdet>summary.secthead::after{content:'▸';margin-left:4px;font-size:12px;opacity:.9}
+.race20 .brdet[open]>summary.secthead::after{content:'▾'}
+.race20 .brdet>summary.secthead .cnt{margin-left:auto;font-variant-numeric:tabular-nums}
 /* 買い目の馬番のボタン。見た目は枠色ボックスのまま、押せるだけにする（2026-09-09） */
 .betstbl .hnb{background:none;border:0;padding:0;margin:0;font:inherit;line-height:0;
   cursor:pointer;vertical-align:middle;-webkit-tap-highlight-color:transparent}
