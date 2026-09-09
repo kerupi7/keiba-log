@@ -4066,7 +4066,9 @@ function buildRace20Html(site, oddsAll) {
       ${renderShinbaNote20(site)}
       <div class="tabbar" role="tablist">${bar}</div>
       ${pane('shutuba', renderMitate20(site) + renderShutuba20(site))}
-      ${pane('kaime', renderBetRules(site) + renderOddsMasterSection(site, oddsAll))}
+      ${/* 2026-09-09 ユーザー決定: 買い目シミュレーター（質問で決める）は買い目タブから外す。
+            renderOddsMasterSection は古い版のページ（race20 でない方）で使い続けるので残す */''}
+      ${pane('kaime', renderBetRules(site))}
       ${pane('kaiko', renderVerification20(site))}
       ${renderPopups20(site)}
     </div>
