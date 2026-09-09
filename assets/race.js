@@ -3606,9 +3606,11 @@ function renderBetRules(site) {
     const head = `<div class="secthead">${name}`
       + `<span class="cnt">${escapeHtml(pl.desc)} ${pl.n_rules}ルール</span></div>`;
     if (!pl.points) return head + '<div class="conf">本レースは見送り（買い目なし）</div>';
+    // 2026-09-09 ユーザー決定: 券種は行ごとに書かず、券種ごとの見出し行でまとめる
     const header = showResult
-      ? '<tr><th class="l">券種</th><th class="l">買い目</th><th>金額</th><th>結果</th><th>払戻</th></tr>'
-      : '<tr><th class="l">券種</th><th class="l">買い目</th><th>金額</th></tr>';
+      ? '<tr><th class="l">買い目</th><th>金額</th><th>結果</th><th>払戻</th></tr>'
+      : '<tr><th class="l">買い目</th><th>金額</th></tr>';
+    const ncols = showResult ? 4 : 2;
     let ret = 0;
     const payOf = (type, tk) => {
       const sorted = /馬単|三連単/.test(type) ? tk : [...tk].sort((a, b) => a - b);
@@ -3617,7 +3619,9 @@ function renderBetRules(site) {
     const rows = pl.types.map((t) => {
       const label = t.type.replace('三連', '3連');
       const ordered = /馬単|三連単/.test(t.type);
-      return brGroups(t.type, t.tickets).map((g) => {
+      const tyHead = `<tr class="btyhead"><td class="l" colspan="${ncols}">${label}`
+        + `<span class="bn">${t.tickets.length}点</span></td></tr>`;
+      return tyHead + brGroups(t.type, t.tickets).map((g) => {
         let gret = 0;
         const hits = [];
         for (const tk of g.tickets) {
@@ -3638,27 +3642,31 @@ function renderBetRules(site) {
             + `<span class="brl">の${ordered ? '1着固定' : '軸1頭'}流し（相手 </span>${rel}`
             + `<span class="brl">）</span>`;
         } else {
-          body = g.tickets.map((tk) => comboBoxes(t.type, tk, byNum))
-            .join('<span class="cbsep">／</span>');
+          // 名前が使えない塊は1点1行で出す（2026-09-09 ユーザー決定。
+          // 1行に18点並べると読めなかったため）
+          return g.tickets.map((tk) => {
+            const p = payOf(t.type, tk);
+            const c = showResult
+              ? `<td class="${p ? 'o' : 'x'}">${p ? '✓' : '✕'}</td><td>${fmtYen(p)}</td>`
+              : '';
+            return `<tr><td class="l bcombo">${comboBoxes(t.type, tk, byNum)}</td>`
+              + `<td>${fmtYen(100)}</td>${c}</tr>`;
+          }).join('');
         }
         const cell = showResult
           ? `<td class="${gret ? 'o' : 'x'}">${gret ? '✓' : '✕'}</td><td>${fmtYen(gret)}</td>`
           : '';
-        // 2026-09-09 ユーザー決定: 「除く…」「的中…」の補足行は出さない。
-        // 欠けのある塊は名前を使わず買い目をそのまま並べるので、除外を書く必要が無い。
-        // 的中は行の右の ✓ と払戻の金額で足りる。
-        const note = '';
-        return `<tr><td class="l">${label}</td><td class="l bcombo">${body}</td>`
-          + `<td>${fmtYen(g.n * 100)}</td>${cell}</tr>${note}`;
+        return `<tr><td class="l bcombo">${body}</td>`
+          + `<td>${fmtYen(g.n * 100)}</td>${cell}</tr>`;
       }).join('');
     }).join('');
     gp += pl.points;
     gr += ret;
     const foot = showResult
-      ? `<tr><td class="l">合計</td><td class="l">${pl.points}点</td>`
+      ? `<tr><td class="l">合計 ${pl.points}点</td>`
         + `<td>${fmtYen(pl.stake)}</td><td class="${ret ? 'o' : 'x'}">${ret ? '✓' : '✕'}</td>`
         + `<td>${fmtYen(ret)}</td></tr>`
-      : `<tr><td class="l">合計</td><td class="l">${pl.points}点</td>`
+      : `<tr><td class="l">合計 ${pl.points}点</td>`
         + `<td>${fmtYen(pl.stake)}</td></tr>`;
     return head
       + `<table class="fixed betstbl"><thead>${header}</thead>`
