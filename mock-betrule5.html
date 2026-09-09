@@ -1,0 +1,188 @@
+<!doctype html><html lang="ja"><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>買い目5案（Ans.デザイン）</title>
+<style>
+:root{
+  /* テキスト3階調 */
+  --text:#333333;        /* 本文 */
+  --sub:#5C5C5C;         /* 補足 */
+  --cap:#757575;         /* キャプション・表ヘッダ */
+
+  /* ブランド・リンク */
+  --navy:#003E70;        /* ブランド・◎印・重賞バッジ・見出しアクセント・有利判定 */
+  --link:#326691;        /* 通常リンク */
+  --cta:#0068BC;         /* 発走前ピル・土曜色 */
+  --orange:#F58700;      /* 買い印★ */
+
+  /* セマンティック */
+  --hit:#0F7A3D;         /* 的中・プラス回収率・妙味（緑はこの用途専用） */
+  --live:#EB1400;        /* 不的中・マイナス・地雷・日曜色・不利判定 */
+  --upcoming:#003E70;    /* R箱: 発走前 */
+  --finished:#C8102E;    /* R箱: 終了（勝敗とは無関係） */
+
+  /* 馬場種別（netkeiba踏襲） */
+  --turf:#2f8f4e;        /* 芝 */
+  --dirt:#D97A00;        /* ダート */
+
+  /* 印のランク色（馬名の文字色に使う。濃→薄） */
+  --mk-hon:#003E70;      /* ◎ */
+  --mk-tai:#35617f;      /* ○ */
+  --mk-tan:#566b7a;      /* ▲ */
+  --mk-oku:#6f7883;      /* △ */
+  /* 印バッジの背景色（◎○▲△の塗りチップ） */
+  --mkb-hon:#003E70; --mkb-tai:#5C7A99; --mkb-tan:#8a97a3; --mkb-oku:#aab2b8;
+  --keshi:#8A8F94;       /* 消し＝灰。赤は地雷が使っているので使わない（mockup-116 案A） */
+  /* ✓（2026-09-02追加）。◎○▲△の濃淡ランプにも☆の橙にも重ならない色として緑を当てた。
+     白地でのコントラスト比 4.9:1（本文の基準4.5以上を満たす） */
+  --mk-chk:#1B7A43;
+
+  /* 荒れ度（89-spec）。同じ色相の濃淡だけ。良し悪しを含意させないため緑・赤は使わない */
+  --up-kata:#003E70;     /* 堅い   = 濃い（人気に集中） */
+  --up-naka:#6E8CA6;     /* 中荒れ = 中間 */
+  --up-dai:#B7C6D3;      /* 大荒れ = 薄い（ばらける） */
+  --up-on-bg:#E8EFF5;    /* 該当クラスのカード背景 */
+  /* 荒れ度の**文字色**（110-spec §3）。塗りをそのまま文字に使うと読めないので分ける。
+     濃さの向きは塗りと同じ。カッコ内は白地でのコントラスト比（本文は4.5以上が必要） */
+  --up-kata-t:#003E70;   /* 堅い   (10.9:1) 塗りと同じ値でよい */
+  --up-naka-t:#35617F;   /* 中荒れ  (6.6:1) 塗り#6E8CA6は3.5:1で不足 */
+  --up-dai-t:#63798A;    /* 大荒れ  (4.5:1) 塗り#B7C6D3は1.75:1で論外 */
+  /* 一覧の札（119-spec）だけは色相で分ける。89-spec の「濃淡だけ」を一覧に限って改めた。
+     理由: 小さい札3種を並べると濃淡の差が読み取れなかった（2026-08-19 ユーザー決定）。
+     緑（芝・的中）・赤（不的中・地雷）・橙（ダート）は別の意味で使用中なので避けている。
+     カッコ内は白抜き文字のコントラスト比（本文は4.5以上が必要） */
+  --up-chip-kata:#003E70;  /* 堅い   (10.9:1) */
+  --up-chip-naka:#5B4B9E;  /* 中荒れ  (7.0:1) 青紫 */
+  --up-chip-dai:#A32267;   /* 大荒れ  (7.1:1) 赤紫 */
+
+  /* 3連単100万超え（103-spec）。荒れ度と同じく色相の濃淡だけ。緑・赤は使わない。
+     人気番号の帯は 2026-08-06 に廃止したので --bp-band は削除した（--bp-off は別用途で生存中） */
+  --bp-on:#003E70;       /* 発生率が高いレースの枠線 */
+  --bp-off:#EDEDEA;      /* 淡い塗り（他ブロックでも使用） */
+
+  /* 背景・罫線 */
+  --bg:#FFFFFF;
+  --sub-bg:#FAFAFA;      /* 薄背景（1着行など） */
+  --sub-bg2:#F1F1F0;     /* 濃いめ薄背景（バー土台・開催メタ） */
+  --rule:#E3E3E3;        /* 通常罫線 */
+  --rule-strong:#333333; /* 強罫線（ヘッダ下・表ヘッダ下・折り見出し） */
+  --sep:#EAEAE7;         /* 数値列を区切る縦罫線 */
+
+  /* チップ（過小/過剰/妥当・達成/未達/蓄積中） */
+  --chip-under-bg:#E7F3EA; --chip-under-fg:#0F6A34;   /* 過小=買い得（緑系） */
+  --chip-over-bg:#F0F0EE;  --chip-over-fg:#7a6a6a;    /* 過剰（グレー） */
+  --chip-fair-bg:#EEF1F5;  --chip-fair-fg:#4a5766;    /* 妥当（青グレー） */
+  --chip-ok-bg:#E7F3EA;    --chip-ok-fg:#0F6A34;      /* 達成 */
+  --chip-ng-bg:#FBE9E9;    --chip-ng-fg:#b23b3b;      /* 未達 */
+  --chip-acc-bg:#F0F0EE;   --chip-acc-fg:#7a7a72;     /* 蓄積中 */
+
+  /* その他の実値 */
+  --pred-row:#F4F8FC;    /* 印あり馬の行背景 */
+  --pred-race:#FCFCFB;   /* 予想済みレース行の背景 */
+  --ev-max-bg:#E7F3EA;   /* 期待値最大セルの背景 */
+  --cal-bar:#9db8cf;     /* 校正バー */
+  --win5:#1f6feb;        /* WIN5マーク（121-spec・一覧の脚番号の札。白抜き文字で4.6:1） */
+  --green-row:#E3F4E8;   /* 45-spec: EV>1の買える馬・買い目の行背景 */
+
+  /* 2026-08-28: 和文（日本語）の書体を明記した。それまで並んでいたのは欧文専用の9個だけで、
+     日本語はブラウザの初期設定に落ちていた（Macはヒラギノ角ゴW3・Windowsは游ゴシック）。
+     端末ごとに太さが変わるのをやめ、サイト全体をヒラギノ角ゴにそろえる。
+     欧文と数字は今までどおり先頭の並びから取るので、桁の揃い方は変わらない。
+     Windowsにヒラギノは無いので BIZ UDPGothic → 游ゴシックMedium → メイリオ の順で受ける。 */
+  --font:-apple-system,"system-ui","Segoe UI",Roboto,Oxygen,Ubuntu,"Helvetica Neue",Arial,
+    "Hiragino Sans","BIZ UDPGothic","Yu Gothic Medium",Meiryo,sans-serif;
+  --max-width:720px;
+}
+
+.chip{display:inline-block;font-size:11px;font-weight:700;padding:1px 7px;
+  border-radius:2px;white-space:nowrap}
+.chip.under{background:var(--chip-under-bg);color:var(--chip-under-fg)}
+.chip.over{background:var(--chip-over-bg);color:var(--chip-over-fg)}
+.chip.fair{background:var(--chip-fair-bg);color:var(--chip-fair-fg)}
+.chip.ok{background:var(--chip-ok-bg);color:var(--chip-ok-fg)}
+.chip.ng{background:var(--chip-ng-bg);color:var(--chip-ng-fg)}
+.chip.acc{background:var(--chip-acc-bg);color:var(--chip-acc-fg)}
+.hn{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;
+  border-radius:5px;font-weight:700;font-size:12.5px;vertical-align:middle;
+  font-variant-numeric:tabular-nums;flex:none}
+.hn.sm{width:22px;height:22px;font-size:12.5px;border-radius:5px}
+.hn.plain{background:none;color:var(--text)}
+.hn.wk1{background:#fff;color:#000;border:1.5px solid #333}
+.hn.wk2{background:#000;color:#fff}
+.hn.wk3{background:#e60012;color:#fff}
+.hn.wk4{background:#0068c8;color:#fff}
+.hn.wk5{background:#ffd900;color:#000}
+.hn.wk6{background:#009944;color:#fff}
+.hn.wk7{background:#f39800;color:#fff}
+.hn.wk8{background:#e85298;color:#fff}
+.cbsep{color:var(--cap);font-weight:700;margin:0 3px}
+.chip.buy{background:var(--chip-under-bg);color:var(--chip-under-fg)}
+.chip.pass{background:var(--chip-over-bg);color:var(--chip-over-fg)}
+.chip.lowp{background:var(--chip-acc-bg);color:var(--chip-acc-fg);margin-left:4px}
+
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--text);
+  font-family:var(--font);line-height:1.5;letter-spacing:normal}
+a{color:var(--link);text-decoration:none}
+a:hover{text-decoration:underline}
+.container{max-width:var(--max-width);margin:0 auto;padding:0 14px 32px}
+
+
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--text);
+  font-family:var(--font);line-height:1.5}
+.container{max-width:var(--max-width);margin:0 auto;padding:0 14px 40px}
+.site-header{max-width:var(--max-width);margin:0 auto;display:flex;align-items:center;
+  justify-content:space-between;padding:11px 14px;border-bottom:2px solid var(--rule-strong)}
+.site-header .logo{font-family:"Hoefler Text","Hiragino Mincho ProN",Georgia,serif;
+  font-style:italic;font-size:27px;font-weight:600;color:var(--text);line-height:1}
+.site-header .logo .g{color:var(--navy)}
+.site-header nav{display:flex;gap:14px;font-size:13px;font-weight:700}
+.site-header nav a{color:var(--link);text-decoration:none}
+.secthead{display:flex;align-items:center;gap:8px;margin-top:18px;padding:8px 11px;
+  background:var(--navy);color:#fff;font-size:15px;font-weight:700;border-radius:3px}
+.secthead .cnt{margin-left:auto;font-size:11px;font-weight:400;opacity:.85}
+.eyebrow{font-size:14px;font-weight:700;border-bottom:1px solid var(--rule);
+  padding-bottom:5px;margin:22px 0 9px}
+h1.rt{font-size:17px;margin:14px 0 2px;font-weight:700}
+.rmeta{font-size:12px;color:var(--sub);margin:0 0 12px}
+.rmeta .turf{color:var(--turf);font-weight:700}
+.rmeta .up{color:var(--up-naka-t);font-weight:700}
+.warn{background:var(--chip-acc-bg);color:var(--chip-acc-fg);border-left:3px solid var(--cap);
+  padding:8px 10px;font-size:12px;line-height:1.7;margin:0 0 4px}
+table{width:100%;border-collapse:collapse;font-size:13px;margin-top:2px}
+th{font-size:11px;color:var(--cap);font-weight:700;padding:5px 6px;text-align:center;
+  border-bottom:2px solid var(--rule-strong)}
+td{padding:7px 6px;border-bottom:1px solid var(--rule);text-align:center;vertical-align:middle}
+td.l,th.l{text-align:left}td.r{text-align:right;font-variant-numeric:tabular-nums}
+td.r.hot{color:var(--live);font-weight:700}
+td.o{color:var(--hit);font-weight:700}td.x{color:var(--cap)}
+tfoot td{border-top:2px solid var(--rule-strong);border-bottom:none;font-weight:700;
+  background:var(--sub-bg)}
+.conf{font-size:12px;color:var(--cap);margin-top:5px}
+.mk{display:inline-flex;width:22px;height:22px;border-radius:4px;color:#fff;font-size:12.5px;
+  align-items:center;justify-content:center;font-weight:700}
+.mkb-hon{background:var(--mkb-hon)}.mkb-tai{background:var(--mkb-tai)}
+.mkb-tan{background:var(--mkb-tan)}.mkb-oku{background:var(--mkb-oku)}
+.mkb-ana{background:var(--orange)}
+td.nm{font-weight:600}
+.gsum{margin-top:20px;padding:10px 11px;background:var(--sub-bg2);border-radius:3px;
+  font-size:13px;font-weight:700;display:flex;justify-content:space-between}
+</style>
+<header class="site-header"><div class="logo">An<span class="g">s</span>.</div>
+<nav><a href="#">レース</a><a href="#">戦績</a><a href="#">コース</a></nav></header>
+<div class="container">
+<h1 class="rt">セントウルS</h1>
+<p class="rmeta">2026-09-06　阪神11R　オープン　<span class="turf">芝1200m</span>　馬場 良　16頭　荒れ度 <span class="up">中荒れ</span></p>
+
+<div class="eyebrow">買う候補の6頭</div>
+<table><thead><tr><th>印</th><th>馬番</th><th class="l">馬名</th><th>単勝</th><th>勝率</th><th>地雷</th></tr></thead>
+<tbody><tr><td><span class="mk mkb-hon">◎</span></td><td><span class="hn wk3">5</span></td><td class="l nm">ダイヤモンドノット</td><td class="r hot">7.0</td><td class="r">23.0%</td><td class="r"></td></tr><tr><td><span class="mk mkb-tai">○</span></td><td><span class="hn wk2">3</span></td><td class="l nm">フリッカージャブ</td><td class="r hot">2.8</td><td class="r">19.6%</td><td class="r"></td></tr><tr><td><span class="mk mkb-tan">▲</span></td><td><span class="hn wk5">9</span></td><td class="l nm">ピューロマジック</td><td class="r hot">4.6</td><td class="r">12.4%</td><td class="r"></td></tr><tr><td><span class="mk mkb-oku">△</span></td><td><span class="hn wk8">16</span></td><td class="l nm">タマモイカロス</td><td class="r">30.8</td><td class="r">7.7%</td><td class="r"></td></tr><tr><td><span class="mk mkb-oku">△</span></td><td><span class="hn wk1">1</span></td><td class="l nm">ママコチャ</td><td class="r">10.8</td><td class="r">7.7%</td><td class="r"></td></tr><tr><td><span class="mk mkb-ana">穴</span></td><td><span class="hn wk5">10</span></td><td class="l nm">ヤブサメ</td><td class="r">74.7</td><td class="r">3.4%</td><td class="r"></td></tr></tbody></table>
+
+<div class="eyebrow">買い目 <span class="conf" style="font-weight:400">5案を並走して検証中</span></div>
+<div class="warn"><b>この5案はどれも答え合わせが終わっていません。</b>
+3か月の実測（2026-06〜09）で100円買って戻ったのは 86.0〜119.8円。100円を割る案もあります。
+どれか1つを本採用にする判断は 2026-Q4 以降に行います。</div>
+<div class="secthead">東海<span class="cnt">オッズ帯・頭数・クラス・荒れ度・地雷 129ルール</span></div><table class="fixed betstbl"><thead><tr><th class="l">券種</th><th class="l">買い目</th><th>金額</th><th>結果</th><th>払戻</th></tr></thead><tbody><tr><td class="l">ワイド <span class="chip ng">低</span></td><td class="l"><span class="hn wk8 sm">16</span><span class="cbsep">-</span><span class="hn wk5 sm">10</span></td><td>100円</td><td class="x">✕</td><td>0円</td></tr><tr><td class="l">3連複 <span class="chip ng">低</span></td><td class="l"><span class="hn wk3 sm">5</span><span class="cbsep">-</span><span class="hn wk5 sm">9</span><span class="cbsep">-</span><span class="hn wk1 sm">1</span></td><td>100円</td><td class="x">✕</td><td>0円</td></tr></tbody><tfoot><tr><td class="l">合計</td><td class="l">2点</td><td>200円</td><td class="x">✕</td><td>0円</td></tr></tfoot></table><div class="conf">信頼度＝過去の検証で100円が何円で戻ったか（1.00でトントン）：この案 0.92</div><div class="secthead">甲州<span class="cnt">コース・馬場・季節 127ルール</span></div><table class="fixed betstbl"><thead><tr><th class="l">券種</th><th class="l">買い目</th><th>金額</th><th>結果</th><th>払戻</th></tr></thead><tbody><tr><td class="l">ワイド <span class="chip ok">高</span></td><td class="l"><span class="hn wk3 sm">5</span><span class="cbsep">-</span><span class="hn wk2 sm">3</span></td><td>100円</td><td class="x">✕</td><td>0円</td></tr><tr><td class="l">ワイド <span class="chip ok">高</span></td><td class="l"><span class="hn wk3 sm">5</span><span class="cbsep">-</span><span class="hn wk5 sm">9</span></td><td>100円</td><td class="x">✕</td><td>0円</td></tr><tr><td class="l">ワイド <span class="chip ok">高</span></td><td class="l"><span class="hn wk3 sm">5</span><span class="cbsep">-</span><span class="hn wk8 sm">16</span></td><td>100円</td><td class="x">✕</td><td>0円</td></tr><tr><td class="l">ワイド <span class="chip ok">高</span></td><td class="l"><span class="hn wk3 sm">5</span><span class="cbsep">-</span><span class="hn wk1 sm">1</span></td><td>100円</td><td class="x">✕</td><td>0円</td></tr><tr><td class="l">ワイド <span class="chip ok">高</span></td><td class="l"><span class="hn wk3 sm">5</span><span class="cbsep">-</span><span class="hn wk5 sm">10</span></td><td>100円</td><td class="x">✕</td><td>0円</td></tr><tr><td class="l">ワイド <span class="chip ok">高</span></td><td class="l"><span class="hn wk2 sm">3</span><span class="cbsep">-</span><span class="hn wk5 sm">9</span></td><td>100円</td><td class="o">✓</td><td>330円</td></tr><tr><td class="l">ワイド <span class="chip ok">高</span></td><td class="l"><span class="hn wk2 sm">3</span><span class="cbsep">-</span><span class="hn wk8 sm">16</span></td><td>100円</td><td class="x">✕</td><td>0円</td></tr><tr><td class="l">ワイド <span class="chip ok">高</span></td><td class="l"><span class="hn wk2 sm">3</span><span class="cbsep">-</span><span class="hn wk1 sm">1</span></td><td>100円</td><td class="o">✓</td><td>430円</td></tr><tr><td class="l">ワイド <span class="chip ok">高</span></td><td class="l"><span class="hn wk2 sm">3</span><span class="cbsep">-</span><span class="hn wk5 sm">10</span></td><td>100円</td><td class="x">✕</td><td>0円</td></tr><tr><td class="l">ワイド <span class="chip ok">高</span></td><td class="l"><span class="hn wk5 sm">9</span><span class="cbsep">-</span><span class="hn wk8 sm">16</span></td><td>100円</td><td class="x">✕</td><td>0円</td></tr><tr><td class="l">ワイド <span class="chip ok">高</span></td><td class="l"><span class="hn wk5 sm">9</span><span class="cbsep">-</span><span class="hn wk1 sm">1</span></td><td>100円</td><td class="o">✓</td><td>690円</td></tr><tr><td class="l">ワイド <span class="chip ok">高</span></td><td class="l"><span class="hn wk5 sm">9</span><span class="cbsep">-</span><span class="hn wk5 sm">10</span></td><td>100円</td><td class="x">✕</td><td>0円</td></tr><tr><td class="l">ワイド <span class="chip ok">高</span></td><td class="l"><span class="hn wk8 sm">16</span><span class="cbsep">-</span><span class="hn wk1 sm">1</span></td><td>100円</td><td class="x">✕</td><td>0円</td></tr><tr><td class="l">ワイド <span class="chip ok">高</span></td><td class="l"><span class="hn wk8 sm">16</span><span class="cbsep">-</span><span class="hn wk5 sm">10</span></td><td>100円</td><td class="x">✕</td><td>0円</td></tr><tr><td class="l">ワイド <span class="chip ok">高</span></td><td class="l"><span class="hn wk1 sm">1</span><span class="cbsep">-</span><span class="hn wk5 sm">10</span></td><td>100円</td><td class="x">✕</td><td>0円</td></tr><tr><td class="l">馬連 <span class="chip ok">高</span></td><td class="l"><span class="hn wk3 sm">5</span><span class="cbsep">-</span><span class="hn wk8 sm">16</span></td><td>100円</td><td class="x">✕</td><td>0円</td></tr><tr><td class="l">馬単 <span class="chip ok">高</span></td><td class="l"><span class="hn wk3 sm">5</span><span class="cbsep">→</span><span class="hn wk8 sm">16</span></td><td>100円</td><td class="x">✕</td><td>0円</td></tr><tr><td class="l">馬単 <span class="chip ok">高</span></td><td class="l"><span class="hn wk8 sm">16</span><span class="cbsep">→</span><span class="hn wk3 sm">5</span></td><td>100円</td><td class="x">✕</td><td>0円</td></tr></tbody><tfoot><tr><td class="l">合計</td><td class="l">18点</td><td>1,800円</td><td class="o">✓</td><td>1,450円</td></tr></tfoot></table><div class="conf">信頼度＝過去の検証で100円が何円で戻ったか（1.00でトントン）：この案 1.47</div><div class="secthead">中山<span class="cnt">10期中8期で100円超 50ルール</span></div><table class="fixed betstbl"><thead><tr><th class="l">券種</th><th class="l">買い目</th><th>金額</th><th>結果</th><th>払戻</th></tr></thead><tbody><tr><td class="l">3連複 <span class="chip ng">低</span></td><td class="l"><span class="hn wk3 sm">5</span><span class="cbsep">-</span><span class="hn wk2 sm">3</span><span class="cbsep">-</span><span class="hn wk1 sm">1</span></td><td>100円</td><td class="x">✕</td><td>0円</td></tr><tr><td class="l">3連複 <span class="chip ng">低</span></td><td class="l"><span class="hn wk3 sm">5</span><span class="cbsep">-</span><span class="hn wk5 sm">9</span><span class="cbsep">-</span><span class="hn wk1 sm">1</span></td><td>100円</td><td class="x">✕</td><td>0円</td></tr><tr><td class="l">3連複 <span class="chip ng">低</span></td><td class="l"><span class="hn wk2 sm">3</span><span class="cbsep">-</span><span class="hn wk5 sm">9</span><span class="cbsep">-</span><span class="hn wk1 sm">1</span></td><td>100円</td><td class="o">✓</td><td>1,560円</td></tr></tbody><tfoot><tr><td class="l">合計</td><td class="l">3点</td><td>300円</td><td class="o">✓</td><td>1,560円</td></tr></tfoot></table><div class="conf">信頼度＝過去の検証で100円が何円で戻ったか（1.00でトントン）：この案 0.96</div><div class="secthead">奥州<span class="cnt">betrule-1 と C のどちらか 256ルール</span></div><table class="fixed betstbl"><thead><tr><th class="l">券種</th><th class="l">買い目</th><th>金額</th><th>結果</th><th>払戻</th></tr></thead><tbody><tr><td class="l">ワイド <span class="chip ok">高</span></td><td class="l"><span class="hn wk3 sm">5</span><span class="cbsep">-</span><span class="hn wk2 sm">3</span></td><td>100円</td><td class="x">✕</td><td>0円</td></tr><tr><td class="l">ワイド <span class="chip ok">高</span></td><td class="l"><span class="hn wk3 sm">5</span><span class="cbsep">-</span><span class="hn wk5 sm">9</span></td><td>100円</td><td class="x">✕</td><td>0円</td></tr><tr><td class="l">ワイド <span class="chip ok">高</span></td><td class="l"><span class="hn wk3 sm">5</span><span class="cbsep">-</span><span class="hn wk8 sm">16</span></td><td>100円</td><td class="x">✕</td><td>0円</td></tr><tr><td class="l">ワイド <span class="chip ok">高</span></td><td class="l"><span class="hn wk3 sm">5</span><span class="cbsep">-</span><span class="hn wk1 sm">1</span></td><td>100円</td><td class="x">✕</td><td>0円</td></tr><tr><td class="l">ワイド <span class="chip ok">高</span></td><td class="l"><span class="hn wk3 sm">5</span><span class="cbsep">-</span><span class="hn wk5 sm">10</span></td><td>100円</td><td class="x">✕</td><td>0円</td></tr><tr><td class="l">ワイド <span class="chip ok">高</span></td><td class="l"><span class="hn wk2 sm">3</span><span class="cbsep">-</span><span class="hn wk5 sm">9</span></td><td>100円</td><td class="o">✓</td><td>330円</td></tr><tr><td class="l">ワイド <span class="chip ok">高</span></td><td class="l"><span class="hn wk2 sm">3</span><span class="cbsep">-</span><span class="hn wk8 sm">16</span></td><td>100円</td><td class="x">✕</td><td>0円</td></tr><tr><td class="l">ワイド <span class="chip ok">高</span></td><td class="l"><span class="hn wk2 sm">3</span><span class="cbsep">-</span><span class="hn wk1 sm">1</span></td><td>100円</td><td class="o">✓</td><td>430円</td></tr><tr><td class="l">ワイド <span class="chip ok">高</span></td><td class="l"><span class="hn wk2 sm">3</span><span class="cbsep">-</span><span class="hn wk5 sm">10</span></td><td>100円</td><td class="x">✕</td><td>0円</td></tr><tr><td class="l">ワイド <span class="chip ok">高</span></td><td class="l"><span class="hn wk5 sm">9</span><span class="cbsep">-</span><span class="hn wk8 sm">16</span></td><td>100円</td><td class="x">✕</td><td>0円</td></tr><tr><td class="l">ワイド <span class="chip ok">高</span></td><td class="l"><span class="hn wk5 sm">9</span><span class="cbsep">-</span><span class="hn wk1 sm">1</span></td><td>100円</td><td class="o">✓</td><td>690円</td></tr><tr><td class="l">ワイド <span class="chip ok">高</span></td><td class="l"><span class="hn wk5 sm">9</span><span class="cbsep">-</span><span class="hn wk5 sm">10</span></td><td>100円</td><td class="x">✕</td><td>0円</td></tr><tr><td class="l">ワイド <span class="chip ok">高</span></td><td class="l"><span class="hn wk8 sm">16</span><span class="cbsep">-</span><span class="hn wk1 sm">1</span></td><td>100円</td><td class="x">✕</td><td>0円</td></tr><tr><td class="l">ワイド <span class="chip ok">高</span></td><td class="l"><span class="hn wk8 sm">16</span><span class="cbsep">-</span><span class="hn wk5 sm">10</span></td><td>100円</td><td class="x">✕</td><td>0円</td></tr><tr><td class="l">ワイド <span class="chip ok">高</span></td><td class="l"><span class="hn wk1 sm">1</span><span class="cbsep">-</span><span class="hn wk5 sm">10</span></td><td>100円</td><td class="x">✕</td><td>0円</td></tr><tr><td class="l">馬連 <span class="chip ok">高</span></td><td class="l"><span class="hn wk3 sm">5</span><span class="cbsep">-</span><span class="hn wk8 sm">16</span></td><td>100円</td><td class="x">✕</td><td>0円</td></tr><tr><td class="l">馬単 <span class="chip ok">高</span></td><td class="l"><span class="hn wk3 sm">5</span><span class="cbsep">→</span><span class="hn wk8 sm">16</span></td><td>100円</td><td class="x">✕</td><td>0円</td></tr><tr><td class="l">馬単 <span class="chip ok">高</span></td><td class="l"><span class="hn wk8 sm">16</span><span class="cbsep">→</span><span class="hn wk3 sm">5</span></td><td>100円</td><td class="x">✕</td><td>0円</td></tr><tr><td class="l">3連複 <span class="chip ok">高</span></td><td class="l"><span class="hn wk3 sm">5</span><span class="cbsep">-</span><span class="hn wk5 sm">9</span><span class="cbsep">-</span><span class="hn wk1 sm">1</span></td><td>100円</td><td class="x">✕</td><td>0円</td></tr></tbody><tfoot><tr><td class="l">合計</td><td class="l">19点</td><td>1,900円</td><td class="o">✓</td><td>1,450円</td></tr></tfoot></table><div class="conf">信頼度＝過去の検証で100円が何円で戻ったか（1.00でトントン）：この案 1.29</div><div class="secthead">日光<span class="cnt">C と D のどちらか 177ルール</span></div><table class="fixed betstbl"><thead><tr><th class="l">券種</th><th class="l">買い目</th><th>金額</th><th>結果</th><th>払戻</th></tr></thead><tbody><tr><td class="l">ワイド <span class="chip ok">高</span></td><td class="l"><span class="hn wk3 sm">5</span><span class="cbsep">-</span><span class="hn wk2 sm">3</span></td><td>100円</td><td class="x">✕</td><td>0円</td></tr><tr><td class="l">ワイド <span class="chip ok">高</span></td><td class="l"><span class="hn wk3 sm">5</span><span class="cbsep">-</span><span class="hn wk5 sm">9</span></td><td>100円</td><td class="x">✕</td><td>0円</td></tr><tr><td class="l">ワイド <span class="chip ok">高</span></td><td class="l"><span class="hn wk3 sm">5</span><span class="cbsep">-</span><span class="hn wk8 sm">16</span></td><td>100円</td><td class="x">✕</td><td>0円</td></tr><tr><td class="l">ワイド <span class="chip ok">高</span></td><td class="l"><span class="hn wk3 sm">5</span><span class="cbsep">-</span><span class="hn wk1 sm">1</span></td><td>100円</td><td class="x">✕</td><td>0円</td></tr><tr><td class="l">ワイド <span class="chip ok">高</span></td><td class="l"><span class="hn wk3 sm">5</span><span class="cbsep">-</span><span class="hn wk5 sm">10</span></td><td>100円</td><td class="x">✕</td><td>0円</td></tr><tr><td class="l">ワイド <span class="chip ok">高</span></td><td class="l"><span class="hn wk2 sm">3</span><span class="cbsep">-</span><span class="hn wk5 sm">9</span></td><td>100円</td><td class="o">✓</td><td>330円</td></tr><tr><td class="l">ワイド <span class="chip ok">高</span></td><td class="l"><span class="hn wk2 sm">3</span><span class="cbsep">-</span><span class="hn wk8 sm">16</span></td><td>100円</td><td class="x">✕</td><td>0円</td></tr><tr><td class="l">ワイド <span class="chip ok">高</span></td><td class="l"><span class="hn wk2 sm">3</span><span class="cbsep">-</span><span class="hn wk1 sm">1</span></td><td>100円</td><td class="o">✓</td><td>430円</td></tr><tr><td class="l">ワイド <span class="chip ok">高</span></td><td class="l"><span class="hn wk2 sm">3</span><span class="cbsep">-</span><span class="hn wk5 sm">10</span></td><td>100円</td><td class="x">✕</td><td>0円</td></tr><tr><td class="l">ワイド <span class="chip ok">高</span></td><td class="l"><span class="hn wk5 sm">9</span><span class="cbsep">-</span><span class="hn wk8 sm">16</span></td><td>100円</td><td class="x">✕</td><td>0円</td></tr><tr><td class="l">ワイド <span class="chip ok">高</span></td><td class="l"><span class="hn wk5 sm">9</span><span class="cbsep">-</span><span class="hn wk1 sm">1</span></td><td>100円</td><td class="o">✓</td><td>690円</td></tr><tr><td class="l">ワイド <span class="chip ok">高</span></td><td class="l"><span class="hn wk5 sm">9</span><span class="cbsep">-</span><span class="hn wk5 sm">10</span></td><td>100円</td><td class="x">✕</td><td>0円</td></tr><tr><td class="l">ワイド <span class="chip ok">高</span></td><td class="l"><span class="hn wk8 sm">16</span><span class="cbsep">-</span><span class="hn wk1 sm">1</span></td><td>100円</td><td class="x">✕</td><td>0円</td></tr><tr><td class="l">ワイド <span class="chip ok">高</span></td><td class="l"><span class="hn wk8 sm">16</span><span class="cbsep">-</span><span class="hn wk5 sm">10</span></td><td>100円</td><td class="x">✕</td><td>0円</td></tr><tr><td class="l">ワイド <span class="chip ok">高</span></td><td class="l"><span class="hn wk1 sm">1</span><span class="cbsep">-</span><span class="hn wk5 sm">10</span></td><td>100円</td><td class="x">✕</td><td>0円</td></tr><tr><td class="l">馬連 <span class="chip ok">高</span></td><td class="l"><span class="hn wk3 sm">5</span><span class="cbsep">-</span><span class="hn wk8 sm">16</span></td><td>100円</td><td class="x">✕</td><td>0円</td></tr><tr><td class="l">馬単 <span class="chip ok">高</span></td><td class="l"><span class="hn wk3 sm">5</span><span class="cbsep">→</span><span class="hn wk8 sm">16</span></td><td>100円</td><td class="x">✕</td><td>0円</td></tr><tr><td class="l">馬単 <span class="chip ok">高</span></td><td class="l"><span class="hn wk8 sm">16</span><span class="cbsep">→</span><span class="hn wk3 sm">5</span></td><td>100円</td><td class="x">✕</td><td>0円</td></tr><tr><td class="l">3連複 <span class="chip ok">高</span></td><td class="l"><span class="hn wk3 sm">5</span><span class="cbsep">-</span><span class="hn wk2 sm">3</span><span class="cbsep">-</span><span class="hn wk1 sm">1</span></td><td>100円</td><td class="x">✕</td><td>0円</td></tr><tr><td class="l">3連複 <span class="chip ok">高</span></td><td class="l"><span class="hn wk3 sm">5</span><span class="cbsep">-</span><span class="hn wk5 sm">9</span><span class="cbsep">-</span><span class="hn wk1 sm">1</span></td><td>100円</td><td class="x">✕</td><td>0円</td></tr><tr><td class="l">3連複 <span class="chip ok">高</span></td><td class="l"><span class="hn wk2 sm">3</span><span class="cbsep">-</span><span class="hn wk5 sm">9</span><span class="cbsep">-</span><span class="hn wk1 sm">1</span></td><td>100円</td><td class="o">✓</td><td>1,560円</td></tr></tbody><tfoot><tr><td class="l">合計</td><td class="l">21点</td><td>2,100円</td><td class="o">✓</td><td>3,010円</td></tr></tfoot></table><div class="conf">信頼度＝過去の検証で100円が何円で戻ったか（1.00でトントン）：この案 1.33</div>
+<div class="gsum"><span>5案の合計（重複を除かず単純合計）</span>
+<span>63点 6,300円 → 7,470円</span></div>
+</div></html>

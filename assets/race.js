@@ -773,204 +773,6 @@ function setupFinishOrder() {
 // 出馬表タブで自分の印を付けてから買い目タブへ来ると、アキネーターは前に描いたままなので、
 // タブを開いた時に描き直して印を読み直させる（state は保つので、進んだところは戻らない）
 let akRefresh = null;
-// 手動シミュレーター側も同じ理由で描き直す（2026-09-07・自分の印を出すようになったため）。
-// 選んだ馬（state.cols）は Simulator 側に残るので、組みかけの買い目は消えない
-let simRefresh = null;
-
-// ============================================================
-// 128-spec: 買い目シート。画面の下に要約バーを貼り、押すと下から重なって開く（案C）。
-// 保存・集計・描画は betsheet.js。ここは DOM への出し入れとイベントだけ。
-// タブを移っても消えないので、バーは .race20 の外（body直下）に置く。
-// ============================================================
-const BS = { raceId: null, site: null, probs: null, heads: 0, oddsAll: null, open: [] };
-
-function bsCtx() { return BS.site && BS.raceId; }
-
-// バーは中身が変わるたびに描き直す。1本も無ければ要素ごと消す（場所を取らない）
-function bsPaintBar() {
-  if (!bsCtx()) return;
-  let host = document.getElementById('bs-bar-host');
-  const html = BetSheet.renderBar(BS.raceId, BS.site, BS.probs, BS.heads, BS.oddsAll);
-  if (!html) { if (host) host.remove(); document.body.classList.remove('has-bsbar'); return; }
-  if (!host) {
-    host = document.createElement('div');
-    host.id = 'bs-bar-host';
-    document.body.appendChild(host);
-  }
-  host.innerHTML = html;
-  document.body.classList.add('has-bsbar');
-}
-
-function bsPaintList() {
-  const body = document.getElementById('bs-drawer-body');
-  if (!body || !bsCtx()) return;
-  body.innerHTML = BetSheet.renderList(BS.raceId, BS.site, BS.probs, BS.heads, BS.oddsAll, BS.open);
-  const t = BetSheet.totals(BetSheet.load(BS.raceId), BS.site, BS.probs, BS.heads, BS.oddsAll);
-  const sum = document.getElementById('bs-drawer-sum');
-  if (sum) sum.innerHTML = `${t.points}<i>点</i>　${String(t.buy).replace(/\B(?=(\d{3})+$)/g, ',')}<i>円</i>`;
-}
-
-function bsOpen() {
-  const dr = document.getElementById('bs-drawer');
-  if (!dr) return;
-  bsPaintList();
-  dr.hidden = false;
-  document.body.classList.add('bs-locked');
-}
-function bsClose() {
-  const dr = document.getElementById('bs-drawer');
-  if (!dr) return;
-  dr.hidden = true;
-  document.body.classList.remove('bs-locked');
-}
-
-// 「シートに入れる」。1頭も選んでいなければ入れない（0点の行が溜まるだけなので）
-function addCurrentToSheet(site, state) {
-  if (!bsCtx()) return;
-  const rows = Simulator.rowsFor(state, site, BS.probs, BS.heads, BS.oddsAll);
-  if (!rows.length) { bsToast('馬を選んでから押してください'); return; }
-  const r = BetSheet.add(BS.raceId, state, BetSheet.UNITS[0]);
-  if (!r.ok) { bsToast(`シートは${BetSheet.MAX_LINES}本まで`); return; }
-  bsPaintBar();
-  bsToast(`シートに入れました（${rows.length}点）`);
-}
-
-// 入れた・入らなかったを1.6秒だけ知らせる。押した指の近く（バーの上）に出す
-let bsToastTimer = null;
-function bsToast(text) {
-  let el = document.getElementById('bs-toast');
-  if (!el) {
-    el = document.createElement('div');
-    el.id = 'bs-toast';
-    el.setAttribute('role', 'status');
-    document.body.appendChild(el);
-  }
-  el.textContent = text;
-  el.classList.add('on');
-  clearTimeout(bsToastTimer);
-  bsToastTimer = setTimeout(() => el.classList.remove('on'), 1600);
-}
-
-// 2026-09-08: 「買いレース」の付け外し。押した所だけ塗り替える（ページは描き直さない）
-function setupBuyRace(site) {
-  const btn = document.querySelector('[data-buyrace]');
-  if (!btn || !site.race || !site.race.race_id) return;
-  btn.addEventListener('click', () => {
-    const on = toggleBuyRace(site.race.race_id);
-    btn.classList.toggle('on', on);
-    btn.setAttribute('aria-pressed', on ? 'true' : 'false');
-  });
-}
-
-function setupBetSheet(site, oddsAll) {
-  if (typeof BetSheet === 'undefined') return;
-  const built = Harville.buildProbs(site.horses);
-  BS.raceId = site.race && site.race.race_id;
-  BS.site = site; BS.probs = built.probs; BS.heads = built.heads; BS.oddsAll = oddsAll;
-  BS.open = [];
-  if (!BS.raceId) return;
-
-  const dr = document.createElement('div');
-  dr.id = 'bs-drawer';
-  dr.hidden = true;
-  dr.innerHTML = `<div class="bs-scrim" data-bs-close></div>
-    <div class="bs-panel" role="dialog" aria-modal="true" aria-label="買い目シート">
-      <div class="bs-head"><span>買い目シート</span>
-        <span class="n" id="bs-drawer-sum"></span>
-        <button type="button" class="bs-x" data-bs-close aria-label="閉じる">✕</button></div>
-      <div class="bs-scroll" id="bs-drawer-body"></div>
-    </div>`;
-  document.body.appendChild(dr);
-
-  document.addEventListener('click', (e) => {
-    if (e.target.closest('[data-bs-bar]')) { bsOpen(); return; }
-    if (e.target.closest('[data-bs-close]')) { bsClose(); return; }
-    const del = e.target.closest('[data-bs-del]');
-    if (del) { BetSheet.remove(BS.raceId, del.dataset.bsDel); bsPaintList(); bsPaintBar(); return; }
-    const step = e.target.closest('[data-bs-step]');
-    if (step) {
-      BetSheet.stepUnit(BS.raceId, step.dataset.id, Number(step.dataset.bsStep));
-      bsPaintList(); bsPaintBar(); return;
-    }
-    const op = e.target.closest('[data-bs-open]');
-    if (op) {
-      const id = op.dataset.bsOpen;
-      const i = BS.open.indexOf(id);
-      if (i === -1) BS.open.push(id); else BS.open.splice(i, 1);
-      bsPaintList(); return;
-    }
-    if (e.target.closest('[data-bs-clear]')) {
-      // 消すと戻せないので一度だけ確かめる
-      if (window.confirm('シートの買い目をすべて消します。よろしいですか。')) {
-        BetSheet.clear(BS.raceId); bsPaintList(); bsPaintBar();
-      }
-    }
-  });
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') bsClose(); });
-
-  bsPaintBar();
-}
-
-// ── 読んでいた位置を覚えて戻す（2026-09-07）──────────────────────
-// 戦績の面は18頭で 14,308px（375×812 の画面で17.6枚ぶん・中京11R の実測）ある。
-// 印や新聞、他のタブへ寄り道して戻るたび先頭へ落とされると読み直しになるので、
-// 面ごと・タブごとに「最後に読んでいた位置」を預けておき、戻った時にそこへ返す。
-// キーは出馬表タブだけ面まで分ける（他のタブに面は無い）。
-// 覚えるのはページを開いている間だけ。読み込み直したら先頭から始まる。
-const RACE20_Y = new Map();
-let race20Tab = null;                    // show() が入れる（RACE20_TAB_DEFAULT はこの下で定義）
-let race20View = 'mark';                 // 出馬表タブでいま出している面。既定は印（mmBar と揃える）
-
-function race20Key() {
-  if (!race20Tab) return null;
-  return race20Tab === 'shutuba' ? `shutuba:${race20View}` : race20Tab;
-}
-
-function race20SaveY() {
-  const k = race20Key();
-  if (k) RACE20_Y.set(k, window.scrollY);
-}
-
-// sticky で貼り付いている要素の「本来の位置」。貼り付いている間は
-// getBoundingClientRect も offsetTop も貼り付いた先の値を返す
-// （Chrome 実測 2026-09-07: scrollY=8000 のとき .tabbar の offsetTop も 8000）。
-// 一瞬 static に戻して測る。sticky と static は同じ場所を同じだけ占めるので画面は動かない。
-function race20NaturalTop(el) {
-  const keep = el.style.position;
-  el.style.position = 'static';
-  const y = el.getBoundingClientRect().top + window.scrollY;
-  el.style.position = keep;
-  return y;
-}
-
-// 面の先頭＝切替バーが貼り付く位置。タブバーのぶんだけ上を空ける
-function race20FaceTop(root) {
-  const mb = root.querySelector('.mm-bar');
-  if (!mb) return 0;
-  const tb = root.querySelector('.tabbar');
-  return Math.max(0, race20NaturalTop(mb) - (tb ? tb.getBoundingClientRect().height : 0));
-}
-
-// 貼り付ける切替バーの上位置を、タブバーの実測値で決める。
-// 文言やフォントが変わって行が高くなっても追随させる（CSS 側の既定は 43px）。
-function race20SyncBarTop(root) {
-  const tb = root.querySelector('.tabbar');
-  if (tb) root.style.setProperty('--mmtop', Math.round(tb.getBoundingClientRect().height) + 'px');
-}
-
-// 戻す。預けた位置が無ければ「その面・そのタブの先頭」へ。
-// 先頭より上（まだ読み始めていない位置）に居るなら動かさない。
-function race20RestoreY(topY) {
-  const y = RACE20_Y.get(race20Key());
-  if (y == null) {
-    if (window.scrollY > topY) window.scrollTo(0, topY);
-    return;
-  }
-  // 面ごとに本文の長さが違うので、いま行ける範囲に収める
-  const max = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
-  window.scrollTo(0, Math.min(y, max));
-}
-
 
 function setupTabs20(site) {
   const root = document.querySelector('#race-content .race20');
@@ -988,31 +790,25 @@ function setupTabs20(site) {
       b.setAttribute('aria-selected', on ? 'true' : 'false');
     }
     for (const p of panes) p.classList.toggle('on', p.dataset.pane === key);
-    race20Tab = key;                     // 位置を預けるキーに使う（race20Key）
     // 回顧タブは開いた瞬間に初めて幅が確定するので測り直す（折りたたみと同じ理由）
     if (key === 'kaiko') setupFinishOrder();
     // 111-spec: 出馬表で付けた印をアキネーターにも出すため、開くたびに描き直す
     if (key === 'kaime' && akRefresh) akRefresh();
-    // 2026-09-08: シミュレーターは出馬表タブへ移ったので、そちらを開いた時に描き直す
-    if (key === 'shutuba' && simRefresh) simRefresh();
     if (pushHash) history.replaceState(null, '', `${location.pathname}${location.search}#tab=${key}`);
   };
 
   bar.addEventListener('click', (e) => {
     const b = e.target.closest('.t20');
-    if (!b || b.dataset.tab === race20Tab) return;
-    race20SaveY();                       // 離れるタブに、いま読んでいた位置を預ける
+    if (!b) return;
     show(b.dataset.tab, true);
-    // そのタブを前に読んでいればその位置へ、初めてなら先頭へ（上には戻しすぎない）。
-    // 2026-09-07 まで、ここは貼り付いた .tabbar の rect を見ていたので条件が
-    // 一度も成立せず、先頭に戻す処理が効いていなかった（race20NaturalTop で直した）。
-    race20RestoreY(race20NaturalTop(bar));
+    // タブより下まで読んでいたら、切り替え先の先頭に戻す（上には戻しすぎない）
+    const y = bar.getBoundingClientRect().top + window.scrollY;
+    if (window.scrollY > y) window.scrollTo(0, y);
   });
   // 共有リンクの #tab=... で直接そのタブを開く
   window.addEventListener('hashchange', () => show(race20TabFromHash(), false));
 
   root.classList.add('tabs-ready');
-  race20SyncBarTop(root);
   show(race20TabFromHash(), false);
 }
 
@@ -1021,9 +817,6 @@ let foResizeTimer = null;
 window.addEventListener('resize', () => {
   clearTimeout(foResizeTimer);
   foResizeTimer = setTimeout(setupFinishOrder, 150);
-  // タブバーが2行に折れると貼り付ける切替バーの位置も変わる
-  const root = document.querySelector('.race20');
-  if (root) race20SyncBarTop(root);
 });
 
 // 勝ち時計カードの2行目（91-race-review-spec.md §7-3）。
@@ -1419,12 +1212,15 @@ function renderOddsMasterSection(site, oddsAll) {
   const openAttr = oddsAll ? ' open' : '';
   // 88-akinator-spec.md §7: schema_version odds_all-1.x かつ単勝以外に発売中オッズがある場合のみ表示
   const hasAki = (typeof Akinator !== 'undefined' && Akinator.eligible(oddsAll));
-  // 2026-09-08: 「自分で組む」は出馬表タブの4つ目の面（馬券）へ移した。ここに残るのは
-  // 「質問で決める」だけなので、2択の切り替えバー（om-tabs）は外した。
-  // 同じ表を2か所に出さない（買い目タブからは消す・ユーザー決定）。
-  // アキネーターが出せないレースでは、この折りたたみごと出さない。
+  // アキネーターが出せないレースではタブを出さず、手動シミュレーターだけを従来どおり表示する
   const panels = hasAki
-    ? '<div id="ak-panel-body" class="om-pane active" role="tabpanel"></div>' : '';
+    ? `<div class="om-tabs" role="tablist">
+         <button type="button" class="om-tab active" data-om-tab="aki" role="tab" aria-selected="true">質問で決める</button>
+         <button type="button" class="om-tab" data-om-tab="sim" role="tab" aria-selected="false">自分で組む</button>
+       </div>
+       <div id="ak-panel-body" class="om-pane active" role="tabpanel"></div>
+       <div id="om-panel-body" class="om-pane" role="tabpanel" hidden></div>`
+    : '<div id="om-panel-body"></div>';
 
   return `
     <details class="fold om-fold"${openAttr}>
@@ -1450,16 +1246,10 @@ function setupOddsMasterPanel(site, oddsAll) {
   const state = Simulator.initialState();
 
   function rerender() {
-    // markBadge20 は race.js のIIFEの中にあってグローバルに出ていないので、ここで渡す
-    body.innerHTML = Simulator.renderBlockB(site, probs, heads, oddsAll, state, { aiMark: markBadge20 });
+    body.innerHTML = Simulator.renderBlockB(site, probs, heads, oddsAll, state);
   }
 
   body.addEventListener('click', (ev) => {
-    // 2026-09-08: 自分の印は読むだけ（押しても何も起きない）。押す先は馬名に一本化し、
-    // 戦績のポップアップ（#pop-N）を開く。ポップアップは .race20 直下にあり、
-    // [data-pop] の受け口も .race20 なので、ここでは何もしないで通す。
-    // 128-spec: いま組んでいるものをシートへ。state は betsheet.js が写しを取る
-    if (ev.target.closest('[data-sim-add]')) { addCurrentToSheet(site, state); return; }
     if (Simulator.handleClick(state, ev.target)) rerender();
   });
   body.addEventListener('change', (ev) => {
@@ -1467,15 +1257,12 @@ function setupOddsMasterPanel(site, oddsAll) {
   });
 
   rerender();
-  // 出馬表で印を付け替えてから買い目タブへ戻る動きに追いつかせる（アキネーターの akRefresh と同じ理由）
-  simRefresh = rerender;
 
   return {
     applyPlan(plan) {
       Simulator.applyPlan(state, plan);
       rerender();
-      // smooth はタブを切り替えた直後の位置戻しと競合して届かない（2026-09-07 実測）
-      body.scrollIntoView({ behavior: 'auto', block: 'start' });
+      body.scrollIntoView({ behavior: 'smooth', block: 'start' });
     },
   };
 }
@@ -1483,16 +1270,33 @@ function setupOddsMasterPanel(site, oddsAll) {
 // 88-akinator-spec.md T9: 買い目アキネーターのマウント・イベント委譲。描画・stateは
 // Akinator（assets/akinator.js）に一任。テキスト入力(予算)とスライダーのドラッグ中だけは
 // フォーカス/カーソル位置を保つため、全体rerenderせずピンポイントでDOMを更新する。
-// 2026-09-08: fold の中が「質問で決める」1つになったので、om-tabs の切り替え配線
-// （setupOddsMasterTabs）は削除した。
+// タブ切替。中身は再描画せず表示だけ入れ替える（両方のstateを保つため）
+function setupOddsMasterTabs() {
+  const bar = document.querySelector('.om-tabs');
+  if (!bar) return;
+  bar.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-om-tab]');
+    if (!btn) return;
+    const key = btn.dataset.omTab;
+    bar.querySelectorAll('.om-tab').forEach((b) => {
+      const on = b.dataset.omTab === key;
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+    const map = { aki: 'ak-panel-body', sim: 'om-panel-body' };
+    Object.keys(map).forEach((k) => {
+      const el = document.getElementById(map[k]);
+      if (!el) return;
+      el.hidden = (k !== key);
+      el.classList.toggle('active', k === key);
+    });
+  });
+}
 
-// 買い目アキネーターの「シミュレーターに入れる」から呼ぶ。
-// 2026-09-08: 行き先が出馬表タブの「馬券」の面になった。タブと面を続けて切り替える。
+// 買い目アキネーターの「シミュレーターに入れる」から呼ぶ。手動タブへ切り替える
 function switchToSimulatorTab() {
-  const tab = document.querySelector('.race20 .t20[data-tab="shutuba"]');
-  if (tab && !tab.classList.contains('on')) tab.click();
-  const view = document.querySelector('.race20 [data-view="baken"]');
-  if (view && !view.classList.contains('on')) view.click();
+  const btn = document.querySelector('[data-om-tab="sim"]');
+  if (btn) btn.click();
 }
 
 function setupAkinatorPanel(site, oddsAll, simCtl) {
@@ -1514,9 +1318,7 @@ function setupAkinatorPanel(site, oddsAll, simCtl) {
   body.addEventListener('click', (ev) => {
     const result = Akinator.handleClick(ctx, state, ev.target);
     if (!result) return;
-    // 2026-09-08: 行き先が別タブ（出馬表の馬券の面）になったので、**先に切り替えてから**流し込む。
-    // 逆にすると、隠れている間に scrollIntoView が走って何も動かない
-    if (result.plan && simCtl) { switchToSimulatorTab(); simCtl.applyPlan(result.plan); }
+    if (result.plan && simCtl) { simCtl.applyPlan(result.plan); switchToSimulatorTab(); }
     rerender();
   });
 
@@ -1795,16 +1597,9 @@ function renderHeader20(site) {
     `<div class="sp"><span class="k">${escapeHtml(k)}</span><span class="v">${v}</span></div>`).join('');
   const meta = `${r.date} ${r.track}${r.race_number}R`
     + (r.post_time ? `<span class="dot">・</span>発走 ${escapeHtml(r.post_time)}` : '');
-  // 2026-09-08: 「買いレース」のチェック。付け外しはこのページだけで、一覧は札を出すだけ。
-  // パイプラインの stance:'pass'（見送り）はAIの判断なので、こちらとは並べず別の行に置く。
-  const buyOn = isBuyRace(r.race_id);
-  const buyBtn = `<button type="button" class="brchk${buyOn ? ' on' : ''}" data-buyrace`
-    + ` aria-pressed="${buyOn ? 'true' : 'false'}">`
-    + `<span class="bx" aria-hidden="true"></span>買いレース</button>`;
-
   return `
     <div class="rhead h2">
-      <div class="ttlrow">${r.grade ? `<span class="gb2">${escapeHtml(r.grade)}</span>` : ''}<span class="ttl">${escapeHtml(r.race_name)}</span>${buyBtn}</div>
+      <div class="ttlrow">${r.grade ? `<span class="gb2">${escapeHtml(r.grade)}</span>` : ''}<span class="ttl">${escapeHtml(r.race_name)}</span></div>
       <div class="meta">${meta}</div>
       <div class="specrow">${cells}</div>
       <div class="pt">予想: ${fmtDateTimeShort(p.predicted_at)}（${escapeHtml(p.odds_basis)}基準）</div>
@@ -3037,27 +2832,18 @@ function mmInline(h) {
 // 「コース」は 2026-08-27 にタブからここへ移した。押すとポップアップ（#pop-course）が開く。
 // 印／戦績／新聞 と違って表示を切り替えるものではないので、3つの帯の中には入れない。
 // course_entities が無いレース（コースが確定できなかったぶん）はボタンごと出さない。
-// 2026-09-08: 4つ目「馬券」（買い目シミュレーター）を足した。買い目タブからは外し、
-// ここが唯一の入口になる。あわせて「コース」を上の帯（.secthead）へ移した。
-// 4つ目を足すと1段目が 351px になってバーが2段から3段に増えるため（333pxに対し余り16px）。
-// コース55pxを帯へ逃がすと 286px に収まり、高さは今までどおり（実測）。
-// 帯の中のコース（2026-09-08・案A）。メンバー札の右・荒れ度の左に置く。
-// 見た目は帯の決まりどおり白の枠線＋白文字。押した先は今までと同じ #pop-course。
-function crsBand(site) {
-  return (site && site.course_entities)
-    ? '<button type="button" class="crsb2" data-pop="course">コース</button>' : '';
-}
-
 function mmBar(site) {
+  const crs = site && site.course_entities
+    ? '<button type="button" class="crsb" data-pop="course">コース</button>' : '';
   return `<div class="mm-bar">
     <span class="mm-seg">
       <button type="button" data-view="mark" class="on">印</button>
       <button type="button" data-view="runs">戦績</button>
       <button type="button" data-view="paper">新聞</button>
-      <button type="button" data-view="tenkai">展開</button>
-      <button type="button" data-view="baken">馬券</button>
     </span>
+    ${crs}
     <span class="mm-tp"></span>
+    <span class="mm-sum"></span>
   </div>`;
 }
 
@@ -3099,10 +2885,15 @@ function mmPaint() {
     if (mk === '消') el.classList.add('my-keshi');
     else if (mk) el.classList.add('my-mark');
   });
-  // 2026-09-08: 「自分の印　◎1　消3・7…」の要約行（.mm-sum）は外した（ユーザー指示）。
-  // 111-spec §3.5 では、ボトムシートが説明文を出さずに閉じるので、印のマスと
-  // この行の2つで「何が起きたか」を示していた。マスの方は残っているので、
-  // 付けた印がその場で変わることは今までどおり分かる。
+  const sum = document.querySelector('.race20 .mm-sum');
+  if (!sum) return;
+  const by = {};
+  Object.entries(MM.marks).forEach(([n, mk]) => { (by[mk] = by[mk] || []).push(Number(n)); });
+  const parts = MM_MARKS.filter((mk) => by[mk])
+    .map((mk) => `<b>${mk}</b>${by[mk].sort((a, b) => a - b).join('・')}`);
+  sum.innerHTML = parts.length
+    ? `自分の印　${parts.join('　')}`
+    : '<span class="e">自分の印はまだありません</span>';
 }
 
 function mmOpenSheet(n) {
@@ -3125,20 +2916,6 @@ function mmOpenSheet(n) {
 }
 
 // シートは .race20 の外（body直下）に置く。position:fixed を親の影響から切り離すため
-// 2026-09-08: 印を変えたら、その印を出している所を全部塗り直す。
-// mmPaint が塗るのは出馬表の [data-my] のマスだけで、買い目タブ側（シミュレーター・
-// アキネーター）は localStorage を自分で読み直さないと古い印のまま残る。
-// 戦績のポップアップ（.mm-in の1行）からも印を変えられるので、そこも同じ道を通す。
-function mmChanged() {
-  mmPaint();
-  // シミュレーターは描き直しても選んだ馬（state.cols）が残る
-  if (simRefresh) simRefresh();
-  // アキネーターは開いている時だけ。隠れている間に描き直すと、
-  // 予算の入力欄へフォーカスが飛んで読んでいる位置がずれる
-  const ak = document.getElementById('ak-panel-body');
-  if (akRefresh && ak && !ak.hidden) akRefresh();
-}
-
 function setupMyMarks(site) {
   const root = document.querySelector('.race20');
   if (!root || !root.querySelector('.mm-list')) return;
@@ -3174,7 +2951,7 @@ function setupMyMarks(site) {
   sheet.querySelectorAll('.mks button').forEach((b) => b.addEventListener('click', () => {
     if (MM.target == null) return;
     mmSet(MM.target, b.dataset.mk);
-    mmChanged();
+    mmPaint();
     close();
   }));
 
@@ -3187,7 +2964,7 @@ function setupMyMarks(site) {
       e.preventDefault();
       e.stopPropagation();
       mmSet(ib.closest('.mm-in').dataset.n, ib.dataset.mk);
-      mmChanged();
+      mmPaint();
       return;
     }
     const b = e.target.closest('[data-my]');
@@ -3205,8 +2982,6 @@ function setupMyMarks(site) {
     const b = e.target.closest('[data-view]');
     if (!b) return;
     const v = b.dataset.view;
-    if (v === race20View) return;              // 出ている面をもう一度押しただけなら動かさない
-    race20SaveY();                             // 離れる面に、いま読んでいた位置を預ける
     root.querySelectorAll('[data-view]').forEach((x) => x.classList.toggle('on', x === b));
     root.querySelector('.shlist').classList.toggle('off', v !== 'runs');
     root.querySelector('.mm-list').classList.toggle('off', v !== 'mark');
@@ -3215,21 +2990,6 @@ function setupMyMarks(site) {
       paper.classList.toggle('off', v !== 'paper');
       if (v === 'paper') npSyncRail(root);   // 隠れている間は測れないので、出した直後に測る
     }
-    // 2026-09-08: 4つ目の面＝展開（コースの形・馬場・脚質・ペース）。
-    // 他の4つは「16頭をどう見るか」だが、これだけはレースの性質なので中身の種類が違う
-    // （ユーザー決定。幅は5つで333pxちょうどのため、ボタンの左右を8pxに詰めてある）
-    const tenkai = root.querySelector('.tenkaiview');
-    if (tenkai) tenkai.classList.toggle('off', v !== 'tenkai');
-    // 2026-09-08: 5つ目の面＝馬券（買い目シミュレーター）
-    const baken = root.querySelector('.bakenview');
-    if (baken) {
-      baken.classList.toggle('off', v !== 'baken');
-      // 隠れている間に印を変えていることがあるので、出した瞬間に読み直す
-      if (v === 'baken' && simRefresh) simRefresh();
-    }
-    race20View = v;
-    // その面を前に読んでいればその位置へ、初めてなら面の先頭へ
-    race20RestoreY(race20FaceTop(root));
   });
 
   mmPaint();
@@ -3594,14 +3354,12 @@ function renderShutuba20(site) {
   // タブは display:none で切り替えるので、出馬表タブの中に置くと展開タブから
   // 馬番を押しても中身が組み上がらず、幅も高さも0のまま開いていた。
   return `
-    <div class="secthead">出馬表${memberLevelBand(site.prediction)}${crsBand(site)}${up ? up.band : ''}</div>
+    <div class="secthead">出馬表${memberLevelBand(site.prediction)}${up ? up.band : ''}</div>
     <div class="shctl"></div>
     ${mmBar(site)}
     <div class="shlist off">${cards}</div>
     ${renderPaper(site)}
     ${mmList(site)}
-    <div class="tenkaiview off">${renderOverview20(site)}</div>
-    <div id="om-panel-body" class="om-pane bakenview off"></div>
   `;
 }
 
@@ -3741,6 +3499,84 @@ function confNote(bets) {
 }
 
 // 買い目セルの組番整形・合計式は既存renderBetsSectionV11（:164-201）と同一ロジックをコピー（23-spec §3-9）
+// ===== 買い目＝五街道5案（2026-09-09 ユーザー決定・SCOREBOARD §2.84） =====
+// 現行の買い目（renderBets20）は呼ばなくなったが、過去の公開分（bets_rules が無い
+// レース）はそちらに落として今までどおり描く。関数は消さない。
+// 直近3か月の戻り＝2026-06-06〜09-06 の実測（100円買って何円戻ったか）。
+const BETRULE_FWD = { 東海: 0.92, 甲州: 1.47, 中山: 0.96, 奥州: 1.29, 日光: 1.33 };
+const BETRULE_ORDER = ['東海', '甲州', '中山', '奥州', '日光'];
+
+function betruleChip(v) {
+  if (v == null) return '';
+  const c = v >= 1.2 ? 'ok' : (v >= 1.0 ? 'fair' : 'ng');
+  const lab = v >= 1.2 ? '高' : (v >= 1.0 ? '中' : '低');
+  return ` <span class="chip ${c}">${lab}</span>`;
+}
+
+function renderBetRules(site) {
+  const br = site.bets_rules;
+  if (!br || !br.plans) return renderBets20(site);
+  if (br.skip) {
+    return `<div class="secthead">買い目</div><div class="conf">${escapeHtml(br.skip)}</div>`;
+  }
+  const byNum = {};
+  for (const h of site.horses) byNum[h.number] = h;
+  const showResult = site.status === 'final';
+  const payMap = {};
+  if (showResult && site.result && site.result.payouts) {
+    for (const p of site.result.payouts) {
+      const key = `${p.type}|${(p.combination || []).join('-')}`;
+      payMap[key] = p.payout;
+    }
+  }
+  let gp = 0;
+  let gr = 0;
+  const secs = BETRULE_ORDER.map((name) => {
+    const pl = br.plans[name];
+    if (!pl) return '';
+    const head = `<div class="secthead">${name}`
+      + `<span class="cnt">${escapeHtml(pl.desc)} ${pl.n_rules}ルール</span></div>`;
+    if (!pl.points) return head + '<div class="conf">本レースは見送り（買い目なし）</div>';
+    const header = showResult
+      ? '<tr><th class="l">券種</th><th class="l">買い目</th><th>金額</th><th>結果</th><th>払戻</th></tr>'
+      : '<tr><th class="l">券種</th><th class="l">買い目</th><th>金額</th></tr>';
+    let ret = 0;
+    const rows = pl.types.map((t) => t.tickets.map((tk) => {
+      const label = t.type.replace('三連', '3連');
+      const sorted = /馬単|3連単/.test(label) ? tk : [...tk].sort((a, b) => a - b);
+      const pay = payMap[`${t.type}|${sorted.join('-')}`] || 0;
+      ret += pay;
+      const cell = showResult
+        ? `<td class="${pay ? 'o' : 'x'}">${pay ? '✓' : '✕'}</td><td>${fmtYen(pay)}</td>`
+        : '';
+      return `<tr><td class="l">${label}${betruleChip(BETRULE_FWD[name])}</td>`
+        + `<td class="l">${comboBoxes(t.type, tk, byNum)}</td>`
+        + `<td>${fmtYen(100)}</td>${cell}</tr>`;
+    }).join('')).join('');
+    gp += pl.points;
+    gr += ret;
+    const foot = showResult
+      ? `<tr><td class="l">合計</td><td class="l">${pl.points}点</td>`
+        + `<td>${fmtYen(pl.stake)}</td><td class="${ret ? 'o' : 'x'}">${ret ? '✓' : '✕'}</td>`
+        + `<td>${fmtYen(ret)}</td></tr>`
+      : `<tr><td class="l">合計</td><td class="l">${pl.points}点</td>`
+        + `<td>${fmtYen(pl.stake)}</td></tr>`;
+    return head
+      + `<table class="fixed betstbl"><thead>${header}</thead>`
+      + `<tbody>${rows}</tbody><tfoot>${foot}</tfoot></table>`
+      + `<div class="conf">直近3か月＝100円買って${(BETRULE_FWD[name] * 100).toFixed(0)}円戻った</div>`;
+  }).join('');
+  const sum = showResult
+    ? `<div class="betrule-sum"><span>5案の合計（重複を除かず単純合計）</span>`
+      + `<span>${gp}点 ${fmtYen(gp * 100)} → ${fmtYen(gr)}</span></div>`
+    : `<div class="betrule-sum"><span>5案の合計（重複を除かず単純合計）</span>`
+      + `<span>${gp}点 ${fmtYen(gp * 100)}</span></div>`;
+  const note = '<div class="conf betrule-note"><b>この5案はどれも答え合わせが終わって'
+    + 'いません。</b>2026-06〜09 の3か月で100円買って戻ったのは 86〜120円で、'
+    + '100円を割る案もあります。どれか1つを本採用にする判断は 2026-Q4 以降に行います。</div>';
+  return note + secs + sum;
+}
+
 function renderBets20(site) {
   const bets = sortedBets(site);
   if (site.prediction.stance === 'pass' || !bets.length) {
@@ -3807,9 +3643,9 @@ function renderBets20(site) {
    ============================================================ */
 const RACE20_TABS = [
   { key: 'shutuba', label: '出馬表' },
+  { key: 'tenkai', label: '展開' },
   // コースは 2026-08-27 にタブをやめ、出馬表の「印／戦績／新聞」の右のボタンから
-  // 開くポップアップ（#pop-course）へ移した。2026-09-08 にそのボタンも帯へ移した。
-  // 展開は 2026-09-08 に出馬表の5つ目の面（.tenkaiview）へ移したので、タブは3枚になる。
+  // 開くポップアップ（#pop-course）へ移した。タブは5枚から4枚になる。
   { key: 'kaime', label: '買い目' },
   // 回顧タブの見出しは中身に合わせる。レース前は renderVerification20 が
   // 「答え合わせ／結果はレース後に反映されます」を出すので、タブ名も同じ言葉にする
@@ -3867,7 +3703,8 @@ function buildRace20Html(site, oddsAll) {
       ${renderShinbaNote20(site)}
       <div class="tabbar" role="tablist">${bar}</div>
       ${pane('shutuba', renderMitate20(site) + renderShutuba20(site))}
-      ${pane('kaime', renderBets20(site) + renderOddsMasterSection(site, oddsAll))}
+      ${pane('tenkai', renderOverview20(site))}
+      ${pane('kaime', renderBetRules(site) + renderOddsMasterSection(site, oddsAll))}
       ${pane('kaiko', renderVerification20(site))}
       ${renderPopups20(site)}
     </div>
@@ -4382,33 +4219,6 @@ const TILT_CLS = ['t2', 't1', 't0', 'u1', 'u2'];
 // シーソーの傾きは差そのものを写す。0.30以上は端で止める（それ以上傾けても読めない）
 const TILT_FULL = 0.30;
 
-// 「今日の馬場」の札の下に出す一言（2026-09-07）。
-// **狙う馬が変わる日だけ出す。**全10帯のうち出すのは2つだけで、残り8帯は何も出さない。
-//
-//   ダート・湿っている（平年より+3以上）… 逃げ馬の3着内 28.8% → 32.7%（+3.9pt）
-//     ダート7,547レースの実測。偶然でこうなる確率0.7%
-//   芝・軟らかい（平年より-0.3未満）    … 1番人気の勝率 33.8% → 29.9%（-3.9pt）
-//     芝7,261レースの実測。偶然でこうなる確率0.5%
-//
-// 出さない8帯では、脚質も内外の枠も人気も幅1ポイント前後で横並びだった。
-// 内枠の3着内率はダートの5帯すべてで20.0〜20.3%、芝でも22.2〜23.3%しか動かない。
-// それまでここに出していた「札幌の平年より +3.1」は、読んでも狙う馬が変わらない
-// 数字だったので置き換えた（何の+3.1かも画面に書いていなかった）。
-//
-// 残り8帯には「大きな偏りなし」を出す（2026-09-07 ユーザー決定）。空にすると
-// マスの高さが日によって2px変わるのと、読み手が「出ていない」のか「偏りが無い」
-// のか判別できないため。こちらは目立たせない（.aim を付けない＝9pxの薄い字）。
-//
-// 集計は research/baba_aim_scan.py（8頭立て以上・含水率は489日ぶん）。
-// 数字を更新するときはあれを走らせてから、この関数の2つの文言を書き替える。
-const BABA_AIM_FLAT = '大きな偏りなし';
-function babaAim20(isTurf, delta) {
-  if (isTurf) {
-    return delta < -0.3 ? { t: '人気が飛ぶ 普段-3.9%', on: true } : { t: BABA_AIM_FLAT, on: false };
-  }
-  return delta >= 3 ? { t: '逃げが残る 普段+3.9%', on: true } : { t: BABA_AIM_FLAT, on: false };
-}
-
 function renderCourseBabaBar20(site, g, iv, ov) {
   const cells = [];
 
@@ -4443,6 +4253,7 @@ function renderCourseBabaBar20(site, g, iv, ov) {
   const norm = isTurf ? src.normal : null;
   const delta = isTurf ? (norm || {}).delta : src.normal_delta;
   if (lv && delta != null) {
+    const sign = `${delta > 0 ? '+' : ''}${Number(delta).toFixed(1)}`;
     // 仮柵は「今日の馬場」のマスの先頭に入れる（2026-08-27・ユーザー決定）。
     // それまでは下に青い枠を作って1行だけ置いていたが、クッション値を消したことで
     // 枠の中身が1行だけになり浮いていた。マスを6つに増やすと 351px を分け合う関係で
@@ -4453,12 +4264,9 @@ function renderCourseBabaBar20(site, g, iv, ov) {
       ? `<span class="rl">${escapeHtml(rail.course)}`
         + (rail.weeks ? `・${rail.weeks}週目` : '') + '</span>'
       : '';
-    // 下の一言は 2026-09-07 に「◯◯の平年より +3.1」から狙いへ差し替えた。
-    // 平年との差は、読んでも狙う馬が変わらない数字だった（babaAim20 のコメント）。
-    const aim = babaAim20(isTurf, delta);
     cells.push(`<div class="cell wide"><span class="k">今日の馬場</span>${railHtml}`
       + `<span class="lv ${lv.cls || 'z0'}">${escapeHtml(lv.label)}</span>`
-      + `<span class="w${aim.on ? ' aim' : ''}">${escapeHtml(aim.t)}</span></div>`);
+      + `<span class="w">${escapeHtml(site.race.track)}の平年より ${sign}</span></div>`);
   }
   if (disp) {
     // 上がり3F（勝ち馬のゴール前3ハロン）のマスは 2026-08-27 に削除した。
@@ -4539,14 +4347,10 @@ function renderWeekTrend20(site) {
   if (io) {
     const L = 50 + Math.max(-1, Math.min(1, io.diff / WK_IO_FULL)) * 40;
     const cls = io.label === '大きな偏りなし' ? 't0' : (io.diff >= 0 ? 't1' : 'u1');
-    // 見出しに「3着内率」を入れ、数字には%を付ける（2026-09-07）。
-    // それまでは見出し「内と外」・数字「内26.7 外19.2」で、何の26.7かが画面のどこにも
-    // 書いていなかった。数字の行に「3着内」を足すと102pxを超えて2行に折れるので、
-    // 見出しの側に置いた（数字の行は76px・実測）。
-    cells.push(`<div class="cell"><span class="k">内と外の3着内率</span>`
+    cells.push(`<div class="cell"><span class="k">内と外</span>`
       + seesawHtml(L, 50, ['内', '外'])
       + `<span class="w ${cls}">${escapeHtml(io.label)}</span>`
-      + `<span class="n">内${io.inner_pct.toFixed(1)}% 外${io.outer_pct.toFixed(1)}%</span></div>`);
+      + `<span class="n">内${io.inner_pct.toFixed(1)} 外${io.outer_pct.toFixed(1)}</span></div>`);
   }
   if (legs) {
     // 白い目盛りは50%ではなく平年値（前62.2%）に置く。前と後ろは半々が中立ではないため。
@@ -5040,8 +4844,7 @@ async function main() {
   document.getElementById('race-content').innerHTML = html;
   const simCtl = setupOddsMasterPanel(site, oddsAll);
   setupAkinatorPanel(site, oddsAll, simCtl);
-  setupBetSheet(site, oddsAll);   // 128-spec: 下に貼る要約バーとドロワー
-  setupBuyRace(site);             // 買いレースのチェック
+  setupOddsMasterTabs();
   if (is20) setupShutuba20(site);
   if (is20) setupTopping(site);   // 102-spec: トッピング（データが無ければ何もしない）
   if (is20) setupUpset20();
