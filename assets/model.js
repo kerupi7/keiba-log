@@ -38,7 +38,11 @@ function render(doc, slug) {
   const typeRows = TYPE_ORDER.map((ty) => {
     const x = p.by_type[ty];
     if (!x || !x.pt) return '';
-    return `<tr><td>${ty}</td>${roiCell(x.ret, x.cost)}<td class="sm">${x.hits}点</td>`
+    // 的中率は「点」あたり（買った点数のうち何点当たったか）。この表の的中・買った
+    // はどちらも点数なので、同じ単位でそろえる。荒れ度べつはレース単位なので別物
+    return `<tr><td>${ty}</td>${roiCell(x.ret, x.cost)}`
+      + `<td class="sm">${fmtPercent(x.hits / x.pt, 1)}</td>`
+      + `<td class="sm">${x.hits}点</td>`
       + `<td class="sm">${x.pt}点</td><td class="sm">${fmtYen(x.cost)}</td>`
       + `<td class="sm">${fmtYen(x.ret)}</td></tr>`;
   }).join('');
@@ -75,7 +79,7 @@ function render(doc, slug) {
     </div>
     <div class="mnote">${escapeHtml(period)}</div>
     <div class="msec">券種べつ</div>
-    ${table(['券種', '回収率', '的中', '買った', '投資', '払戻'], typeRows)}
+    ${table(['券種', '回収率', '的中率', '的中', '買った', '投資', '払戻'], typeRows)}
     <div class="msec">荒れ度べつ</div>
     ${table(['荒れ度', '回収率', '的中', '買った', '投資', '払戻'], upsetRows)}
     <div class="msec">払戻があったレース</div>
