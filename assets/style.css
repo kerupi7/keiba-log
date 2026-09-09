@@ -398,6 +398,8 @@ div.roi{padding:12px 0 14px;border-bottom:1px solid var(--rule)}
 .betstbl th:nth-child(2){width:5.2em}
 .betstbl th:nth-child(3){width:2.6em}
 .betstbl th:nth-child(4){width:5.2em}
+/* 相手の馬番のあいだ。区切り文字は置かず、すき間だけ空ける（2026-09-09 ユーザー決定） */
+.betstbl .cbsp{display:inline-block;width:5px}
 /* 券種の見出し行（2026-09-09）。行ごとに券種を書かず、ここでまとめる */
 .betstbl tr.btyhead td{font-weight:700;background:var(--bp-off);padding-top:5px;padding-bottom:5px}
 .betstbl tr.btyhead .bn{font-weight:400;color:var(--cap);font-size:11.5px;margin-left:6px}
@@ -477,6 +479,10 @@ div.roi{padding:12px 0 14px;border-bottom:1px solid var(--rule)}
   .gk .rk{margin-right:4px;min-width:17px;height:17px;line-height:17px;font-size:10.5px}
 }
 
+.race20 .betrule-note{background:var(--chip-acc-bg);color:var(--chip-acc-fg);
+  border-left:3px solid var(--cap);padding:8px 10px;line-height:1.7;margin:8px 0 0}
+.race20 .betrule-sum{margin-top:16px;padding:10px 11px;background:var(--sub-bg2);
+  border-radius:3px;font-size:13px;font-weight:700;display:flex;justify-content:space-between}
 .rmeta{font-size:13px;color:var(--cap);margin-top:3px;font-variant-numeric:tabular-nums}
 .rmeta .t{color:var(--turf);font-weight:700}
 .rmeta .d{color:var(--dirt);font-weight:700}
@@ -553,13 +559,13 @@ details.fold.om-fold[open]>summary{font-size:15px;border-bottom:none;padding-bot
 details.fold.om-fold>summary .tri::before{color:#fff}
 details.fold.om-fold>summary .cnt{color:#fff;opacity:.85;font-size:11px}
 
-.om-tabs{display:grid;grid-template-columns:1fr 1fr;gap:0;margin:12px 0 0;
-  border-bottom:2px solid var(--rule)}
-.om-tab{font-size:13px;font-weight:700;padding:10px 6px;border:none;background:none;
-  color:var(--cap);cursor:pointer;font-family:inherit;border-bottom:2px solid transparent;margin-bottom:-2px}
-.om-tab.active{color:var(--cta);border-bottom-color:var(--cta)}
+/* 2026-09-08: .om-tabs / .om-tab は「自分で組む」が出馬表へ移って出す所が無くなったので削除した。
+   買い目タブの折りたたみの中は「質問で決める」1つだけになっている。 */
 .om-pane{padding-top:2px}
 .om-pane[hidden]{display:none}
+/* 2026-09-08: 出馬表の4つ目・5つ目の面（馬券・展開）。他と同じく .off で隠す */
+.race20 .bakenview.off,.race20 .tenkaiview.off{display:none}
+.race20 .bakenview{padding-top:10px}
 .om-subhead{font-size:13px;font-weight:700;color:var(--sub);margin:12px 0 8px}
 .om-subhead:first-child{margin-top:2px}
 .om-note{font-size:12px;color:var(--cap);margin:4px 0 6px}
@@ -598,18 +604,53 @@ details.fold.om-fold>summary .cnt{color:#fff;opacity:.85;font-size:11px}
 .sim-band.umatan{background:#e59300}.sim-band.sanrenpuku{background:#4aa3d6}
 .sim-band.sanrentan{background:#e57d1e}
 
-.sim-sel{width:100%;border-collapse:collapse;font-size:12.5px}
+/* 2026-09-07: table-layout を fixed にした。印を2列足したことで、320px幅では
+   馬名・オッズ・騎手の3行の「これ以上縮まない幅」が効いて表が容器から44〜75pxはみ出し、
+   ページに横スクロールが出た（印なしでは出ない＝この変更で出た退行）。
+   fixed にすると選択列を先に確定でき、余りが本文に回って3行が省略記号で収まる。 */
+.sim-sel{width:100%;table-layout:fixed;border-collapse:collapse;font-size:12.5px}
+.sim-sel th:not(.l),.sim-sel td:not(.l){width:30px}
 .sim-sel th{background:var(--sub-bg2);color:var(--cap);font-size:10.5px;font-weight:700;
   padding:5px 2px;border-bottom:1px solid var(--rule);text-align:center}
 .sim-sel th.l{text-align:left}
 .sim-sel td{border-bottom:1px solid var(--rule);padding:6px 2px;text-align:center;vertical-align:middle}
 .sim-sel td.l{text-align:left;padding-left:4px}
 .sim-sel tr.green td{background:var(--green-row)}
-/* 45-spec §2.8: 印は既存の色トークンを流用（.n-honなどの命名は使わず新規スコープ） */
-.sim-mk{font-weight:700;font-size:12px;min-width:13px;display:inline-block;text-align:center}
-.sim-mk.hon{color:var(--mk-hon)}.sim-mk.tai{color:var(--mk-tai)}
-.sim-mk.tan{color:var(--mk-tan)}.sim-mk.oku{color:var(--mk-oku)}
-.sim-mk.none{color:#ccc}
+/* 2026-09-08（案C）: 自分の印が「消」の行を沈める。出馬表の .my-keshi と同じ値。
+   tr.green より後に書いて、両方立った時は「消」を勝たせる（実際には simulator.js が
+   消の馬に green を付けないので重ならないが、順番で意図を残しておく） */
+.sim-sel tr.my-keshi td{background:#F2F2F0}
+.sim-sel tr.my-keshi .sim-hbody,.sim-sel tr.my-keshi .sim-ai{opacity:.62}
+/* 45-spec §2.8: 印は既存の色トークンを流用（.n-honなどの命名は使わず新規スコープ）。
+   2026-09-07: 能力印だけの1列（.sim-mk）をやめ、「自分の印（.sim-my）＋AIの印（.sim-ai）」の
+   2列にした。.sim-mk は出す所が無くなったので削除。 */
+
+/* 自分の印。読むだけで、押すと出馬表タブのその馬へ飛ぶ。
+   見た目は隣タブ（アキネーター）の .ak-my と同じ「紺の枠＋薄青の地＋印ごとの文字色」。
+   出馬表の .mm-my（32px・その場で付け替える）とは幅も役目も違う。 */
+/* 2026-09-08: 読むだけの札にした（押しても何も起きない）。押す先は馬名に一本化 */
+.sim-my{flex:none;display:inline-flex;align-items:center;justify-content:center;
+  min-width:16px;height:19px;padding:0 2px;border:1px solid var(--rule);border-radius:4px;
+  background:#fff;font-size:12px;font-weight:700;line-height:1;color:#C4C4BF}
+.sim-my.set{border-color:var(--navy);background:#F4F8FC}
+.sim-my i{font-style:normal;font-size:9px;font-weight:400}
+.sim-my.m1{color:var(--mk-hon)} .sim-my.m2{color:var(--mk-tai)}
+.sim-my.m3{color:var(--mk-tan)} .sim-my.m4{color:var(--mk-oku)}
+.sim-my.m5{color:var(--orange)}
+.sim-my.m7{color:var(--mk-chk)}
+.sim-my.m6{color:var(--cap);font-size:10.5px}
+
+/* AIの印。出馬表の .mm-ai と同じ30pxの器で、中身は markBadge20（能力印＋穴／地雷／消し）。
+   器が無いと .mkstack（能力印＋地雷の2段）が横に伸びて、表が34pxはみ出す（実測） */
+.sim-ai{flex:none;width:30px;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:1px}
+.sim-ai .none{font-size:9px;color:#C4C4BF}
+.sim-ai .mkb{margin-right:0}
+.sim-ai .mkstack{display:flex;flex-direction:column;align-items:center;gap:1px}
+.sim-ai .mkstack .mkb{font-size:10.5px;line-height:14px;padding:0 4px;min-width:15px}
+.sim-ai .mkstack .mkb.sub{font-size:8.5px;line-height:11px;padding:0 3px;min-width:0}
+/* 馬名・オッズ・騎手の3行。印2列と馬番のぶん残りが狭いので、はみ出さずに詰める */
+.sim-hbody{min-width:0}
 /* 45-spec §2.8: 評価バッジは既存.race20 .gradeと同色だが、Block Bは1.xページでは.race20外に
    出るためスコープなしで複製（.race20 .gradeは変更しない） */
 .sim-grade{display:inline-block;min-width:22px;text-align:center;font-weight:700;
@@ -618,8 +659,19 @@ details.fold.om-fold>summary .cnt{color:#fff;opacity:.85;font-size:11px}
 .sim-grade.g-bp{background:#5a9bd4} .sim-grade.g-b{background:#8aadc9}
 .sim-grade.g-cp{background:#b0b0a8} .sim-grade.g-c{background:#c2c2ba}
 .sim-grade.g-d{background:#d8b48a} .sim-grade.g-e{background:#d89a9a}
+/* 2026-09-07: 幅が足りないときは折り返さず「…」で切る。折り返すと行の高さが馬ごとに
+   変わって、右の選択欄と目が合わなくなるため（table-layout:fixed とセットで効く） */
+.sim-hname,.sim-hodds,.sim-hmeta{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sim-hname{font-weight:700;font-size:12.5px;line-height:1.25}
+/* 2026-09-08: 馬名を押すと戦績のポップアップ（#pop-N）。出馬表の .nm と同じ作りで、
+   ボタンの地・枠・余白を消して見た目は文字のまま。取消馬は span で出るので押せない */
+.sim-nm{border:0;background:transparent;padding:0;margin:0;font:inherit;color:inherit;
+  text-align:left;cursor:pointer}
+.sim-nm .apop{font-style:normal;font-size:9px;color:var(--cap);margin-left:2px;vertical-align:2px}
+span.sim-nm{cursor:default}
 .sim-hodds{font-size:10.5px;color:var(--cap)}
+/* 2026-09-07: 点数はオッズの行の右へ移した（案A）。行の中で一番読ませたい数字なので本文色 */
+.sim-hsc{color:var(--text);font-variant-numeric:tabular-nums}
 .sim-hodds .hot{color:var(--live);font-weight:700}
 .sim-hmeta{font-size:10px;color:var(--sub)}
 .sim-gflag{display:inline-block;font-size:9.5px;font-weight:700;color:var(--hit);
@@ -2379,7 +2431,14 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
    ============================================================ */
 
 /* ── 表示の切り替え（印を付ける ／ 戦績5走）＋いま付いている印の要約 ── */
-.race20 .mm-bar{display:flex;align-items:center;gap:8px;margin:8px 0 0;flex-wrap:wrap}
+/* 印／戦績／新聞の切替バーを、タブバーの真下に貼り付ける（2026-09-07）。
+   戦績の面は18頭で 14,308px（375×812 の画面で17.6枚ぶん・中京11R の実測）あり、
+   下まで読んでから印や新聞へ移るのに約14,700px スクロールして戻る必要があった。
+   貼り付けると上部の固定は 43px → 108px（画面の13.3%）に増えるが、戻る距離は0になる。
+   --mmtop は .tabbar の実測高（race20SyncBarTop が入れる）。既定の43pxは実測値。 */
+.race20 .mm-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  position:sticky;top:var(--mmtop,43px);z-index:29;background:var(--bg);
+  margin:0;padding:5px 0 6px;box-shadow:0 3px 6px -3px rgba(0,0,0,.25)}
 /* コースのボタン（2026-08-27）。印／戦績／新聞 の帯の右に置く。
    帯の中に入れないのは、表示を切り替えるものではなく別の画面を開くボタンだから。 */
 .race20 .crsb{flex:none;border:1px solid var(--rule-strong);background:#fff;border-radius:6px;
@@ -2416,23 +2475,27 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
 .race20 .popup{margin-top:max(0px, env(safe-area-inset-top))}
 .race20 .popup .phead{padding-top:calc(10px + env(safe-area-inset-top, 0px))}
 .race20 .popup .pclose{min-height:34px;padding:0 12px}
+/* 2026-09-08: コースを上のバーから帯へ移した（案A・メンバーの右／荒れ度の左）。
+   帯の中は白の枠線＋白文字で一律というのが既定（メンバー札 .mlv と同じ考え方）。
+   押した先は今までと同じ #pop-course。 */
+.race20 .secthead .crsb2{flex:none;border:1px solid rgba(255,255,255,.75);background:transparent;
+  color:#fff;font:inherit;font-size:12px;font-weight:700;line-height:1;padding:4px 9px;
+  border-radius:5px;cursor:pointer}
+.race20 .secthead .crsb2:active{background:rgba(255,255,255,.16)}
+
 .race20 .mm-seg{display:inline-flex;border:1px solid var(--rule-strong);border-radius:6px;
   overflow:hidden;background:#fff;flex:none}
+/* 2026-09-08: 4つ目「馬券」が入ったので左右を12px→10pxに詰める。
+   コースを帯へ逃がしたぶんと合わせて、バーは今までどおり2段に収まる */
 .race20 .mm-seg button{border:0;background:#fff;font:inherit;font-size:12px;font-weight:700;
-  color:var(--sub);padding:6px 12px;cursor:pointer;line-height:1.3;
+  color:var(--sub);padding:6px 8px;cursor:pointer;line-height:1.3;
   border-right:1px solid var(--rule)}
 .race20 .mm-seg button:last-child{border-right:0}
 .race20 .mm-seg button.on{background:var(--navy);color:#fff}
-/* 要約行は必ず2段目の1行に置く（111-spec §3.5）。以前は1段目に同居しており、
-   印の数で文字の長さが変わるたびに「この端末に自動保存」が折り返して帯の高さが
-   30px⇄53px⇄55px と動き、下の札全体が最大23pxズレていた（375px幅で実測）。
-   独立した行にして1行で固定すると、印0個〜10個でズレ0px・文字も切れない。 */
+/* 2026-09-08: 要約行（.mm-sum「自分の印　◎1　消3・7…」）は外した（ユーザー指示）。
+   111-spec §3.5 で2段目の1行に固定していたのはこの行の折り返し対策だったので、
+   行ごと無くなってバーは1段になる。 */
 .race20 .mm-tp{display:contents}
-.race20 .mm-sum{font-size:11.5px;color:var(--sub);flex:1 0 100%;order:2;min-width:0;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-  font-variant-numeric:tabular-nums}
-.race20 .mm-sum b{color:var(--navy);font-weight:700;margin-left:5px}
-.race20 .mm-sum .e{color:var(--cap)}
 .race20 .mm-save{font-size:10px;color:var(--cap);flex:none;margin-left:auto}
 
 /* ── 印のマス（札・1行の共通部品） ── */
@@ -2959,6 +3022,11 @@ body.noscroll{position:fixed;width:100%;overflow:hidden}
    守りたいのは1文字だけ次の行に落ちないことで、ここが崩れたら文言のほうを短くする */
 .race20 .cbbar .cell .w{display:block;font-size:9px;color:var(--cap);line-height:1.4;
   margin-top:1px;letter-spacing:-.02em}
+/* 狙う馬が変わる日だけ出す一言（2026-09-07）。10px・黒・太字。
+   1行に収まる上限がこの大きさ。マス幅107pxに対し「逃げが残る 普段+3.9%」が104px（実測）で、
+   10.5pxにすると109pxになって2行に折れる。守りたいのは1行に収まることなので、
+   これより大きくしたい時は文字の大きさではなく**文言のほうを短くする**。 */
+.race20 .cbbar .cell .w.aim{font-size:10px;font-weight:700;color:var(--text)}
 .race20 .cbbar .cell.p1 .v,.race20 .cbbar .cell.p1 .w{color:#0F6A34}
 .race20 .cbbar .cell.m1 .v,.race20 .cbbar .cell.m1 .w{color:#A8632B}
 /* 今日の馬場。色の意味は青＝軟らかい/湿っている、橙＝硬い/乾いている */
@@ -3890,8 +3958,116 @@ body:has(.racepage){background:var(--sub-bg2)}
 .race20 .tabpane > *{margin-left:8px;margin-right:8px}
 .race20 .tabpane > .mm-list{margin-left:0;margin-right:0}
 
-/* 買い目＝五街道5案（2026-09-09）。案ごとに紺帯＋表を繰り返し、最後に合計を1本置く。 */
-.race20 .betrule-note{background:var(--chip-acc-bg);color:var(--chip-acc-fg);
-  border-left:3px solid var(--cap);padding:8px 10px;line-height:1.7;margin:8px 0 0}
-.race20 .betrule-sum{margin-top:16px;padding:10px 11px;background:var(--sub-bg2);
-  border-radius:3px;font-size:13px;font-weight:700;display:flex;justify-content:space-between}
+/* ============================================================
+   128-spec 買い目シート（2026-09-08）
+   画面の下に要約バーを貼り、押すと下から重なって開く（案C・ユーザー決定）。
+   バーは .race20 の外（body直下）に置くので、タブを移っても消えない。
+   数字は Futura。Apple の端末には入っているので本物が出る。無い端末（Windows・
+   Android）は Google Fonts の Jost へ落ちる（Futura のリバイバルとして作られた書体）。
+   ============================================================ */
+.bs-card .n,.bsbar .n,.bs-head .n,.bs-foot .n{
+  font-family:Futura,Jost,'Century Gothic',system-ui,sans-serif;
+  font-variant-numeric:tabular-nums;font-weight:600;letter-spacing:.02em}
+/* 「点」「円」だけは本文の書体に戻す（Futura に和文が無く、別の書体へ勝手に落ちるため） */
+.bs-card .n i,.bsbar .n i,.bs-head .n i,.bs-foot .n i{
+  font-style:normal;font-family:system-ui,-apple-system,"Hiragino Sans",sans-serif;
+  font-weight:700;font-size:.8em;margin-left:1px}
+
+/* 「シートに入れる」。確定買い目リストの直下に置く */
+.sim-add{display:block;width:100%;margin-top:10px;padding:11px;border:0;border-radius:7px;
+  background:var(--cta);color:#fff;font:inherit;font-size:14px;font-weight:700;cursor:pointer}
+.sim-add:active{opacity:.85}
+
+/* 下に貼り付く要約バー。iPhone のホームバーぶんの余白を safe-area で取る */
+#bs-bar-host{position:fixed;left:0;right:0;bottom:0;z-index:60;
+  padding:0 10px calc(10px + env(safe-area-inset-bottom));pointer-events:none}
+.bsbar{pointer-events:auto;width:100%;display:flex;align-items:center;gap:9px;
+  background:var(--navy);color:#fff;border:0;border-radius:8px;padding:12px 14px;
+  font:inherit;font-size:13.5px;font-weight:700;cursor:pointer;
+  box-shadow:0 3px 14px rgba(0,0,0,.28)}
+.bsbar .lb{flex:1;text-align:left}
+.bsbar .n{font-size:15px}
+.bsbar .ar{font-size:17px;opacity:.7}
+/* バーが本文の末尾を隠さないよう、body 側に下余白を足す */
+body.has-bsbar{padding-bottom:78px}
+
+/* 開いたところ */
+#bs-drawer{position:fixed;inset:0;z-index:70;display:flex;flex-direction:column;justify-content:flex-end}
+/* display:flex は ID 指定なので、ブラウザ既定の [hidden]{display:none} に勝ってしまう。
+   閉じているときは必ずここで消す（これが無いと開きっぱなしで画面が暗いままになる） */
+#bs-drawer[hidden]{display:none}
+.bs-scrim{position:absolute;inset:0;background:rgba(0,0,0,.42)}
+.bs-panel{position:relative;background:var(--sub-bg);border-radius:12px 12px 0 0;
+  max-height:82vh;display:flex;flex-direction:column;overflow:hidden;
+  box-shadow:0 -6px 24px rgba(0,0,0,.3)}
+.bs-head{background:var(--navy);color:#fff;display:flex;align-items:center;gap:10px;
+  padding:11px 13px;font-weight:700;font-size:14px;flex:none}
+.bs-head .n{margin-left:auto;font-size:15px}
+.bs-x{border:0;background:transparent;color:#fff;font:inherit;font-size:16px;opacity:.8;
+  cursor:pointer;padding:0 2px}
+.bs-scroll{overflow-y:auto;-webkit-overflow-scrolling:touch;
+  padding:11px 11px calc(14px + env(safe-area-inset-bottom))}
+body.bs-locked{overflow:hidden}
+
+.bs-empty{background:#fff;border:1px solid var(--rule);border-radius:8px;padding:22px 16px;
+  text-align:center;font-size:13px;color:var(--cap);line-height:1.9}
+.bs-empty b{color:var(--text)}
+.bs-list{display:flex;flex-direction:column;gap:9px}
+.bs-card{background:#fff;border:1px solid var(--rule);border-radius:8px;overflow:hidden}
+.bs-card .sim-band{border-radius:0;margin:0;font-size:13px;padding:6px 10px;
+  display:flex;align-items:center;gap:8px}
+.bs-del{margin-left:auto;border:0;background:rgba(255,255,255,.22);color:#fff;font:inherit;
+  font-size:12px;line-height:1;width:22px;height:22px;border-radius:5px;cursor:pointer;padding:0}
+.bs-body{display:flex;gap:9px;padding:9px 10px 7px}
+.bs-left{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:5px}
+.bs-pos{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.bs-pos .lb{font-size:10.5px;font-weight:700;color:#fff;background:var(--keshi);
+  border-radius:3px;padding:1px 6px;margin-right:2px}
+.bs-rng{font-size:12px;color:var(--cap)}
+.bs-amt{flex:0 0 auto;display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+.bs-stepper{display:flex;align-items:center;gap:6px}
+.bs-stepper button{width:30px;height:30px;border-radius:50%;border:1px solid var(--rule);
+  background:#fff;font-size:16px;line-height:1;color:var(--text);cursor:pointer;padding:0}
+.bs-stepper .v{min-width:38px;text-align:right;font-size:17px}
+.bs-unit{font-size:10.5px;color:var(--cap)}
+.bs-buy{font-size:15px}
+.bs-pay{display:flex;justify-content:space-between;align-items:baseline;gap:8px;
+  padding:6px 10px;background:var(--sub-bg2);border-top:1px solid var(--rule);font-size:12px}
+.bs-pay .lb{color:var(--cap)}
+.bs-pay .v{color:var(--hit)}
+.bs-toggle{width:100%;border:0;border-top:1px solid var(--rule);background:#FAFAF7;padding:8px;
+  font:inherit;font-size:11.5px;color:var(--cap);cursor:pointer}
+.bs-tbl{border-top:1px solid var(--rule);font-size:12px}
+.bs-thead,.bs-trow{display:grid;grid-template-columns:1fr 86px;align-items:center;gap:6px;padding:5px 10px}
+.bs-thead{background:var(--sub-bg2);color:var(--cap);font-size:10.5px;font-weight:700}
+.bs-trow{border-top:1px solid var(--rule)}
+.bs-trow .od{text-align:right;font-size:13px}
+.bs-sep{color:var(--cap);margin:0 1px}
+.bs-ab{font-size:9.5px;color:var(--cap);margin:0 3px 0 1px}
+.bs-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;
+  padding:11px 2px 0;font-size:12.5px;color:var(--cap);font-weight:700}
+.bs-clear{border:1px solid var(--rule);background:#fff;color:var(--cap);font:inherit;
+  font-size:12px;border-radius:6px;padding:6px 11px;cursor:pointer}
+
+/* 入れた・入らなかったの知らせ。バーの上に出す */
+#bs-toast{position:fixed;left:50%;transform:translateX(-50%) translateY(8px);
+  bottom:calc(84px + env(safe-area-inset-bottom));z-index:80;
+  background:rgba(20,20,20,.92);color:#fff;font-size:12.5px;font-weight:700;
+  padding:9px 15px;border-radius:20px;opacity:0;pointer-events:none;
+  transition:opacity .18s ease,transform .18s ease}
+#bs-toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+@media (prefers-reduced-motion:reduce){ #bs-toast{transition:none} }
+
+/* 買いレース（2026-09-08）。付け外しはレース詳細のヘッダーだけ。一覧は札を出すだけ */
+.race20 .rhead.h2 .brchk{margin-left:auto;flex:none;display:inline-flex;align-items:center;gap:6px;
+  border:1px solid var(--rule);background:#fff;border-radius:6px;padding:5px 10px;
+  font:inherit;font-size:12px;font-weight:700;color:var(--cap);cursor:pointer;line-height:1}
+.race20 .rhead.h2 .brchk .bx{width:15px;height:15px;border:1.5px solid #BBB;border-radius:4px;
+  display:inline-block;position:relative}
+.race20 .rhead.h2 .brchk.on{border-color:var(--cta);color:var(--cta);background:#F1F7FD}
+.race20 .rhead.h2 .brchk.on .bx{background:var(--cta);border-color:var(--cta)}
+.race20 .rhead.h2 .brchk.on .bx::after{content:"";position:absolute;left:4px;top:0;width:5px;height:9px;
+  border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
+/* 一覧の札。荒れ度の札（.rtags の中）と横に並ぶ */
+.brtag{display:inline-block;font-size:10.5px;font-weight:700;color:#fff;background:var(--cta);
+  border-radius:4px;padding:1px 6px;margin-right:4px;white-space:nowrap}
