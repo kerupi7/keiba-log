@@ -57,26 +57,9 @@ function renderSummary(stats) {
     bindPlanRowClicks();
     return;
   }
-  const roi = stats.roi.total;
-  const numClass = roi.roi >= 0 ? 'pos' : 'neg';
-  const accumLine = stats.n_final < 30
-    ? `<div class="accum-line">${pillHtml('accum', 'データ蓄積中')}&nbsp; ${stats.n_final} / 30レース ・ 30到達までは参考値</div>`
-    : '';
-
-  el.innerHTML = `
-    <div class="eyebrow">通算成績</div>
-    <div class="roi">
-      <div class="lab">回収率</div>
-      <div class="num ${numClass}">${fmtSignedPercent(roi.roi, 1)}</div>
-      <div class="sub">払戻 ${fmtYen(roi.return)} ／ 投資 ${fmtYen(roi.cost)}</div>
-      ${accumLine}
-      <div class="mini">
-        <div><div class="k">的中</div><div class="v">${roi.hits} / ${roi.bets}点</div></div>
-        <div><div class="k">◎3着内率</div><div class="v">${fmtPercent(stats.marks.honmei.top3_rate, 0)}</div></div>
-        <div><div class="k">対象レース</div><div class="v">${stats.n_final}</div></div>
-      </div>
-    </div>
-  `;
+  // 2026-09-09 ユーザー決定A: 旧買い目（EVセレクタ／bet-1）の通算成績は廃止した。
+  // 成績ページ（stats.html）ごと消しており、ここに出す数字はもう作られない。
+  el.innerHTML = '';
 }
 
 // 当日（実日付）に最も近い開催日を返す。同着の場合は未来側（これから開催）を優先。
