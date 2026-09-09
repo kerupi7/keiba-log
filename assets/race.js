@@ -3573,17 +3573,16 @@ function renderBetRules(site) {
     return head
       + `<table class="fixed betstbl"><thead>${header}</thead>`
       + `<tbody>${rows}</tbody><tfoot>${foot}</tfoot></table>`
-      + `<div class="conf">直近3か月＝100円買って${(BETRULE_FWD[name] * 100).toFixed(0)}円戻った</div>`;
+      ;
   }).join('');
   const sum = showResult
     ? `<div class="betrule-sum"><span>5案の合計（重複を除かず単純合計）</span>`
       + `<span>${gp}点 ${fmtYen(gp * 100)} → ${fmtYen(gr)}</span></div>`
     : `<div class="betrule-sum"><span>5案の合計（重複を除かず単純合計）</span>`
       + `<span>${gp}点 ${fmtYen(gp * 100)}</span></div>`;
-  const note = '<div class="conf betrule-note"><b>この5案はどれも答え合わせが終わって'
-    + 'いません。</b>2026-06〜09 の3か月で100円買って戻ったのは 86〜120円で、'
-    + '100円を割る案もあります。どれか1つを本採用にする判断は 2026-Q4 以降に行います。</div>';
-  return note + secs + sum;
+  // 2026-09-09: 冒頭の注意書きと「直近3か月＝100円買って…」の行は削除（ユーザー決定）。
+  // 検証中であることは 130-spec §8 に残す。BETRULE_FWD は信頼度の札（高/中/低）で使い続ける
+  return secs + sum;
 }
 
 function renderBets20(site) {
