@@ -3815,6 +3815,15 @@ function brGroups(type, tickets) {
   return out;
 }
 
+// 買い目の馬番を押したら、その馬の戦績の札を開く（2026-09-09 ユーザー決定）。
+// 出馬表・新聞の馬名と同じ入口（[data-pop]＝馬番）を通すので、専用の処理は要らない。
+function betPopBoxes(type, nums, byNum) {
+  const ordered = /馬単|三連単|umatan|sanrentan/.test(String(type));
+  const sep = `<span class="cbsep">${ordered ? '→' : '-'}</span>`;
+  return nums.map((n) => `<button type="button" class="hnb" data-pop="${n}">`
+    + `${umaBox(n, (byNum[n] || {}).gate, 'sm')}</button>`).join(sep);
+}
+
 function renderBetRules(site) {
   const br = site.bets_rules;
   if (!br || !br.plans) return renderBets20(site);
@@ -3873,14 +3882,14 @@ function renderBetRules(site) {
         ret += gret;
         // 買い目のセル。2026-09-09 ユーザー決定で「軸1頭流し（相手 …）」の文言をやめ、
         // 「軸 - 相手の並び」「軸 → 相手の並び」の記号だけにした。相手のあいだの「・」も置かない
-        const relList = (ns) => ns.map((n) => comboBoxes(t.type, [n], byNum))
+        const relList = (ns) => ns.map((n) => betPopBoxes(t.type, [n], byNum))
           .join('<span class="cbsp"></span>');
         let body;
         if (g.others) {
-          body = comboBoxes(t.type, [g.axis], byNum)
+          body = betPopBoxes(t.type, [g.axis], byNum)
             + `<span class="cbsep">${ordered ? '→' : '-'}</span>` + relList(g.others);
         } else if (g.nagashi) {
-          body = comboBoxes(t.type, [g.axis], byNum)
+          body = betPopBoxes(t.type, [g.axis], byNum)
             + `<span class="cbsep">${ordered ? '→' : '-'}</span>` + relList(g.remSet);
         } else {
           // 名前が使えない塊は1点1行で出す（2026-09-09 ユーザー決定。
@@ -3890,7 +3899,7 @@ function renderBetRules(site) {
             const c = showResult
               ? `<td class="${p ? 'o' : 'x'}">${p ? '✓' : '✕'}</td><td>${fmtYen(p)}</td>`
               : '';
-            return `<tr><td class="l bcombo">${comboBoxes(t.type, tk, byNum)}</td>`
+            return `<tr><td class="l bcombo">${betPopBoxes(t.type, tk, byNum)}</td>`
               + `<td>${fmtYen(100)}</td>${c}</tr>`;
           }).join('');
         }

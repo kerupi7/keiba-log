@@ -248,8 +248,8 @@ function win5LabelHtml(win5) {
 // 買わない案も薄い札で残すので、縦に見て「どの案がいつも買っているか」が読める。
 // 色は既存の意味づけのまま：発走前=紺 / 的中=緑 / 外れ=灰。金額・馬名は出さない。
 const PLAN_ORDER = ['東海', '甲州', '中山', '奥州', '日光'];
-const PLAN_SLUG = { 東海: 'tokaido', 甲州: 'koshu', 中山: 'nakasendo',
-                    奥州: 'oshu', 日光: 'nikko' };
+// 2026-09-09 ユーザー決定: 一覧の札はモデルのページへ飛ばさない（表示だけ）。
+// モデルのページへの入口は「各モデルの成績」の行だけにする。
 
 // 5案が動き始めた日。manifest の plan_stats.period.from を main() が入れる。
 // これより前のレースは「対象外」ではなく旧方式なので、従来の表示に落とす。
@@ -266,7 +266,7 @@ function planChipsHtml(race) {
     const p = br[k] || {};
     let st = 'off';
     if (p.points > 0) st = p.hit === true ? 'hit' : (p.hit === false ? 'miss' : 'buy');
-    return `<span class="pchip ${st}" data-slug="${PLAN_SLUG[k]}">${escapeHtml(k)}</span>`;
+    return `<span class="pchip ${st}">${escapeHtml(k)}</span>`;
   }).join('');
   return `<div class="rpick"><div class="pchips">${chips}</div></div>`;
 }
@@ -350,28 +350,12 @@ function renderRaceRow(race) {
   `;
 }
 
-// 札のタップだけレースページではなくモデルのページへ送る（130-spec §12）。
-// 入れ子の <a> は書けないので、クリックを横取りして飛び先を差し替える。
-function bindPlanChipClicks() {
-  const el = document.getElementById('races-list');
-  if (!el || el.dataset.chipBound) return;
-  el.dataset.chipBound = '1';
-  el.addEventListener('click', (ev) => {
-    const chip = ev.target.closest('.pchip');
-    if (!chip || !chip.dataset.slug) return;
-    ev.preventDefault();
-    ev.stopPropagation();
-    location.href = `model.html?m=${chip.dataset.slug}`;
-  });
-}
-
 function renderRaceList(state, races) {
   const el = document.getElementById('races-list');
   const filtered = races
     .filter((r) => r.date === state.activeDate && r.track === state.activeTrack)
     .sort((a, b) => a.race_number - b.race_number);
   el.innerHTML = filtered.map(renderRaceRow).join('');
-  bindPlanChipClicks();
 }
 
 function renderEmpty() {
