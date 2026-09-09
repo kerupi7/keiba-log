@@ -388,6 +388,39 @@ div.roi{padding:12px 0 14px;border-bottom:1px solid var(--rule)}
 .pchip.miss{background:#8a8a8a;color:#fff}
 .pchip.hit{background:var(--hit);color:#fff}
 
+/* モデル詳細ページ（130-spec §12・model.html） */
+.mhead{padding:14px 0 10px;border-bottom:1px solid var(--rule)}
+.mhead .nm{font-size:22px;font-weight:700;display:flex;align-items:baseline;gap:8px}
+.mhead .nm .rk{font-size:12px;color:var(--cap);font-weight:700}
+.mhead .ds{font-size:13px;color:var(--sub);margin-top:3px}
+.mhead .ds b{color:var(--text)}
+.mroi{display:flex;align-items:baseline;gap:12px;padding:12px 0 2px}
+.mroi .v{font-size:38px;font-weight:700;line-height:1.1;font-variant-numeric:tabular-nums}
+.mroi .v.pos{color:var(--hit)} .mroi .v.neg{color:var(--live)}
+.mroi .s{font-size:13px;color:var(--sub);font-variant-numeric:tabular-nums}
+.msec{font-size:13px;font-weight:700;margin:18px 0 0;padding-bottom:5px;border-bottom:2px solid var(--navy)}
+.mnote{font-size:12px;color:var(--cap);margin-top:8px}
+.mt{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+.mt th{font-size:11px;color:var(--cap);font-weight:400;text-align:right;padding:6px 0 5px;
+  border-bottom:1px solid var(--rule)}
+.mt th:first-child{text-align:left}
+.mt td{font-size:13px;padding:7px 0;border-bottom:1px solid var(--rule);text-align:right}
+.mt td:first-child{text-align:left;font-weight:700}
+.mt td.sm{font-size:12px;color:var(--cap)}
+.mt td.pos{color:var(--hit);font-weight:700}
+.mt td.neg{color:var(--live);font-weight:700}
+.mt td.zero{color:var(--cap)}
+.mt td.nm{font-size:12.5px;font-weight:400;text-align:left}
+.mothers{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.mothers .mother{font-size:13px;font-weight:700;padding:7px 12px;border-radius:6px;
+  border:1px solid var(--rule);background:#fff;color:var(--link);text-decoration:none}
+@media (max-width: 520px) {
+  .mroi{flex-direction:column;gap:2px}
+  .mroi .v{font-size:32px}
+  .mt td{font-size:12px} .mt td.sm{font-size:11px} .mt th{font-size:10px}
+  .mt td:not(:first-child), .mt th:not(:first-child){padding-left:4px}
+}
+
 /* 各モデルの成績（回収率の高い順）。数字を並べて比べる表なので tabular-nums */
 .gk{width:100%;border-collapse:collapse;margin-top:10px;font-variant-numeric:tabular-nums}
 .gk th{font-size:11.5px;color:var(--cap);font-weight:400;text-align:right;padding:0 0 5px;
@@ -404,6 +437,10 @@ div.roi{padding:12px 0 14px;border-bottom:1px solid var(--rule)}
   font-size:11.5px;font-weight:700;border-radius:50%;margin-right:7px;vertical-align:1px;
   border:1px solid var(--rule);color:var(--cap);background:#fff}
 .gk .rk.r1{background:var(--navy);border-color:var(--navy);color:#fff}
+/* 行ごとモデルのページへ飛ぶ（130-spec §12）。案名はリンク色にせず本文色のまま出す */
+.gk tr.mrow{cursor:pointer}
+.gk tr.mrow td:first-child a{color:var(--text);text-decoration:none}
+.gk tr.mrow:hover td{background:var(--pred-race)}
 /* スマホ幅では6列が入りきらず、払戻の桁が切れる（375pxで実測）。
    文字と余白を詰めて6列とも残す。それでも足りない画面は横スクロールで逃がす */
 .gkwrap{overflow-x:auto;-webkit-overflow-scrolling:touch}

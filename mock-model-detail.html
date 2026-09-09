@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ja"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>モデル詳細ページ — Ans.（2026-09-09）</title>
+<link rel="stylesheet" href="assets/style.css?v=20260909a">
+<style>
+body{background:#ECECE7;margin:0;font:13px/1.6 -apple-system,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;color:#333}
+.doc{max-width:800px;margin:0 auto;padding:20px 12px 60px}
+.doc h1{font-size:17px;margin:0 0 6px}
+.doc p.n{font-size:12px;color:#5C5C5C;margin:0 0 4px;line-height:1.7}
+.doc code{background:#fff;border:1px solid #D8D8D3;padding:0 3px;border-radius:3px;font-size:11.5px}
+.frame{width:720px;background:#fff;border:1px solid #C9C9C4;border-radius:8px;overflow:hidden;margin-top:16px}
+.frame .container{padding:0 16px 20px}
+
+/* ===== 新しく足す部品（本番へ移すときはこのブロックを style.css へ） ===== */
+.mtabs{display:flex;gap:6px;padding:12px 0 0;flex-wrap:wrap}
+.mtab{flex:1;text-align:center;font-size:13px;font-weight:700;padding:8px 0;border-radius:6px;
+  border:1px solid var(--rule);background:#fff;color:var(--sub);cursor:pointer}
+.mtab.on{background:var(--navy);border-color:var(--navy);color:#fff}
+.mhead{padding:14px 0 10px;border-bottom:1px solid var(--rule)}
+.mhead .nm{font-size:22px;font-weight:700;display:flex;align-items:baseline;gap:8px}
+.mhead .nm .rk{font-size:12px;color:var(--cap);font-weight:700}
+.mhead .ds{font-size:13px;color:var(--sub);margin-top:3px}
+.mhead .ds b{color:var(--text)}
+.mroi{display:flex;align-items:baseline;gap:12px;padding:12px 0 6px}
+.mroi .v{font-size:38px;font-weight:700;line-height:1.1;font-variant-numeric:tabular-nums}
+.mroi .v.pos{color:var(--hit)} .mroi .v.neg{color:var(--live)}
+.mroi .s{font-size:13px;color:var(--sub);font-variant-numeric:tabular-nums}
+.msec{font-size:13px;font-weight:700;margin:18px 0 0;padding-bottom:5px;border-bottom:2px solid var(--navy)}
+.mt{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+.mt th{font-size:11px;color:var(--cap);font-weight:400;text-align:right;padding:6px 0 5px;
+  border-bottom:1px solid var(--rule)}
+.mt th:first-child{text-align:left}
+.mt td{font-size:13px;padding:7px 0;border-bottom:1px solid var(--rule);text-align:right}
+.mt td:first-child{text-align:left;font-weight:700}
+.mt td.pos{color:var(--hit);font-weight:700} .mt td.neg{color:var(--live)}
+.mt td.zero{color:var(--cap)}
+.mt td.nm{font-size:12.5px;font-weight:400;text-align:left}
+.mnote{font-size:12px;color:var(--cap);margin-top:8px}
+</style></head><body>
+<div class="doc">
+<h1>モデル詳細ページ — Ans.（2026-09-09）</h1>
+<p class="n">一覧の札か「各モデルの成績」の行をタップすると開くページ。上のタブは切り替えの確認用で、本番は <code>model.html?m=koshu</code> のように1モデル1ページで開く。</p>
+<p class="n">2026-09-09 の指示で変えたところ：<b>「ルールの例」と「開催日べつ」を消した</b>／<b>「払戻があったレース」を回収率の高い順・上位10件にし、レース名からレースページへ飛べるようにした</b>。</p>
+<div class="frame">
+  <header class="site-header"><a class="logo" href="#">Ans<span class="g">.</span></a>
+    <nav><a href="#">TOP</a><a href="#">成績</a><a href="#">コースデータ</a></nav></header>
+  <div class="container top">
+    <div class="mtabs" id="tabs"></div>
+    <div id="body"></div>
+  </div>
+</div>
+</div>
+<script>
+const D = {"東海": {"desc": "オッズ帯・頭数・クラス・荒れ度・地雷", "materials": ["オッズ帯", "クラス", "頭数", "荒れ度", "地雷", "人気の並び", "1着の向き"], "n_rules": 129, "total": {"races": 36, "points": 192, "cost": 19200, "ret": 3100, "hits": 1, "hit_races": 1, "roi": 16.1}, "by_type": {"ワイド": {"pt": 31, "cost": 3100, "ret": 0, "hits": 0}, "馬単": {"pt": 47, "cost": 4700, "ret": 3100, "hits": 1}, "馬連": {"pt": 23, "cost": 2300, "ret": 0, "hits": 0}, "三連複": {"pt": 31, "cost": 3100, "ret": 0, "hits": 0}, "三連単": {"pt": 60, "cost": 6000, "ret": 0, "hits": 0}}, "by_upset": {"中荒れ": {"r": 28, "cost": 15900, "ret": 0, "hitr": 0}, "大荒れ": {"r": 4, "cost": 1400, "ret": 0, "hitr": 0}, "堅い": {"r": 4, "cost": 1900, "ret": 3100, "hitr": 1}}, "hits": [{"race_id": "202609040109", "date": "2026-09-05", "track": "阪神", "r": 9, "name": "出石特別", "points": 3, "cost": 300, "ret": 3100, "roi": 1033.3}], "n_hits": 1}, "甲州": {"desc": "コース・馬場・季節", "materials": ["オッズ帯", "競馬場", "距離", "季節", "芝ダート", "馬場状態"], "n_rules": 127, "total": {"races": 37, "points": 1042, "cost": 104200, "ret": 401370, "hits": 25, "hit_races": 12, "roi": 385.2}, "by_type": {"三連複": {"pt": 112, "cost": 11200, "ret": 49450, "hits": 3}, "三連単": {"pt": 648, "cost": 64800, "ret": 332410, "hits": 2}, "ワイド": {"pt": 164, "cost": 16400, "ret": 19510, "hits": 20}, "馬連": {"pt": 44, "cost": 4400, "ret": 0, "hits": 0}, "馬単": {"pt": 74, "cost": 7400, "ret": 0, "hits": 0}}, "by_upset": {"中荒れ": {"r": 27, "cost": 79300, "ret": 64600, "hitr": 8}, "大荒れ": {"r": 6, "cost": 17800, "ret": 334780, "hitr": 2}, "堅い": {"r": 4, "cost": 7100, "ret": 1990, "hitr": 2}}, "hits": [{"race_id": "202601020506", "date": "2026-09-05", "track": "札幌", "r": 6, "name": "3歳未勝利", "points": 42, "cost": 4200, "ret": 334050, "roi": 7953.6}, {"race_id": "202601020510", "date": "2026-09-05", "track": "札幌", "r": 10, "name": "札幌スポニチ賞", "points": 79, "cost": 7900, "ret": 58400, "roi": 739.2}, {"race_id": "202601020511", "date": "2026-09-05", "track": "札幌", "r": 11, "name": "札幌2歳S", "points": 18, "cost": 1800, "ret": 1480, "roi": 82.2}, {"race_id": "202609040211", "date": "2026-09-06", "track": "阪神", "r": 11, "name": "セントウルS", "points": 18, "cost": 1800, "ret": 1450, "roi": 80.6}, {"race_id": "202609040107", "date": "2026-09-05", "track": "阪神", "r": 7, "name": "3歳以上1勝クラス", "points": 33, "cost": 3300, "ret": 2080, "roi": 63.0}, {"race_id": "202601020608", "date": "2026-09-06", "track": "札幌", "r": 8, "name": "3歳以上1勝クラス", "points": 10, "cost": 1000, "ret": 510, "roi": 51.0}, {"race_id": "202601020610", "date": "2026-09-06", "track": "札幌", "r": 10, "name": "HTB賞", "points": 22, "cost": 2200, "ret": 680, "roi": 30.9}, {"race_id": "202609040210", "date": "2026-09-06", "track": "阪神", "r": 10, "name": "オークランドTRT", "points": 30, "cost": 3000, "ret": 660, "roi": 22.0}, {"race_id": "202609040104", "date": "2026-09-05", "track": "阪神", "r": 4, "name": "3歳未勝利", "points": 21, "cost": 2100, "ret": 360, "roi": 17.1}, {"race_id": "202601020607", "date": "2026-09-06", "track": "札幌", "r": 7, "name": "3歳以上1勝クラス", "points": 85, "cost": 8500, "ret": 730, "roi": 8.6}], "n_hits": 12}, "中山": {"desc": "10期中8期で100円超", "materials": ["オッズ帯", "頭数", "クラス", "地雷", "荒れ度", "人気の並び"], "n_rules": 50, "total": {"races": 28, "points": 249, "cost": 24900, "ret": 8030, "hits": 4, "hit_races": 4, "roi": 32.2}, "by_type": {"ワイド": {"pt": 14, "cost": 1400, "ret": 0, "hits": 0}, "馬単": {"pt": 66, "cost": 6600, "ret": 5710, "hits": 2}, "馬連": {"pt": 10, "cost": 1000, "ret": 0, "hits": 0}, "三連複": {"pt": 43, "cost": 4300, "ret": 2320, "hits": 2}, "三連単": {"pt": 116, "cost": 11600, "ret": 0, "hits": 0}}, "by_upset": {"中荒れ": {"r": 23, "cost": 12700, "ret": 4170, "hitr": 2}, "堅い": {"r": 3, "cost": 600, "ret": 3860, "hitr": 2}, "大荒れ": {"r": 2, "cost": 11600, "ret": 0, "hitr": 0}}, "hits": [{"race_id": "202609040109", "date": "2026-09-05", "track": "阪神", "r": 9, "name": "出石特別", "points": 2, "cost": 200, "ret": 3100, "roi": 1550.0}, {"race_id": "202606040108", "date": "2026-09-05", "track": "中山", "r": 8, "name": "3歳以上1勝クラス", "points": 3, "cost": 300, "ret": 2610, "roi": 870.0}, {"race_id": "202609040211", "date": "2026-09-06", "track": "阪神", "r": 11, "name": "セントウルS", "points": 3, "cost": 300, "ret": 1560, "roi": 520.0}, {"race_id": "202601020511", "date": "2026-09-05", "track": "札幌", "r": 11, "name": "札幌2歳S", "points": 3, "cost": 300, "ret": 760, "roi": 253.3}], "n_hits": 4}, "奥州": {"desc": "東海と甲州のどちらか", "materials": ["オッズ帯", "クラス", "頭数", "競馬場", "距離", "荒れ度", "季節", "芝ダート", "地雷", "馬場状態", "人気の並び", "1着の向き"], "n_rules": 256, "total": {"races": 48, "points": 1210, "cost": 121000, "ret": 404470, "hits": 26, "hit_races": 13, "roi": 334.3}, "by_type": {"ワイド": {"pt": 179, "cost": 17900, "ret": 19510, "hits": 20}, "馬単": {"pt": 120, "cost": 12000, "ret": 3100, "hits": 1}, "三連複": {"pt": 139, "cost": 13900, "ret": 49450, "hits": 3}, "三連単": {"pt": 705, "cost": 70500, "ret": 332410, "hits": 2}, "馬連": {"pt": 67, "cost": 6700, "ret": 0, "hits": 0}}, "by_upset": {"中荒れ": {"r": 36, "cost": 93600, "ret": 64600, "hitr": 8}, "大荒れ": {"r": 7, "cost": 18400, "ret": 334780, "hitr": 2}, "堅い": {"r": 5, "cost": 9000, "ret": 5090, "hitr": 3}}, "hits": [{"race_id": "202601020506", "date": "2026-09-05", "track": "札幌", "r": 6, "name": "3歳未勝利", "points": 42, "cost": 4200, "ret": 334050, "roi": 7953.6}, {"race_id": "202601020510", "date": "2026-09-05", "track": "札幌", "r": 10, "name": "札幌スポニチ賞", "points": 79, "cost": 7900, "ret": 58400, "roi": 739.2}, {"race_id": "202601020511", "date": "2026-09-05", "track": "札幌", "r": 11, "name": "札幌2歳S", "points": 18, "cost": 1800, "ret": 1480, "roi": 82.2}, {"race_id": "202609040211", "date": "2026-09-06", "track": "阪神", "r": 11, "name": "セントウルS", "points": 19, "cost": 1900, "ret": 1450, "roi": 76.3}, {"race_id": "202609040109", "date": "2026-09-05", "track": "阪神", "r": 9, "name": "出石特別", "points": 43, "cost": 4300, "ret": 3100, "roi": 72.1}, {"race_id": "202609040107", "date": "2026-09-05", "track": "阪神", "r": 7, "name": "3歳以上1勝クラス", "points": 33, "cost": 3300, "ret": 2080, "roi": 63.0}, {"race_id": "202601020608", "date": "2026-09-06", "track": "札幌", "r": 8, "name": "3歳以上1勝クラス", "points": 14, "cost": 1400, "ret": 510, "roi": 36.4}, {"race_id": "202601020610", "date": "2026-09-06", "track": "札幌", "r": 10, "name": "HTB賞", "points": 25, "cost": 2500, "ret": 680, "roi": 27.2}, {"race_id": "202609040210", "date": "2026-09-06", "track": "阪神", "r": 10, "name": "オークランドTRT", "points": 39, "cost": 3900, "ret": 660, "roi": 16.9}, {"race_id": "202609040104", "date": "2026-09-05", "track": "阪神", "r": 4, "name": "3歳未勝利", "points": 22, "cost": 2200, "ret": 360, "roi": 16.4}], "n_hits": 13}, "日光": {"desc": "甲州と中山のどちらか", "materials": ["オッズ帯", "競馬場", "距離", "季節", "芝ダート", "馬場状態", "頭数", "クラス", "地雷", "荒れ度", "人気の並び"], "n_rules": 177, "total": {"races": 42, "points": 1275, "cost": 127500, "ret": 408640, "hits": 28, "hit_races": 14, "roi": 320.5}, "by_type": {"ワイド": {"pt": 174, "cost": 17400, "ret": 19510, "hits": 20}, "馬単": {"pt": 140, "cost": 14000, "ret": 5710, "hits": 2}, "三連複": {"pt": 146, "cost": 14600, "ret": 51010, "hits": 4}, "三連単": {"pt": 761, "cost": 76100, "ret": 332410, "hits": 2}, "馬連": {"pt": 54, "cost": 5400, "ret": 0, "hits": 0}}, "by_upset": {"中荒れ": {"r": 32, "cost": 90700, "ret": 68770, "hitr": 9}, "大荒れ": {"r": 6, "cost": 29400, "ret": 334780, "hitr": 2}, "堅い": {"r": 4, "cost": 7400, "ret": 5090, "hitr": 3}}, "hits": [{"race_id": "202601020506", "date": "2026-09-05", "track": "札幌", "r": 6, "name": "3歳未勝利", "points": 42, "cost": 4200, "ret": 334050, "roi": 7953.6}, {"race_id": "202606040108", "date": "2026-09-05", "track": "中山", "r": 8, "name": "3歳以上1勝クラス", "points": 3, "cost": 300, "ret": 2610, "roi": 870.0}, {"race_id": "202601020510", "date": "2026-09-05", "track": "札幌", "r": 10, "name": "札幌スポニチ賞", "points": 79, "cost": 7900, "ret": 58400, "roi": 739.2}, {"race_id": "202609040211", "date": "2026-09-06", "track": "阪神", "r": 11, "name": "セントウルS", "points": 21, "cost": 2100, "ret": 3010, "roi": 143.3}, {"race_id": "202601020511", "date": "2026-09-05", "track": "札幌", "r": 11, "name": "札幌2歳S", "points": 18, "cost": 1800, "ret": 1480, "roi": 82.2}, {"race_id": "202609040109", "date": "2026-09-05", "track": "阪神", "r": 9, "name": "出石特別", "points": 42, "cost": 4200, "ret": 3100, "roi": 73.8}, {"race_id": "202609040107", "date": "2026-09-05", "track": "阪神", "r": 7, "name": "3歳以上1勝クラス", "points": 34, "cost": 3400, "ret": 2080, "roi": 61.2}, {"race_id": "202601020608", "date": "2026-09-06", "track": "札幌", "r": 8, "name": "3歳以上1勝クラス", "points": 10, "cost": 1000, "ret": 510, "roi": 51.0}, {"race_id": "202601020610", "date": "2026-09-06", "track": "札幌", "r": 10, "name": "HTB賞", "points": 25, "cost": 2500, "ret": 680, "roi": 27.2}, {"race_id": "202609040210", "date": "2026-09-06", "track": "阪神", "r": 10, "name": "オークランドTRT", "points": 37, "cost": 3700, "ret": 660, "roi": 17.8}], "n_hits": 14}};
+const ORDER = ['東海','甲州','中山','奥州','日光'];
+const TYPES = ['ワイド','馬連','馬単','三連複','三連単'];
+const UPS = ['堅い','中荒れ','大荒れ'];
+const yen = n => n.toLocaleString('ja-JP') + '円';
+const rank = ORDER.slice().sort((a,b) => D[b].total.roi - D[a].total.roi);
+let cur = '甲州';
+
+function tbl(head, rows){ return `<table class="mt"><tr>${head.map(h=>`<th>${h}</th>`).join('')}</tr>${rows}</table>`; }
+function roiCell(ret, cost){
+  const v = cost ? ret / cost * 100 : 0;
+  return `<td class="${v>=100?'pos':(ret?'neg':'zero')}">${v.toFixed(1)}%</td>`;
+}
+
+function render(){
+  const d = D[cur], t = d.total;
+  document.getElementById('tabs').innerHTML = ORDER.map(n =>
+    `<div class="mtab${n===cur?' on':''}" data-n="${n}">${n}</div>`).join('');
+
+  const typeRows = TYPES.map(ty => {
+    const x = d.by_type[ty]; if (!x || !x.pt) return '';
+    return `<tr><td>${ty}</td>${roiCell(x.ret, x.cost)}
+      <td>${x.hits}点</td><td>${x.pt}点</td><td>${yen(x.cost)}</td><td>${yen(x.ret)}</td></tr>`;
+  }).join('');
+
+  const upRows = UPS.map(u => {
+    const x = d.by_upset[u]; if (!x) return '';
+    return `<tr><td>${u}</td>${roiCell(x.ret, x.cost)}
+      <td>${x.hitr}R</td><td>${x.r}R</td><td>${yen(x.cost)}</td><td>${yen(x.ret)}</td></tr>`;
+  }).join('');
+
+  // 並びは回収率の高い順（2026-09-09 ユーザー決定）。レース名からレースページへ飛ぶ
+  const hitRows = d.hits.map(r =>
+    `<tr><td>${r.date.slice(5)} ${r.track}${r.r}R</td>
+      <td class="nm"><a href="race.html?id=${r.race_id}">${r.name}</a></td>
+      <td class="${r.roi >= 100 ? 'pos' : 'neg'}">${r.roi.toFixed(0)}%</td>
+      <td>${r.points}点</td><td>${yen(r.ret)}</td></tr>`).join('');
+  const rest = d.n_hits - d.hits.length;
+
+  document.getElementById('body').innerHTML = `
+    <div class="mhead">
+      <div class="nm">${cur}<span class="rk">5案中${rank.indexOf(cur)+1}位</span></div>
+      <div class="ds">何を見て買うか　<b>${d.materials.join('・')}</b></div>
+      <div class="ds">選び方　${d.desc}（${d.n_rules}ルール）</div>
+    </div>
+    <div class="mroi">
+      <div class="v ${t.roi>=100?'pos':'neg'}">${t.roi}%</div>
+      <div class="s">投資 ${yen(t.cost)} → 払戻 ${yen(t.ret)}<br>
+        買った ${t.races}レース / ${t.points}点 ・ 的中 ${t.hit_races}レース / ${t.hits}点</div>
+    </div>
+    <div class="msec">券種べつ</div>
+    ${tbl(['券種','回収率','的中','買った','投資','払戻'], typeRows)}
+    <div class="msec">荒れ度べつ</div>
+    ${tbl(['荒れ度','回収率','的中','買った','投資','払戻'], upRows)}
+    <div class="msec">払戻があったレース</div>
+    ${hitRows ? tbl(['レース','','回収率','買った','払戻'], hitRows) : '<div class="mnote">払戻のあったレースはありません</div>'}
+    ${rest > 0 ? `<div class="mnote">ほか${rest}レースでも払戻あり（回収率の高い10件だけ表示）</div>` : ''}
+  `;
+  document.querySelectorAll('.mtab').forEach(el => el.onclick = () => { cur = el.dataset.n; render(); });
+}
+render();
+</script>
+</body></html>

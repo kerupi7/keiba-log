@@ -14,8 +14,9 @@ function renderPlanTable(ps) {
     ? `${PLAN_STAKE_LABEL}・${ps.period.from.slice(5)}〜${ps.period.to.slice(5)}の${ps.n_races}レース`
     : PLAN_STAKE_LABEL;
   const rows = plans.map((p, i) => `
-    <tr>
-      <td><span class="rk${i === 0 ? ' r1' : ''}">${i + 1}</span>${escapeHtml(p.name)}</td>
+    <tr class="mrow" data-slug="${escapeHtml(p.slug || '')}">
+      <td><span class="rk${i === 0 ? ' r1' : ''}">${i + 1}</span>
+        <a href="model.html?m=${escapeHtml(p.slug || '')}">${escapeHtml(p.name)}</a></td>
       <td class="big ${p.roi >= 1 ? 'pos' : 'neg'}">${fmtPercent(p.roi, 1)}</td>
       <td class="sm">${p.hit_races}R</td>
       <td class="sm">${p.races}R / ${p.points}点</td>
@@ -31,6 +32,19 @@ function renderPlanTable(ps) {
   `;
 }
 
+// 表の行のどこをタップしてもモデルのページへ（案名のリンクだけだと的が小さい）
+function bindPlanRowClicks() {
+  const el = document.getElementById('summary-section');
+  if (!el || el.dataset.rowBound) return;
+  el.dataset.rowBound = '1';
+  el.addEventListener('click', (ev) => {
+    if (ev.target.closest('a')) return;   // 案名のリンクはそのまま働かせる
+    const row = ev.target.closest('tr.mrow');
+    if (!row || !row.dataset.slug) return;
+    location.href = `model.html?m=${row.dataset.slug}`;
+  });
+}
+
 function renderSummary(stats) {
   const el = document.getElementById('summary-section');
   if (!stats || stats.n_final === 0) {
@@ -40,6 +54,7 @@ function renderSummary(stats) {
   const ps = stats.plan_stats;
   if (ps && (ps.plans || []).length) {
     el.innerHTML = renderPlanTable(ps);
+    bindPlanRowClicks();
     return;
   }
   const roi = stats.roi.total;
@@ -233,6 +248,8 @@ function win5LabelHtml(win5) {
 // 買わない案も薄い札で残すので、縦に見て「どの案がいつも買っているか」が読める。
 // 色は既存の意味づけのまま：発走前=紺 / 的中=緑 / 外れ=灰。金額・馬名は出さない。
 const PLAN_ORDER = ['東海', '甲州', '中山', '奥州', '日光'];
+const PLAN_SLUG = { 東海: 'tokaido', 甲州: 'koshu', 中山: 'nakasendo',
+                    奥州: 'oshu', 日光: 'nikko' };
 
 // 5案が動き始めた日。manifest の plan_stats.period.from を main() が入れる。
 // これより前のレースは「対象外」ではなく旧方式なので、従来の表示に落とす。
@@ -249,7 +266,7 @@ function planChipsHtml(race) {
     const p = br[k] || {};
     let st = 'off';
     if (p.points > 0) st = p.hit === true ? 'hit' : (p.hit === false ? 'miss' : 'buy');
-    return `<span class="pchip ${st}">${escapeHtml(k)}</span>`;
+    return `<span class="pchip ${st}" data-slug="${PLAN_SLUG[k]}">${escapeHtml(k)}</span>`;
   }).join('');
   return `<div class="rpick"><div class="pchips">${chips}</div></div>`;
 }
@@ -333,12 +350,28 @@ function renderRaceRow(race) {
   `;
 }
 
+// 札のタップだけレースページではなくモデルのページへ送る（130-spec §12）。
+// 入れ子の <a> は書けないので、クリックを横取りして飛び先を差し替える。
+function bindPlanChipClicks() {
+  const el = document.getElementById('races-list');
+  if (!el || el.dataset.chipBound) return;
+  el.dataset.chipBound = '1';
+  el.addEventListener('click', (ev) => {
+    const chip = ev.target.closest('.pchip');
+    if (!chip || !chip.dataset.slug) return;
+    ev.preventDefault();
+    ev.stopPropagation();
+    location.href = `model.html?m=${chip.dataset.slug}`;
+  });
+}
+
 function renderRaceList(state, races) {
   const el = document.getElementById('races-list');
   const filtered = races
     .filter((r) => r.date === state.activeDate && r.track === state.activeTrack)
     .sort((a, b) => a.race_number - b.race_number);
   el.innerHTML = filtered.map(renderRaceRow).join('');
+  bindPlanChipClicks();
 }
 
 function renderEmpty() {
