@@ -3502,16 +3502,9 @@ function confNote(bets) {
 // ===== 買い目＝五街道5案（2026-09-09 ユーザー決定・SCOREBOARD §2.84） =====
 // 現行の買い目（renderBets20）は呼ばなくなったが、過去の公開分（bets_rules が無い
 // レース）はそちらに落として今までどおり描く。関数は消さない。
-// 直近3か月の戻り＝2026-06-06〜09-06 の実測（100円買って何円戻ったか）。
-const BETRULE_FWD = { 東海: 0.92, 甲州: 1.47, 中山: 0.96, 奥州: 1.29, 日光: 1.33 };
+// 2026-09-09: 信頼度の札（高/中/低）を消したので、直近3か月の戻り（BETRULE_FWD）と
+// betruleChip() も一緒に落とした。過去の数字は 130-spec §8 と git 履歴に残る。
 const BETRULE_ORDER = ['東海', '甲州', '中山', '奥州', '日光'];
-
-function betruleChip(v) {
-  if (v == null) return '';
-  const c = v >= 1.2 ? 'ok' : (v >= 1.0 ? 'fair' : 'ng');
-  const lab = v >= 1.2 ? '高' : (v >= 1.0 ? '中' : '低');
-  return ` <span class="chip ${c}">${lab}</span>`;
-}
 
 function renderBetRules(site) {
   const br = site.bets_rules;
@@ -3558,7 +3551,7 @@ function renderBetRules(site) {
       const cell = showResult
         ? `<td class="${pay ? 'o' : 'x'}">${pay ? '✓' : '✕'}</td><td>${fmtYen(pay)}</td>`
         : '';
-      return `<tr><td class="l">${label}${betruleChip(BETRULE_FWD[name])}</td>`
+      return `<tr><td class="l">${label}</td>`
         + `<td class="l">${comboBoxes(t.type, tk, byNum)}</td>`
         + `<td>${fmtYen(100)}</td>${cell}</tr>`;
     }).join('')).join('');
@@ -3581,7 +3574,7 @@ function renderBetRules(site) {
     : `<div class="betrule-sum"><span>5案の合計（重複を除かず単純合計）</span>`
       + `<span>${gp}点 ${fmtYen(gp * 100)}</span></div>`;
   // 2026-09-09: 冒頭の注意書きと「直近3か月＝100円買って…」の行は削除（ユーザー決定）。
-  // 検証中であることは 130-spec §8 に残す。BETRULE_FWD は信頼度の札（高/中/低）で使い続ける
+  // 検証中であることは 130-spec §8 に残す
   return secs + sum;
 }
 
