@@ -3562,11 +3562,11 @@ function brGroups(type, tickets) {
       const remFull = ordered ? brPerms(remSet, k - 1) : brCombos(remSet, k - 1);
       const have = new Set(rem.map((t) => brKey(t, ordered)));
       const missing = remFull.filter((t) => !have.has(brKey(t, ordered)));
-      // 除外を書くほうが短くなるときだけ「相手…／除く…」にする。
-      // 守りたいのは「1行に並ぶ数字を少なくすること」で、この不等号はその代理。
-      // 実測（50レース・3,968点）では最悪の行が 14点→8点、除外は最大9点になった。
-      // 数字の見え方と衝突したら、この不等号のほうを捨てて件数の上限に替える。
-      const nagashi = missing.length < grp.length;
+      // ★欠けが1つでもあれば「流し」とは呼ばず、買い目をそのまま並べる
+      // （2026-09-09 ユーザー決定B。18点しか買っていないのに「流し」と書くのは誤りのため）。
+      // 実測（50レース・3,968点）では、名前が使えるのは827の塊、
+      // そのまま並べるのは250の塊で、1行に並ぶ最大は18点。
+      const nagashi = missing.length === 0;
       out.push({ axis, rem, remSet, nagashi, missing, n: grp.length, tickets: grp, ordered });
     }
   }
@@ -3614,7 +3614,6 @@ function renderBetRules(site) {
       const sorted = /馬単|三連単/.test(type) ? tk : [...tk].sort((a, b) => a - b);
       return payMap[`${type}|${sorted.join('-')}`] || 0;
     };
-    const cols = showResult ? 5 : 3;
     const rows = pl.types.map((t) => {
       const label = t.type.replace('三連', '3連');
       const ordered = /馬単|三連単/.test(t.type);
@@ -3637,7 +3636,7 @@ function renderBetRules(site) {
             .join('<span class="cbsep">・</span>');
           body = comboBoxes(t.type, [g.axis], byNum)
             + `<span class="brl">の${ordered ? '1着固定' : '軸1頭'}流し（相手 </span>${rel}`
-            + `<span class="brl">${ordered ? '・順番自由' : ''}）</span>`;
+            + `<span class="brl">）</span>`;
         } else {
           body = g.tickets.map((tk) => comboBoxes(t.type, tk, byNum))
             .join('<span class="cbsep">／</span>');
@@ -3645,15 +3644,10 @@ function renderBetRules(site) {
         const cell = showResult
           ? `<td class="${gret ? 'o' : 'x'}">${gret ? '✓' : '✕'}</td><td>${fmtYen(gret)}</td>`
           : '';
-        const notes = [];
-        if (g.nagashi && g.missing && g.missing.length) {
-          notes.push('除く ' + g.missing
-            .map((m) => [g.axis, ...m].join(ordered ? '→' : '-')).join('・'));
-        }
-        if (showResult && hits.length) notes.push('的中 ' + hits.join('・'));
-        const note = notes.length
-          ? `<tr class="brnote"><td class="l" colspan="${cols}">${escapeHtml(notes.join('　'))}</td></tr>`
-          : '';
+        // 2026-09-09 ユーザー決定: 「除く…」「的中…」の補足行は出さない。
+        // 欠けのある塊は名前を使わず買い目をそのまま並べるので、除外を書く必要が無い。
+        // 的中は行の右の ✓ と払戻の金額で足りる。
+        const note = '';
         return `<tr><td class="l">${label}</td><td class="l bcombo">${body}</td>`
           + `<td>${fmtYen(g.n * 100)}</td>${cell}</tr>${note}`;
       }).join('');
