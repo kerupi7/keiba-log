@@ -3522,11 +3522,20 @@ function renderBetRules(site) {
   const byNum = {};
   for (const h of site.horses) byNum[h.number] = h;
   const showResult = site.status === 'final';
+  // result.payouts は「券種名をキーにした辞書」。複勝とワイドだけ配列で、他は単体。
+  // 2026-09-09: 配列だと思い込んで for..of を回し、例外でページ全体が白くなった。
+  const BR_BT = { ワイド: 'wide', 馬連: 'umaren', 馬単: 'umatan',
+                  三連複: 'sanrenpuku', 三連単: 'sanrentan' };
   const payMap = {};
-  if (showResult && site.result && site.result.payouts) {
-    for (const p of site.result.payouts) {
-      const key = `${p.type}|${(p.combination || []).join('-')}`;
-      payMap[key] = p.payout;
+  const po = (showResult && site.result && site.result.payouts) || null;
+  if (po && !Array.isArray(po)) {
+    for (const [ja, key] of Object.entries(BR_BT)) {
+      const v = po[key];
+      if (!v) continue;
+      for (const e of (Array.isArray(v) ? v : [v])) {
+        if (!e || !e.combination) continue;
+        payMap[`${ja}|${e.combination.join('-')}`] = e.payout;
+      }
     }
   }
   let gp = 0;
