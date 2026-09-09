@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="ja"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>買い目のまとめ方3案 — Ans.（2026-09-09）</title>
+<link rel="stylesheet" href="assets/style.css?v=20260909b">
+<style>
+body{background:#ECECE7;margin:0;font:13px/1.6 -apple-system,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;color:#333}
+.doc{max-width:2260px;margin:0 auto;padding:20px 12px 60px}
+.doc h1{font-size:17px;margin:0 0 6px}
+.doc p.n{font-size:12px;color:#5C5C5C;margin:0 0 4px;line-height:1.7}
+.doc code{background:#fff;border:1px solid #D8D8D3;padding:0 3px;border-radius:3px;font-size:11.5px}
+.cols{display:flex;gap:14px;flex-wrap:wrap;margin-top:18px;align-items:flex-start}
+.col{width:720px}
+.col h2{font-size:13px;margin:0 0 2px}
+.col p.d{font-size:11.5px;color:#5C5C5C;margin:0 0 8px;line-height:1.7;min-height:56px}
+.frame{width:720px;background:#fff;border:1px solid #C9C9C4;border-radius:8px;padding:0 16px 16px;
+  max-height:1100px;overflow-y:auto}
+.tabs{display:flex;gap:6px;margin-top:14px}
+.tabs button{flex:1;font:700 12px/1 -apple-system,sans-serif;padding:8px 0;border:1px solid #C9C9C4;
+  background:#fff;border-radius:6px;cursor:pointer;color:#5C5C5C}
+.tabs button.on{background:var(--navy);border-color:var(--navy);color:#fff}
+
+/* ===== 新しく足す部品（本番へ移すときはこのブロックを style.css へ） ===== */
+.bgrp{padding:8px 0;border-bottom:1px solid var(--rule);display:flex;gap:8px;align-items:flex-start;
+  flex-wrap:wrap}
+.bgrp .ty{flex:none;width:52px;font-size:13px;font-weight:700}
+.bgrp .bd{flex:1;min-width:0;display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.bgrp .amt{flex:none;font-size:12px;color:var(--cap);font-variant-numeric:tabular-nums;width:76px;
+  text-align:right}
+.bgrp .pay{flex:none;font-size:12px;font-variant-numeric:tabular-nums;width:88px;text-align:right}
+.bgrp .pay.o{color:var(--hit);font-weight:700}
+.bgrp .pay.x{color:var(--cap)}
+.bgrp .lbl{font-size:12px;color:var(--sub)}
+.bgrp .ex{font-size:11.5px;color:var(--cap);width:100%;padding-left:60px}
+.bgrp .hit{font-size:11.5px;width:100%;padding-left:60px;color:var(--hit);font-weight:700;
+  font-variant-numeric:tabular-nums}
+.bsum{display:flex;justify-content:space-between;font-size:12.5px;font-weight:700;padding:8px 0}
+</style></head><body>
+<div class="doc">
+<h1>買い目のまとめ方3案 — Ans.（2026-09-09）</h1>
+<p class="n">中身は <b>2026-09-06(日) 札幌7R 3歳以上1勝クラス</b> の実データ。日光は141点・甲州は85点あり、1点1行だと画面が長くなる。</p>
+<p class="n">上のボタンでモデルを切り替えられる。表の色と枠色ボックスは本物の <code>assets/style.css</code>。</p>
+<div class="tabs" id="tabs"></div>
+<div class="cols" id="cols"></div>
+</div>
+<script>
+const RACE = {"race": {"track": "札幌", "r": 7, "name": "3歳以上1勝クラス", "date": "2026-09-06", "id": "202601020607"}, "gates": {"1": 1, "2": 1, "3": 2, "4": 2, "5": 3, "6": 3, "7": 4, "8": 4, "9": 5, "10": 5, "11": 6, "12": 6, "13": 7, "14": 7, "15": 8, "16": 8}, "payouts": {"tansho": {"combination": [12], "payout": 270, "popularity": 1}, "fukusho": [{"combination": [12], "payout": 140}, {"combination": [16], "payout": 320}, {"combination": [4], "payout": 390}], "wakuren": {"combination": [6, 8], "payout": 1500}, "umaren": {"combination": [12, 16], "payout": 2160}, "wide": [{"combination": [12, 16], "payout": 730}, {"combination": [4, 12], "payout": 940}, {"combination": [4, 16], "payout": 3520}], "umatan": {"combination": [12, 16], "payout": 3050}, "sanrenpuku": {"combination": [4, 12, 16], "payout": 11160}, "sanrentan": {"combination": [12, 16, 4], "payout": 43870}}, "plans": {"東海": {"points": 7, "desc": "オッズ帯・頭数・クラス・荒れ度・地雷", "n_rules": 129, "types": [{"type": "ワイド", "tickets": [[12, 3], [8, 3], [3, 6], [3, 14], [3, 16], [6, 14], [14, 16]]}]}, "甲州": {"points": 85, "desc": "コース・馬場・季節", "n_rules": 127, "types": [{"type": "ワイド", "tickets": [[12, 3], [12, 6], [12, 16], [8, 3], [8, 6], [8, 16], [3, 6], [3, 14], [3, 16], [6, 14], [6, 16], [14, 16]]}, {"type": "三連複", "tickets": [[12, 8, 3], [12, 8, 6], [12, 8, 16], [12, 3, 6], [12, 3, 14], [12, 3, 16], [12, 6, 14], [12, 6, 16], [12, 14, 16], [8, 3, 6], [8, 3, 14], [8, 3, 16], [8, 6, 14], [8, 6, 16], [8, 14, 16], [3, 6, 14], [3, 6, 16], [3, 14, 16], [6, 14, 16]]}, {"type": "三連単", "tickets": [[8, 3, 6], [8, 3, 14], [8, 3, 16], [8, 6, 3], [8, 6, 14], [8, 6, 16], [8, 14, 3], [8, 14, 6], [8, 14, 16], [8, 16, 3], [8, 16, 6], [8, 16, 14], [3, 8, 6], [3, 8, 14], [3, 8, 16], [3, 6, 8], [3, 6, 14], [3, 14, 8], [3, 14, 6], [3, 14, 16], [3, 16, 8], [3, 16, 14], [6, 8, 3], [6, 8, 14], [6, 8, 16], [6, 3, 8], [6, 3, 14], [6, 14, 8], [6, 14, 3], [6, 14, 16], [6, 16, 8], [6, 16, 14], [14, 8, 3], [14, 8, 6], [14, 8, 16], [14, 3, 8], [14, 3, 6], [14, 3, 16], [14, 6, 8], [14, 6, 3], [14, 6, 16], [14, 16, 8], [14, 16, 3], [14, 16, 6], [16, 8, 3], [16, 8, 6], [16, 8, 14], [16, 3, 8], [16, 3, 14], [16, 6, 8], [16, 6, 14], [16, 14, 8], [16, 14, 3], [16, 14, 6]]}]}, "中山": {"points": 56, "desc": "10期中8期で100円超", "n_rules": 50, "types": [{"type": "馬単", "tickets": [[6, 12], [16, 12]]}, {"type": "三連単", "tickets": [[12, 8, 3], [12, 8, 6], [12, 8, 16], [12, 3, 8], [12, 3, 6], [12, 3, 14], [12, 3, 16], [12, 6, 8], [12, 6, 3], [12, 6, 14], [12, 6, 16], [12, 14, 3], [12, 14, 6], [12, 14, 16], [12, 16, 8], [12, 16, 3], [12, 16, 6], [12, 16, 14], [8, 12, 3], [8, 12, 6], [8, 12, 16], [8, 3, 12], [8, 6, 12], [8, 16, 12], [3, 12, 8], [3, 12, 6], [3, 12, 14], [3, 12, 16], [3, 8, 12], [3, 6, 12], [3, 14, 12], [3, 16, 12], [6, 12, 8], [6, 12, 3], [6, 12, 14], [6, 12, 16], [6, 8, 12], [6, 3, 12], [6, 14, 12], [6, 16, 12], [14, 12, 3], [14, 12, 6], [14, 12, 16], [14, 3, 12], [14, 6, 12], [14, 16, 12], [16, 12, 8], [16, 12, 3], [16, 12, 6], [16, 12, 14], [16, 8, 12], [16, 3, 12], [16, 6, 12], [16, 14, 12]]}]}, "奥州": {"points": 85, "desc": "東海と甲州のどちらか", "n_rules": 256, "types": [{"type": "ワイド", "tickets": [[12, 3], [12, 6], [12, 16], [8, 3], [8, 6], [8, 16], [3, 6], [3, 14], [3, 16], [6, 14], [6, 16], [14, 16]]}, {"type": "三連複", "tickets": [[12, 8, 3], [12, 8, 6], [12, 8, 16], [12, 3, 6], [12, 3, 14], [12, 3, 16], [12, 6, 14], [12, 6, 16], [12, 14, 16], [8, 3, 6], [8, 3, 14], [8, 3, 16], [8, 6, 14], [8, 6, 16], [8, 14, 16], [3, 6, 14], [3, 6, 16], [3, 14, 16], [6, 14, 16]]}, {"type": "三連単", "tickets": [[8, 3, 6], [8, 3, 14], [8, 3, 16], [8, 6, 3], [8, 6, 14], [8, 6, 16], [8, 14, 3], [8, 14, 6], [8, 14, 16], [8, 16, 3], [8, 16, 6], [8, 16, 14], [3, 8, 6], [3, 8, 14], [3, 8, 16], [3, 6, 8], [3, 6, 14], [3, 14, 8], [3, 14, 6], [3, 14, 16], [3, 16, 8], [3, 16, 14], [6, 8, 3], [6, 8, 14], [6, 8, 16], [6, 3, 8], [6, 3, 14], [6, 14, 8], [6, 14, 3], [6, 14, 16], [6, 16, 8], [6, 16, 14], [14, 8, 3], [14, 8, 6], [14, 8, 16], [14, 3, 8], [14, 3, 6], [14, 3, 16], [14, 6, 8], [14, 6, 3], [14, 6, 16], [14, 16, 8], [14, 16, 3], [14, 16, 6], [16, 8, 3], [16, 8, 6], [16, 8, 14], [16, 3, 8], [16, 3, 14], [16, 6, 8], [16, 6, 14], [16, 14, 8], [16, 14, 3], [16, 14, 6]]}]}, "日光": {"points": 141, "desc": "甲州と中山のどちらか", "n_rules": 177, "types": [{"type": "ワイド", "tickets": [[12, 3], [12, 6], [12, 16], [8, 3], [8, 6], [8, 16], [3, 6], [3, 14], [3, 16], [6, 14], [6, 16], [14, 16]]}, {"type": "馬単", "tickets": [[6, 12], [16, 12]]}, {"type": "三連複", "tickets": [[12, 8, 3], [12, 8, 6], [12, 8, 16], [12, 3, 6], [12, 3, 14], [12, 3, 16], [12, 6, 14], [12, 6, 16], [12, 14, 16], [8, 3, 6], [8, 3, 14], [8, 3, 16], [8, 6, 14], [8, 6, 16], [8, 14, 16], [3, 6, 14], [3, 6, 16], [3, 14, 16], [6, 14, 16]]}, {"type": "三連単", "tickets": [[12, 8, 3], [12, 8, 6], [12, 8, 16], [12, 3, 8], [12, 3, 6], [12, 3, 14], [12, 3, 16], [12, 6, 8], [12, 6, 3], [12, 6, 14], [12, 6, 16], [12, 14, 3], [12, 14, 6], [12, 14, 16], [12, 16, 8], [12, 16, 3], [12, 16, 6], [12, 16, 14], [8, 12, 3], [8, 12, 6], [8, 12, 16], [8, 3, 12], [8, 3, 6], [8, 3, 14], [8, 3, 16], [8, 6, 12], [8, 6, 3], [8, 6, 14], [8, 6, 16], [8, 14, 3], [8, 14, 6], [8, 14, 16], [8, 16, 12], [8, 16, 3], [8, 16, 6], [8, 16, 14], [3, 12, 8], [3, 12, 6], [3, 12, 14], [3, 12, 16], [3, 8, 12], [3, 8, 6], [3, 8, 14], [3, 8, 16], [3, 6, 12], [3, 6, 8], [3, 6, 14], [3, 14, 12], [3, 14, 8], [3, 14, 6], [3, 14, 16], [3, 16, 12], [3, 16, 8], [3, 16, 14], [6, 12, 8], [6, 12, 3], [6, 12, 14], [6, 12, 16], [6, 8, 12], [6, 8, 3], [6, 8, 14], [6, 8, 16], [6, 3, 12], [6, 3, 8], [6, 3, 14], [6, 14, 12], [6, 14, 8], [6, 14, 3], [6, 14, 16], [6, 16, 12], [6, 16, 8], [6, 16, 14], [14, 12, 3], [14, 12, 6], [14, 12, 16], [14, 8, 3], [14, 8, 6], [14, 8, 16], [14, 3, 12], [14, 3, 8], [14, 3, 6], [14, 3, 16], [14, 6, 12], [14, 6, 8], [14, 6, 3], [14, 6, 16], [14, 16, 12], [14, 16, 8], [14, 16, 3], [14, 16, 6], [16, 12, 8], [16, 12, 3], [16, 12, 6], [16, 12, 14], [16, 8, 12], [16, 8, 3], [16, 8, 6], [16, 8, 14], [16, 3, 12], [16, 3, 8], [16, 3, 14], [16, 6, 12], [16, 6, 8], [16, 6, 14], [16, 14, 12], [16, 14, 8], [16, 14, 3], [16, 14, 6]]}]}}};
+const ORDER = ['東海','甲州','中山','奥州','日光'];
+let cur = '日光';
+const yen = n => n.toLocaleString('ja-JP') + '円';
+const FRAME = {1:'wk1',2:'wk2',3:'wk3',4:'wk4',5:'wk5',6:'wk6',7:'wk7',8:'wk8'};
+function box(n){ const g=RACE.gates[n]; const c=FRAME[g]||'plain';
+  return `<span class="hn ${c} sm">${n}</span>`; }
+function boxes(ns, ordered){ return ns.map(box).join(`<span class="cbsep">${ordered?'→':'-'}</span>`); }
+function list(ns){ return ns.map(box).join('<span class="cbsep">・</span>'); }
+
+const PAYKEY = {'ワイド':'wide','馬連':'umaren','馬単':'umatan','三連複':'sanrenpuku','三連単':'sanrentan'};
+function payoutOf(type, t){
+  const v = RACE.payouts[PAYKEY[type]]; if (!v) return 0;
+  const arr = Array.isArray(v) ? v : [v];
+  const ordered = /馬単|三連単/.test(type);
+  for (const e of arr){
+    const a = ordered ? e.combination : [...e.combination].sort((x,y)=>x-y);
+    const b = ordered ? t : [...t].sort((x,y)=>x-y);
+    if (a.length===b.length && a.every((v2,i)=>v2===b[i])) return e.payout;
+  }
+  return 0;
+}
+
+/* ---- まとめ方の部品 ---- */
+function combos(arr,k){ const out=[]; const rec=(s,cur)=>{ if(cur.length===k){out.push([...cur]);return;}
+  for(let i=s;i<arr.length;i++){cur.push(arr[i]);rec(i+1,cur);cur.pop();} }; rec(0,[]); return out; }
+function perms(arr,k){ const out=[]; const used=new Set(); const rec=(cur)=>{ if(cur.length===k){out.push([...cur]);return;}
+  for(const a of arr){ if(used.has(a))continue; used.add(a);cur.push(a);rec(cur);cur.pop();used.delete(a);} }; rec([]); return out; }
+const keyOf = (t, ordered) => (ordered ? t : [...t].sort((a,b)=>a-b)).join('-');
+
+function analyse(type, tickets){
+  const ordered = /馬単|三連単/.test(type);
+  const k = tickets[0].length;
+  const set = [...new Set(tickets.flat())].sort((a,b)=>a-b);
+  const full = ordered ? perms(set,k) : combos(set,k);
+  const have = new Set(tickets.map(t=>keyOf(t,ordered)));
+  const missing = full.filter(t=>!have.has(keyOf(t,ordered)));
+  return {ordered, k, set, full, missing};
+}
+
+/* 案A: ボックス＋除外 */
+function groupsBox(type, tickets){
+  const a = analyse(type, tickets);
+  if (a.missing.length === 0)
+    return [{lbl:`${a.set.length}頭ボックス`, set:a.set, n:tickets.length, tickets}];
+  if (a.missing.length <= Math.max(2, Math.round(a.full.length * 0.25)))
+    return [{lbl:`${a.set.length}頭ボックス`, set:a.set, n:tickets.length, tickets,
+             ex:a.missing, ordered:a.ordered}];
+  return groupsAxis(type, tickets);
+}
+
+/* 案B: 軸でまとめる */
+function groupsAxis(type, tickets){
+  const ordered = /馬単|三連単/.test(type);
+  const k = tickets[0].length;
+  let rest = tickets.map(t=>[...t]);
+  const out = [];
+  while (rest.length){
+    const cnt = {};
+    rest.forEach(t => new Set(ordered ? [t[0]] : t).forEach(h => cnt[h]=(cnt[h]||0)+1));
+    const h = +Object.entries(cnt).sort((a,b)=>b[1]-a[1])[0][0];
+    const grp = rest.filter(t => ordered ? t[0]===h : t.includes(h));
+    rest = rest.filter(t => !(ordered ? t[0]===h : t.includes(h)));
+    if (k === 2){
+      const others = grp.map(t => t[0]===h ? t[1] : t[0]);
+      out.push({axis:h, others, n:grp.length, tickets:grp, ordered});
+    } else {
+      const rem = grp.map(t => t.filter(x=>x!==h));
+      const remSet = [...new Set(rem.flat())].sort((a,b)=>a-b);
+      const remFull = ordered ? perms(remSet, k-1) : combos(remSet, k-1);
+      const remHave = new Set(rem.map(t=>keyOf(t,ordered)));
+      const remMissing = remFull.filter(t=>!remHave.has(keyOf(t,ordered)));
+      // 相手の組がほぼ全部そろっていれば「相手から2頭・除く◯」と書く（1点ずつ並べない）
+      const complete = remMissing.length <= Math.max(2, Math.round(remFull.length * 0.25));
+      out.push({axis:h, rem, remSet, complete, remMissing, n:grp.length, tickets:grp, ordered});
+    }
+  }
+  return out;
+}
+
+function payLine(tickets, type){
+  let ret = 0; const hits = [];
+  for (const t of tickets){ const p = payoutOf(type, t); if (p){ ret += p; hits.push([t,p]); } }
+  return {ret, hits};
+}
+
+function rowsFor(type, tickets, mode){
+  if (mode === 'now')
+    return tickets.map(t => {
+      const p = payoutOf(type, t);
+      return `<div class="bgrp"><span class="ty">${type}</span>
+        <span class="bd">${boxes(t, /馬単|三連単/.test(type))}</span>
+        <span class="amt">100円</span>
+        <span class="pay ${p?'o':'x'}">${p?'✓ '+yen(p):'✕ 0円'}</span></div>`;
+    }).join('');
+  const grps = mode === 'box' ? groupsBox(type, tickets) : groupsAxis(type, tickets);
+  return grps.map(g => {
+    const {ret, hits} = payLine(g.tickets, type);
+    let body;
+    if (g.set) body = `${list(g.set)}<span class="lbl">のボックス</span>`;
+    else if (g.others) body = `${box(g.axis)}<span class="cbsep">${g.ordered?'→':'-'}</span>${list(g.others)}`;
+    else body = `${box(g.axis)}<span class="cbsep">${g.ordered?'→':'-'}</span>`
+      + (g.complete
+          ? `${list(g.remSet)}<span class="lbl">から${g.rem[0].length}頭${g.ordered ? '（順番自由）' : ''}</span>`
+          : g.rem.map(r=>boxes(r, g.ordered)).join('<span class="cbsep">・</span>'));
+    const exList = g.ex || (g.complete && g.remMissing && g.remMissing.length
+      ? g.remMissing.map(t => [g.axis, ...t]) : null);
+    const ex = exList && exList.length
+      ? `<div class="ex">除く ${exList.map(t=>t.join(g.ordered?'→':'-')).join('・')}</div>` : '';
+    const hit = hits.length
+      ? `<div class="hit">的中 ${hits.map(([t,p])=>t.join(g.ordered||/馬単|三連単/.test(type)?'→':'-')+' '+yen(p)).join('・')}</div>` : '';
+    return `<div class="bgrp"><span class="ty">${type}</span>
+      <span class="bd">${body}</span>
+      <span class="amt">${g.n}点 ${yen(g.n*100)}</span>
+      <span class="pay ${ret?'o':'x'}">${ret?'✓ '+yen(ret):'✕ 0円'}</span>${ex}${hit}</div>`;
+  }).join('');
+}
+
+function planHtml(mode){
+  const pl = RACE.plans[cur];
+  let pts = 0, ret = 0;
+  const secs = pl.types.map(t => {
+    pts += t.tickets.length;
+    ret += payLine(t.tickets, t.type).ret;
+    return rowsFor(t.type, t.tickets, mode);
+  }).join('');
+  return `<div class="secthead">${cur}<span class="cnt">${pl.desc} ${pl.n_rules}ルール</span></div>`
+    + secs
+    + `<div class="bsum"><span>合計 ${pts}点 ${yen(pts*100)}</span><span>払戻 ${yen(ret)}</span></div>`;
+}
+
+const CASES = [
+  {k:'now', t:'現行　1点ずつ1行', d:'いま公開しているかたち。点数がそのまま行数になる。'},
+  {k:'axis', t:'案A　軸でまとめる', d:'同じ馬を含む買い目をまとめて「3 - 6・8・12・14・16」の形にする。ユーザー指定の書き方。三連複・三連単は「軸 - 相手から2頭」になる。'},
+  {k:'box', t:'案B　ボックス＋除外', d:'買い目の集合が総当たり（ボックス）に近いときは「6頭ボックス、除く 8-12」と書く。近くないときは案Aに落ちる。'},
+];
+
+function render(){
+  document.getElementById('tabs').innerHTML = ORDER.map(n =>
+    `<button class="${n===cur?'on':''}" data-n="${n}">${n}（${RACE.plans[n].points}点）</button>`).join('');
+  document.getElementById('cols').innerHTML = CASES.map(c => `
+    <div class="col"><h2>${c.t}</h2><p class="d">${c.d}</p>
+      <div class="frame">${planHtml(c.k)}</div>
+      <p class="d" style="min-height:0;margin-top:6px">行数 <b id="ln-${c.k}"></b></p>
+    </div>`).join('');
+  CASES.forEach(c => {
+    const el = document.querySelectorAll('.col')[CASES.indexOf(c)];
+    el.querySelector(`#ln-${c.k}`).textContent =
+      el.querySelectorAll('.bgrp').length + '行';
+  });
+  document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => { cur = b.dataset.n; render(); });
+}
+render();
+</script>
+</body></html>

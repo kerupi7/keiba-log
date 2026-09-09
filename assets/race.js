@@ -3506,6 +3506,73 @@ function confNote(bets) {
 // betruleChip() も一緒に落とした。過去の数字は 130-spec §8 と git 履歴に残る。
 const BETRULE_ORDER = ['東海', '甲州', '中山', '奥州', '日光'];
 
+// 買い目を「軸1頭流し」にまとめる（130-spec §13・2026-09-09 ユーザー決定）。
+// 1点ずつ並べると日光141点で141行になり、画面が読めないため。
+// 同じ馬を含む買い目をひとまとめにして、軸1頭＋相手の並びで1行にする。
+// 点数と払戻の合計は1点ずつ足したときと同じになる（表示だけを変える）。
+
+function brKey(t, ordered) {
+  return (ordered ? t : [...t].sort((a, b) => a - b)).join('-');
+}
+
+function brCombos(arr, k) {
+  const out = [];
+  const rec = (start, cur) => {
+    if (cur.length === k) { out.push([...cur]); return; }
+    for (let i = start; i < arr.length; i++) { cur.push(arr[i]); rec(i + 1, cur); cur.pop(); }
+  };
+  rec(0, []);
+  return out;
+}
+
+function brPerms(arr, k) {
+  const out = [];
+  const used = new Set();
+  const rec = (cur) => {
+    if (cur.length === k) { out.push([...cur]); return; }
+    for (const a of arr) {
+      if (used.has(a)) continue;
+      used.add(a); cur.push(a); rec(cur); cur.pop(); used.delete(a);
+    }
+  };
+  rec([]);
+  return out;
+}
+
+// 軸を1頭ずつ立てて、その馬を含む買い目をまとめる（多い順）。
+// 三連複・三連単は、相手の組がほぼ全部そろっていれば「相手…」＋「除く…」と書く。
+function brGroups(type, tickets) {
+  const ordered = /馬単|三連単/.test(type);
+  const k = tickets[0].length;
+  let rest = tickets.map((t) => [...t]);
+  const out = [];
+  while (rest.length) {
+    const cnt = {};
+    rest.forEach((t) => new Set(ordered ? [t[0]] : t).forEach((h) => { cnt[h] = (cnt[h] || 0) + 1; }));
+    const axis = Number(Object.entries(cnt).sort((a, b) => b[1] - a[1])[0][0]);
+    const hit = (t) => (ordered ? t[0] === axis : t.includes(axis));
+    const grp = rest.filter(hit);
+    rest = rest.filter((t) => !hit(t));
+    if (k === 2) {
+      const others = grp.map((t) => (t[0] === axis ? t[1] : t[0])).sort((a, b) => a - b);
+      out.push({ axis, others, n: grp.length, tickets: grp, ordered });
+    } else {
+      const rem = grp.map((t) => t.filter((x) => x !== axis));
+      const remSet = [...new Set(rem.flat())].sort((a, b) => a - b);
+      const remFull = ordered ? brPerms(remSet, k - 1) : brCombos(remSet, k - 1);
+      const have = new Set(rem.map((t) => brKey(t, ordered)));
+      const missing = remFull.filter((t) => !have.has(brKey(t, ordered)));
+      // 除外を書くほうが短くなるときだけ「相手…／除く…」にする。
+      // 守りたいのは「1行に並ぶ数字を少なくすること」で、この不等号はその代理。
+      // 実測（50レース・3,968点）では最悪の行が 14点→8点、除外は最大9点になった。
+      // 数字の見え方と衝突したら、この不等号のほうを捨てて件数の上限に替える。
+      const nagashi = missing.length < grp.length;
+      out.push({ axis, rem, remSet, nagashi, missing, n: grp.length, tickets: grp, ordered });
+    }
+  }
+  return out;
+}
+
 function renderBetRules(site) {
   const br = site.bets_rules;
   if (!br || !br.plans) return renderBets20(site);
@@ -3543,18 +3610,54 @@ function renderBetRules(site) {
       ? '<tr><th class="l">券種</th><th class="l">買い目</th><th>金額</th><th>結果</th><th>払戻</th></tr>'
       : '<tr><th class="l">券種</th><th class="l">買い目</th><th>金額</th></tr>';
     let ret = 0;
-    const rows = pl.types.map((t) => t.tickets.map((tk) => {
+    const payOf = (type, tk) => {
+      const sorted = /馬単|三連単/.test(type) ? tk : [...tk].sort((a, b) => a - b);
+      return payMap[`${type}|${sorted.join('-')}`] || 0;
+    };
+    const cols = showResult ? 5 : 3;
+    const rows = pl.types.map((t) => {
       const label = t.type.replace('三連', '3連');
-      const sorted = /馬単|3連単/.test(label) ? tk : [...tk].sort((a, b) => a - b);
-      const pay = payMap[`${t.type}|${sorted.join('-')}`] || 0;
-      ret += pay;
-      const cell = showResult
-        ? `<td class="${pay ? 'o' : 'x'}">${pay ? '✓' : '✕'}</td><td>${fmtYen(pay)}</td>`
-        : '';
-      return `<tr><td class="l">${label}</td>`
-        + `<td class="l">${comboBoxes(t.type, tk, byNum)}</td>`
-        + `<td>${fmtYen(100)}</td>${cell}</tr>`;
-    }).join('')).join('');
+      const ordered = /馬単|三連単/.test(t.type);
+      return brGroups(t.type, t.tickets).map((g) => {
+        let gret = 0;
+        const hits = [];
+        for (const tk of g.tickets) {
+          const p = payOf(t.type, tk);
+          if (p) { gret += p; hits.push(`${tk.join(ordered ? '→' : '-')} ${fmtYen(p)}`); }
+        }
+        ret += gret;
+        // 買い目のセル。2頭の券は「軸 - 相手…」、3頭の券は「軸の軸1頭流し（相手 …）」
+        let body;
+        if (g.others) {
+          body = comboBoxes(t.type, [g.axis], byNum)
+            + `<span class="cbsep">${ordered ? '→' : '-'}</span>`
+            + g.others.map((n) => comboBoxes(t.type, [n], byNum)).join('<span class="cbsep">・</span>');
+        } else if (g.nagashi) {
+          const rel = g.remSet.map((n) => comboBoxes(t.type, [n], byNum))
+            .join('<span class="cbsep">・</span>');
+          body = comboBoxes(t.type, [g.axis], byNum)
+            + `<span class="brl">の${ordered ? '1着固定' : '軸1頭'}流し（相手 </span>${rel}`
+            + `<span class="brl">${ordered ? '・順番自由' : ''}）</span>`;
+        } else {
+          body = g.tickets.map((tk) => comboBoxes(t.type, tk, byNum))
+            .join('<span class="cbsep">／</span>');
+        }
+        const cell = showResult
+          ? `<td class="${gret ? 'o' : 'x'}">${gret ? '✓' : '✕'}</td><td>${fmtYen(gret)}</td>`
+          : '';
+        const notes = [];
+        if (g.nagashi && g.missing && g.missing.length) {
+          notes.push('除く ' + g.missing
+            .map((m) => [g.axis, ...m].join(ordered ? '→' : '-')).join('・'));
+        }
+        if (showResult && hits.length) notes.push('的中 ' + hits.join('・'));
+        const note = notes.length
+          ? `<tr class="brnote"><td class="l" colspan="${cols}">${escapeHtml(notes.join('　'))}</td></tr>`
+          : '';
+        return `<tr><td class="l">${label}</td><td class="l bcombo">${body}</td>`
+          + `<td>${fmtYen(g.n * 100)}</td>${cell}</tr>${note}`;
+      }).join('');
+    }).join('');
     gp += pl.points;
     gr += ret;
     const foot = showResult

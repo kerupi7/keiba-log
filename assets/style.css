@@ -388,6 +388,28 @@ div.roi{padding:12px 0 14px;border-bottom:1px solid var(--rule)}
 .pchip.miss{background:#8a8a8a;color:#fff}
 .pchip.hit{background:var(--hit);color:#fff}
 
+/* 買い目のまとめ表記（130-spec §13）。「軸1頭流し（相手 …）」の説明文と、
+   その下に置く「除く…／的中…」の小さい行 */
+/* まとめた買い目のセルは折り返す。全体の th,td は nowrap（style.css:127）なので、
+   ここで解除しないとスマホ幅で表が横にはみ出す（375pxで885pxまで伸びた） */
+.betstbl td.bcombo{white-space:normal;line-height:2}
+/* 列の幅。table-layout:fixed なので、買い目いがいの4列を決めて残りを買い目に回す。
+   守りたいのは「買い目の数字が1〜2行で収まること」。狭い画面では文字を落として稼ぐ */
+.betstbl th:nth-child(1){width:3.8em}
+.betstbl th:nth-child(3){width:4.8em}
+.betstbl th:nth-child(4){width:2.6em}
+.betstbl th:nth-child(5){width:4.8em}
+@media (max-width: 520px) {
+  .betstbl th,.betstbl td{padding-left:2px;padding-right:2px;font-size:12px}
+  .betstbl th:nth-child(1){width:3.4em}
+  .betstbl th:nth-child(3){width:4.4em}
+  .betstbl th:nth-child(4){width:2.2em}
+  .betstbl th:nth-child(5){width:4.4em}
+}
+.betstbl .brl{font-size:11.5px;color:var(--sub)}
+.betstbl tr.brnote td{font-size:11.5px;color:var(--cap);padding-top:0;padding-bottom:6px;
+  border-top:0;white-space:normal}
+
 /* モデル詳細ページ（130-spec §12・model.html） */
 .mhead{padding:14px 0 10px;border-bottom:1px solid var(--rule)}
 .mhead .nm{font-size:22px;font-weight:700;display:flex;align-items:baseline;gap:8px}
