@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ja"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>通算成績を五街道5案にする3案 — Ans. トップページ（2026-09-09）</title>
+<link rel="stylesheet" href="assets/style.css?v=20260909b">
+<style>
+body{background:#ECECE7;margin:0;font:13px/1.6 -apple-system,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;color:#333}
+.doc{max-width:1500px;margin:0 auto;padding:20px 12px 60px}
+.doc h1{font-size:17px;margin:0 0 6px}
+.doc p.n{font-size:12px;color:#5C5C5C;margin:0 0 4px;line-height:1.7}
+.doc code{background:#fff;border:1px solid #D8D8D3;padding:0 3px;border-radius:3px;font-size:11.5px}
+.cols{display:flex;gap:14px;flex-wrap:wrap;margin-top:18px;align-items:flex-start}
+.col{width:720px}
+.col h2{font-size:13px;margin:0 0 2px}
+.col p.d{font-size:11.5px;color:#5C5C5C;margin:0 0 8px;line-height:1.7;min-height:56px}
+.frame{width:720px;background:#fff;border:1px solid #C9C9C4;border-radius:8px;overflow:hidden}
+.frame .container{padding:0 16px 16px}
+
+/* ===== 新しく足す部品はここだけ（本番へ移すときはこのブロックを style.css へ） ===== */
+/* 五街道5案の成績。色は既存の意味づけのまま：プラス=緑(--hit) / マイナス=赤(--live)。
+   ただし 2026-09-09 時点はどの案も答え合わせ前なので、数字は灰（--cap）で出して
+   緑赤を使わない案も併せて見せる（案1・案2は灰、案3だけ色をつけている）。 */
+.gk{width:100%;border-collapse:collapse;margin-top:10px;font-variant-numeric:tabular-nums}
+.gk th{font-size:11.5px;color:var(--cap);font-weight:400;text-align:right;padding:0 0 5px;
+  border-bottom:1px solid var(--rule)}
+.gk th:first-child{text-align:left}
+.gk td{font-size:14px;padding:7px 0;border-bottom:1px solid var(--rule);text-align:right}
+.gk td:first-child{text-align:left;font-weight:700}
+.gk td.big{font-size:19px;font-weight:700;padding-right:16px}
+.gk th:nth-child(2){padding-right:16px}   /* 回収率と的中がくっつくのを防ぐ */
+/* 100円が戻ってくるかどうかで色を分ける（100%＝ちょうど元手）。緑・赤は既存の意味づけどおり */
+.gk td.big.pos{color:var(--hit)} .gk td.big.neg{color:var(--live)}
+/* 順位。1位だけ濃紺で塗り、2位以下は枠線だけにする */
+.gk .rk{display:inline-block;min-width:19px;height:19px;line-height:19px;text-align:center;
+  font-size:11.5px;font-weight:700;border-radius:50%;margin-right:7px;vertical-align:1px;
+  border:1px solid var(--rule);color:var(--cap);background:#fff}
+.gk .rk.r1{background:var(--navy);border-color:var(--navy);color:#fff}
+.gk .sm{font-size:12px;color:var(--cap)}
+.gkcards{display:flex;gap:8px;margin-top:12px}
+.gkcards .c{flex:1;border:1px solid var(--rule);border-radius:8px;padding:9px 8px 10px;text-align:center}
+.gkcards .c .nm{font-size:12px;font-weight:700}
+.gkcards .c .rt{font-size:22px;font-weight:700;line-height:1.2;margin-top:3px;font-variant-numeric:tabular-nums}
+.gkcards .c .sb{font-size:11px;color:var(--cap);font-variant-numeric:tabular-nums}
+</style></head><body>
+<div class="doc">
+<h1>通算成績を五街道5案にする3案 — Ans. トップページ（2026-09-09）</h1>
+<p class="n">本物の <code>assets/style.css</code> を読んでいる。幅は実物と同じ720px。</p>
+<p class="n"><b>数字は実データ</b>：2026-09-05・09-06 の50レースについて、<code>bets_rules</code> の買い目と実際の払戻を1点100円で突き合わせて計算した。研究用の集計（<code>betrule_eval.py</code>）は通していない。</p>
+<p class="n"><b>いま画面に出ている「−40.0%・345レース」は停止した旧方式（bet-1）の数字。</b>買い目は 2026-09-09 に五街道5案へ入れ替わっているので、置き場所を決める必要がある（3案の違いはそこ）。</p>
+
+<div class="cols" id="cols"></div>
+</div>
+
+<script>
+/* ---- 実データ（50レース・1点100円で計算） ---- */
+const G = [
+  {nm:'東海', desc:'オッズ帯・頭数・クラス・荒れ度・地雷', races:36, pts:192,  cost:19200,  ret:3100,   hitr:1,  roi:16.1,  roiEx:16.1},
+  {nm:'甲州', desc:'コース・馬場・季節',                   races:37, pts:1042, cost:104200, ret:401370, hitr:12, roi:385.2, roiEx:67.3},
+  {nm:'中山', desc:'10期中8期で100円超',                   races:28, pts:249,  cost:24900,  ret:8030,   hitr:4,  roi:32.2,  roiEx:32.2},
+  {nm:'奥州', desc:'東海と甲州のどちらか',                 races:48, pts:1210, cost:121000, ret:404470, hitr:13, roi:334.3, roiEx:60.3},
+  {nm:'日光', desc:'甲州と中山のどちらか',                 races:42, pts:1275, cost:127500, ret:408640, hitr:14, roi:320.5, roiEx:60.5},
+];
+// 表示は回収率の高い順（2026-09-09 ユーザー決定）。元の並び順（東海→日光）は使わない
+G.sort((a, b) => b.roi - a.roi);
+const yen = n => n.toLocaleString('ja-JP') + '円';
+
+/* 案1: 表で5行 */
+function case1(){
+  return `<div class="eyebrow">買い目5案の成績 <span class="note">参考値・2026-09-05〜09-06の50レース</span></div>
+    <table class="gk">
+      <tr><th>案</th><th>回収率</th><th>的中</th><th>買った</th><th>投資</th><th>払戻</th></tr>
+      ${G.map((g, i) => `<tr>
+        <td><span class="rk${i === 0 ? ' r1' : ''}">${i + 1}</span>${g.nm}</td>
+        <td class="big ${g.roi >= 100 ? 'pos' : 'neg'}">${g.roi}%</td>
+        <td class="sm">${g.hitr}R</td>
+        <td class="sm">${g.races}R / ${g.pts}点</td>
+        <td class="sm">${yen(g.cost)}</td>
+        <td class="sm">${yen(g.ret)}</td></tr>`).join('')}
+    </table>`;
+}
+
+/* 案2: 5案を横並びのカード */
+function case2(){
+  return `<div class="eyebrow">買い目5案の成績 <span class="note">参考値・2026-09-05〜09-06の50レース</span></div>
+    <div class="gkcards">
+      ${G.map(g => `<div class="c">
+        <div class="nm">${g.nm}</div>
+        <div class="rt">${g.roi}%</div>
+        <div class="sb">的中 ${g.hitr}R</div>
+        <div class="sb">買 ${g.races}R</div></div>`).join('')}
+    </div>`;
+}
+
+/* 案3: 大きい数字を1つ残す（5案を全部買った合計）＋内訳 */
+function case3(){
+  const cost = G.reduce((s,g)=>s+g.cost,0), ret = G.reduce((s,g)=>s+g.ret,0);
+  const roi = (ret/cost*100 - 100);
+  return `<div class="eyebrow">通算成績 <span class="note">参考値・2026-09-05〜09-06の50レース</span></div>
+    <div class="roi">
+      <div class="lab">回収率（5案を全部買った合計・重複は除かない）</div>
+      <div class="num pos">+${roi.toFixed(1)}%</div>
+      <div class="sub">払戻 ${yen(ret)} ／ 投資 ${yen(cost)}</div>
+      <div class="mini">
+        <div><div class="k">的中</div><div class="v">14R<span class="k" style="font-weight:400"> ／ 案ごとの延べ ${G.reduce((s,g)=>s+g.hitr,0)}R</span></div></div>
+        <div><div class="k">買った</div><div class="v">${G.reduce((s,g)=>s+g.pts,0)}点</div></div>
+        <div><div class="k">対象レース</div><div class="v">50</div></div>
+      </div>
+    </div>
+    <table class="gk">
+      ${G.map(g => `<tr><td>${g.nm}</td>
+        <td class="big" style="color:${g.roi>=100?'var(--hit)':'var(--live)'}">${g.roi}%</td>
+        <td class="sm">的中 ${g.hitr}R ／ 買 ${g.races}R</td></tr>`).join('')}
+    </table>`;
+}
+
+const CASES = [
+  {t:'案1　表で5行', d:'回収率の高い順に1行ずつ。右端に投資と払戻の実額を置き、回収率がどれだけの金額から出た数字かが分かるようにした。', f:case1},
+  {t:'案2　5案を横並びのカード', d:'720px幅に5列。縦は短い（実測96px）。1列144pxなので回収率と的中レース数しか置けず、「1本依存」は下の注意書きに逃がすことになる。', f:case2},
+  {t:'案3　大きい数字を残す＋内訳', d:'いまの見た目に一番近い。ただし大きい数字にできるのは「5案を全部買った合計」で、これは重複を除いていない架空の買い方。数字が独り歩きしやすい。', f:case3},
+];
+
+document.getElementById('cols').innerHTML = CASES.map(c => `
+  <div class="col">
+    <h2>${c.t}</h2>
+    <p class="d">${c.d}</p>
+    <div class="frame"><div class="container top">
+      <section class="summary-section">${c.f()}</section>
+    </div></div>
+  </div>`).join('');
+</script>
+</body></html>

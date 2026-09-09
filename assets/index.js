@@ -3,10 +3,43 @@
 
 const TRACK_ORDER = ['札幌', '函館', '福島', '新潟', '東京', '中山', '中京', '京都', '阪神', '小倉'];
 
+// 130-spec §7: 通算成績の枠に「各モデルの成績」（五街道5案）を出す。
+// 回収率の高い順・1位だけ塗りの順位・100円が戻るかどうかで色分け（2026-09-09 ユーザー決定）。
+// 5案の数字が無い（plan_stats が空の）manifest では、従来の通算成績に落ちる。
+const PLAN_STAKE_LABEL = '参考値';
+
+function renderPlanTable(ps) {
+  const plans = [...(ps.plans || [])].sort((a, b) => b.roi - a.roi);
+  const period = ps.period && ps.period.from
+    ? `${PLAN_STAKE_LABEL}・${ps.period.from.slice(5)}〜${ps.period.to.slice(5)}の${ps.n_races}レース`
+    : PLAN_STAKE_LABEL;
+  const rows = plans.map((p, i) => `
+    <tr>
+      <td><span class="rk${i === 0 ? ' r1' : ''}">${i + 1}</span>${escapeHtml(p.name)}</td>
+      <td class="big ${p.roi >= 1 ? 'pos' : 'neg'}">${fmtPercent(p.roi, 1)}</td>
+      <td class="sm">${p.hit_races}R</td>
+      <td class="sm">${p.races}R / ${p.points}点</td>
+      <td class="sm">${fmtYen(p.cost)}</td>
+      <td class="sm">${fmtYen(p.return)}</td>
+    </tr>`).join('');
+  return `
+    <div class="eyebrow">各モデルの成績 <span class="note">${escapeHtml(period)}</span></div>
+    <div class="gkwrap"><table class="gk">
+      <tr><th>案</th><th>回収率</th><th>的中</th><th>買った</th><th>投資</th><th>払戻</th></tr>
+      ${rows}
+    </table></div>
+  `;
+}
+
 function renderSummary(stats) {
   const el = document.getElementById('summary-section');
   if (!stats || stats.n_final === 0) {
     el.innerHTML = '';
+    return;
+  }
+  const ps = stats.plan_stats;
+  if (ps && (ps.plans || []).length) {
+    el.innerHTML = renderPlanTable(ps);
     return;
   }
   const roi = stats.roi.total;
@@ -196,6 +229,31 @@ function win5LabelHtml(win5) {
   return `<div class="w5"><img src="assets/win5-${leg}.png" alt="WIN${leg}" title="WIN5の${leg}レース目" width="188" height="74"></div>`;
 }
 
+// 130-spec §7: 一覧の行に出す五街道5案の札（案A・5枠を固定）。
+// 買わない案も薄い札で残すので、縦に見て「どの案がいつも買っているか」が読める。
+// 色は既存の意味づけのまま：発走前=紺 / 的中=緑 / 外れ=灰。金額・馬名は出さない。
+const PLAN_ORDER = ['東海', '甲州', '中山', '奥州', '日光'];
+
+// 5案が動き始めた日。manifest の plan_stats.period.from を main() が入れる。
+// これより前のレースは「対象外」ではなく旧方式なので、従来の表示に落とす。
+let BETRULE_FROM = null;
+
+function planChipsHtml(race) {
+  // 中止は買い目より先。札より「中止」の1つだけを出す
+  if (race.status === 'cancelled') return `<div class="rpick">${pillHtml('cancel', '中止')}</div>`;
+  const br = race.bets_rules;
+  if (!br) return '';
+  const total = PLAN_ORDER.reduce((n, k) => n + ((br[k] && br[k].points) || 0), 0);
+  if (total === 0) return `<div class="rpick">${pillHtml('pass', '見送り')}</div>`;
+  const chips = PLAN_ORDER.map((k) => {
+    const p = br[k] || {};
+    let st = 'off';
+    if (p.points > 0) st = p.hit === true ? 'hit' : (p.hit === false ? 'miss' : 'buy');
+    return `<span class="pchip ${st}">${escapeHtml(k)}</span>`;
+  }).join('');
+  return `<div class="rpick"><div class="pchips">${chips}</div></div>`;
+}
+
 function renderRaceRow(race) {
   const rnClass = race.status === 'prediction' ? 'up' : 'fin';
   let metaSurface;
@@ -219,8 +277,15 @@ function renderRaceRow(race) {
   const bchip = isBuyRace(race.race_id) ? '<span class="brtag">買い</span>' : '';
   const tags = (uchip || bchip) ? `<span class="rtags">${bchip}${uchip}</span>` : '';
 
-  let pickHtml = '';
-  if (race.status === 'prediction') {
+  let pickHtml = planChipsHtml(race);
+  // 5案が始まった日以降で買い目が無いレース（新馬・2歳未勝利・8頭未満）は「対象外」。
+  // それより前のレースは旧方式なので、下の従来表示（◎と収支）をそのまま出す。
+  if (!pickHtml && BETRULE_FROM && race.date >= BETRULE_FROM) {
+    pickHtml = `<div class="rpick">${pillHtml('pass', '対象外')}</div>`;
+  }
+  if (pickHtml) {
+    // 札を出したレースでは、◎馬名・収支・状態ピルは出さない（2026-09-09 ユーザー決定）
+  } else if (race.status === 'prediction') {
     if (race.stance === 'pass') {
       pickHtml = `<div class="rpick">${pillHtml('pass', '見送り')}</div>`;
     } else {
@@ -293,6 +358,8 @@ async function main() {
       `<div class="error-box">データの読み込みに失敗しました: ${escapeHtml(e.message)}</div>`;
     return;
   }
+  // 5案が動き始めた日。これより前は旧方式なので一覧の表示を切り替える（130-spec §7）
+  BETRULE_FROM = ((manifest.stats || {}).plan_stats || {}).period?.from || null;
   renderSummary(manifest.stats);
   const races = manifest.races || [];
   if (!races.length) {

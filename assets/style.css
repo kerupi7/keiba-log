@@ -374,6 +374,49 @@ div.roi{padding:12px 0 14px;border-bottom:1px solid var(--rule)}
 .rname .uchip.u-kata{background:var(--up-chip-kata)}
 .rname .uchip.u-naka{background:var(--up-chip-naka)}
 .rname .uchip.u-dai{background:var(--up-chip-dai)}
+/* ===== 五街道5案（130-spec §7・2026-09-09） ===================================
+   一覧の行に出す案の札と、通算成績の枠に出す「各モデルの成績」の表。
+   色は既存の意味づけをそのまま使う:
+     発走前=--navy ／ 的中=--hit（緑）／ 外れ=#8a8a8a（.pill.miss と同じ灰）
+     買わない案=枠線だけの薄い札（塗らない＝視線を奪わない）
+   一覧では金額・馬名を出さない（2026-09-09 ユーザー決定）。 */
+.pchips{display:flex;gap:4px;flex-wrap:wrap;align-items:center}
+.pchip{flex:none;font-size:11.5px;font-weight:700;line-height:1;padding:5px 7px;border-radius:4px;
+  border:1px solid transparent;letter-spacing:.02em}
+.pchip.off{background:#fff;border-color:#DCDCD7;color:#B4B4AE}
+.pchip.buy{background:var(--navy);color:#fff}
+.pchip.miss{background:#8a8a8a;color:#fff}
+.pchip.hit{background:var(--hit);color:#fff}
+
+/* 各モデルの成績（回収率の高い順）。数字を並べて比べる表なので tabular-nums */
+.gk{width:100%;border-collapse:collapse;margin-top:10px;font-variant-numeric:tabular-nums}
+.gk th{font-size:11.5px;color:var(--cap);font-weight:400;text-align:right;padding:0 0 5px;
+  border-bottom:1px solid var(--rule)}
+.gk th:first-child{text-align:left}
+.gk th:nth-child(2){padding-right:16px}   /* 回収率と的中がくっつくのを防ぐ */
+.gk td{font-size:14px;padding:7px 0;border-bottom:1px solid var(--rule);text-align:right}
+.gk td:first-child{text-align:left;font-weight:700}
+.gk td.big{font-size:19px;font-weight:700;padding-right:16px}
+.gk td.big.pos{color:var(--hit)} .gk td.big.neg{color:var(--live)}
+.gk td.sm{font-size:12px;color:var(--cap)}
+/* 順位。1位だけ濃紺で塗り、2位以下は枠線だけ */
+.gk .rk{display:inline-block;min-width:19px;height:19px;line-height:19px;text-align:center;
+  font-size:11.5px;font-weight:700;border-radius:50%;margin-right:7px;vertical-align:1px;
+  border:1px solid var(--rule);color:var(--cap);background:#fff}
+.gk .rk.r1{background:var(--navy);border-color:var(--navy);color:#fff}
+/* スマホ幅では6列が入りきらず、払戻の桁が切れる（375pxで実測）。
+   文字と余白を詰めて6列とも残す。それでも足りない画面は横スクロールで逃がす */
+.gkwrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+@media (max-width: 520px) {
+  .gk td.big{font-size:15px;padding-right:6px}
+  .gk th:nth-child(2){padding-right:8px}
+  .gk td.sm{font-size:10px}
+  .gk th{font-size:10px}
+  .gk td:first-child{font-size:13px}
+  .gk td:not(:first-child), .gk th:not(:first-child){padding-left:3px}
+  .gk .rk{margin-right:4px;min-width:17px;height:17px;line-height:17px;font-size:10.5px}
+}
+
 .rmeta{font-size:13px;color:var(--cap);margin-top:3px;font-variant-numeric:tabular-nums}
 .rmeta .t{color:var(--turf);font-weight:700}
 .rmeta .d{color:var(--dirt);font-weight:700}
