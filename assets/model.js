@@ -47,6 +47,14 @@ function render(doc, slug) {
       + `<td class="sm">${fmtYen(x.ret)}</td></tr>`;
   }).join('');
 
+  // 週べつ（2026-09-14 追加）。新しい週が上。1週はトップページの開催週と同じ区切り
+  const weekRows = (p.by_week || []).map((w) => {
+    const [, m, d] = w.from.split('-');
+    return `<tr><td>${+m}/${+d}週</td>${roiCell(w.ret, w.cost)}<td class="sm">${w.hitr}R</td>`
+      + `<td class="sm">${w.r}R</td><td class="sm">${fmtYen(w.cost)}</td>`
+      + `<td class="sm">${fmtYen(w.ret)}</td></tr>`;
+  }).join('');
+
   const upsetRows = UPSET_ORDER.map((u) => {
     const x = p.by_upset[u];
     if (!x) return '';
@@ -78,6 +86,8 @@ function render(doc, slug) {
         買った ${p.races}レース / ${p.points}点 ・ 的中 ${p.hit_races}レース / ${p.hits}点</div>
     </div>
     <div class="mnote">${escapeHtml(period)}</div>
+    <div class="msec">週べつ</div>
+    ${table(['週', '回収率', '的中', '買った', '投資', '払戻'], weekRows)}
     <div class="msec">券種べつ</div>
     ${table(['券種', '回収率', '的中率', '的中', '買った', '投資', '払戻'], typeRows)}
     <div class="msec">荒れ度べつ</div>
