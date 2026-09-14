@@ -4737,12 +4737,18 @@ const TILT_FULL = 0.30;
 //
 // 集計は research/baba_aim_scan.py（8頭立て以上・含水率は489日ぶん）。
 // 数字を更新するときはあれを走らせてから、この関数の2つの文言を書き替える。
+//
+// 2026-09-14 文言を「主語＋普段→今日」に変えた（mockup-165 案B・ユーザー決定）。
+// 旧「逃げが残る 普段+3.9%」は何の割合かが書かれておらず、差がポイントなのに%と
+// 書いていたので「3.9%増えた」とも読めた。2つとも差が3.9なのは偶然で別の数字。
+// 数字は上のメモの値を整数に丸めたもの（28.8→29・32.7→33／33.8→34・29.9→30）。
+// マス幅107pxに対し、ダート96px・芝96px（mockup-165 で実測）。
 const BABA_AIM_FLAT = '大きな偏りなし';
 function babaAim20(isTurf, delta) {
   if (isTurf) {
-    return delta < -0.3 ? { t: '人気が飛ぶ 普段-3.9%', on: true } : { t: BABA_AIM_FLAT, on: false };
+    return delta < -0.3 ? { t: '1人気勝率 34→30%', on: true } : { t: BABA_AIM_FLAT, on: false };
   }
-  return delta >= 3 ? { t: '逃げが残る 普段+3.9%', on: true } : { t: BABA_AIM_FLAT, on: false };
+  return delta >= 3 ? { t: '逃げ3着内 29→33%', on: true } : { t: BABA_AIM_FLAT, on: false };
 }
 
 function renderCourseBabaBar20(site, g, iv, ov) {
