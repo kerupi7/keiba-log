@@ -3652,8 +3652,14 @@ function setupShutuba20(site) {
   // 残っているので、当時の前提が当てはまらない。印・戦績の面には付けていない。
   // §5.4: 「買える／消せる」は札に常時出るので、開く／消すボタンも無い。
   setupPaperZoom(root);
+  setupPopups20(root, site);
+  setupMyMarks(site);   // 111-spec: 自分の印
+}
 
-  // 105-spec §5.5: 馬名ポップアップ。閉じ方は「閉じる」ボタン・背景クリック・Esc の3つ
+// 105-spec §5.5: 馬名ポップアップ。閉じ方は「閉じる」ボタン・背景クリック・Esc の3つ。
+// 2026-09-14 に setupShutuba20 から切り出した（WIN5の画面からも同じ札を開くため・中身は変えていない）。
+// 戻り値の open(id) で外から開ける。
+function setupPopups20(root, site) {
   const bg = document.createElement('div');
   bg.className = 'pbg';
   root.appendChild(bg);
@@ -3714,8 +3720,7 @@ function setupShutuba20(site) {
   });
   bg.addEventListener('click', closePopup);
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closePopup(); });
-
-  setupMyMarks(site);   // 111-spec: 自分の印
+  return { open: openPopupById, close: closePopup };
 }
 
 
@@ -5397,7 +5402,29 @@ async function main() {
   if (is20) setupTabs20(site);
 }
 
-main();
+// 2026-09-14: 出馬表の外（WIN5の画面）から、馬の戦績の札を開く入口。
+// 札の中身も開け閉めも出馬表と同じ関数（renderPopups20 / setupPopups20）を使う。
+// 札の置き場（.race20）はレースごとに1つだけ持ち、別のレースを開いたら作り直す。
+window.RacePopup = {
+  open(site, number) {
+    const rid = String((site.race || {}).race_id || '');
+    let host = document.getElementById('race-pophost');
+    if (!host || host.dataset.rid !== rid) {
+      if (host) host.remove();
+      host = document.createElement('div');
+      host.id = 'race-pophost';
+      host.className = 'race20 pophost';
+      host.dataset.rid = rid;
+      host.innerHTML = renderPopups20(site);
+      document.body.appendChild(host);
+      host.racePop = setupPopups20(host, site);
+    }
+    host.racePop.open(String(number));
+  },
+};
+
+// 出馬表のページ（#race-content がある）でだけ組み立てる。WIN5の画面は札の入口だけ使う
+if (document.getElementById('race-content')) main();
 
 })();
 

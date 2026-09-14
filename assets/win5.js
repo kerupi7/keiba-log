@@ -296,7 +296,13 @@ function w5pRender() {
   box.querySelectorAll('[data-w5pday]').forEach(x => x.onclick = () => {
     w5pState.day = Number(x.dataset.w5pday); w5pInitSel(); w5pRender();
   });
-  box.querySelectorAll('[data-w5pleg]').forEach(x => x.onclick = () => {
+  box.querySelectorAll('[data-w5pleg]').forEach(x => x.onclick = (e) => {
+    // 馬名を押したときは選ばずに戦績の札を開く（race.js の RacePopup）
+    const nm = e.target.closest('[data-w5hpop]');
+    if (nm && nm.dataset.w5hpop && window.RacePopup) {
+      w5pOpenHorse(nm.dataset.w5hpop, nm.dataset.w5hnum);
+      return;
+    }
     const lg = Number(x.dataset.w5pleg), n = Number(x.dataset.w5pnum);
     const set = w5pState.sel[lg];
     if (set.has(n)) set.delete(n); else set.add(n);
@@ -556,6 +562,18 @@ function w5pDayTabs() {
       + ` data-w5pday="${i}">${escapeHtml(d.date)}</button>`).join('') + '</div>';
 }
 
+// 馬名から戦績の札を開く（2026-09-14）。レースの中身は data/races/{race_id}.json を
+// 押したときに初めて読み、同じレースは読み直さない。読めなければ何もしない（画面は止めない）。
+const w5pSites = {};
+async function w5pOpenHorse(raceId, number) {
+  try {
+    if (!w5pSites[raceId]) w5pSites[raceId] = await getData(`data/races/${raceId}.json`);
+    window.RacePopup.open(w5pSites[raceId], number);
+  } catch (e) {
+    console.warn('[win5] 戦績の札を開けませんでした', raceId, number, e);
+  }
+}
+
 function w5pHorseRow(lg, i, h) {
   const on = w5pState.sel[i].has(h.number);
   const mk = w5pMyMarks(lg.race_id)[String(h.number)];
@@ -564,7 +582,9 @@ function w5pHorseRow(lg, i, h) {
     : '<span class="ak-mk none">・</span>';
   return `<button class="ak-h${on ? ' sel' : ''}" data-w5pleg="${i}" data-w5pnum="${h.number}">`
     + umaBox(h.number, h.gate, 'sm') + my
-    + `<span class="nmwrap"><span class="nm">${escapeHtml(h.name)}</span>`
+    // 2026-09-14: 馬名だけは押すと戦績の札を開く（出馬表と同じ札）。行のほかの所は今までどおり選ぶ
+    + `<span class="nmwrap"><span class="nm pop" data-w5hpop="${escapeHtml(lg.race_id || '')}"`
+    + ` data-w5hnum="${h.number}">${escapeHtml(h.name)}<i class="apop">▸</i></span>`
     + `<span class="meta"><span class="od${oddsHotClass(h.odds)}">`
     + `${h.odds.toFixed(1)}倍</span>`
     + `<span class="pop">${h.popularity == null ? '' : h.popularity + '番人気'}</span>`
