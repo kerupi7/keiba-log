@@ -581,10 +581,11 @@ function w5pHorseRow(lg, i, h) {
     ? `<span class="ak-mk ${W5P_MY_CLS[mk]}">${mk}</span>`
     : '<span class="ak-mk none">・</span>';
   return `<button class="ak-h${on ? ' sel' : ''}" data-w5pleg="${i}" data-w5pnum="${h.number}">`
-    + umaBox(h.number, h.gate, 'sm') + my
-    // 2026-09-14: 馬名だけは押すと戦績の札を開く（出馬表と同じ札）。行のほかの所は今までどおり選ぶ
-    + `<span class="nmwrap"><span class="nm pop" data-w5hpop="${escapeHtml(lg.race_id || '')}"`
-    + ` data-w5hnum="${h.number}">${escapeHtml(h.name)}<i class="apop">▸</i></span>`
+    // 2026-09-14: 馬番だけは押すと戦績の札を開く（出馬表と同じ札）。行のほかの所は今までどおり選ぶ。
+    // 同日、馬名から馬番へ移した（ユーザー決定）
+    + `<span class="w5hno" data-w5hpop="${escapeHtml(lg.race_id || '')}" data-w5hnum="${h.number}"`
+    + ` title="${escapeHtml(h.name)}の戦績を見る">${umaBox(h.number, h.gate, 'sm')}</span>` + my
+    + `<span class="nmwrap"><span class="nm">${escapeHtml(h.name)}</span>`
     + `<span class="meta"><span class="od${oddsHotClass(h.odds)}">`
     + `${h.odds.toFixed(1)}倍</span>`
     + `<span class="pop">${h.popularity == null ? '' : h.popularity + '番人気'}</span>`
