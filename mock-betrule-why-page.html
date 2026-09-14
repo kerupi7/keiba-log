@@ -814,7 +814,7 @@ span.sim-nm{cursor:default}
 
 /* 折りたたみ。中身は「その決着になったレースの1着・2着の顔ぶれ」であって
    ラベルの的中率ではない（89-spec §2.6）。見出しの言い回しでそこを外さないこと */
-/* 今回のレースのメンバーレベル（handoff_2026-08-19_member-level.md 決定#3）。
+/* 今回のレースのメンバーレベル（2026-08-19_メンバーレベルを表示する.md 決定#3）。
    画面には既に2系統の記号がある。3つ目を「裸のS〜D」で足すと取り違えるので、
    ラベル「メンバー」＋**紫の1色軸の枠線**という第3の見た目にする。
      過去5走のレベル(.lv)      … 金/赤/青/灰の**淡い塗り**
@@ -2057,7 +2057,7 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
 
 /* 2026-08-23：全戦績の表からAI列を消した（ユーザー指示）。ここには
    td.aicol / .sim-grade / .aix の指定があったが、出す要素が無くなったので削除した。
-   元の仕様は handoff_2026-08-17_prev-grade.md 決定#7。 */
+   元の仕様は 2026-08-17_過去5走にAI評価を出す.md 決定#7。 */
 /* 2026-08-23：全戦績の表に足した枠・馬番の列。札（.vrun .l3 .nmg）と同じ見た目に揃え、
    「枠」の字を薄く・馬番を地の色にして、数字2つのどちらが馬番か目で分かるようにする。
    枠番は公開済み215本・31,122走のうち24.3%（7,554走）で取れていない。その走は
@@ -2066,7 +2066,7 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
 .race20 table.pastt .wkn{color:var(--sub)}
 .race20 table.pastt .wkn b{font-weight:700;color:var(--text)}
 
-/* 過去走のレースレベル（handoff_2026-08-17_race-level.md 決定#3）。
+/* 過去走のレースレベル（2026-08-17_過去5走にレースレベルを出す.md 決定#3）。
    AI評価と見分けるため4つを重ねる（2026-08-18 ユーザー決定・モックで比較のうえ）:
      ①置き場所  レベルは「着順の右」／AI評価は「クラスの右」
      ②見出し    レベルは `Lv`／AI評価は `AI`
@@ -2117,7 +2117,7 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
 .race20 table.lvt tr.zero td.l .lv{opacity:1}
 .race20 .lvn{font-size:10px;color:#8A8A80;margin:0 0 3px}
 
-/* レースの型べつ成績（handoff_2026-08-31_race-type-per-horse.md・mockup-162 案A）。
+/* レースの型べつ成績（2026-08-31_馬ごとのレースの型べつ成績.md・mockup-162 案A）。
    濃淡5段＋走数0。**緑と赤は使わない**（緑＝的中・赤＝不的中/地雷で使用中・09-spec）。
    藍の濃淡だけで作る。段の境目（平常±5pt / ±20pt）はデータ側の keiba_shutuba_columns.py
    が決めて shade で渡してくる。ここは色だけ持つ。 */
@@ -2897,7 +2897,7 @@ body.noscroll{position:fixed;width:100%;overflow:hidden}
 
 
 /* ══════════════════════════════════════════════════════════════════
-   展開タブ 作り直し（docs/keiba-log-design/108-tenkai-tab-redesign-spec.md）
+   展開タブ 作り直し（部署/競馬部/仕様/予測サイト/108-tenkai-tab-redesign-spec.md）
    2026-08-05。既存の .race20 スコープに足すだけで、旧クラスは1つも消していない
    （旧データのレースは旧クラスのまま描かれる）。
    ══════════════════════════════════════════════════════════════════ */
@@ -3629,7 +3629,7 @@ body.noscroll{position:fixed;width:100%;overflow:hidden}
 .shinba-note b{font-weight:700}
 
 /* ═══ 和文（日本語）の書体指定 — 戦績・新聞だけ（2026-08-28）═════════════
-   仕様: Kelpie.Inc/shared/keiba/handoff_2026-08-28_font-review.md
+   仕様: Kelpie.Inc/部署/競馬部/過去の決定事項/済み/2026-08-28_出馬表の和文フォント見直し.md
 
    何が問題だったか:
      --font には欧文の書体しか並んでおらず、日本語は最後の sans-serif
@@ -5107,14 +5107,14 @@ window.CourseTab = {
 /**
  * Harville確率モデル & 買い目シミュレーター計算モジュール（keiba-log 買い目シミュレーター）
  *
- * 正本: Kelpie.Inc shared/scripts/keiba_harville.py
- *      （複勝のみ shared/scripts/keiba_select_bets.py の prob_fukusho 行44-58）
+ * 正本: Kelpie.Inc 部署/競馬部/動かすもの/keiba_harville.py
+ *      （複勝のみ 部署/競馬部/動かすもの/keiba_select_bets.py の prob_fukusho 行44-58）
  * 本ファイルはその移植（写し）であり、JS側で式を改変・最適化・簡略化してはならない。
- * 式を変更する場合は 必ず 正本Pythonを修正 → shared/scripts/keiba_harville_fixture.py で
+ * 式を変更する場合は 必ず 正本Pythonを修正 → 部署/競馬部/動かすもの/keiba_harville_fixture.py で
  * fixture再生成 → tools/harville_crosscheck.mjs で突合を再実行し一致を確認 → 本ファイルへ
  * 追随、の順でのみ行う（JS先行の修正は禁止）。
  *
- * 仕様書: Kelpie.Inc docs/keiba-log-design/17-odds-master-spec.md §3.3 / §3.4 / §4 / §5.1 / §5.2
+ * 仕様書: Kelpie.Inc 部署/競馬部/仕様/予測サイト/17-odds-master-spec.md §3.3 / §3.4 / §4 / §5.1 / §5.2
  *
  * 契約: 純関数のみ。DOM・fetch・console禁止。ブラウザ(window.Harville)とNode(module.exports)の
  * 両方で同一オブジェクトを公開する。馬番などのid引数はすべて数値(Number)で渡すこと
@@ -5123,7 +5123,7 @@ window.CourseTab = {
 (function () {
   'use strict';
 
-  // ---- §3.4 定数（正本: shared/keiba/bet_config.json の2026-07時点値のミラー。改訂時は手動同期） ----
+  // ---- §3.4 定数（正本: 部署/競馬部/bet_config.json の2026-07時点値のミラー。改訂時は手動同期） ----
   var EV_TARGET = 1.0;
 
   var P_MIN = {
@@ -5485,7 +5485,7 @@ window.CourseTab = {
  * 前段として置くもので、出力は Simulator.applyPlan(state, plan) 経由で state に流し込むだけ。
  * 自動選定(Python)・予想成績には一切影響しない。
  *
- * 参照モックアップ: docs/keiba-log-design/mockup-10-akinator.tpl.html（動作確認済み）。
+ * 参照モックアップ: 部署/競馬部/仕様/予測サイト/mockup-10-akinator.tpl.html（動作確認済み）。
  * 本ファイルはそのロジック移植だが、以下の点を本番向けに変更している：
  *   - FIXTURE直読みではなく Akinator.init(site, oddsAll) でレースごとに初期化する
  *   - 確率計算は自前実装をやめ、必ず window.Harville の公開関数を呼ぶ（harville.jsは無改造）
@@ -10219,7 +10219,7 @@ function renderMitate20(site) {
   return renderBigPay(site.prediction.bigpay);
 }
 
-// 今回のレースのメンバーレベル（handoff_2026-08-19_member-level.md 決定#3/#4・v2.1）。
+// 今回のレースのメンバーレベル（2026-08-19_メンバーレベルを表示する.md 決定#3/#4・v2.1）。
 // 出走各馬の直近3走のレースレベルを「その走のクラスの中での順位」に直して平均し、
 // 同じクラス×年齢条件（2歳／3歳限定／古馬）の中で5等分した段。
 // 生の値のまま平均した初版は、オープンで「S＝格下から上がってきた顔ぶれ」を指していたので
@@ -10391,7 +10391,7 @@ function courseRecordTable(h, bare) {
 }
 
 // ============================================================
-// レースレベル別の好走歴（handoff_2026-08-17_race-level.md の値を数え直したもの）
+// レースレベル別の好走歴（2026-08-17_過去5走にレースレベルを出す.md の値を数え直したもの）
 //
 // 過去走の「クラス」列に出している Lv を、**全戦績ぶん段ごとに集計**する。
 // コース適性が「今日と同じ条件をどれだけ走ったか」なのに対し、こちらは
@@ -10443,7 +10443,7 @@ function levelRecordTable(h) {
 }
 
 // ============================================================
-// レースの型べつ成績（handoff_2026-08-31_race-type-per-horse.md）
+// レースの型べつ成績（2026-08-31_馬ごとのレースの型べつ成績.md）
 //
 // 93-spec の6マス（ペース S/M/H × 決着 前残り／差し・追込）に、その馬の過去走を
 // 割り振ったもの。コース適性が「今日と同じ条件をどれだけ走ったか」なのに対し、
@@ -10542,11 +10542,11 @@ function courseBlock(h) {
 // 2026-08-23：過去走のAI評価は画面から全部消した（ユーザー指示）。
 // 戦績5走の札に続いて、馬名ポップアップの全戦績の表からもAI列を外し、
 // 描画していた aiGradeCell も消した（呼び出し元が無くなったため）。
-// 経緯と元の仕様は handoff_2026-08-17_prev-grade.md にある。
+// 経緯と元の仕様は 2026-08-17_過去5走にAI評価を出す.md にある。
 // データ側の ai_grade / ai_miss / ai_rank は生成も配信も続いており、消したのは表示だけ。
 // なお出馬表の「今回のレースのAI評価」（race.js の dispGrade）は別物で、残っている。
 
-// 過去走のレースレベル（handoff_2026-08-17_race-level.md 決定#2/#3）。
+// 過去走のレースレベル（2026-08-17_過去5走にレースレベルを出す.md 決定#2/#3）。
 // そのレースの出走馬が「その後180日で3着以内に何回入ったか」を、同じクラスの中で
 // 相対にして5段（S/A/B/C/D）にしたもの。AI評価（隣の列）が「予想の時点でどう見えたか」
 // なのに対し、こちらは「終わってみて中身が濃かったか」。プラス付きの段は作らない
@@ -10784,7 +10784,7 @@ function itemDots(h) {
   }).join('');
 }
 
-// 6マス適性（handoff_2026-08-17_pace-fit.md）。**出すのは「向かない」側だけ。**
+// 6マス適性（2026-08-17_予想ペースへの適性.md）。**出すのは「向かない」側だけ。**
 // 上位側は実測で中位より複勝率が低く（7番人気以下で −1.3pt・−3.8σ）、絞り込みを
 // 18通り試しても人気3帯すべてでプラスになる条件が無かったため、良い側の印は作らない。
 // 見た目は「消せる理由」チップ（.idot.d-x）と同じにする＝専用のCSSを足さない。
@@ -11068,8 +11068,8 @@ function popupRunsTable(h) {
 // ── 条件べつの見立て（34枠） ─────────────────────────────────
 // 正本: businesses/design/dept/finish/data/2026-09-02_horse-aptitude-visual/adopted.html
 //       （Kelpie.Inc デザイン部 2026-09-02 段8完了・確定）
-// データ: shared/scripts/keiba_shutuba_columns.py の build_aptitude_grid() / aptitude_meta()
-//        （実装記録は shared/keiba/handoff_2026-09-03_sire-aptitude.md）
+// データ: 部署/競馬部/動かすもの/keiba_shutuba_columns.py の build_aptitude_grid() / aptitude_meta()
+//        （実装記録は 部署/競馬部/過去の決定事項/済み/2026-09-03_父母父の産駒成績34枠.md）
 //
 // 棒＝100回走って何回3着以内か。右端が100%で**どの馬も同じ物差し**。
 // 走数が足りない枠は血統（父75%＋母父25%）で補ってあり、8走で実績と血統が半々になる。
@@ -11171,8 +11171,8 @@ function popupBody(h, site) {
 // ── 馬の格（％とランク） ───────────────────────────────────
 // 正本: businesses/design/dept/finish/data/2026-09-02_horse-level-rank/adopted.html
 //       （Kelpie.Inc デザイン部 2026-09-03 段8完了・確定）
-// データ: shared/scripts/keiba_shutuba_columns.py の build_horse_grade()
-//        ／ 数字の作り方は shared/scripts/keiba_horse_grade.py
+// データ: 部署/競馬部/動かすもの/keiba_shutuba_columns.py の build_horse_grade()
+//        ／ 数字の作り方は 部署/競馬部/動かすもの/keiba_horse_grade.py
 //
 // 棒1本を濃さ3段で「いま確かな分・まだ分からない分・まだ伸びる分」に割り、残りが届かない分。
 // **線も枠も足さない。**足すと1本の図が「内訳の表」に変わる（基準の1枚 #14）。
@@ -12495,7 +12495,7 @@ function race20TabFromHash() {
   return m && RACE20_TABS.some((t) => t.key === m[1]) ? m[1] : RACE20_TAB_DEFAULT;
 }
 
-// ===== 新馬レースの注記（2026-08-27・handoff_2026-08-27_shinba-model.md 決定3） =====
+// ===== 新馬レースの注記（2026-08-27・2026-08-27_新馬戦専用の勝率モデル.md 決定3） =====
 // 新馬は本体の勝率モデル win-1 の材料100項目のうち80項目が死ぬ（全頭が過去走ゼロ）ので、
 // 新馬だけで学習した shinba-1 で予想を出している。点数は出さない：7観点のうち
 // ③④の20点ぶんが全馬同点になり（実測 13頭とも6.0）、順位を付ける意味が無いため。
@@ -12804,7 +12804,7 @@ function renderScenarioLegacy20(site) {
 }
 
 /* ══════════════════════════════════════════════════════════════════
-   展開タブ 作り直し（docs/keiba-log-design/108-tenkai-tab-redesign-spec.md）
+   展開タブ 作り直し（部署/競馬部/仕様/予測サイト/108-tenkai-tab-redesign-spec.md）
    2026-08-05。判定を全場共通のしきい値ではなく **実測の表** から引く形にした。
    表は publish が引いて site.prediction.display に載せている（108-spec §9）。
    display が無い（＝旧データの）レースは、下の各関数が null を返して
@@ -13287,7 +13287,7 @@ const LEG_WORD = {
 // ptは差の単位で読み手が持っている単位ではなく、しかも脚質をまたぐと意味が変わる
 // （先行の+3ptは上位、追込の+3ptは真ん中）。等級は脚質ごとの境目で切ってあるので、
 // 逃げのSと追込のSが同じ「上位2割」を指す。境目の正本は
-// shared/keiba/leg_bias_baseline.json の grade_bands。
+// 部署/競馬部/leg_bias_baseline.json の grade_bands。
 //
 // 等級を持たない過去のレース（grade が無い）は、これまでどおり差を出す。
 function renderLeg20(site) {

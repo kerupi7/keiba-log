@@ -2,15 +2,15 @@
 /**
  * Harville突合テスト（JS ↔ Python の数値一致を機械保証） — keiba-log
  *
- * assets/harville.js が正本 Kelpie.Inc shared/scripts/keiba_harville.py
- * （複勝は shared/scripts/keiba_select_bets.py::prob_fukusho）と数値一致することを検証する。
- * fixtureは shared/scripts/keiba_harville_fixture.py が生成する
+ * assets/harville.js が正本 Kelpie.Inc 部署/競馬部/動かすもの/keiba_harville.py
+ * （複勝は 部署/競馬部/動かすもの/keiba_select_bets.py::prob_fukusho）と数値一致することを検証する。
+ * fixtureは 部署/競馬部/動かすもの/keiba_harville_fixture.py が生成する
  * （Kelpie.Incリポ・正本2ファイルをimportして全数計算。両正本は無変更）。
  *
- * 仕様: Kelpie.Inc docs/keiba-log-design/17-odds-master-spec.md §5.3-5.4
+ * 仕様: Kelpie.Inc 部署/競馬部/仕様/予測サイト/17-odds-master-spec.md §5.3-5.4
  *
  * 再実行手順:
- *   1. (Kelpie.Incリポのルートで) python3 shared/scripts/keiba_harville_fixture.py <race_id>
+ *   1. (Kelpie.Incリポのルートで) python3 部署/競馬部/動かすもの/keiba_harville_fixture.py <race_id>
  *      → keiba-log tools/fixtures/harville_{race_id}.json を再生成
  *   2. (keiba-logリポのルートで) node tools/harville_crosscheck.mjs <race_id>
  *      （race_idの代わりに fixture JSON への相対/絶対パスを渡すことも可）

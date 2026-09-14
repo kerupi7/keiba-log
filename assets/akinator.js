@@ -6,7 +6,7 @@
  * 前段として置くもので、出力は Simulator.applyPlan(state, plan) 経由で state に流し込むだけ。
  * 自動選定(Python)・予想成績には一切影響しない。
  *
- * 参照モックアップ: docs/keiba-log-design/mockup-10-akinator.tpl.html（動作確認済み）。
+ * 参照モックアップ: 部署/競馬部/仕様/予測サイト/mockup-10-akinator.tpl.html（動作確認済み）。
  * 本ファイルはそのロジック移植だが、以下の点を本番向けに変更している：
  *   - FIXTURE直読みではなく Akinator.init(site, oddsAll) でレースごとに初期化する
  *   - 確率計算は自前実装をやめ、必ず window.Harville の公開関数を呼ぶ（harville.jsは無改造）

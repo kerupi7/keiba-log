@@ -1,14 +1,14 @@
 /**
  * Harville確率モデル & 買い目シミュレーター計算モジュール（keiba-log 買い目シミュレーター）
  *
- * 正本: Kelpie.Inc shared/scripts/keiba_harville.py
- *      （複勝のみ shared/scripts/keiba_select_bets.py の prob_fukusho 行44-58）
+ * 正本: Kelpie.Inc 部署/競馬部/動かすもの/keiba_harville.py
+ *      （複勝のみ 部署/競馬部/動かすもの/keiba_select_bets.py の prob_fukusho 行44-58）
  * 本ファイルはその移植（写し）であり、JS側で式を改変・最適化・簡略化してはならない。
- * 式を変更する場合は 必ず 正本Pythonを修正 → shared/scripts/keiba_harville_fixture.py で
+ * 式を変更する場合は 必ず 正本Pythonを修正 → 部署/競馬部/動かすもの/keiba_harville_fixture.py で
  * fixture再生成 → tools/harville_crosscheck.mjs で突合を再実行し一致を確認 → 本ファイルへ
  * 追随、の順でのみ行う（JS先行の修正は禁止）。
  *
- * 仕様書: Kelpie.Inc docs/keiba-log-design/17-odds-master-spec.md §3.3 / §3.4 / §4 / §5.1 / §5.2
+ * 仕様書: Kelpie.Inc 部署/競馬部/仕様/予測サイト/17-odds-master-spec.md §3.3 / §3.4 / §4 / §5.1 / §5.2
  *
  * 契約: 純関数のみ。DOM・fetch・console禁止。ブラウザ(window.Harville)とNode(module.exports)の
  * 両方で同一オブジェクトを公開する。馬番などのid引数はすべて数値(Number)で渡すこと
@@ -17,7 +17,7 @@
 (function () {
   'use strict';
 
-  // ---- §3.4 定数（正本: shared/keiba/bet_config.json の2026-07時点値のミラー。改訂時は手動同期） ----
+  // ---- §3.4 定数（正本: 部署/競馬部/bet_config.json の2026-07時点値のミラー。改訂時は手動同期） ----
   var EV_TARGET = 1.0;
 
   var P_MIN = {

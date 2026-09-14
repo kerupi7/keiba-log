@@ -448,7 +448,7 @@ function w5pLegCardHtml(lg, key, heads) {
   return h + '</div>';
 }
 
-// 予算から各鞍の頭数を決める。shared/scripts/keiba_win5_payout_table.py の allocate_heads と
+// 予算から各鞍の頭数を決める。部署/競馬部/動かすもの/keiba_win5_payout_table.py の allocate_heads と
 // **同じ手順**（頭数÷その帯の平均頭数 が一番小さい鞍から1頭ずつ増やす／帯ごとの上限で止める）。
 // 決め打ちの予算は win5_payout.json に入っているが、自由入力ぶんはここで計算する。
 // 手順が2か所にあるので、既定の予算で両者が一致するかを w5pAllocSelfTest() で確かめている。
