@@ -3914,6 +3914,58 @@ function betPopBoxes(type, nums, byNum) {
     + `${umaBox(n, (byNum[n] || {}).gate, 'sm')}</button>`).join(sep);
 }
 
+// 買い目: 案ごとの「この案で使う馬」（2026-09-14 ユーザー決定・130-spec §14）。
+// 帯を開いたすぐ下、買い目の表より上に、その案の買い目で実際に使った馬だけを出す。
+// 候補は5案共通だが、案ごとに使う馬が違う（82レース中40レースで違った）ため案ごとに出す。
+// 中身は keiba_betrule_infer.py が買い目と同じ時点で書き出す bets_rules.why（表示専用）。
+// why が無いレース（2026-09-14 以前の公開分）は何も出さない。
+// 馬番は [data-pop] のボタンにして、出馬表と同じ入口で戦績の札を開く。
+function brWhyPct(v) {
+  return `${(v * 100).toFixed(1)}%`;
+}
+
+function brWhyCards(pl, br, byNum) {
+  const why = br.why;
+  if (!why || !Array.isArray(why.horses)) return '';
+  const rowOf = {};
+  for (const r of why.horses) rowOf[r.number] = r;
+  const used = new Set();
+  for (const t of pl.types) for (const tk of t.tickets) for (const n of tk) used.add(n);
+  const nums = (br.horses || []).filter((n) => used.has(n) && rowOf[n]);
+  if (!nums.length) return '';
+  const cards = nums.map((n) => {
+    const r = rowOf[n];
+    const h = byNum[n] || {};
+    const odds = r.odds != null ? `単勝 ${Number(r.odds).toFixed(1)}倍` : '';
+    const pop = h.popularity != null ? `・${h.popularity}番人気` : '';
+    let reason;
+    let anaLine = '';
+    if (r.pick === 'ana') {
+      reason = `<span class="why ana">穴候補</span> モデルの勝率 <b>${brWhyPct(r.p_win)}</b>`
+        + `（${r.rank}位・穴で追加）`;
+      if (r.ana_market != null && r.ana_p != null) {
+        anaLine = `<div class="hr sub">穴　3着以内 人気相応${brWhyPct(r.ana_market)}`
+          + `→予想${brWhyPct(r.ana_p)}</div>`;
+      }
+    } else {
+      reason = `<span class="why top">勝率${r.rank}位</span> モデルの勝率 <b>${brWhyPct(r.p_win)}</b>`
+        + '（上位5頭が候補）';
+    }
+    // 地雷は「4着以下の確率がオッズより上がる馬」。読みやすさのため3着以内の確率に言い直して出す
+    let jirai = '地雷判定なし';
+    if (r.jirai_market != null && r.jirai_p != null) {
+      const head = r.jirai ? '<b class="jr">地雷</b>' : '地雷ではない';
+      jirai = `${head}　3着以内 人気相応${brWhyPct(1 - r.jirai_market)}`
+        + `→予想${brWhyPct(1 - r.jirai_p)}`;
+    }
+    return '<div class="hcard"><div class="hh">'
+      + `<button type="button" class="hnb" data-pop="${n}">${umaBox(n, h.gate)}</button>`
+      + `<span class="nm">${escapeHtml(h.name || '')}</span><span class="od">${odds}${pop}</span></div>`
+      + `<div class="hr">${reason}</div>${anaLine}<div class="hr sub">${jirai}</div></div>`;
+  }).join('');
+  return `<div class="brwhy"><div class="bwh">この案で使う馬（${nums.length}頭）</div>${cards}</div>`;
+}
+
 function renderBetRules(site) {
   const br = site.bets_rules;
   if (!br || !br.plans) return renderBets20(site);
@@ -4009,6 +4061,7 @@ function renderBetRules(site) {
       : `${pl.points}点 ${fmtYen(pl.stake)}`;
     return `<details class="brdet"><summary class="secthead">${name}`
       + `<span class="cnt">${cap}</span></summary>`
+      + brWhyCards(pl, br, byNum)
       + `<table class="fixed betstbl"><thead>${header}</thead>`
       + `<tbody>${rows}</tbody><tfoot>${foot}</tfoot></table></details>`;
   }).join('');

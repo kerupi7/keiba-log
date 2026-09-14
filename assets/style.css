@@ -4082,3 +4082,22 @@ body.bs-locked{overflow:hidden}
 /* 一覧の札。荒れ度の札（.rtags の中）と横に並ぶ */
 .brtag{display:inline-block;font-size:10.5px;font-weight:700;color:#fff;background:var(--cta);
   border-radius:4px;padding:1px 6px;margin-right:4px;white-space:nowrap}
+
+/* ===== 買い目: 案ごとの「この案で使う馬」（2026-09-14 ユーザー決定・130-spec §14） =====
+   各案の帯を開いたすぐ下、買い目の表より上に置く。馬番は [data-pop] で戦績の札を開く。
+   地雷の文字だけ赤（--live）。赤は地雷・不的中の意味で使っているので揃う。 */
+.race20 .brwhy{margin:6px 0 10px}
+.race20 .brwhy .bwh{font-size:12px;font-weight:700;color:var(--cap);margin:8px 0 2px}
+.race20 .brwhy .hcard{border:1px solid var(--rule);border-radius:4px;padding:9px 11px;margin:6px 0;background:var(--bg)}
+.race20 .brwhy .hh{display:flex;align-items:center;gap:8px;font-size:14px;flex-wrap:wrap}
+.race20 .brwhy .hh .nm{font-weight:700}
+.race20 .brwhy .hh .od{color:var(--sub);font-size:12px}
+.race20 .brwhy .hr{font-size:13px;margin-top:5px;line-height:1.6}
+.race20 .brwhy .hr.sub{color:var(--cap);font-size:12px;margin-top:2px}
+.race20 .brwhy .why{display:inline-block;font-size:11px;font-weight:700;padding:1px 7px;border-radius:2px;margin-right:6px;color:#fff}
+.race20 .brwhy .why.top{background:var(--navy)}
+.race20 .brwhy .why.ana{background:var(--orange)}
+.race20 .brwhy .jr{color:var(--live)}
+/* 札の馬番は押せるボタン（戦績の札を開く）。ボタンの枠と余白を消して、ただの馬番の箱に見せる */
+.race20 .brwhy .hnb{background:none;border:0;padding:0;margin:0;font:inherit;line-height:0;cursor:pointer}
+.race20 .brwhy .hnb:active{opacity:.6}
