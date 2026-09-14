@@ -3748,15 +3748,97 @@ function confNote(bets) {
 // betruleChip() も一緒に落とした。過去の数字は 130-spec §8 と git 履歴に残る。
 const BETRULE_ORDER = ['東海', '甲州', '中山', '奥州', '日光'];
 
-// 買い目を「軸1頭流し」にまとめる（130-spec §13・2026-09-09 ユーザー決定）。
+// 買い目を「フォーメーション」にまとめる（130-spec §13・2026-09-14 改訂）。
 // 1点ずつ並べると日光141点で141行になり、画面が読めないため。
-// 同じ馬を含む買い目をひとまとめにして、軸1頭＋相手の並びで1行にする。
-// 点数と払戻の合計は1点ずつ足したときと同じになる（表示だけを変える）。
+// 列ごとに馬を集めて（例 8→4→3 6 10 16）、その列の組み合わせ全部が買い目に
+// そろっている塊だけを1行にする。欠けのある組み合わせは行にしないので、
+// 行に書いた組み合わせは必ず全部買っている。点数と払戻の合計は1点ずつ足したときと同じ。
+// 2026-09-09版は「1着（軸）を1頭だけ固定」だったので、8→6→4 と 8→4→6 のように
+// 2列目と3列目に同じ馬が入る買い目が1点1行に散っていた（ユーザー指摘・2026-09-14）。
 
 function brKey(t, ordered) {
   return (ordered ? t : [...t].sort((a, b) => a - b)).join('-');
 }
 
+// 列 cols（各列＝馬番の配列）から作れる買い目のキー全部。同じ馬を2列に置く組は除く
+function brGen(cols, ordered) {
+  const out = new Set();
+  const rec = (i, cur) => {
+    if (i === cols.length) { out.add(brKey(cur, ordered)); return; }
+    for (const h of cols[i]) {
+      if (cur.includes(h)) continue;
+      cur.push(h); rec(i + 1, cur); cur.pop();
+    }
+  };
+  rec(0, []);
+  return out;
+}
+
+function brChoose(n, r) {
+  if (r < 0 || r > n) return 0;
+  let v = 1;
+  for (let i = 1; i <= r; i++) v = (v * (n - r + i)) / i;
+  return Math.round(v);
+}
+
+// 種（買い目1点）から列を1頭ずつ広げる。広げてできる買い目が全部「残り」にある時だけ受け入れる。
+// いちばん多く増える1手を選び、増やせなくなったら止める。
+// 1頭足しても増えないとき（例 5→8→1 と 8→5→1 のように2列の馬を入れ替えた買い目）は、
+// 2列に同時に足す手も試す。これが無いと三連単のBOX・マルチが1点ずつ散る。
+function brGrow(seed, rest, horses, k, ordered) {
+  const cols = seed.map((h) => [h]);
+  const gen = new Set([brKey(seed, ordered)]);
+  // adds＝[[列, 馬], …] を足したとき新しくできる買い目。全部が残りにあれば配列、無ければ null
+  const tryAdd = (adds) => {
+    const trial = cols.map((c, i) => {
+      const extra = adds.filter((x) => x[0] === i).map((x) => x[1]);
+      return extra.length ? [...c, ...extra] : c;
+    });
+    const added = new Set();
+    for (const [p, h] of adds) {
+      // 新しくできる買い目＝p列を h に固定した残り列の組み合わせ
+      for (const key of brGen(trial.map((c, i) => (i === p ? [h] : c)), ordered)) {
+        if (gen.has(key) || added.has(key)) continue;
+        if (!rest.has(key)) return null;
+        added.add(key);
+      }
+    }
+    return added.size ? [...added] : null;
+  };
+  for (;;) {
+    let best = null;
+    for (let p = 0; p < k; p++) {
+      for (const h of horses) {
+        if (cols[p].includes(h)) continue;
+        const added = tryAdd([[p, h]]);
+        if (added && (!best || added.length > best.added.length)) best = { adds: [[p, h]], added };
+      }
+    }
+    if (!best) {
+      for (let p = 0; p < k && !best; p++) {
+        for (let q = 0; q < k && !best; q++) {
+          if (p === q) continue;
+          for (const h of cols[q]) {
+            if (cols[p].includes(h)) continue;
+            for (const h2 of cols[p]) {
+              if (cols[q].includes(h2)) continue;
+              const added = tryAdd([[p, h], [q, h2]]);
+              if (added && (!best || added.length > best.added.length)) best = { adds: [[p, h], [q, h2]], added };
+            }
+          }
+        }
+      }
+    }
+    if (!best) break;
+    for (const [p, h] of best.adds) cols[p].push(h);
+    best.added.forEach((key) => gen.add(key));
+  }
+  return { cols, gen };
+}
+
+// ワイド・馬連・三連複（順番なし）は「軸 - 相手」の流し（軸なし＝BOX）だけを塊にする。
+// 列ごとの並びだと 4 6 8 - 4 6 10 13 - 4 6 13 16 のような読めない形になるため。
+// 種の馬のうちどれを軸にするかを全部試し、相手を1頭ずつ広げて、いちばん大きい塊を返す。
 function brCombos(arr, k) {
   const out = [];
   const rec = (start, cur) => {
@@ -3767,49 +3849,57 @@ function brCombos(arr, k) {
   return out;
 }
 
-function brPerms(arr, k) {
-  const out = [];
-  const used = new Set();
-  const rec = (cur) => {
-    if (cur.length === k) { out.push([...cur]); return; }
-    for (const a of arr) {
-      if (used.has(a)) continue;
-      used.add(a); cur.push(a); rec(cur); cur.pop(); used.delete(a);
+function brGrowNagashi(seed, rest, horses, k) {
+  let best = null;
+  const sorted = [...seed].sort((a, b) => a - b);
+  for (let m = k - 1; m >= 0; m--) {
+    for (const axes of brCombos(sorted, m)) {
+      const others = sorted.filter((h) => !axes.includes(h));
+      const gen = new Set([brKey(seed, false)]);
+      for (;;) {
+        let pick = null;
+        for (const h of horses) {
+          if (axes.includes(h) || others.includes(h)) continue;
+          // h を相手に足したとき新しくできる買い目＝軸＋h＋残り相手の組み合わせ
+          const added = brCombos(others, k - m - 1).map((c) => brKey([...axes, h, ...c], false));
+          if (added.every((key) => rest.has(key) && !gen.has(key))) { pick = { h, added }; break; }
+        }
+        if (!pick) break;
+        others.push(pick.h);
+        pick.added.forEach((key) => gen.add(key));
+      }
+      if (!best || gen.size > best.gen.size) {
+        best = { axes, others: others.sort((a, b) => a - b), gen };
+      }
     }
-  };
-  rec([]);
-  return out;
+  }
+  return best;
 }
 
-// 軸を1頭ずつ立てて、その馬を含む買い目をまとめる（多い順）。
-// 三連複・三連単は、相手の組がほぼ全部そろっていれば「相手…」＋「除く…」と書く。
+// 残りの買い目から、いちばん大きい塊を順に切り出す。
 function brGroups(type, tickets) {
   const ordered = /馬単|三連単/.test(type);
   const k = tickets[0].length;
-  let rest = tickets.map((t) => [...t]);
+  const all = new Map();
+  for (const t of tickets) all.set(brKey(t, ordered), [...t]);
+  const rest = new Map(all);
   const out = [];
-  while (rest.length) {
-    const cnt = {};
-    rest.forEach((t) => new Set(ordered ? [t[0]] : t).forEach((h) => { cnt[h] = (cnt[h] || 0) + 1; }));
-    const axis = Number(Object.entries(cnt).sort((a, b) => b[1] - a[1])[0][0]);
-    const hit = (t) => (ordered ? t[0] === axis : t.includes(axis));
-    const grp = rest.filter(hit);
-    rest = rest.filter((t) => !hit(t));
-    if (k === 2) {
-      const others = grp.map((t) => (t[0] === axis ? t[1] : t[0])).sort((a, b) => a - b);
-      out.push({ axis, others, n: grp.length, tickets: grp, ordered });
+  while (rest.size) {
+    const horses = [...new Set([...rest.values()].flat())].sort((a, b) => a - b);
+    let best = null;
+    for (const seed of rest.values()) {
+      // すでに見つけた最大の塊に入っている種は、同じ塊にしかならないので飛ばす
+      if (best && best.gen.has(brKey(seed, ordered))) continue;
+      const g = ordered ? brGrow(seed, rest, horses, k, true) : brGrowNagashi(seed, rest, horses, k);
+      if (!best || g.gen.size > best.gen.size) best = g;
+    }
+    const grp = [...best.gen].map((key) => rest.get(key));
+    best.gen.forEach((key) => rest.delete(key));
+    if (ordered) {
+      out.push({ cols: best.cols.map((c) => [...c].sort((a, b) => a - b)),
+                 n: grp.length, tickets: grp, ordered });
     } else {
-      const rem = grp.map((t) => t.filter((x) => x !== axis));
-      const remSet = [...new Set(rem.flat())].sort((a, b) => a - b);
-      const remFull = ordered ? brPerms(remSet, k - 1) : brCombos(remSet, k - 1);
-      const have = new Set(rem.map((t) => brKey(t, ordered)));
-      const missing = remFull.filter((t) => !have.has(brKey(t, ordered)));
-      // ★欠けが1つでもあれば「流し」とは呼ばず、買い目をそのまま並べる
-      // （2026-09-09 ユーザー決定B。18点しか買っていないのに「流し」と書くのは誤りのため）。
-      // 実測（50レース・3,968点）では、名前が使えるのは827の塊、
-      // そのまま並べるのは250の塊で、1行に並ぶ最大は18点。
-      const nagashi = missing.length === 0;
-      out.push({ axis, rem, remSet, nagashi, missing, n: grp.length, tickets: grp, ordered });
+      out.push({ axes: best.axes, others: best.others, n: grp.length, tickets: grp, ordered });
     }
   }
   return out;
@@ -3884,27 +3974,19 @@ function renderBetRules(site) {
         }
         ret += gret;
         // 買い目のセル。2026-09-09 ユーザー決定で「軸1頭流し（相手 …）」の文言をやめ、
-        // 「軸 - 相手の並び」「軸 → 相手の並び」の記号だけにした。相手のあいだの「・」も置かない
+        // 「軸 - 相手の並び」「軸 → 相手の並び」の記号だけにした。相手のあいだの「・」も置かない。
+        // 2026-09-14: 列ごとの並び（8→4→3 6 10 16）で出す。列の中は空白、列のあいだは →／-
+        const sep = `<span class="cbsep">${ordered ? '→' : '-'}</span>`;
         const relList = (ns) => ns.map((n) => betPopBoxes(t.type, [n], byNum))
           .join('<span class="cbsp"></span>');
         let body;
-        if (g.others) {
-          body = betPopBoxes(t.type, [g.axis], byNum)
-            + `<span class="cbsep">${ordered ? '→' : '-'}</span>` + relList(g.others);
-        } else if (g.nagashi) {
-          body = betPopBoxes(t.type, [g.axis], byNum)
-            + `<span class="cbsep">${ordered ? '→' : '-'}</span>` + relList(g.remSet);
+        if (g.ordered) {
+          body = g.cols.map((c) => relList(c)).join(sep);          // 例 8→4→3 6 10 16
+        } else if (g.axes.length) {
+          body = relList([...g.axes, ...g.others].slice(0, g.axes.length)).replace(/<span class="cbsp"><\/span>/g, sep)
+            + sep + relList(g.others);                              // 例 8-4-3 6 10 16
         } else {
-          // 名前が使えない塊は1点1行で出す（2026-09-09 ユーザー決定。
-          // 1行に18点並べると読めなかったため）
-          return g.tickets.map((tk) => {
-            const p = payOf(t.type, tk);
-            const c = showResult
-              ? `<td class="${p ? 'o' : 'x'}">${p ? '✓' : '✕'}</td><td>${fmtYen(p)}</td>`
-              : '';
-            return `<tr><td class="l bcombo">${betPopBoxes(t.type, tk, byNum)}</td>`
-              + `<td>${fmtYen(100)}</td>${c}</tr>`;
-          }).join('');
+          body = `<span class="cbsep">BOX</span>` + relList(g.others); // 全点に入る馬が無い
         }
         const cell = showResult
           ? `<td class="${gret ? 'o' : 'x'}">${gret ? '✓' : '✕'}</td><td>${fmtYen(gret)}</td>`
