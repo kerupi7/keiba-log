@@ -2546,8 +2546,10 @@ function runNameSpan(raceName) {
 // 「3勝クラス3着」と書ききる（同レースの札60走で名前が縮んだのは0走）。
 function winnerBestSpan(p, compact) {
   if (!p.winner_best) return '';
+  // 2026-09-14 定義を「今いるクラスでの最高着順」に変えた（keiba_shutuba_columns._best_label）。
+  // 上のクラスへ挑戦して負けた1走（例：2勝クラスの馬の「G3 8着」）は出さない。
   const t = `${p.winner || 'この相手'}の現時点の最高成績 ${p.winner_best}`
-    + '（中央の平地・出走した中でいちばん上のクラスでの最高着順）';
+    + '（中央の平地・今いるクラスでの最高着順。そのクラスをまだ走っていなければ1つ下のクラス）';
   const txt = compact ? p.winner_best.replace('クラス', '') : p.winner_best;
   return `<span class="wb" title="${escapeHtml(t)}">${escapeHtml(txt)}</span>`;
 }
