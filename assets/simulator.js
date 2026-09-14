@@ -43,7 +43,7 @@
   // ===== §2.7 発売なし・無効条件（現行omEligibility踏襲＋枠連・3頭系を追加） =====
   function eligibility(type, heads) {
     if (type === 'fukusho' && heads <= 4) return { ok: false, reason: '5頭未満のため発売なし' };
-    if (type === 'wide' && heads < 8) return { ok: false, reason: '8頭未満のため発売なし' };
+    if (type === 'wide' && heads <= 4) return { ok: false, reason: '5頭未満のため発売なし' };
     if (type === 'wakuren' && heads < 9) return { ok: false, reason: '9頭未満のため発売なし' };
     if ((type === 'sanrenpuku' || type === 'sanrentan') && heads < 3) return { ok: false, reason: '3頭未満のため組成不可' };
     return { ok: true, reason: null };

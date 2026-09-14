@@ -146,7 +146,7 @@
 
   // ---- ワイド（keiba_harville.py prob_wide 行46-53 の写し。headsガードはJS版で追加） ----
   function probWide(a, b, probs, heads) {
-    if (heads < 8) return null;
+    if (heads <= 4) return null;
     var p = 0;
     var keys = Object.keys(probs);
     for (var i = 0; i < keys.length; i++) {
@@ -309,7 +309,7 @@
       var status = oddsAll.status ? oddsAll.status[type] : undefined;
       if (status !== 'result') continue;
       if (type === 'fukusho' && heads <= 4) continue;
-      if (type === 'wide' && heads < 8) continue;
+      if (type === 'wide' && heads <= 4) continue;
 
       var arity = TYPE_ARITY[type];
       var idsList = (type === 'umatan' || type === 'sanrentan')
