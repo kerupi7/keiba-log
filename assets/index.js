@@ -51,12 +51,10 @@ function renderSummary(stats) {
     el.innerHTML = '';
     return;
   }
-  const ps = stats.plan_stats;
-  if (ps && (ps.plans || []).length) {
-    el.innerHTML = renderPlanTable(ps);
-    bindPlanRowClicks();
-    return;
-  }
+  // 2026-09-15 ユーザー決定（mockup-168 ①）: TOP の「各モデルの成績」の表は外した。
+  // モデルの成績はメニューの「成績」（stats.html）で見る。renderPlanTable は成績ページへ移すまで残す
+  el.innerHTML = '';
+  return;
   // 2026-09-09 ユーザー決定A: 旧買い目（EVセレクタ／bet-1）の通算成績は廃止した。
   // 成績ページ（stats.html）ごと消しており、ここに出す数字はもう作られない。
   el.innerHTML = '';

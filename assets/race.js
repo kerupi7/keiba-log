@@ -3974,17 +3974,58 @@ function brWhyCards(pl, br, byNum) {
 }
 
 function renderBetRules(site) {
+  // 2026-09-15 ユーザー決定（mockup-166 案①）: win-5 の6案（bets_rules_w5）があれば上下2段にする。
+  // 上＝win-5 の6案、下＝win-4 の五街道5案（bets_rules）。bets_rules_w5 が無いレース
+  // （2026-09-18以前の公開分など）は、今までと1pxも変わらない表示に落とす。
+  const w5 = site.bets_rules_w5;
   const br = site.bets_rules;
-  if (!br || !br.plans) return renderBets20(site);
-  if (br.skip) {
-    return `<div class="secthead">買い目</div><div class="conf">${escapeHtml(br.skip)}</div>`;
+  // 対象外（w5.skip）も win-5 の段として出す。w5 が無いときだけ今までの1段に落とす（2026-09-15 反例探しで直した）
+  if (!w5 || (!w5.plans && !w5.skip)) {
+    if (!br || !br.plans) return renderBets20(site);
+    if (br.skip) {
+      return `<div class="secthead">買い目</div><div class="conf">${escapeHtml(br.skip)}</div>`;
+    }
+    const g = renderBetRuleGroup(site, br, BETRULE_ORDER, '');
+    return g.secs + betRuleSumHtml(site, '5案の合計（重複を除かず単純合計）', g.points, g.ret);
   }
+  let html = '<div class="grphead">win-5 の買い目<span class="sub">いまの本番の勝率</span></div>';
+  if (w5.skip) {
+    html += `<div class="conf">${escapeHtml(w5.skip)}</div>`;
+  } else {
+    // 案の並びはデータの順（models.json の betrule.groups の順）。名前をここに書き写さない
+    const g5 = renderBetRuleGroup(site, w5, Object.keys(w5.plans), '');
+    html += g5.secs + betRuleSumHtml(site, `win-5 ${Object.keys(w5.plans).length}案の合計（重複を除かず）`, g5.points, g5.ret);
+  }
+  html += '<div class="grphead">win-4 の買い目<span class="sub">五街道5案・前の本番の勝率</span></div>';
+  if (!br || !br.plans) {
+    html += '<div class="conf">このレースは win-4 の買い目がありません</div>';
+  } else if (br.skip) {
+    html += `<div class="conf">${escapeHtml(br.skip)}</div>`;
+  } else {
+    const g4 = renderBetRuleGroup(site, br, BETRULE_ORDER, 'w4');
+    html += g4.secs + betRuleSumHtml(site, 'win-4 5案の合計（重複を除かず）', g4.points, g4.ret);
+  }
+  return html;
+}
+
+function betRuleSumHtml(site, label, points, ret) {
+  const showResult = site.status === 'final';
+  return showResult
+    ? `<div class="betrule-sum"><span>${escapeHtml(label)}</span>`
+      + `<span>${points}点 ${fmtYen(points * 100)} → ${fmtYen(ret)}</span></div>`
+    : `<div class="betrule-sum"><span>${escapeHtml(label)}</span>`
+      + `<span>${points}点 ${fmtYen(points * 100)}</span></div>`;
+}
+
+// 1つのまとまり（案の並び order）の帯と表を作る。戻り値 {secs, points, ret}
+function renderBetRuleGroup(site, br, order, headCls) {
   const byNum = {};
   for (const h of site.horses) byNum[h.number] = h;
   const showResult = site.status === 'final';
   // result.payouts は「券種名をキーにした辞書」。複勝とワイドだけ配列で、他は単体。
   // 2026-09-09: 配列だと思い込んで for..of を回し、例外でページ全体が白くなった。
-  const BR_BT = { ワイド: 'wide', 馬連: 'umaren', 馬単: 'umatan',
+  // 2026-09-15: win-5 の6案に単勝が入ったので tansho を足した（同着は配列で来ることがある）
+  const BR_BT = { 単勝: 'tansho', ワイド: 'wide', 馬連: 'umaren', 馬単: 'umatan',
                   三連複: 'sanrenpuku', 三連単: 'sanrentan' };
   const payMap = {};
   const po = (showResult && site.result && site.result.payouts) || null;
@@ -3998,15 +4039,16 @@ function renderBetRules(site) {
       }
     }
   }
+  const hcls = headCls ? ` ${headCls}` : '';
   let gp = 0;
   let gr = 0;
-  const secs = BETRULE_ORDER.map((name) => {
+  const secs = order.map((name) => {
     const pl = br.plans[name];
     if (!pl) return '';
     // 2026-09-09 ユーザー決定: 帯の右の材料の説明（例「オッズ帯・頭数… 129ルール」）は出さない。
     // 代わりに点数（確定後は払戻）を出し、帯を押すと表が開く形にする（既定は閉じる）
     if (!pl.points) {
-      return `<div class="secthead">${name}</div>`
+      return `<div class="secthead${hcls}">${escapeHtml(name)}</div>`
         + '<div class="conf">本レースは見送り（買い目なし）</div>';
     }
     // 2026-09-09 ユーザー決定: 券種は行ごとに書かず、券種ごとの見出し行でまとめる
@@ -4024,7 +4066,11 @@ function renderBetRules(site) {
       const ordered = /馬単|三連単/.test(t.type);
       const tyHead = `<tr class="btyhead"><td class="l" colspan="${ncols}">${label}`
         + `<span class="bn">${t.tickets.length}点</span></td></tr>`;
-      return tyHead + brGroups(t.type, t.tickets).map((g) => {
+      // 単勝は1頭ずつ1行（まとめる相手がいない）。brGroups は2頭以上の組を前提にしている
+      const groups = t.type === '単勝'
+        ? t.tickets.map((tk) => ({ single: true, others: tk, n: 1, tickets: [tk], ordered: false, axes: [] }))
+        : brGroups(t.type, t.tickets);
+      return tyHead + groups.map((g) => {
         let gret = 0;
         const hits = [];
         for (const tk of g.tickets) {
@@ -4039,7 +4085,9 @@ function renderBetRules(site) {
         const relList = (ns) => ns.map((n) => betPopBoxes(t.type, [n], byNum))
           .join('<span class="cbsp"></span>');
         let body;
-        if (g.ordered) {
+        if (g.single) {
+          body = relList(g.others);                                 // 単勝 例 8
+        } else if (g.ordered) {
           body = g.cols.map((c) => relList(c)).join(sep);          // 例 8→4→3 6 10 16
         } else if (g.axes.length) {
           body = relList([...g.axes, ...g.others].slice(0, g.axes.length)).replace(/<span class="cbsp"><\/span>/g, sep)
@@ -4066,20 +4114,15 @@ function renderBetRules(site) {
     const cap = showResult
       ? `${pl.points}点 ${fmtYen(pl.stake)} → ${fmtYen(ret)}`
       : `${pl.points}点 ${fmtYen(pl.stake)}`;
-    return `<details class="brdet"><summary class="secthead">${name}`
+    return `<details class="brdet"><summary class="secthead${hcls}">${escapeHtml(name)}`
       + `<span class="cnt">${cap}</span></summary>`
       + brWhyCards(pl, br, byNum)
       + `<table class="fixed betstbl"><thead>${header}</thead>`
       + `<tbody>${rows}</tbody><tfoot>${foot}</tfoot></table></details>`;
   }).join('');
-  const sum = showResult
-    ? `<div class="betrule-sum"><span>5案の合計（重複を除かず単純合計）</span>`
-      + `<span>${gp}点 ${fmtYen(gp * 100)} → ${fmtYen(gr)}</span></div>`
-    : `<div class="betrule-sum"><span>5案の合計（重複を除かず単純合計）</span>`
-      + `<span>${gp}点 ${fmtYen(gp * 100)}</span></div>`;
   // 2026-09-09: 冒頭の注意書きと「直近3か月＝100円買って…」の行は削除（ユーザー決定）。
   // 検証中であることは 130-spec §8 に残す
-  return secs + sum;
+  return { secs, points: gp, ret: gr };
 }
 
 function renderBets20(site) {

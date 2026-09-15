@@ -4108,3 +4108,21 @@ body.bs-locked{overflow:hidden}
 /* 札の馬番は押せるボタン（戦績の札を開く）。ボタンの枠と余白を消して、ただの馬番の箱に見せる */
 .race20 .brwhy .hnb{background:none;border:0;padding:0;margin:0;font:inherit;line-height:0;cursor:pointer}
 .race20 .brwhy .hnb:active{opacity:.6}
+
+/* ===== 2026-09-15: レース詳細の買い目を上下2段（mockup-166 案①） =====
+   上＝win-5 の6案、下＝win-4 の五街道5案。段の見出しと、win-4 側の帯の色だけ足す。
+   bets_rules_w5 が無いレースでは .grphead も .w4 も出ないので、見た目は今までと同じ。 */
+.race20 .grphead{margin-top:18px;padding:6px 2px 4px;border-bottom:2px solid var(--navy);
+  font-size:13.5px;font-weight:800;color:var(--navy);display:flex;align-items:baseline;gap:8px}
+.race20 .grphead .sub{font-size:11px;font-weight:400;color:var(--cap)}
+.race20 .grphead+.brdet>summary.secthead,.race20 .grphead+.secthead{margin-top:8px}
+.race20 .secthead.w4{background:#4A6278}
+/* 2026-09-15: メニューの「成績」（mockup-168 ①）。WIN5 のロゴの右に置く */
+.site-header nav .navstat{display:inline-flex;align-items:center;padding:4px 9px;
+  border:1.5px solid var(--link);border-radius:14px;line-height:1}
+.site-header nav .navstat.active{background:var(--navy);border-color:var(--navy);color:#fff}
+/* 2026-09-15: 成績ページとモデル詳細の「win-5／win-4」の札（mockup-168 ②③） */
+.mdlchip{display:inline-block;flex:none;font-size:10.5px;font-weight:700;line-height:1;padding:3px 7px;
+  border-radius:8px;border:1px solid var(--navy);color:var(--navy);background:#fff;margin-right:6px;vertical-align:2px}
+.mdlchip.w4{border-color:#4A6278;color:#4A6278}
+.msec .msecnote{font-size:11px;font-weight:400;color:var(--cap);margin-left:8px}
