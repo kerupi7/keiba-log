@@ -37,9 +37,11 @@ function render(doc, slug) {
   const rank = ranked.findIndex((x) => x.name === p.name) + 1;
   const per = isW5 ? doc.period_w5 : doc.period;
   const nr = isW5 ? doc.n_races_w5 : doc.n_races;
-  const period = per && per.from
+  const bfn = isW5 ? (doc.n_backfilled_w5 || 0) : 0;
+  const period = (per && per.from
     ? `参考値・${per.from.slice(5)}〜${per.to.slice(5)}の${nr}レース`
-    : '参考値';
+    : '参考値')
+    + (bfn ? `（うち${bfn}レースは本番化の日に遡って計算した参考値）` : '');
   const chip = `<span class="mdlchip${isW5 ? '' : ' w4'}">${isW5 ? 'win-5' : 'win-4'}</span>`;
 
   const typeRows = TYPE_ORDER.map((ty) => {

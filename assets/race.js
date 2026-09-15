@@ -3988,7 +3988,9 @@ function renderBetRules(site) {
     const g = renderBetRuleGroup(site, br, BETRULE_ORDER, '');
     return g.secs + betRuleSumHtml(site, '5案の合計（重複を除かず単純合計）', g.points, g.ret);
   }
-  let html = '<div class="grphead">win-5 の買い目<span class="sub">いまの本番の勝率</span></div>';
+  // 2026-09-15: 9/5〜9/13 は本番化の日に遡って計算した参考値（bets_rules_w5.backfilled）。当日は出していない
+  const w5sub = w5.backfilled ? '遡って計算した参考値（当日は出していない）' : 'いまの本番の勝率';
+  let html = `<div class="grphead">win-5 の買い目<span class="sub">${w5sub}</span></div>`;
   if (w5.skip) {
     html += `<div class="conf">${escapeHtml(w5.skip)}</div>`;
   } else {

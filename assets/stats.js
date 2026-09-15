@@ -26,6 +26,15 @@ function groupTable(plans) {
   return `<table class="mt"><tr><th>案</th><th>回収率</th><th>的中</th><th>買った</th><th></th></tr>${rows}</table>`;
 }
 
+// 2026-09-15: win-5 の成績のうち、本番化の日に遡って計算したレースの件数と期間
+function backfillNote(doc) {
+  const n = doc.n_backfilled_w5 || 0;
+  const p = doc.backfill_period_w5;
+  if (!n || !p || !p.from) return '';
+  return `<div class="mnote">うち${n}レース（${p.from.slice(5)}〜${p.to.slice(5)}）は、`
+    + '本番化の日（9/15）に発走前のオッズで遡って計算した参考値です。当日は出していません。</div>';
+}
+
 function render(doc) {
   const el = document.getElementById('stats-content');
   const w5 = doc.plans_w5 || [];
@@ -39,6 +48,7 @@ function render(doc) {
       <span class="msecnote">${escapeHtml(w5period || 'いまの本番の勝率')}</span></div>
     ${w5.length ? groupTable(w5)
       : '<div class="mnote">win-5 に切り替えた日から数え始めます。まだ結果の出たレースがありません。</div>'}
+    ${backfillNote(doc)}
     <div class="msec"><span class="mdlchip w4">win-4</span>五街道${w4.length}案
       <span class="msecnote">${escapeHtml(w4period)}</span></div>
     ${w4.length ? groupTable(w4) : '<div class="mnote">記録がありません</div>'}
