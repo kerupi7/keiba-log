@@ -2,17 +2,12 @@
 /* ===== mockup-169 だけの見た目 =====
    仕様: 部署/競馬部/過去の決定事項/未着手/2026-09-17_払う比べるだけで印が決まる画面.md
    色・枠線・文字は本番の style.css の変数（--navy / --rule / --mk-hon …）だけを使う。
-   動きだけ3案を切り替えて比べる（#14）。
-     iphone … スッと滑って止まる（跳ねない）
-     nin    … 押すと縮んで弾む・払ったカードが大きく回って飛ぶ
-     mix    … その中間 */
+   2026-09-17：選ばなかった案（過去走・直近5走・展開・色・動き）の指定は片付けた。残っているのは決めた形の分だけ */
 
 /* 決定 #1：バーから「戦績」を消す */
 .race20 .mm-seg [data-view="runs"]{display:none}
 
 :root{ --yf-ease:cubic-bezier(.34,1.56,.64,1); --yf-press:.94; --yf-fly:1.3; --yf-dur:.36s; }
-:root[data-motion="iphone"]{ --yf-ease:cubic-bezier(.25,.8,.25,1); --yf-press:.98; --yf-fly:.8; --yf-dur:.3s; }
-:root[data-motion="nin"]{ --yf-ease:cubic-bezier(.3,1.9,.6,1); --yf-press:.9; --yf-fly:1.8; --yf-dur:.45s; }
 
 /* 入口（決定 #2）：印の一覧の一番上 */
 .race20 .yf-entry{padding:10px 10px 8px;border-bottom:1px solid var(--rule)}
@@ -45,12 +40,20 @@
   touch-action:none;user-select:none;-webkit-user-select:none;will-change:transform}
 .yf-card.back{transform:scale(.96) translateY(8px);opacity:.55;pointer-events:none}
 .yf-card.snap{transition:transform var(--yf-dur) var(--yf-ease)}
-.yf-card.fly{transition:transform .36s ease-in, opacity .36s ease-in}
+
 .yf-dots{display:flex;gap:3px;padding:8px 10px 5px}
 .yf-dots i{flex:1;height:3px;border-radius:2px;background:var(--rule)}
 .yf-dots i.on{background:var(--navy)}
 .yf-plab{display:flex;justify-content:space-between;padding:0 12px 4px;font-size:11px;font-weight:700;color:var(--cap)}
 .yf-plab b{color:var(--navy)}
+/* 今回の芝・ダートと距離（1〜3ページ目。2026-09-17） */
+.yf-plab .yf-pl{display:flex;align-items:center;gap:6px;min-width:0}
+.yf-plab .yf-today{font-style:normal;display:inline-flex;align-items:baseline;gap:1px;font-size:11px;line-height:16px;font-weight:700;
+  padding:0 7px;border-radius:999px;background:#F2F2F7;color:#3C3C43;white-space:nowrap}
+.yf-plab .yf-today i{font-style:normal;font-size:9.5px;font-weight:600;color:#8E8E93;margin-right:4px}
+.yf-plab .yf-today b{font-size:12.5px;color:inherit;margin-left:1px}
+.yf-plab .yf-today.sf-tf{background:#E3F1E7;color:#1F6B3A}
+.yf-plab .yf-today.sf-dt{background:#F6E9DA;color:#A05A12}
 .yf-page{flex:1;overflow-y:auto;padding:0 10px 10px;min-height:0}
 /* 全戦績以外のページは縦に動かさない（中身は fitPage で画面の高さに縮めて収める） */
 .yf-page.fit{overflow:hidden}
@@ -69,51 +72,9 @@ body.yf-open{position:fixed;inset:0;width:100%}
 .yf-edge.l{left:0}.yf-edge.r{right:0}
 .yf-deck.top{margin-top:calc(10px + env(safe-area-inset-top,0px))}
 .yf-deck-foot{height:calc(10px + env(safe-area-inset-bottom,0px))}
-.yf-acts{display:flex;align-items:center;justify-content:center;gap:26px;padding:10px 0 calc(12px + env(safe-area-inset-bottom,0px))}
-.yf-rd{width:62px;height:62px;border-radius:50%;background:#fff;border:1px solid var(--rule);
-  box-shadow:0 3px 10px rgba(0,0,0,.10);font:inherit;font-size:24px;font-weight:800;line-height:1;cursor:pointer;
-  transition:transform .22s var(--yf-ease)}
-.yf-rd:active{transform:scale(var(--yf-press))}
-.yf-rd small{display:block;font-size:9px;margin-top:2px}
-.yf-rd.ng{color:var(--keshi)}.yf-rd.ok{color:var(--mk-chk)}
-.yf-undo{border:0;background:none;font:inherit;font-size:12px;color:var(--link);padding:6px}
-.yf-undo:disabled{color:var(--cap);opacity:.5}
-
-/* カードの中に本番の部品を置く（ポップアップの見出し・表・戦績の札の1走） */
-.yf-page .popup.yf-in{display:block !important;position:static !important;transform:none !important;width:auto !important;
-  max-width:none !important;max-height:none !important;margin:0 !important;box-shadow:none !important;
-  border:0 !important;border-radius:0 !important;background:transparent !important;z-index:auto !important}
-.yf-page .popup.yf-in .phead{padding:6px 0 8px !important;flex-wrap:wrap}
-.yf-page .popup.yf-in .pbody{padding:8px 0 0 !important;overflow:visible !important}
-.yf-run{padding-top:6px}
-.yf-run .vrun{zoom:1.32;margin:0}
-.yf-run .yf-rh{font-size:13px;font-weight:700;margin:2px 0 8px;color:var(--text)}
-.yf-none{padding:40px 10px;text-align:center;color:var(--cap);font-size:13px}
-
 
 /* 過去走ページ（2026-09-17 作り直し・検討中） */
-.yf-rp{padding:4px 2px 8px;display:flex;flex-direction:column;gap:10px}
-.yf-rp-top{display:flex;align-items:flex-end;gap:14px;padding:2px 4px 6px}
-.yf-fin{font-family:Futura,Jost,sans-serif;font-size:64px;font-weight:600;line-height:.9;color:var(--text)}
-.yf-fin small{font-family:inherit;font-size:18px;margin-left:2px;color:var(--sub)}
-.yf-fin.w1{color:#B8860B}.yf-fin.w3{color:var(--navy)}
-.yf-mg{display:flex;flex-direction:column;gap:3px;padding-bottom:4px}
-.yf-mg b{font-size:22px;font-weight:700}
-.yf-mg span{font-size:12px;color:var(--cap)}
-.yf-rp-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.yf-kgap{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
-.yf-kgap dd{margin:0}
-.yf-kgap em{margin:0}
-.yf-k{background:var(--sub-bg);border:1px solid var(--rule);border-radius:8px;padding:8px 10px;min-width:0}
-.yf-k dt{font-size:11px;color:var(--cap);font-weight:700;display:flex;align-items:center;justify-content:space-between;gap:6px}
-.yf-k dd{margin:3px 0 0;font-size:18px;font-weight:700;line-height:1.25}
-.yf-k em{display:block;font-style:normal;font-size:10px;color:var(--cap);margin-top:3px}
-.yf-diff{display:block;font-size:11px;color:var(--cap);margin-top:3px}
-.yf-diff.on{color:var(--live);font-weight:700}
-.yf-kpos dd{display:none}
-.yf-seg{display:inline-flex;border:1px solid var(--rule);border-radius:5px;overflow:hidden}
-.yf-seg button{border:0;background:#fff;font:inherit;font-size:10px;padding:2px 8px;color:var(--sub)}
-.yf-seg button.on{background:var(--navy);color:#fff}
+
 .yf-pos{display:block;width:100%;height:auto;margin-top:4px}
 .yf-pos .g{stroke:var(--rule);stroke-width:1}
 .yf-pos .ln{fill:none;stroke:var(--navy);stroke-width:2.5}
@@ -123,168 +84,35 @@ body.yf-open{position:fixed;inset:0;width:100%}
 .yf-pos .v{font-family:Futura,Jost,sans-serif;font-size:12px;font-weight:600;text-anchor:middle;fill:var(--text)}
 .yf-pos .c{font-size:10px;text-anchor:middle;fill:var(--cap)}
 .yf-pos .ax{font-size:9px;text-anchor:end;fill:var(--cap)}
-.yf-posnum{font-family:Futura,Jost,sans-serif;font-size:30px;font-weight:600;letter-spacing:.06em;margin-top:4px}
-.yf-posnum small{font-family:inherit;font-size:13px;color:var(--cap);margin-left:4px;letter-spacing:0}
+
 .yf-posnone{font-size:12px;color:var(--cap);padding:10px 0}
-.yf-rhd{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:12px;color:var(--sub);padding:2px 2px 0}
-.yf-rhd .gr{font-size:10px;background:var(--navy);color:#fff;border-radius:3px;padding:1px 5px}
-.yf-rhd .rn{font-weight:700;color:var(--text);flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.yf-rhd>span{white-space:nowrap}
-.yf-rhd .ds{margin-left:auto;font-weight:700;color:var(--text);flex:none}
-.yf-sub{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:-4px;padding:0 2px}
-.yf-rp-top + .yf-sub{border-bottom:2px solid var(--rule-strong);padding-bottom:8px}
-.yf-sub.in{margin-top:6px;padding:0}
-.yf-sub.col{flex-direction:column;gap:2px}
-.yf-sm{font-size:12px;color:var(--text);white-space:nowrap}
-.yf-sm i{font-style:normal;font-size:10px;color:var(--cap);margin-right:4px}
-.yf-sm.top{color:var(--live);font-weight:700}.yf-sm.good{color:var(--navy);font-weight:700}
-.yf-wb{font-weight:400;font-size:10px;color:var(--cap);border:1px solid var(--rule);border-radius:3px;padding:0 4px;margin-left:5px;background:#fff}
-.yf-rhd .lv{flex:none}
+
 .yf-memo{margin-top:6px;font-size:12px;background:#fff;border-left:3px solid var(--navy);padding:4px 8px;color:var(--text)}
-.yf-rest{border-top:1px dashed var(--rule);padding-top:8px}
-.yf-rest-h{font-size:10px;color:var(--cap);margin-bottom:4px}
-.yf-rest dl{display:grid;grid-template-columns:1fr 1fr;gap:2px 10px;margin:0}
-.yf-rest dl div{display:flex;gap:6px;font-size:11px;min-width:0}
-.yf-rest dt{color:var(--cap);flex:none}
-.yf-rest dd{margin:0;color:var(--sub);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
-
-/* ===== 過去走ページ 3案（2026-09-17） ===== */
+/* ===== 過去走ページの土台（2026-09-17。スコアボード A・新聞 B は選ばず片付けた） ===== */
 .yf-page .gr{font-size:10px;background:var(--navy);color:#fff;border-radius:3px;padding:1px 5px;font-weight:700;flex:none}
 .yf-page .rn{font-weight:700;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .yf-page .lv{flex:none}
 
-/* A スコアボード型 */
-.rvA{display:flex;flex-direction:column;gap:8px;padding:4px 0 8px}
-.rvA .a-hero{background:var(--navy);color:#fff;border-radius:10px;padding:10px 12px 12px}
-.rvA .a-meta{display:flex;align-items:center;gap:6px;font-size:11px;opacity:.95}
-.rvA .a-meta .gr{background:#fff;color:var(--navy)}
-.rvA .a-meta .rn{flex:1 1 auto}
-.rvA .a-meta .ds{flex:none;font-weight:700}
-.rvA .a-meta .lv{background:rgba(255,255,255,.9)}
-.rvA .a-score{display:flex;align-items:flex-end;gap:14px;margin-top:6px}
-.rvA .a-fin{font-family:Futura,Jost,sans-serif;font-size:72px;font-weight:600;line-height:.85;letter-spacing:-.02em}
-.rvA .a-fin small{font-size:18px;margin-left:3px;opacity:.8}
-.rvA .a-fin.w1{color:#F2C94C}
-.rvA .a-right{padding-bottom:4px;min-width:0}
-.rvA .a-mg{font-size:24px;font-weight:700;line-height:1.1}
-.rvA .a-f{font-size:11px;opacity:.8;margin-top:4px}
-.rvA .a-win{margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.25);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.rvA .a-win i{font-style:normal;font-size:10px;opacity:.7;margin-right:6px}
-.rvA .a-win .yf-wb{background:transparent;color:#fff;border-color:rgba(255,255,255,.5)}
-.rvA .a-gap{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;padding:8px 12px;border-radius:10px;background:#EEF3F8}
-.rvA .a-gap i{font-style:normal;font-size:11px;color:var(--navy);font-weight:700}
-.rvA .a-gap b{font-size:20px;color:var(--navy)}
-.rvA .a-gap span{font-size:10px;color:var(--cap)}
-.rvA .a-box{background:#fff;border:1px solid var(--rule);border-radius:10px;padding:8px 12px}
-.rvA .a-h{font-size:11px;font-weight:700;color:var(--cap)}
-.rvA .a-v{font-size:20px;font-weight:700;margin-top:2px}
-.rvA .a-two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-
-/* B 新聞・罫線型 */
-.rvB{padding:2px 2px 8px}
-.rvB .b-meta{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--sub);padding-bottom:6px;border-bottom:1px solid var(--rule-strong)}
-.rvB .b-meta .rn{color:var(--text);flex:1 1 auto}
-.rvB .b-meta .ds{flex:none;font-weight:700;color:var(--text)}
-.rvB .b-top{display:flex;gap:14px;align-items:center;padding:10px 0;border-bottom:3px double var(--rule-strong)}
-.rvB .b-fin{font-family:Futura,Jost,sans-serif;font-size:70px;font-weight:600;line-height:.85;min-width:92px;text-align:center}
-.rvB .b-fin small{font-size:16px;color:var(--sub);margin-left:2px}
-.rvB .b-fin.w1{color:#B8860B}.rvB .b-fin.w3{color:var(--navy)}
-.rvB .b-info{min-width:0;border-left:1px solid var(--rule);padding-left:12px}
-.rvB .b-mg{font-size:22px;font-weight:700}
-.rvB .b-l{font-size:11px;color:var(--sub);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.rvB .b-l b{color:var(--text)}
-.rvB .b-row{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--rule)}
-.rvB .b-k{flex:none;width:34px;font-size:11px;font-weight:700;color:var(--navy);padding-top:3px;
-  writing-mode:horizontal-tb;letter-spacing:.1em}
-.rvB .b-v{flex:1;min-width:0;font-size:13px}
-.rvB .b-v>b{font-size:18px}
-.rvB .b-v .yf-diff{display:inline;margin-left:8px}
-.rvB .b-s{font-size:11px;color:var(--cap);margin-top:2px}
-.rvB .yf-memo{background:none}
-
 /* C 設定画面型 */
 .rvC{background:#F2F2F7;margin:0 -10px -10px;padding:8px 10px 10px;min-height:100%;box-sizing:border-box}
-.rvC .c-hero{text-align:center;padding:4px 0 8px}
-.rvC .c-meta{font-size:11px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.rvC .c-meta b:not(.gr){color:var(--text)}
-.rvC .c-fin{font-family:Futura,Jost,sans-serif;font-size:64px;font-weight:600;line-height:1;margin-top:4px}
-.rvC .c-fin small{font-size:16px;color:var(--sub);margin-left:2px}
-.rvC .c-fin.w1{color:#B8860B}.rvC .c-fin.w3{color:var(--navy)}
-.rvC .c-mg{font-size:17px;font-weight:700}
-.rvC .c-mg span{font-size:11px;color:var(--cap);font-weight:400;margin-left:4px}
-.rvC .c-cap{font-size:11px;color:#6D6D72;margin:10px 12px 3px}
-.rvC .c-grp{background:#fff;border-radius:10px;margin-top:8px;overflow:hidden}
-.rvC .c-cap + .c-grp{margin-top:0}
-.rvC .c-pad{padding:4px 12px 8px}
-.rvC .c-li{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:7px 12px;font-size:13px;min-height:22px}
-.rvC .c-li + .c-li{border-top:1px solid #E5E5EA}
-.rvC .c-k{color:var(--text);flex:none}
-.rvC .c-v{text-align:right;color:#6D6D72;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.rvC .c-v b:not(.yf-wb){color:var(--text);font-size:15px}
-.rvC .c-v em,.rvC .c-v .yf-diff{display:block;font-style:normal;font-size:10px;margin-top:1px}
 
-
-/* ===== C を土台にした3案（2026-09-17） ===== */
+/* ===== 設定画面型 C を土台にした部品（2026-09-17） ===== */
 .rvC .cp-pill{display:inline-block;font-style:normal;font-size:10px;font-weight:600;color:#6D6D72;background:#EFEFF4;
   border-radius:999px;padding:1px 8px;margin-left:6px;vertical-align:middle}
 .rvC .cp-pill.on{color:#fff;background:var(--live)}
-/* C1 設定アプリ改 */
-.c1 .c-meta{text-align:left;padding:2px 4px 6px}
-.c1 .c1-hero{display:flex;align-items:center;gap:16px;padding:10px 16px;margin-top:0}
-.c1 .c1-fin{font-family:Futura,Jost,sans-serif;font-size:60px;font-weight:600;line-height:.9}
-.c1 .c1-fin small{font-size:15px;color:var(--sub);margin-left:2px}
-.c1 .c1-fin.w1{color:#B8860B}.c1 .c1-fin.w3{color:var(--navy)}
-.c1 .c1-r{border-left:1px solid #E5E5EA;padding-left:16px}
-.c1 .c1-mg{font-size:20px;font-weight:700}
-.c1 .c1-sub{font-size:11px;color:#8E8E93;margin-top:2px}
-.c1 .c-cap{margin:12px 14px 4px;text-transform:none;letter-spacing:.02em}
-.c1 .c-li{padding:8px 14px}
-.c1 .c-k{color:#3C3C43}
 /* C2 ウィジェット型 */
 .c2{display:flex;flex-direction:column;gap:8px;padding-top:6px}
-.c2 .w-hero,.c2 .w-t{background:#fff;border-radius:16px;box-shadow:0 1px 2px rgba(0,0,0,.05)}
-.c2 .w-hero{padding:10px 14px 12px}
-.c2 .w-meta{font-size:11px;color:#8E8E93;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.c2 .w-meta b:not(.gr){color:var(--text)}
-.c2 .w-main{display:flex;align-items:flex-end;gap:14px;margin-top:4px}
-.c2 .w-fin{font-family:Futura,Jost,sans-serif;font-size:64px;font-weight:600;line-height:.85}
-.c2 .w-fin small{font-size:15px;color:var(--sub);margin-left:2px}
-.c2 .w-fin.w1{color:#B8860B}.c2 .w-fin.w3{color:var(--navy)}
-.c2 .w-mg{font-size:21px;font-weight:700;padding-bottom:2px}
-.c2 .w-mg span{display:block;font-size:11px;font-weight:400;color:#8E8E93;margin-top:2px}
-.c2 .w-chips{display:flex;gap:6px;margin-top:8px}
-.c2 .w-chips span{font-size:11px;background:#F2F2F7;border-radius:999px;padding:2px 10px}
-.c2 .w-row2{display:grid;grid-template-columns:1.3fr 1fr;gap:8px}
-.c2 .w-row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
-.c2 .w-t{padding:9px 12px;min-width:0}
-.c2 .w-k{font-size:10px;font-weight:700;color:#8E8E93}
-.c2 .w-v{font-size:17px;font-weight:700;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.c2 .w-s{font-size:10px;color:#8E8E93;margin-top:2px}
-.c2 .w-s .cp-pill{margin-left:0}
-.c2 .w-t.accent{background:var(--navy);color:#fff}
-.c2 .w-t.accent .w-k,.c2 .w-t.accent .w-s{color:rgba(255,255,255,.75)}
-.c2 .w-t.small .w-v{font-size:13px}
-/* C3 ヘルスケア型 */
+
+/* C3 ヘルスケア型（1まとまり＝1枚の札。決めた形の土台） */
 .c3{display:flex;flex-direction:column;gap:8px}
-.c3 .c-meta{text-align:left;padding:2px 4px 0}
+
 .c3 .h-card{background:#fff;border-radius:12px;padding:9px 14px 10px}
 .c3 .h-top{display:flex;justify-content:space-between;align-items:baseline}
 .c3 .h-t{font-size:12px;font-weight:700}
 .c3 .h-r{font-size:11px;color:#8E8E93}
-.c3 .h-big{font-family:Futura,Jost,sans-serif;font-size:44px;font-weight:600;line-height:1;margin-top:4px;display:flex;align-items:baseline;gap:4px}
-.c3 .h-big small{font-size:14px;color:var(--sub)}
-.c3 .h-big.w1{color:#B8860B}.c3 .h-big.w3{color:var(--navy)}
-.c3 .h-big .h-mg{font-family:-apple-system,"Hiragino Sans",sans-serif;font-size:18px;font-weight:700;color:var(--text);margin-left:10px}
-.c3 .h-big.s{font-family:-apple-system,"Hiragino Sans",sans-serif;font-size:22px;font-weight:700}
-.c3 .h-line{font-size:11px;color:#6D6D72;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.c3 .h-line b{color:var(--text)}
-.c3 .h-two{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:2px}
-.c3 .h-k{font-size:10px;color:#8E8E93;margin-top:2px}
-.c3 .h-two .cp-pill{margin-left:0}
 
-
-/* ===== C3＋C2 の3案（2026-09-17） ===== */
+/* ===== C3＋C2（M3 に決定。2026-09-17） ===== */
 .mx .h-card{border-radius:14px;box-shadow:0 1px 2px rgba(0,0,0,.05);min-width:0}
 .mx .m-chips{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
 .mx .m-chips span{font-size:11px;background:#F2F2F7;border-radius:999px;padding:2px 10px}
@@ -292,46 +120,27 @@ body.yf-open{position:fixed;inset:0;width:100%}
 .mx .m-row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
 .mx .m-row3 .h-card{padding:9px 10px 10px}
 .mx .m-row3 .h-t{font-size:11px}
-.mx .h-card.accent{background:var(--navy);color:#fff}
-.mx .h-card.accent .h-r,.mx .h-card.accent .h-line{color:rgba(255,255,255,.75)}
-.mx .h-big.s{font-size:20px}
-.mx .h-big.xs{font-size:15px}
-.mx .h-big.wrap{display:block;font-size:17px;line-height:1.25;word-break:break-all}
-.mx .h-r{white-space:nowrap}
-.mx .h-card.accent .h-line{white-space:normal}
-.mx .h-big.ell{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.mx .m-row3 .cp-pill{margin-left:0;margin-top:3px;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis;box-sizing:border-box}
 
+.mx .h-r{white-space:nowrap}
+
+.mx .m-row3 .cp-pill{margin-left:0;margin-top:3px;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis;box-sizing:border-box}
 
 /* 今回と同じ条件で好走した札（2026-09-17） */
 .mx .h-card.hit{background:#E7F3EA;box-shadow:inset 0 0 0 2px var(--hit)}
 .mx .h-card.hit .h-t{color:var(--hit) !important}
-.mx .h-card.accent.hit{background:var(--hit);box-shadow:none}
-.mx .h-card.accent.hit .h-t{color:#fff !important}
+
 .mx .m-hit{display:inline-block;margin-top:5px;font-size:10px;font-weight:700;color:#fff;background:var(--hit);
   border-radius:999px;padding:1px 8px;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis;box-sizing:border-box}
-.mx .h-card.accent.hit .m-hit{background:#fff;color:var(--hit)}
+
 .mx .m-row3 .m-hit{padding:1px 6px;font-size:9px}
 
-
-/* 上の3つのカード化 3案（2026-09-17） */
+/* 上の3つのカード化（R3 に決定。2026-09-17） */
 .mx .m-rn{font-size:17px;font-weight:700;line-height:1.3;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mx .m-pls{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin-top:5px}
 .mx .m-pl{font-size:11px;background:#F2F2F7;border-radius:999px;padding:2px 9px;white-space:nowrap}
 .mx .m-pls .gr{font-size:10px;padding:2px 7px;border-radius:999px}
 .mx .m-pls .lv{border-radius:999px;padding:1px 7px}
 .mx .h-card.wide{grid-column:1 / -1}
-/* R2 */
-.hd-r2 .m-hero{padding:0;overflow:hidden}
-.hd-r2 .m-band{background:#F7F7FA;padding:9px 14px 9px;border-bottom:1px solid #E5E5EA}
-.hd-r2 .m-band .m-pl{background:#fff}
-.hd-r2 .m-body{padding:6px 14px 10px}
-.hd-r2 .m-foot{display:flex;align-items:center;gap:6px;border-top:1px solid #E5E5EA;padding:8px 14px;font-size:13px;white-space:nowrap;overflow:hidden}
-.hd-r2 .m-foot i{font-style:normal;font-size:10px;color:#8E8E93}
-.hd-r2 .m-foot b{overflow:hidden;text-overflow:ellipsis}
-.hd-r2 .m-foot span:last-child{margin-left:auto;font-size:10px;color:#8E8E93}
-.hd-r2 .h-card.accent.wide{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
-.hd-r2 .h-card.accent.wide .h-top{flex:none}
 /* R3 */
 .hd-r3 .m-slim{padding:9px 14px}
 .hd-r3 .m-num{padding:8px 10px;text-align:left}
@@ -339,7 +148,6 @@ body.yf-open{position:fixed;inset:0;width:100%}
 .hd-r3 .m-nv{font-family:Futura,Jost,sans-serif;font-size:34px;font-weight:600;line-height:1.05}
 .hd-r3 .m-nv small{font-family:-apple-system,"Hiragino Sans",sans-serif;font-size:12px;color:var(--sub);margin-left:2px}
 .hd-r3 .m-num.w1 .m-nv{color:#B8860B}.hd-r3 .m-num.w3 .m-nv{color:var(--navy)}
-
 
 /* R3 改（2026-09-17） */
 .hd-r3 .m-race{display:flex;gap:12px;align-items:stretch;padding:10px 12px}
@@ -367,32 +175,6 @@ body.yf-open{position:fixed;inset:0;width:100%}
 .hd-r3 .m-wn i{display:block;font-style:normal;font-size:9px;color:#8E8E93;font-weight:400}
 .hd-r3 .m-win .m-pls{margin-top:4px}
 
-
-/* 勝ち馬の段と上がり・流れ 3案（2026-09-17） */
-.mx .ft-rk{display:inline-block;font-size:10px;font-weight:700;border-radius:999px;padding:1px 7px;background:#F2F2F7;color:#6D6D72;white-space:nowrap}
-.mx .ft-rk.r1{background:var(--live);color:#fff}
-.mx .ft-rk.r3{background:var(--navy);color:#fff}
-/* F1 */
-.mx .ft1-row{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px}
-.mx .ft1-t{background:#F7F7FA;border-radius:10px;padding:6px 10px;display:flex;flex-direction:column;gap:1px}
-.mx .ft1-t i{font-style:normal;font-size:9px;color:#8E8E93}
-.mx .ft1-t b{font-size:17px}
-.mx .ft1-t b small{font-size:10px;color:#8E8E93;font-weight:400;margin-left:2px}
-.mx .ft1-t .ft-rk{align-self:flex-start}
-.mx .ft1-win{margin-top:6px;background:#F7F7FA;border-radius:10px;padding:6px 10px;display:flex;flex-direction:column}
-.mx .ft1-win i{font-style:normal;font-size:9px;color:#8E8E93}
-.mx .ft1-win b{font-size:14px;line-height:1.3;word-break:break-all}
-.mx .ft1-win span{font-size:10px;color:#6D6D72;margin-top:2px}
-/* F2 */
-.mx .ft2-row{display:flex;align-items:center;flex-wrap:wrap;gap:5px;margin-top:6px}
-.mx .ft2-k{font-size:10px;color:#8E8E93}
-.mx .ft2-v{font-size:15px}
-.mx .ft2-sep{width:1px;height:14px;background:#E5E5EA;margin:0 4px}
-.mx .ft2-chip{font-size:11px;font-weight:700;border:1px solid var(--link);color:var(--link);border-radius:999px;padding:1px 8px}
-.mx .ft2-win{display:flex;align-items:center;gap:6px;margin-top:4px;min-width:0}
-.mx .ft2-vs{flex:none;font-size:9px;font-weight:700;color:#fff;background:var(--navy);border-radius:999px;padding:2px 6px}
-.mx .ft2-win b{font-size:15px;line-height:1.25;word-break:break-all}
-.mx .ft2-best{display:inline-block;margin-top:5px;font-size:10px;font-weight:700;color:var(--navy);border:1px solid var(--navy);border-radius:999px;padding:1px 8px}
 /* F3 */
 .mx .ft3{margin-top:6px;border-top:1px solid #E5E5EA;padding-top:6px;display:flex;flex-direction:column;gap:6px}
 .mx .ft3-r{display:flex;align-items:center;gap:6px}
@@ -411,10 +193,9 @@ body.yf-open{position:fixed;inset:0;width:100%}
 .mx .ft3-win{margin-top:6px;border-top:1px solid #E5E5EA;padding-top:5px;display:flex;flex-direction:column;gap:3px}
 .mx .ft3-win i{display:block;font-style:normal;font-size:9px;color:#8E8E93}
 .mx .ft3-win b{font-size:14px;line-height:1.25;word-break:break-all}
-.mx .ft3-best b{font-size:12px;color:var(--navy)}
 
 .mx .ft3-style{font-size:11px;color:#fff;background:var(--link);border-radius:999px;padding:1px 9px}
-.mx .ft3-none{font-size:10px;color:#8E8E93}
+
 .mx .ft3 .ft-scale i{padding:2px 8px}
 /* 脚質の段を足した分を詰める（2026-09-17） */
 .mx .ft3{gap:2px;margin-top:2px;padding-top:3px}
@@ -432,7 +213,7 @@ body.yf-open{position:fixed;inset:0;width:100%}
 .mx .ft3-r.sc .ft-scale i.on{color:#fff;font-weight:700}
 .mx .ft3-r.st .ft-scale i.on{background:var(--link)}
 .mx .ft3-r.pc .ft-scale i.on{background:var(--orange)}
-.mx .ft3-r.se .ft-scale i.on{background:var(--navy)}
+
 .mx .ft3-r>b{width:48px}
 .hd-r3 .m-rn .cb{font-size:10px;padding:1px 5px;border-radius:4px;flex:none}
 .hd-r3 .m-rn span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -446,7 +227,6 @@ body.yf-open{position:fixed;inset:0;width:100%}
 .mx .ft3-bst b{font-size:14px}
 .mx .ft3-bst b.f1{color:#B8860B}.mx .ft3-bst b.f3{color:var(--navy)}
 
-
 /* レースの流れの札（2026-09-17）。本番の .sc とぶつかるので fl- で始める */
 .mx .ft3-flow{display:grid;grid-template-columns:3fr 2fr;gap:10px;margin-top:2px}
 .mx .fl-col{min-width:0}
@@ -457,7 +237,6 @@ body.yf-open{position:fixed;inset:0;width:100%}
 .mx .fl-pc .ft-scale i.on{background:var(--orange)}
 .mx .fl-se .ft-scale i.on{background:var(--navy)}
 .mx .ft3{border-top:1px solid #E5E5EA;margin-top:4px;padding-top:6px}
-
 
 /* 脚質の色（2026-09-17）：逃げ＝赤・先行＝黄・差し＝水色・追込＝青。--st-ink は色の上に乗せる文字の色 */
 .mx .st-nige{--st:#D8342C;--st-bg:#FCEDEC;--st-ink:#fff}
@@ -491,7 +270,6 @@ body.yf-open{position:fixed;inset:0;width:100%}
 .mx .ft3-n.r2,.mx .ft3-up.r2{color:var(--silver)}
 .mx .ft3-n.r3,.mx .ft3-up.r3{color:var(--bronze)}
 
-
 /* 着差の札の色（本番 race.js runBandClass / style.css .vrun.pb-win・pb-close と同じ色）と、馬名を折り返さない形（2026-09-17） */
 .mx .h-card.mg-win{background:#FFF3D0;box-shadow:inset 4px 0 0 #C8A200}
 .mx .h-card.mg-close{background:#E6EFF8;box-shadow:inset 4px 0 0 #3D7EBB}
@@ -499,45 +277,36 @@ body.yf-open{position:fixed;inset:0;width:100%}
 .mx .mg-win .mg-tag{background:#C8A200}
 .mx .mg-close .mg-tag{background:#3D7EBB}
 .mx .mg-win .ft3-win,.mx .mg-close .ft3-win{border-top-color:rgba(0,0,0,.08)}
-html.rc-line .mx .h-card.mg-close{background:#E4E9EF;box-shadow:inset 4px 0 0 #5E7185}
+
 html.rc-frame .mx .h-card.mg-close{background:#E4E9EF;box-shadow:inset 0 0 0 1.5px #5E7185}
-html.rc-line .mx .mg-close .mg-tag,html.rc-frame .mx .mg-close .mg-tag{background:#5E7185}
+html.rc-frame .mx .mg-close .mg-tag{background:#5E7185}
 .mx .ft3-wc{display:flex;flex-direction:column;min-width:0}
 .mx .ft3-wc i{font-style:normal;font-size:9px;color:#8E8E93}
 .mx .ft3-wc b{white-space:nowrap;overflow:hidden;text-overflow:clip;line-height:1.3;letter-spacing:-.01em}
 
-
 /* ふだんは白地に黒（2026-09-17 ユーザー指示）：着差の数字・間隔の札。色が付くのは「好走」「勝ち」「僅差」などの時だけ */
 .hd-r3 .m-win .m-nv{color:var(--text)}
-.mx .h-card.accent:not(.hit){background:#fff;color:var(--text)}
-.mx .h-card.accent:not(.hit) .h-r,.mx .h-card.accent:not(.hit) .h-line{color:#8E8E93}
-
 
 /* 斤量・馬場・騎手・馬体重の横4枚（2026-09-17） */
 .mx .m-row4{grid-template-columns:repeat(4,1fr);gap:6px}
 .mx .m-row4 .h-card{padding:8px 8px 9px}
-.mx .m-row4 .h-big.s{font-size:17px}
-.mx .m-row4 .h-big.baba{display:flex;align-items:baseline;gap:2px}
-.mx .m-row4 .h-big.baba small{font-size:10px;color:#6D6D72;font-family:-apple-system,"Hiragino Sans",sans-serif}
-.mx .m-row4 .h-big.fit{display:block;white-space:nowrap;overflow:hidden;line-height:1.5;font-family:-apple-system,"Hiragino Sans",sans-serif;letter-spacing:-.03em}
-.mx .m-row4 .cp-pill,.mx .m-row4 .m-hit{font-size:9px;padding:1px 5px}
 
+.mx .m-row4 .cp-pill,.mx .m-row4 .m-hit{font-size:9px;padding:1px 5px}
 
 /* 数字の書体をそろえる（2026-09-17）。本番の数字の書体（128-spec：Futura、無い端末は Jost）。日本語の字は本文の書体に落ちる */
 .hd-r3.mx{--numfont:Futura,Jost,-apple-system,"Hiragino Sans",sans-serif}
-.hd-r3.mx .h-big,.hd-r3.mx .m-nv,.hd-r3.mx .m-cells b,.hd-r3.mx .ft3-r>b,.hd-r3.mx .ft3-n,
+.hd-r3.mx .m-nv,.hd-r3.mx .m-cells b,.hd-r3.mx .ft3-r>b,.hd-r3.mx .ft3-n,
 .hd-r3.mx .ft3-bst b,.hd-r3.mx .m-date b{font-family:var(--numfont);font-weight:600}
-.hd-r3.mx .m-row4 .h-big.fit{font-family:-apple-system,"Hiragino Sans",sans-serif;font-weight:700}
+
 /* 距離は芝＝緑・ダート＝橙（本番 race.js condHtml の .cd.tf / .cd.dt と同じ色。白地で読める濃さ） */
 .hd-r3 .m-cells b.sf-tf{color:#1F6B3A}
 .hd-r3 .m-cells b.sf-dt{color:#A05A12}
-
 
 /* 勝ち馬の札を横いっぱいに（2026-09-17）：左に着差、右に勝ち馬 */
 .hd-r3 .m-win.wide{display:grid;grid-template-columns:auto 1fr;column-gap:16px;align-items:center}
 .hd-r3 .m-win.wide .h-top{grid-column:1 / -1}
 .hd-r3 .m-win.wide .ft3-win{border-top:0;border-left:1px solid rgba(0,0,0,.08);padding:0 0 0 14px;margin:0}
-/* 下の条件の段 3案（2026-09-17） */
+/* 下の条件の段（B1 に決定。2026-09-17） */
 .mx .bt-lab{font-size:10px;font-weight:700;color:#8E8E93}
 .mx .bt-num{font-family:Futura,Jost,-apple-system,"Hiragino Sans",sans-serif;font-weight:600}
 .mx .bt-jk{font-weight:700;white-space:nowrap;letter-spacing:-.02em}
@@ -552,28 +321,6 @@ html.rc-line .mx .mg-close .mg-tag,html.rc-frame .mx .mg-close .mg-tag{backgroun
 .mx .bt1-s .cp-pill{margin:0}
 .mx .bt1-r.hit{background:#E7F3EA;margin:0 -12px;padding:2px 12px;box-shadow:inset 3px 0 0 var(--hit)}
 .mx .bt1-r.hit .bt-lab{color:var(--hit)}
-/* B2 */
-.mx .bt2{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
-.mx .bt2-t{grid-column:span 2;padding:6px 10px;min-width:0}
-.mx .bt2-t.jk{grid-column:span 4}
-.mx .bt2-t:nth-child(5){grid-column:span 2}
-.mx .bt2-v{font-size:17px;margin-top:0;white-space:nowrap;overflow:hidden;line-height:1.25}
-.mx .bt2-t.jk .bt-jk{font-size:15px !important}
-.mx .bt2-s{display:flex;flex-wrap:wrap;gap:3px;margin-top:2px}
-.mx .bt2-s .cp-pill{margin:0;font-size:9px;padding:1px 6px}
-.mx .bt2-t.hit{background:#E7F3EA;box-shadow:inset 0 0 0 2px var(--hit)}
-.mx .bt2-t.hit .bt-lab{color:var(--hit)}
-/* B3 */
-.mx .bt3{display:grid;grid-template-columns:.85fr 1.15fr .8fr 1.3fr 1.1fr;padding:0;overflow:hidden}
-.mx .bt3-c{padding:8px 6px 9px;border-left:1px solid #EFEFF4;min-width:0;text-align:center;display:flex;flex-direction:column;align-items:center;gap:2px}
-.mx .bt3-c:first-child{border-left:0}
-.mx .bt3-v{font-size:15px;white-space:nowrap;overflow:hidden;max-width:100%;letter-spacing:-.03em}
-.mx .bt3-s{min-height:14px;display:flex;flex-direction:column;align-items:center;gap:2px}
-.mx .bt3-s .cp-pill{margin:0;font-size:8.5px;padding:0 5px}
-.mx .bt3-c.hit{background:#E7F3EA;box-shadow:inset 0 -3px 0 var(--hit)}
-.mx .bt3-c.hit .bt-lab{color:var(--hit)}
-
-
 /* 1ページ目（基本）の札（2026-09-17）。レースの型の濃さは本番 style.css の --d-p2/p1/e/m1/m2/z と同じ（平常との差。境目はデータ側） */
 .b-page .h-card{padding:9px 12px}
 .b-page .h-t{color:var(--text) !important}
@@ -608,65 +355,15 @@ html.rc-line .mx .mg-close .mg-tag,html.rc-frame .mx .mg-close .mg-tag{backgroun
 .b-cr.hit{background:#E7F3EA;margin:0 -12px;padding:3px 12px;box-shadow:inset 3px 0 0 var(--hit)}
 .b-cr.hit .b-bar i{background:var(--hit)}
 .b-none{font-size:12px;color:#8E8E93;padding:6px 0}
-.b-rtg{display:grid;grid-template-columns:44px 1fr 1fr;gap:4px;margin-top:4px}
-.b-rth{font-size:10px;font-weight:700;color:#6D6D72;text-align:center}
-.b-rtl{font-size:11px;font-weight:700;display:flex;align-items:center}
-.b-rtc{border-radius:8px;padding:5px 7px;display:flex;flex-direction:column;gap:1px;position:relative;min-width:0}
-.b-rtt{font-size:9px;line-height:1.25;letter-spacing:-.02em}
-.b-rtc .rec{font-size:14px}
-.b-rtc.sh-p2{background:#003E70;color:#fff}.b-rtc.sh-p1{background:#6E8CA6;color:#fff}
-.b-rtc.sh-e{background:#DCE4EC;color:#35617F}  /* 本番 --d-e（平常±5pt） */
-.b-rtc.sh-m1{background:#EFF1F3;color:#7A828A}.b-rtc.sh-m2{background:#F7F7F6;color:#A2A8AD}
-.b-rtc.sh-z{background:#FAFAF9;color:#C3C6C9}
-.b-rtc.sh-p2 .rec b,.b-rtc.sh-p1 .rec b{color:#fff}
-.b-rtc.sh-p2 .rec b.zr,.b-rtc.sh-p1 .rec b.zr{color:rgba(255,255,255,.45)}
-.b-rtc.cue{box-shadow:inset 0 0 0 2px var(--orange)}
-.b-rtr{display:flex;align-items:center;justify-content:space-between;gap:4px}
-.b-cue{font-size:9px;background:var(--orange);color:#fff;border-radius:999px;padding:0 6px;white-space:nowrap;flex:none}
 
-
-/* レースの型べつ成績 見直し3案（2026-09-17） */
-/* T1 */
-.t1-g{display:grid;grid-template-columns:40px 1fr 1fr;gap:3px 5px;margin-top:2px}
-.t1-h{font-size:10px;font-weight:700;color:#6D6D72;text-align:center}
-.t1-l{font-size:11px;font-weight:700;display:flex;align-items:center}
-.t1-c{border:1px solid #E5E5EA;border-radius:9px;padding:3px 7px 3px;background:#fff;min-width:0;position:relative}
-.t1-c.cue{box-shadow:inset 3px 0 0 var(--orange)}
-.t1-c.none{background:#FAFAFA;color:#C7C7CC}
-.t1-t{font-size:9px;color:#8E8E93;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.t1-m{display:flex;align-items:baseline;gap:5px}
-.t1-m b{font-size:18px;line-height:1.05}
-.t1-m b small{font-size:10px}
-.t1-d{font-size:10px;font-weight:700}
-.t1-c.up .t1-m b,.t1-c.up .t1-d{color:var(--hit)}
-.t1-c.dn .t1-m b,.t1-c.dn .t1-d{color:#C8352C}
-.t1-c.eq .t1-d{color:#8E8E93}
-.t1-z{font-size:10px;padding:1px 0}
-.t1-b{display:flex;align-items:center;justify-content:space-between;gap:4px}
-.t1-b .rec{font-size:11px !important}
-.t1-b em{font-style:normal;font-size:9px;font-weight:700;color:var(--orange);white-space:nowrap}
-/* T2 */
-.t2-g{display:grid;grid-template-columns:40px 1fr 1fr;gap:4px;margin-top:4px}
-.t2-h{font-size:10px;font-weight:700;color:#6D6D72;text-align:center}
-.t2-l{font-size:11px;font-weight:700;display:flex;align-items:center}
-.t2-c{border-radius:9px;padding:6px 8px;min-height:44px;display:flex;flex-direction:column;justify-content:center;position:relative;color:var(--text)}
-.t2-c.none{background:repeating-linear-gradient(45deg,#F7F7F8,#F7F7F8 5px,#EFEFF2 5px,#EFEFF2 10px);color:#AEAEB2}
-.t2-c.dark{color:#fff}
-.t2-c b{font-size:20px;line-height:1.1}
-.t2-c b small{font-size:10px}
-.t2-s{font-size:9.5px;opacity:.85}
-.t2-c.cue{outline:2px solid var(--orange);outline-offset:-2px}
-.t2-c em{position:absolute;top:5px;right:6px;font-style:normal;font-size:9px;font-weight:700;background:var(--orange);color:#fff;border-radius:999px;padding:0 6px}
+  /* レースの型べつ成績 見直し3案（2026-09-17） */
 /* T3 */
 .t3-r{display:grid;grid-template-columns:62px auto 1fr 36px 40px;align-items:center;gap:6px;padding:4px 0;border-top:1px solid #F2F2F7}
 .t3-r:nth-of-type(2){border-top:0}
 .t3-r.cue{background:#FFF6EC;margin:0 -12px;padding:4px 12px}
 .t3-cue{font-size:10px;color:var(--orange);white-space:nowrap}
 .t3-cue b{font-size:11px}
-.t3-tags{display:flex;gap:3px}
-.t3-tags i{font-style:normal;font-size:10px;font-weight:700;border-radius:5px;padding:1px 6px;white-space:nowrap}
-.t3-tags i.p{background:#FFF1DE;color:#B45F06}
-.t3-tags i.s{background:#E8EEF5;color:var(--navy)}
+
 .t3-bar{height:6px;border-radius:3px;background:#EFEFF4;overflow:hidden}
 .t3-bar i{display:block;height:100%;background:#8E8E93;border-radius:3px}
 .t3-r .t3-p{font-size:13px;text-align:right}
@@ -675,8 +372,6 @@ html.rc-line .mx .mg-close .mg-tag,html.rc-frame .mx .mg-close .mg-tag{backgroun
 .t3-r:has(.t3-d.up) .t3-bar i{background:var(--hit)}
 .t3-r:has(.t3-d.dn) .t3-bar i{background:#E0877F}
 .t3-r.none{color:#AEAEB2}
-.t3-r.none .t3-tags i{opacity:.5}
-
 
 /* T3 の列をそろえる（2026-09-17） */
 .t3 .t3-r{grid-template-columns:70px 44px 58px 1fr 38px 42px;gap:6px}
@@ -693,7 +388,6 @@ html.rc-line .mx .mg-close .mg-tag,html.rc-frame .mx .mg-close .mg-tag{backgroun
 .t3 .t3-no{color:#D1D1D6}
 .t3 .t3-p,.t3 .t3-d{font-variant-numeric:tabular-nums}
 
-
 /* コース適性の帯（新聞 126-spec §3.4 と同じ見た目・紺だけ）。今回と同じ条件の4行で、条件A（3着内1回以上・2走以上）を満たす行に付ける */
 .b-cr.band{background:#DDE8F2;margin:0 -12px;padding:3px 12px 3px 16px;box-shadow:inset 5px 0 0 #003E70;border-top:1px solid #003E70;border-bottom:1px solid #003E70}
 .b-cr.band + .b-cr{border-top-color:transparent}
@@ -709,53 +403,25 @@ html.rc-line .mx .mg-close .mg-tag,html.rc-frame .mx .mg-close .mg-tag{backgroun
 
 /* 2ページ目：直近5走のまとめ（2026-09-17）。左の色の枠線はなし。勝ち＝金の地・僅差＝青の地（本番 .vrun.pb-win / pb-close と同じ色） */
 .sm-page{display:flex;flex-direction:column;gap:6px;padding-top:2px}
-.sm-card{display:grid;grid-template-columns:40px 1fr;gap:7px;background:#fff;border-radius:12px;padding:8px 10px;
-  box-shadow:0 1px 2px rgba(0,0,0,.05);cursor:pointer;min-width:0}
-.sm-card.bd-win{background:#FFF3D0}
-.sm-card.bd-close{background:#E6EFF8}
-.sm-l{display:flex;flex-direction:column;align-items:center;justify-content:center;border-right:1px solid rgba(0,0,0,.06);padding-right:5px}
-.sm-l i{font-style:normal;font-size:9px;color:#8E8E93;font-weight:700;white-space:nowrap}
-.sm-l b{font-size:30px;line-height:1}
-.sm-l small{font-size:9px;color:#8E8E93}
+
 .sm-page .md1{color:var(--gold)}.sm-page .md2{color:var(--silver)}.sm-page .md3{color:var(--bronze)}
-.sm-m{min-width:0;display:flex;flex-direction:column;gap:1px}
-.sm-m>div{display:flex;align-items:center;gap:6px;min-width:0;white-space:nowrap;line-height:1.6}
-.sm-m small{font-size:9px;color:#8E8E93;margin-left:1px;font-family:-apple-system,"Hiragino Sans",sans-serif;font-weight:400}
-.sm-r1{font-size:12px}
-.sm-r1 .cb{font-size:9px;padding:0 4px;border-radius:3px;flex:none}
-.sm-dt{color:#6D6D72}
-.sm-rn{font-weight:700;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1;letter-spacing:-.02em}
-.sm-r1{gap:5px !important}
-.sm-r1 b{flex:none;font-size:13.5px}
-.sm-r1 b.sf-tf{color:#1F6B3A}.sm-r1 b.sf-dt{color:#A05A12}
-.sm-r1 b small{color:inherit;font-weight:700}
-.sm-r2{font-size:12px}
-.sm-mg{font-family:Futura,Jost,-apple-system,sans-serif;font-weight:600;font-size:15px;flex:none}
-.sm-wn{overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1 1 auto}
-.sm-wn i{font-style:normal;font-size:9px;color:#8E8E93;margin-right:3px}
+
 .sm-bp{display:inline-flex;align-items:center;gap:3px;flex:none}
 .sm-bp .cb{font-size:8.5px;padding:0 3px;border-radius:3px}
 .sm-bp b{font-size:11px}
-.sm-r2 .lv{flex:none;font-size:10px}
-.sm-r3{font-size:12px}
-.sm-tm{font-size:15px;flex:none}
+
 .sm-cn{display:inline-flex;gap:1px;flex:none}
 .sm-cn i{font-style:normal;font-size:10px;min-width:13px;text-align:center;border:1px solid #D1D1D6;border-radius:3px;padding:0 1px;line-height:14px}
-.sm-up{font-size:15px;flex:none}
+
 .sm-st{font-size:9px !important;padding:0 5px !important;flex:none}
-.sm-sc{font-size:10px;color:#6D6D72;overflow:hidden;text-overflow:ellipsis;min-width:0}
-.sm-r4{font-size:12px;color:#3C3C43}
-.sm-r4 .sm-jk{font-weight:700;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1 1 auto}
-.sm-r4 .bt-num{flex:none;font-size:13.5px}
-.sm-r5{gap:4px !important;flex-wrap:wrap;white-space:normal !important;padding-top:2px}
-.sm-r5 em{font-style:normal;font-size:10px;white-space:nowrap;background:rgba(0,0,0,.06);border-radius:4px;padding:0 5px;overflow:hidden;text-overflow:ellipsis}
+
 .sm-hit{flex:none;font-size:9px;color:#fff;background:var(--hit);border-radius:999px;padding:0 6px;margin-left:auto}
 .sm-rest{font-size:11px;color:#6D6D72;text-align:center;background:rgba(0,0,0,.05);border-radius:6px;padding:2px 0}
-/* 2ページ目のデザイン案 S1〜S3（2026-09-17）。共通：地の色は 1着＝金・僅差＝青 */
+/* 2ページ目の札（S1 に決定。2026-09-17）。地の色は 1着＝金・僅差＝銀（下の bc-b4） */
 .sm-page .s1-sp{flex:1 1 auto;min-width:0}
-.s1-card,.s2-card,.s3-card{background:#fff;border-radius:14px;box-shadow:0 1px 3px rgba(0,0,0,.06);cursor:pointer;min-width:0}
-.s1-card.bd-win,.s2-card.bd-win,.s3-card.bd-win{background:#FFF6DC}
-.s1-card.bd-close,.s2-card.bd-close,.s3-card.bd-close{background:#EBF2FA}
+.s1-card{background:#fff;border-radius:14px;box-shadow:0 1px 3px rgba(0,0,0,.06);cursor:pointer;min-width:0}
+.s1-card.bd-win{background:#FFF6DC}
+.s1-card.bd-close{background:#EBF2FA}
 .sm-page [class^="s1-"],.sm-page [class^="s2-"],.sm-page [class^="s3-"]{white-space:nowrap}
 .sm-page .s1-foot{display:flex;flex-wrap:wrap;gap:4px;align-items:center;white-space:normal;padding-top:3px}
 .s1-foot em{font-style:normal;font-size:10px;background:rgba(0,0,0,.06);border-radius:4px;padding:0 5px;white-space:nowrap}
@@ -786,75 +452,7 @@ html.rc-line .mx .mg-close .mg-tag,html.rc-frame .mx .mg-close .mg-tag{backgroun
 .s1-sub{font-size:10.5px;color:#8E8E93;gap:7px !important}
 .s1-sub .s1-jk{color:#3C3C43;font-weight:600}
 .s1-sc{margin-left:auto;overflow:hidden;text-overflow:ellipsis;min-width:0}
-/* S2 列そろえ */
-.s2-hd,.s2-grid{display:grid;grid-template-columns:34px 30px 42px 58px 40px minmax(0,1fr) 22px;align-items:center;gap:3px}
-.s2-hd{padding:0 12px;position:sticky;top:0}
-.s2-hd i{font-style:normal;font-size:9px;color:#8E8E93;font-weight:700;text-align:center}
-.s2-card{padding:5px 12px 6px;display:flex;flex-direction:column;gap:2px}
-.s2-card>div:not(.s2-grid){display:flex;align-items:center;gap:6px;min-width:0}
-.s2-top{font-size:11.5px}
-.s2-top .cb{font-size:9px;padding:0 4px;border-radius:3px;flex:none}
-.s2-top .sm-dist{flex:none;font-size:13px;margin-left:auto}.s2-top .sf-tf{color:#1F6B3A}.s2-top .sf-dt{color:#A05A12}
-.s2-top .sm-dist small{color:inherit;font-size:9px;font-weight:700}
-.s2-grid{border-top:1px solid rgba(0,0,0,.06);border-bottom:1px solid rgba(0,0,0,.06);padding:2px 0}
-.s2-grid>*{text-align:center;font-size:15px}
-.s2-lab i{font-style:normal;font-size:9px;color:#8E8E93;font-weight:700}
-.s2-grid .s2-fin{font-size:22px;line-height:1}
-.s2-grid .sm-cn{justify-content:center}
-.s2-win{font-size:12px}
-.s2-win i{font-style:normal;font-size:9.5px;color:#8E8E93}
-.s2-wn{font-weight:600;overflow:hidden;text-overflow:ellipsis;min-width:0}
-.s2-win .lv{margin-left:auto;flex:none}
-.s2-sub{font-size:10.5px;color:#8E8E93}
-.s2-sub span{flex:none}.s2-sub .s2-sc{flex:0 1 auto;overflow:hidden;text-overflow:ellipsis}
-/* S3 ウィジェット */
-.s3-card{overflow:hidden}
-.s3-head{display:flex;align-items:center;gap:5px;min-width:0;font-size:11.5px;padding:2px 12px;background:rgba(0,0,0,.035);border-bottom:1px solid rgba(0,0,0,.05)}
-.s3-head .cb{font-size:9px;padding:0 4px;border-radius:3px;flex:none}
-.s3-head .sm-dist{flex:none;font-size:13px;margin-left:auto}.s3-head .sf-tf{color:#1F6B3A}.s3-head .sf-dt{color:#A05A12}
-.s3-head .sm-dist small{color:inherit;font-size:9px;font-weight:700}
-.s3-body{display:grid;grid-template-columns:44px 1fr;gap:8px;padding:3px 12px 4px 8px}
-.s3-l{display:flex;flex-direction:column;align-items:center;justify-content:center}
-.s3-l i{font-style:normal;font-size:9px;color:#8E8E93;font-weight:700}
-.s3-l b{font-size:28px;line-height:1}
-.s3-l b small{font-size:10px;color:#8E8E93;font-family:-apple-system,"Hiragino Sans",sans-serif}
-.s3-m{min-width:0;display:flex;flex-direction:column;gap:2px}
-.s3-m>div:not(.s3-grid){display:flex;align-items:center;gap:6px;min-width:0}
-.s3-win{font-size:12px}
-.s3-mg{font-size:15px;flex:none}
-.s3-win i{font-style:normal;font-size:9.5px;color:#8E8E93}
-.s3-win span:not(.sm-bp){font-weight:600;overflow:hidden;text-overflow:ellipsis;min-width:0}
-.s3-win .lv{margin-left:auto;flex:none}
-.s3-grid{display:grid;grid-template-columns:1.2fr 1fr 1.35fr .75fr .8fr .9fr;background:rgba(0,0,0,.03);border-radius:8px;padding:2px 0}
-.s3-c{display:flex;flex-direction:column;align-items:center;min-width:0;border-left:1px solid rgba(0,0,0,.06)}
-.s3-c:first-child{border-left:0}
-.s3-c i{font-style:normal;font-size:8.5px;color:#8E8E93;line-height:1.3}
-.s3-c b{font-size:13.5px;line-height:1.25}
-.s3-c b small{font-size:8.5px;color:#8E8E93;margin-left:1px}
-.s3-cn{font-size:11px;letter-spacing:-.03em}
-.s3-sub{font-size:10.5px;color:#8E8E93}
-.s3-sub span{flex:none}
-/* 展開のページ（2026-09-17）。本番の出馬表「展開」をそのまま入れる。その馬の馬番は黒い輪で目立たせる */
-.tk-page{padding:4px 0 24px}
-.tk-page .subh:first-child{margin-top:0}
-.tk-page.hl-h0 .yf-me{outline:3px solid #1C1C1E;outline-offset:2px;border-radius:4px;position:relative;z-index:1}
-.tk-page .pz{transition:opacity .2s,transform .2s}
-/* h1 ほかの馬を薄くして、その馬だけ大きく */
-.tk-page.hl-h1 .lmap .pz{opacity:.25}
-.tk-page.hl-h1 .lmap .pz.yf-me{opacity:1;transform:scale(1.35);position:relative;z-index:2;filter:drop-shadow(0 2px 3px rgba(0,0,0,.35))}
-/* h2 地図の上に一文で書き、馬番を少し大きく */
-.tk-page .tk-me{display:flex;align-items:center;gap:6px;margin:0 0 6px;padding:6px 10px;background:#fff;border:1px solid var(--rule);border-radius:10px;font-size:12px}
-.tk-page .tk-me b{font-size:15px;color:var(--navy)}
-.tk-page .tk-me small{margin-left:auto;font-size:11px;color:var(--sub)}
-.tk-page .tk-me .lgv{display:inline-flex;margin:0;padding:0;background:none}
-.tk-page.hl-h2 .lmap .pz.yf-me{position:relative;transform:scale(1.3);z-index:2;filter:drop-shadow(0 2px 3px rgba(0,0,0,.35))}
-/* h3 その馬の脚質の区画ごと明るくし、ほかの区画を少し沈める */
-.tk-page.hl-h3 .lmap .lz{transition:opacity .2s}
-.tk-page.hl-h3 .lmap .lz:not(.yf-mez){opacity:.45}
-.tk-page.hl-h3 .lmap .lz.yf-mez{background:rgba(255,255,255,.42);border-radius:10px;box-shadow:0 0 0 2px rgba(255,255,255,.9)}
-.tk-page.hl-h3 .lmap .lz.yf-mez .pz:not(.yf-me){opacity:.4}
-.tk-page.hl-h3 .lmap .pz.yf-me{transform:scale(1.25);position:relative;z-index:2}
-/* 展開のページのデザイン案 T1〜T3（2026-09-17） */
+/* 展開のページ（T2 を土台にした形に決定。2026-09-17） */
 .tk2{padding:4px 10px 24px;font-size:12px;color:#1C1C1E}
 .tk2 h4{display:flex;align-items:baseline;gap:6px;margin:12px 4px 5px;font-size:12px;font-weight:700;color:#3C3C43}
 .tk2 h4 small{font-size:10px;font-weight:400;color:#8E8E93}
@@ -867,50 +465,14 @@ html.rc-line .mx .mg-close .mg-tag,html.rc-frame .mx .mg-close .mg-tag{backgroun
 .tk2 .tk-pbar i{display:flex;flex-direction:column;justify-content:center;padding:0 8px;font-style:normal;color:#fff;min-width:0;white-space:nowrap;overflow:hidden}
 .tk2 .tk-pbar i b{font-size:12px;line-height:1.1}.tk2 .tk-pbar i span{font-size:10px;line-height:1.1;opacity:.9}
 .tk2 .tk-pbar i.p0{background:#2E6DA4}.tk2 .tk-pbar i.p1{background:#7FA7CC}.tk2 .tk-pbar i.px{background:#C7C7CC;color:#3C3C43;align-items:center;min-width:38px;padding:0 3px}  /* 5%でも「他5%」が切れない幅 */
-.tk2 .tk-prow{display:flex;align-items:baseline;gap:6px;padding:6px 2px 0;font-size:11px;color:#6D6D72}
-.tk2 .tk-prow b{font-size:13px;color:#1C1C1E}.tk2 .tk-prow em{margin-left:auto;font-style:normal;font-size:16px;font-weight:700;color:#1C1C1E}
-.tk2 .tk-prow em small{font-size:10px}
+
 .tk2 .tk-gates{display:grid;grid-template-columns:repeat(8,1fr);gap:4px}
 .tk2 .tk-gate{display:flex;flex-direction:column;align-items:center;gap:4px;padding:5px 0;border-radius:8px;background:#F2F2F7}
-.tk2 .tk-see{display:inline-flex;flex-direction:column;width:84px;flex:none;gap:1px}
-.tk2 .tk-see .tk-bar{position:relative;display:block;height:6px;border-radius:3px;background:#1F6B3A;overflow:hidden}
-.tk2 .tk-see .tk-bar i{position:absolute;left:0;top:0;bottom:0;background:#B05656}
-.tk2 .tk-see.tkfb .tk-bar{background:#AEB4BA}.tk2 .tk-see.tkfb .tk-bar i{background:#2E6DA4}
-.tk2 .tk-see .tk-bar u{position:absolute;top:0;bottom:0;width:2px;background:#fff}
-.tk2 .tk-see .tk-ends{display:flex;justify-content:space-between;font-size:9px;line-height:11px;color:#8E8E93}.tk2 .tk-see .tk-ends em{font-style:normal}
-.tk2 .t1 b.t1,.tk2 b.t1,.tk2 .t1-tilt.t1{color:#B05656}.tk2 b.u1{color:#1F6B3A}
+
+.tk2 .t1 b.t1,.tk2 b.t1{color:#B05656}.tk2 b.u1{color:#1F6B3A}
 .tk2 .fast{color:#1F6B3A}.tk2 .slow{color:#A8632B}
-/* T1 */
-.t1 .tk-sec{background:#fff;border-radius:14px;padding:10px 12px;margin-top:8px;box-shadow:0 1px 2px rgba(0,0,0,.05)}
-.t1 .tk-sec h4{margin:0 0 8px}
-.t1 .t1-tilt{margin-left:auto;font-style:normal;font-size:11px;font-weight:700}
-.t1 .t1-legs{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
-.t1 .t1-col{display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 2px;border-radius:10px;background:#F7F7F9;transition:opacity .2s}
-.t1 .t1-legs:has(.me) .t1-col:not(.me){opacity:.4}
-.t1 .t1-col.me{background:#EAF4EC;box-shadow:inset 0 0 0 1.5px #1F6B3A}
-.t1 .t1-st{font-size:13px}.t1 .t1-st small{font-size:9px;color:#8E8E93;margin-left:2px}
-.t1 .t1-rate{font-size:13px;font-weight:700}
-.t1 .t1-chips{display:flex;flex-wrap:wrap;justify-content:center;gap:3px 2px;margin-top:2px}
-.t1 .t1-me{margin:8px 0 0;font-size:11px;color:#3C3C43}.t1 .t1-me b{margin:0 2px}
-.t1 .t1-tiles{display:grid;grid-template-columns:1fr 1fr;gap:6px}
-.t1 .t1-tile{display:flex;flex-direction:column;gap:1px;padding:7px 9px;border-radius:10px;background:#F2F2F7}
-.t1 .t1-tile.wide{grid-column:1/-1;flex-direction:row;align-items:center;gap:8px;flex-wrap:wrap}
-.t1 .t1-tile i{font-style:normal;font-size:10px;color:#8E8E93}
-.t1 .t1-tile b{font-size:18px}.t1 .t1-tile b small{font-size:10px}
-.t1 .t1-tile small{font-size:10px;color:#6D6D72}
-.t1 .t1-tile.fast b{color:#1F6B3A}.t1 .t1-tile.slow b{color:#A8632B}
-.t1 .t1-lv,.t2 .t2-chip.lv,.t3 .t3-lv{font-size:13px;font-weight:700;color:#2E6DA4;background:#DCE8F3;border-radius:6px;padding:2px 8px}
-.t1 .t1-wrow{display:flex;align-items:center;gap:8px;padding:5px 0;border-top:1px solid #EFEFF4}
-.t1 .t1-wrow:first-of-type{border-top:0}
-.t1 .t1-wrow i{font-style:normal;width:48px;font-size:11px;color:#6D6D72;flex:none}
-.t1 .t1-wrow b{font-size:12px;white-space:nowrap}.t1 .t1-wrow small{margin-left:auto;font-size:9.5px;color:#8E8E93;white-space:nowrap}
-.t1 .t1-clock{width:84px;font-size:15px;font-weight:700;flex:none}.t1 .t1-clock small{font-size:9px}
 /* T2 */
-.t2 .t2-chiprow{display:flex;flex-wrap:wrap;gap:5px;margin:2px 0 8px}
-.t2 .t2-chip{font-size:11px;background:#fff;border:1px solid #E5E5EA;border-radius:999px;padding:2px 9px;white-space:nowrap}
-.t2 .t2-chip.lv{border:0;border-radius:999px}
-.t2 .t2-chip.aim{color:#6D6D72}
-.t2 .t2-chip.slow b{color:#A8632B}.t2 .t2-chip.fast b{color:#1F6B3A}
+
 .t2 .t2-field{border-radius:16px;overflow:hidden;background:linear-gradient(#7FBF7F,#6DB06D);box-shadow:0 1px 3px rgba(0,0,0,.12)}
 .t2 .t2-sky{padding:8px 8px 6px;background:rgba(255,255,255,.55)}
 .t2 .t2-zones{display:grid;grid-template-columns:repeat(4,1fr);border-top:3px dashed rgba(255,255,255,.7)}
@@ -930,36 +492,12 @@ html.rc-line .mx .mg-close .mg-tag,html.rc-frame .mx .mg-close .mg-tag{backgroun
 .t2 .t2-gatehd{display:flex;justify-content:space-between;padding:6px 10px 3px;font-size:11px;color:#fff;font-weight:700;background:rgba(0,0,0,.18)}
 .t2 .t2-gatebox{padding:4px 6px 8px;background:rgba(0,0,0,.18)}
 .t2 .t2-gatebox .tk-gate{background:rgba(255,255,255,.88)}
-.t2 .t2-pt{display:flex;flex-direction:column;gap:2px;margin:6px 4px 0;font-size:10.5px;color:#6D6D72}
-.t2 .t2-pt b{color:#1C1C1E;margin-right:4px}
-.t2 .t2-wk{margin-top:10px;background:#fff;border-radius:14px;padding:8px 10px}
-.t2 .t2-wk h4{margin:0 0 6px}
-.t2 .t2-wkrow{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
-.t2 .t2-wkrow>div{display:flex;flex-direction:column;align-items:center;gap:3px;text-align:center}
-.t2 .t2-wkrow i{font-style:normal;font-size:10px;color:#8E8E93}
-.t2 .t2-wkrow b{font-size:10.5px}
-.t2 .t2-wkrow .tk-see{width:80px}
-.t2 .t2-clock{font-size:17px;font-weight:700;line-height:20px}.t2 .t2-clock small{font-size:9px}
+
 /* T3 */
 .t3 h4{margin:12px 12px 4px;font-size:11px;font-weight:600;color:#6D6D72}
 .t3 h4:first-child{margin-top:4px}
-.t3 .t3-group{background:#fff;border-radius:12px;overflow:hidden}
-.t3 .t3-group>.tk-pbar{margin:10px 12px 4px}
-.t3 .t3-group>.tk-gates{padding:10px 10px 6px}
-.t3 .t3-row{display:flex;align-items:center;flex-wrap:wrap;gap:0 8px;padding:8px 12px;border-top:.5px solid #E5E5EA;min-height:22px}
-.t3 .t3-group>.t3-row:first-child{border-top:0}
-.t3 .t3-row .k{font-size:12.5px;color:#1C1C1E}
-.t3 .t3-row .v{margin-left:auto;font-size:13px;color:#3C3C43}
-.t3 .t3-row small{flex-basis:100%;text-align:right;font-size:10px;color:#8E8E93}
-.t3 .t3-row.on .k b{color:#2E6DA4}
-.t3 .t3-leg{display:grid;grid-template-columns:34px 22px 44px 1fr;align-items:center;gap:6px;padding:7px 12px;border-top:.5px solid #E5E5EA;transition:opacity .2s}
-.t3 .t3-leg:first-child{border-top:0}
-.t3 .t3-group:has(.me) .t3-leg:not(.me){opacity:.45}
-.t3 .t3-leg.me{background:#EAF4EC;box-shadow:inset 3px 0 0 #1F6B3A}
-.t3 .t3-st{font-size:13px;font-weight:700}
-.t3 .t3-rate{font-size:13px;font-weight:700;text-align:right}
-.t3 .t3-chips{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:3px 2px}
-/* T2 の上下の見せ方の案（2026-09-17） */
+
+/* ペースの帯（説明を帯の中に入れる。2026-09-17） */
 .tk2 .tk-pbar.big{height:46px}
 .tk2 .tk-pbar.big i{gap:1px}
 .tk2 .tk-pbar.big i b{display:flex;align-items:baseline;gap:5px;font-size:13px}
@@ -970,76 +508,14 @@ html.rc-line .mx .mg-close .mg-tag,html.rc-frame .mx .mg-close .mg-tag{backgroun
 .tk2 .tk-pbar.big i.narrow span{display:none}
 .tk2 .tk-pbar.big i.narrow b{flex-direction:column;align-items:flex-start;gap:0;font-size:11px;line-height:1.15}
 .tk2 .tk-pbar.big i.narrow b em{font-size:12px}
-.tk2 .tk-see.big{width:100%}
-.tk2 .tk-see.big .tk-bar{height:8px;border-radius:4px}
+
 .t2 h4{margin:0 2px 6px}
-/* v1 */
-.t2-v1 .v1-panel{background:#fff;border-radius:14px;padding:9px 10px;margin:2px 0 8px;box-shadow:0 1px 2px rgba(0,0,0,.05)}
-.t2-v1 .t2-field+.v1-panel{margin-top:10px}
-.t2-v1 .v1-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
-.t2-v1 .v1-grid.three{grid-template-columns:1fr 1fr 1fr}
-.t2-v1 .v1-cell{display:flex;flex-direction:column;gap:2px;padding:7px 9px;border-radius:10px;background:#F2F2F7;min-width:0}
-.t2-v1 .v1-cell i{font-style:normal;font-size:9.5px;color:#8E8E93;white-space:nowrap}
-.t2-v1 .v1-cell b{font-size:19px;line-height:1.15}.t2-v1 .v1-cell b small{font-size:10px;margin-left:1px}
-.t2-v1 .v1-cell small{font-size:9.5px;color:#6D6D72;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.t2-v1 .v1-cell.slow b{color:#A8632B}.t2-v1 .v1-cell.fast b{color:#1F6B3A}
-.t2-v1 .v1-lv{align-self:flex-start;font-size:14px !important;color:#2E6DA4;background:#DCE8F3;border-radius:6px;padding:1px 7px}
-.t2-v1 .v1-aim{font-size:13px !important;white-space:nowrap}
-.t2-v1 .v1-w{font-size:11.5px !important;line-height:1.3 !important}
-/* v2 */
-.t2-v2 .v2-head{padding:4px 4px 10px}
-.t2-v2 .v2-l1{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.t2-v2 .v2-lv{font-size:20px;color:#2E6DA4}
-.t2-v2 .v2-l1 span{font-size:13px;color:#3C3C43}.t2-v2 .v2-l1 span b{font-size:16px;margin:0 2px}
-.t2-v2 .v2-l1 span.slow b,.t2-v2 .v2-l1 span.slow em{color:#A8632B}.t2-v2 .v2-l1 span.fast b,.t2-v2 .v2-l1 span.fast em{color:#1F6B3A}
-.t2-v2 .v2-l1 em{font-style:normal;font-size:12px;font-weight:700;margin-left:2px}
-.t2-v2 .v2-l2{display:flex;flex-wrap:wrap;gap:0;margin-top:4px;font-size:10.5px;color:#8E8E93}
-.t2-v2 .v2-l2 span+span::before{content:"・";margin:0 3px}
-.t2-v2 .v2-list{margin-top:12px;padding:0 4px}
-.t2-v2 .v2-row{display:grid;grid-template-columns:52px 96px 1fr auto;align-items:center;gap:8px;padding:7px 0;border-top:1px solid #E5E5EA}
-.t2-v2 .v2-row i{font-style:normal;font-size:11.5px;color:#3C3C43}
-.t2-v2 .v2-row .tk-see{width:96px}
-.t2-v2 .v2-row b{font-size:12.5px;white-space:nowrap}
-.t2-v2 .v2-row small{font-size:9.5px;color:#8E8E93;white-space:nowrap}
-.t2-v2 .v2-clock{font-size:18px;font-weight:700;text-align:center}.t2-v2 .v2-clock small{font-size:10px}
-/* v3 */
-.t2-v3 .v3-bar-wrap{margin:2px 0 10px}
-.t2-v3 .t2-field+.v3-bar-wrap{margin-top:12px}
-.t2-v3 .v3-bar{display:flex;background:#fff;border-radius:14px;box-shadow:0 1px 2px rgba(0,0,0,.05);overflow:hidden}
-.t2-v3 .v3-seg{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:9px 4px;min-width:0;text-align:center}
-.t2-v3 .v3-seg+.v3-seg{border-left:1px solid #EFEFF4}
-.t2-v3 .v3-seg.wide{flex:1.5}
-.t2-v3 .v3-seg i{font-style:normal;font-size:9.5px;color:#8E8E93}
-.t2-v3 .v3-v b{font-size:19px;line-height:1.1}.t2-v3 .v3-v b small{font-size:10px;margin-left:1px}
-.t2-v3 .v3-v .tk-see{width:78px}
-.t2-v3 .v3-seg small{font-size:10px;color:#6D6D72;white-space:nowrap}
-.t2-v3 .v3-seg small b{font-size:11px}
-.t2-v3 .v3-lv{font-size:15px !important;color:#2E6DA4;background:#DCE8F3;border-radius:6px;padding:2px 8px}
-/* T2 を丸ごと違う見せ方にする案 W1〜W3（2026-09-17） */
-.t2-w1 .w1-panel,.t2-w3 .w3-card{background:#fff;border-radius:16px;padding:10px 10px 8px;margin:2px 0 10px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
-.t2-w1 .t2-field+.w1-panel,.t2-w3 .t2-field+.w3-card{margin-top:12px}
-.t2-w1 .w1-hd,.t2-w3 .w3-hd,.t2-w2 .w2-wh{display:flex;align-items:baseline;justify-content:space-between;margin:0 2px 4px}
-.t2-w1 .w1-hd b,.t2-w3 .w3-hd b,.t2-w2 .w2-wh b{font-size:13px}
-.t2-w1 .w1-hd span,.t2-w3 .w3-hd span,.t2-w2 .w2-wh span{font-size:10px;color:#8E8E93}
-.t2-w1 .w1-row{display:grid;grid-template-columns:repeat(3,1fr);gap:2px}
-.t2-w1 .w1-g{display:flex;flex-direction:column;align-items:center;min-width:0;text-align:center}
-.t2-w1 .w1-g svg{overflow:visible}
-.t2-w1 .w1-g .trk{fill:none;stroke:#E5E5EA;stroke-width:7;stroke-linecap:round}
-.t2-w1 .w1-g .val{fill:none;stroke:#2E6DA4;stroke-width:7;stroke-linecap:round}
-.t2-w1 .w1-g .ndl{stroke:#1C1C1E;stroke-width:2.5;stroke-linecap:round}
-.t2-w1 .w1-g .hub{fill:#1C1C1E}
-.t2-w1 .w1-g .end{font-size:8px;fill:#8E8E93}
-.t2-w1 .w1-g.slow .val{stroke:#C8782E}.t2-w1 .w1-g.fast .val{stroke:#1F6B3A}
-.t2-w1 .w1-g.gray .val{stroke:#8E8E93}.t2-w1 .w1-g.red .val{stroke:#B05656}
-.t2-w1 .w1-g b{margin-top:3px;font-size:13px;line-height:1.2;white-space:nowrap}
-.t2-w1 .w1-g b .bt-num{font-size:17px}
-.t2-w1 .w1-g small{font-size:9px;color:#8E8E93;white-space:nowrap}
-.t2-w1 .w1-foot{margin-top:6px;padding-top:6px;border-top:1px solid #EFEFF4;font-size:10.5px;color:#6D6D72;text-align:center}
-.t2-w1 .w1-foot b{color:#1C1C1E}
-.t2-w1 .w1-panel.dark{background:#1C2533;color:#fff}
-.t2-w1 .w1-panel.dark .w1-hd span,.t2-w1 .w1-panel.dark small{color:#AEB4BF}
-.t2-w1 .w1-panel.dark .trk{stroke:#3A4556}.t2-w1 .w1-panel.dark .ndl{stroke:#fff}.t2-w1 .w1-panel.dark .hub{fill:#fff}
-.t2-w1 .w1-panel.dark .blue .val{stroke:#6FA8DC}.t2-w1 .w1-panel.dark .red .val{stroke:#E08787}
+/* 今日の馬場の大きな札（W2 に決定。2026-09-17） */
+
+.t2-w2 .w2-wh{display:flex;align-items:baseline;justify-content:space-between;margin:0 2px 4px}
+.t2-w2 .w2-wh b{font-size:13px}
+.t2-w2 .w2-wh span{font-size:10px;color:#8E8E93}
+
 /* W2 */
 .t2-w2 .w2-hero{border-radius:18px;padding:12px 14px 12px;margin:2px 0 10px;color:#fff;background:linear-gradient(135deg,#3D8B5A,#2B6A43)}
 .t2-w2 .w2-hero.soft,.t2-w2 .w2-hero.wet{background:linear-gradient(135deg,#3F7FC0,#2A5A91)}
@@ -1057,59 +533,9 @@ html.rc-line .mx .mg-close .mg-tag,html.rc-frame .mx .mg-close .mg-tag{backgroun
 .t2-w2 .w2-facts span{font-size:10px;opacity:.85}
 .t2-w2 .w2-aim{margin-top:8px;display:inline-block;font-size:10.5px;font-weight:700;background:rgba(255,255,255,.2);border-radius:999px;padding:2px 10px}
 .t2-w2 .w2-week{margin-top:12px;background:#fff;border-radius:16px;padding:10px 12px}
-.t2-w2 .w2-cap{margin-top:8px;font-size:9.5px;color:#8E8E93;text-align:center}
-.t2-w2 .w2-vs{display:grid;grid-template-columns:1fr 84px 1fr;align-items:center;gap:6px;margin-top:3px}
-.t2-w2 .w2-side{display:flex;align-items:center;gap:5px;min-width:0}
-.t2-w2 .w2-side.l{flex-direction:row-reverse}
-.t2-w2 .w2-side i{height:10px;border-radius:5px;background:#B05656;flex:0 1 auto;max-width:48px}
-.t2-w2 .w2-side.r i{background:#1F6B3A}
-.t2-w2 .w2fb .w2-side.l i{background:#2E6DA4}.t2-w2 .w2fb .w2-side.r i{background:#AEB4BA}
-.t2-w2 .w2-side b{font-size:17px;white-space:nowrap}.t2-w2 .w2-side b small{font-size:9px}
-.t2-w2 .w2-side span{font-size:11px;color:#3C3C43;flex:none}
-.t2-w2 .w2-side.l{justify-content:flex-start}
-.t2-w2 .w2-mid{font-size:10.5px;font-weight:700;text-align:center;background:#F2F2F7;border-radius:999px;padding:3px 4px;white-space:nowrap}
-.t2-w2 .w2-vs:nth-of-type(n) .w2-side.l i{margin-left:auto}
-.t2-w2 .w2-clock{display:flex;align-items:baseline;gap:8px;margin-top:10px;padding-top:8px;border-top:1px solid #EFEFF4}
-.t2-w2 .w2-clock span{font-size:11px;color:#6D6D72}
-.t2-w2 .w2-clock b{font-size:22px}.t2-w2 .w2-clock b small{font-size:10px}
-.t2-w2 .w2-clock.slow b{color:#A8632B}.t2-w2 .w2-clock.fast b{color:#1F6B3A}
-.t2-w2 .w2-clock em{font-style:normal;font-size:12px;font-weight:700}
-.t2-w2 .w2-clock small{margin-left:auto;font-size:9.5px;color:#8E8E93}
-/* W3 */
-.t2-w3 .w3-r{padding:8px 4px 4px;border-top:1px solid #EFEFF4}
-.t2-w3 .w3-hd+.w3-r{border-top:0}
-.t2-w3 .w3-k{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:18px}
-.t2-w3 .w3-k b{font-size:12px}.t2-w3 .w3-k span{font-size:9.5px;color:#8E8E93;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.t2-w3 .w3-track{position:relative;height:6px;border-radius:3px;margin:0 8px;background:linear-gradient(90deg,#DCE8F3,#F2F2F7 50%,#F6E3CF)}
-.t2-w3 .w3-r.red .w3-track{background:linear-gradient(90deg,#F2D9D9,#F2F2F7 50%,#D6EBDD)}
-.t2-w3 .w3-r.gray .w3-track{background:linear-gradient(90deg,#F2F2F7,#D1D1D6)}
-.t2-w3 .w3-r.fast .w3-track,.t2-w3 .w3-r.slow .w3-track{background:linear-gradient(90deg,#D6EBDD,#F2F2F7 50%,#F6E3CF)}
-.t2-w3 .w3-track>i{position:absolute;top:-2px;width:1px;height:10px;background:#C7C7CC}
-.t2-w3 .w3-track .w3k0{left:0}.t2-w3 .w3-track .w3k1{left:25%}.t2-w3 .w3-track .w3k2{left:50%;background:#8E8E93;height:12px;top:-3px}.t2-w3 .w3-track .w3k3{left:75%}.t2-w3 .w3-track .w3k4{left:100%}
-.t2-w3 .w3-track em{position:absolute;top:50%;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:50%;background:#fff;box-shadow:0 0 0 3px #2E6DA4,0 2px 4px rgba(0,0,0,.25)}
-.t2-w3 .w3-r.slow em{box-shadow:0 0 0 3px #C8782E,0 2px 4px rgba(0,0,0,.25)}
-.t2-w3 .w3-r.fast em{box-shadow:0 0 0 3px #1F6B3A,0 2px 4px rgba(0,0,0,.25)}
-.t2-w3 .w3-r.gray em{box-shadow:0 0 0 3px #6D6D72,0 2px 4px rgba(0,0,0,.25)}
-.t2-w3 .w3-r.red em{box-shadow:0 0 0 3px #B05656,0 2px 4px rgba(0,0,0,.25)}
-.t2-w3 .w3-track em u{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);text-decoration:none;white-space:nowrap;font-size:11px;font-weight:700;color:#1C1C1E}
-.t2-w3 .w3-track em.rt u{left:auto;right:-4px;transform:none}  /* 端に来た札は内側に寄せる（阪神3R「+0.92秒」がはみ出したため） */
-.t2-w3 .w3-track em.lt u{left:-4px;transform:none}
-.t2-w3 .w3-ends{display:flex;justify-content:space-between;margin-top:5px;font-size:9px;color:#8E8E93}
-/* W2 の今週の馬場の案 K1〜K3（2026-09-17） */
-.t2-w2 .k1-svg{display:block;margin-top:4px}
-.t2-w2 .k1-svg .turf{fill:#7FBF7F}
-.t2-w2 .k1-svg .rail{stroke:#fff;stroke-width:3;stroke-dasharray:6 4}
-.t2-w2 .k1-svg .lane{font-size:11px;font-weight:700;fill:#fff}
-.t2-w2 .k1-svg .pct{font-size:17px;font-weight:800;fill:#fff;font-family:Futura,Jost,sans-serif}
-.t2-w2 .k1-svg .cap{font-size:9.5px;fill:#8E8E93}
-.t2-w2 .k1-svg .zone.f{fill:#E4EDF6}.t2-w2 .k1-svg .zone.r{fill:#EFEFF4}
-.t2-w2 .k1-svg .df{fill:#2E6DA4}.t2-w2 .k1-svg .dr{fill:#8E8E93}
-.t2-w2 .k1-svg .zl{font-size:11px;font-weight:700;fill:#3C3C43}
-.t2-w2 .k1-words{display:flex;justify-content:space-between;gap:6px;margin-top:4px;padding-top:6px;border-top:1px solid #EFEFF4}
-.t2-w2 .k1-words span{display:flex;flex-direction:column;align-items:center;flex:1;min-width:0}
-.t2-w2 .k1-words i{font-style:normal;font-size:9.5px;color:#8E8E93}
-.t2-w2 .k1-words b{font-size:11.5px;text-align:center;line-height:1.3}
-.t2-w2 .k1-words .slow b{color:#A8632B}.t2-w2 .k1-words .fast b{color:#1F6B3A}
+
+/* 今週の馬場の色の札3枚（K2 に決定。2026-09-17） */
+
 .t2-w2 .k2-row{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:6px}
 .t2-w2 .k2-card{display:flex;flex-direction:column;gap:2px;padding:9px 8px;border-radius:14px;color:#fff;min-width:0;background:linear-gradient(135deg,#7C8794,#5B6570)}
 .t2-w2 .k2-card.io-a{background:linear-gradient(135deg,#C46A6A,#9A4545)}.t2-w2 .k2-card.io-b{background:linear-gradient(135deg,#3D8B5A,#2B6A43)}
@@ -1127,29 +553,7 @@ html.rc-line .mx .mg-close .mg-tag,html.rc-frame .mx .mg-close .mg-tag{backgroun
 .t2-w2 .k2-two small{font-size:9px;opacity:.85}
 .t2-w2 .k2-card small{font-size:8.5px;line-height:1.3;opacity:.8}
 .t2-w2 .k2-card strong{margin-top:4px;font-size:11px;background:rgba(255,255,255,.22);border-radius:999px;padding:1px 6px;align-self:flex-start;white-space:nowrap}
-.t2-w2 .k3-grid{display:grid;grid-template-columns:1.3fr 1fr;gap:6px;margin-top:6px}
-.t2-w2 .k3-cell{display:flex;flex-direction:column;align-items:center;padding:6px 4px;border-radius:12px;background:#F7F7F9;min-width:0}
-.t2-w2 .k3-cell i,.t2-w2 .k3-fbh i{font-style:normal;font-size:10px;color:#8E8E93;align-self:flex-start}
-.t2-w2 .k3-cell b{font-size:12.5px}
-.t2-w2 .k3-cell small{font-size:9px;color:#8E8E93}
-.t2-w2 .k3-scale .base{fill:#C7C7CC}.t2-w2 .k3-scale .beam{stroke:#3C3C43;stroke-width:3;stroke-linecap:round}
-.t2-w2 .k3-scale .pivot{fill:#1C1C1E}.t2-w2 .k3-scale .str{stroke:#AEAEB2;stroke-width:1}
-.t2-w2 .k3-scale .pan.in{fill:#B05656}.t2-w2 .k3-scale .pan.out{fill:#1F6B3A}
-.t2-w2 .k3-scale .pv{font-size:10px;font-weight:700;fill:#1C1C1E}
-.t2-w2 .k3-watch .btn{fill:#8E8E93}.t2-w2 .k3-watch .face{fill:#fff;stroke:#3C3C43;stroke-width:3}
-.t2-w2 .k3-watch .sweep{fill:rgba(142,142,147,.25)}.t2-w2 .k3-watch.slow .sweep{fill:rgba(200,120,46,.3)}.t2-w2 .k3-watch.fast .sweep{fill:rgba(31,107,58,.3)}
-.t2-w2 .k3-watch .hand{stroke:#1C1C1E;stroke-width:2.5;stroke-linecap:round}.t2-w2 .k3-watch .hub{fill:#1C1C1E}
-.t2-w2 .k3-watch .num{font-size:13px;font-weight:800;fill:#1C1C1E;font-family:Futura,Jost,sans-serif}
-.t2-w2 .k3-watch.slow .num{fill:#A8632B}.t2-w2 .k3-watch.fast .num{fill:#1F6B3A}
-.t2-w2 .k3-fb{margin-top:6px;padding:8px;border-radius:12px;background:#F7F7F9}
-.t2-w2 .k3-fbh{display:flex;align-items:baseline;gap:8px}
-.t2-w2 .k3-fbh b{font-size:12.5px}.t2-w2 .k3-fbh small{margin-left:auto;font-size:9px;color:#8E8E93}
-.t2-w2 .k3-horses{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px}
-.t2-w2 .k3-horses>div>span{font-size:10.5px;font-weight:700}
-.t2-w2 .k3-horses .f>span{color:#2E6DA4}.t2-w2 .k3-horses .r>span{color:#6D6D72}
-.t2-w2 .k3-horses>div>div{display:flex;flex-wrap:wrap;gap:3px;margin-top:3px}
-.t2-w2 .k3-horses i{width:12px;height:12px;border-radius:50%}
-.t2-w2 .k3-horses i.hf{background:#2E6DA4}.t2-w2 .k3-horses i.hr{background:#AEB4BA}
+
 /* Apple らしい動き（2026-09-17） */
 .yf-haptic{position:fixed;left:-9999px;top:0;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none}
 .yf-deck.apple{--dim:0}
@@ -1223,39 +627,16 @@ html.rc-line .mx .mg-close .mg-tag,html.rc-frame .mx .mg-close .mg-tag{backgroun
 .al-pop{margin-left:auto}
 .al-r2 .al-jk{flex:0 1 auto;overflow:hidden;text-overflow:ellipsis;min-width:0;font-size:10.5px;color:#6D6D72}
 .al-r2{gap:4px !important}
-.al-rest{font-size:8.5px;line-height:11px;color:#6D6D72;background:#EFEFF4;text-align:center;letter-spacing:.02em}
+
 .al-s{padding-bottom:30px}
-/* 僅差の地の水色の案（2026-09-17）。b1 濃くする／b2 濃くして青い枠／b3 地は白のまま青い枠 */
-.sm-page.bc-b1 .s1-card.bd-close{background:#D6E6F8}
-.sm-page.bc-b2 .s1-card.bd-close{background:#DCEAF9;box-shadow:inset 0 0 0 1.5px #3D7EBB}
-.sm-page.bc-b3 .s1-card.bd-close{background:#fff;box-shadow:inset 0 0 0 2px #3D7EBB}
-/* B2の形で色を変える案（同日ユーザー「そもそも色も違う方がいい」）。青は差し・追込やG2の札と同じ色でまぎれるため
-   b4 銀（勝ち＝金に対して、あと一歩＝銀）／b5 青緑／b6 ローズ。着差の丸も同じ色にそろえる */
+/* 僅差は銀（B4 に決定。2026-09-17）：勝ち＝金に対して、あと一歩＝銀。青は差し・追込やG2の札と同じ色でまぎれるため
+   銀の地＋細い銀の枠、着差の丸も銀。全戦績の行は細いので地の色だけ */
 .sm-page.bc-b4 .s1-card.bd-close{background:#E4E9EF;box-shadow:inset 0 0 0 1.5px #5E7185}
 .sm-page.bc-b4 .bd-close .s1-mg{background:#5E7185}
-.al-page.bc-b4 .al-row.bd-close{background:#E4E9EF}  /* 全戦績の行も同じ銀の地にそろえる（細い行なので枠は付けない） */
-.sm-page.bc-b5 .s1-card.bd-close{background:#DDF3F1;box-shadow:inset 0 0 0 1.5px #12897F}
-.sm-page.bc-b5 .bd-close .s1-mg{background:#12897F}
-.sm-page.bc-b6 .s1-card.bd-close{background:#FBE6EE;box-shadow:inset 0 0 0 1.5px #C9416F}
-.sm-page.bc-b6 .bd-close .s1-mg{background:#C9416F}
-/* 直近5走の札の色の案（2026-09-17） */
-.s1-card.sc-alt{grid-template-columns:56px 1fr;gap:8px}
-.s1-card.sc-alt .s1-sc{display:inline-flex;align-items:center;gap:4px}
-.s1-card.sc-alt .s1-sc .sm-st{flex:none}
-.s1-card.sc-alt .s1-perf{gap:5px !important}
-.s1-card.sc-alt .s1-tm,.s1-card.sc-alt .s1-up b{font-size:14.5px}
-.s1-card.sc-alt .s1-mg{font-size:11px;padding:0 4px}
-.s1-card.sc-alt .s1-l .s1-mg i{margin-right:2px}
-.sm-page em.c1-tag,.sm-page em.c2-tag{font-style:normal;font-size:9.5px;font-weight:700;border-radius:4px;padding:0 5px;line-height:15px;flex:none}
-.sm-page em.c1-tag{color:#3C3C43;background:rgba(0,0,0,.07)}
-.sm-page .s1-up em.c1-tag,.sm-page .s1-up em.c2-tag{margin-left:3px}
-.sm-page em.c2-tag{color:#fff}
-.sm-page em.c2-tag.md1{background:var(--gold);color:#fff}.sm-page em.c2-tag.md2{background:var(--silver);color:#fff}.sm-page em.c2-tag.md3{background:var(--bronze);color:#fff}
+.al-page.bc-b4 .al-row.bd-close{background:#E4E9EF}
+
 .sm-page .s1-l .s1-mg i{font-style:normal;font-size:9.5px;font-weight:700;margin-right:3px;color:inherit}
-.sm-page .c2-mg{padding:0 6px}
-.sm-page .c3-mg{background:rgba(0,0,0,.05);color:#3C3C43}
-.sm-page .c3-mg.c3-win{background:#C8A200;color:#fff}.sm-page .c3-mg.c3-close{background:#3D7EBB;color:#fff}
-.sm-page .c3-good{color:var(--hit) !important}
+
 /* 区切りの画面（決定 #10・#12） */
 .yf-mid{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:0 20px;text-align:center}
 .yf-big{width:112px;height:112px;border-radius:50%;display:flex;align-items:center;justify-content:center;

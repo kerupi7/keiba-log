@@ -3051,7 +3051,7 @@ function crsBand(site) {
 }
 
 // 2026-09-17: 「戦績」の面を切り替えバーから外した（予想をはじめる・仕様 2026-09-17_払う比べるだけで印が決まる画面.md）。
-// 札の一覧（.shlist）は予想の画面が部品として読むので、DOM には残している。
+// 札の一覧（.shlist）は面の切り替え処理が参照するので DOM に残している（予想の画面はもう読んでいない。2026-09-17）。
 function mmBar(site) {
   return `<div class="mm-bar">
     <span class="mm-seg">
