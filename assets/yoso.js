@@ -107,6 +107,7 @@
     const col = document.getElementById('yf-col');
     col.innerHTML = { swipe: vSwipe, ask: vAsk, duel: vDuel, marked: vMarked }[S.screen]();
     if (S.screen === 'swipe') { fitPage(); bindCard(); }
+    if (S.screen === 'duel') fitDuel();
   }
 
   // 1ページを画面の高さに収める（2026-09-17 ユーザー「縦スクロールせずに1画面に収めたい」）。
@@ -129,6 +130,22 @@
       if (r.bottom <= limit + 0.5) break;
       z = Math.max(0.6, z * ((limit - r.top) / r.height) * 0.995);
       inner.style.zoom = z.toFixed(3);
+    }
+  }
+
+  // 比べる画面も縦に動かさず、2頭ぶんを画面の高さに収める（最小 0.6 倍）
+  function fitDuel() {
+    const w = document.getElementById('dl-wrap');
+    const g = w && w.firstElementChild;
+    if (!g) return;
+    g.style.zoom = '';
+    let z = 1;
+    for (let k = 0; k < 5; k += 1) {
+      const r = g.getBoundingClientRect();
+      const limit = w.getBoundingClientRect().bottom - 8;
+      if (r.bottom <= limit + 0.5) break;
+      z = Math.max(0.6, z * ((limit - r.top) / r.height) * 0.995);
+      g.style.zoom = z.toFixed(3);
     }
   }
 
@@ -252,6 +269,8 @@
     }
     // 過去走ページの走の間隔は、合わせた一覧の上での間隔で判定する
     out.gapOf = gapOf;
+    out.runs = runs;
+    out.today = today;
     return (COND[h.number] = out);
   }
   // この走のこの札に色を付けるか
@@ -847,30 +866,103 @@
       </div>`;
   }
 
-  function pickCard(h) {
-    const runs = (h.past_runs || []).slice(0, 3);
-    const fins = runs.map((r) => {
-      const f = Number(r.finish);
-      return `<b class="${f === 1 ? 't1' : f <= 3 ? 't3' : ''}">${esc(r.finish ?? '—')}</b>`;
-    }).join('') || '—';
+  // ---------- 印を決める：2頭を左右に並べて選ぶ（2026-09-17 作り直し。Facemash のような勝ち残り型） ----------
+  //   1頭ぶんは上から ①馬の情報 ②直近5走（1走2行）③今回の適性4行 ④選ぶボタン。仕様書「印を決める画面の作り直し」
+  const SURF_LAB = (s0) => (String(s0 || '').startsWith('ダ') ? 'ダート' : '芝');
+  let TK_DATA = null;
+  function tenkaiData() {
+    if (TK_DATA) return TK_DATA;
+    if (tenkaiCache == null) tenkaiPage(H[0]);
+    const wrap = document.createElement('div');
+    wrap.innerHTML = tenkaiCache;
+    const D = tkParse(wrap);
+    const numOf = (html) => Number(String(html).replace(/<[^>]+>/g, '').trim());
+    const styleOf = {};
+    D.zones.forEach((z) => z.chips.forEach((c) => { styleOf[numOf(c.hn)] = { style: z.style, grade: z.grade }; }));
+    const gateOf = {};
+    D.gates.forEach((g) => { gateOf[numOf(g.hn)] = g.grade; });
+    return (TK_DATA = { styleOf, gateOf });
+  }
+  const rec = (c) => (c || [0, 0, 0, 0]).map((v, i) => `<b class="${i < 3 && v ? `r${i + 1}` : ''}">${v}</b>`).join('<i>-</i>');
+  function duelRuns(h) {
+    const runs = (h.past_runs || []).slice(0, 5);
+    if (!runs.length) return '<div class="dl-none">出走記録なし</div>';
+    return runs.map((r, i) => {
+      const d = summaryRun(h, r, i);
+      return `<div class="dl-run ${d.band ? `bd-${d.band}` : ''}">
+        <div class="dl-r1"><b class="bt-num dl-fin ${d.finMd}">${esc(d.finTxt)}</b><small>着</small>${d.clsHtml}
+          <span class="bt-num ${d.sf}">${esc(d.sfTxt)}${esc(d.dist)}</span><span class="bt-num dl-mg">${d.mgTxt}</span></div>
+        <div class="dl-r2"><span class="bt-num dl-cn ${d.stc}">${esc(d.corners.join('-') || '—')}</span><span class="bt-num dl-kg">${esc(d.weight)}<small>kg</small></span></div>
+      </div>`;
+    }).join('');
+  }
+  // 今回の適性（4つ）の中身を集める
+  function aptData(h) {
+    const race = site.race || {};
+    const surf = SURF_LAB(race.surface);
+    const rows = (h.course_record || {}).rows || [];
+    const find = (lab) => (rows.find((r) => r.label === lab) || {}).counts || [0, 0, 0, 0];
+    const here = `${race.track || ''}${surf}${race.distance || ''}m`;
+    const all = `全場${surf}${race.distance || ''}m`;
+    // 今日の展開の型：今日いちばんありそうな流れ（prediction.scenario.main）でのこの馬の成績
+    const main = ((site.prediction || {}).scenario || {}).main || {};
+    const code = main.code && main.side ? `${main.code}_${main.side === '前' ? '前残り' : '差し・追込'}` : '';
+    const rt = ((h.race_type_record || {}).rows || []).find((r) => r.code === code) || null;
+    const paceName = { S: 'スロー', M: '平均', H: 'ハイ' }[main.code] || '';
+    const tk = tenkaiData();
+    const st = tk.styleOf[h.number] || {};
+    const c = condOf(h);
+    const hitLab = { gap: '間隔', weight: '斤量', going: '馬場', jockey: '騎手' };
+    return {
+      here, all, hereC: find(here), allC: find(all),
+      flowLab: `${paceName}・${main.side === '前' ? '前残り' : '差し追込'}`, rt,
+      style: st.style || '—', styleG: st.grade || '', gate: h.gate, gateG: tk.gateOf[h.gate] || '',
+      hitLab, lit: c.lit, stat: c.stat,
+    };
+  }
+  // 今回の適性：2×2の札（コース／今日の流れ／脚質と枠／同じ条件で好走）。押すと詳しい版が出る（aptSheet）
+  function duelApt(h) {
+    const A = aptData(h);
+    const recLine = (lab, cc) => `<div class="a1-l"><span>${esc(lab)}</span><b class="bt-num">${rec(cc)}</b></div>`;
+    const flowN = A.rt && A.rt.n;
+    return `<div class="a1">
+        <div class="a1-t" data-apt="course"><i>コース</i>${recLine(A.here.replace(/(芝|ダート)\d+m$/, ''), A.hereC)}${recLine('全場', A.allC)}<small>${esc(A.all.replace(/m$/, '').replace('全場', ''))}</small></div>
+        <div class="a1-t a1-fl" data-apt="flow"><i>今日の流れ</i><small class="a1-fq">${esc(A.flowLab)}で</small><div class="a1-fv"><em>3着内</em>${flowN ? `<b class="bt-num a1-big">${Math.round(A.rt.top3_pct)}<small>%</small></b>` : '<b class="a1-big z">—</b>'}</div><small>${flowN ? `過去${A.rt.n}走 ${A.rt.counts.join('-')}` : 'この流れの走なし'}</small></div>
+        <div class="a1-t" data-apt="fit"><i>脚質と枠</i><div class="a1-g"><span>${esc(A.style)}</span>${tkG(A.styleG)}</div><div class="a1-g"><span>${A.gate}枠</span>${tkG(A.gateG)}</div></div>
+        <div class="a1-t" data-apt="hit"><i>同じ条件で好走</i><div class="a1-chips">${Object.keys(A.hitLab).map((k) => `<b class="${A.lit[k] ? 'on' : ''}" title="${esc(A.stat[k])}">${A.hitLab[k]}</b>`).join('')}</div></div>
+      </div>`;
+  }
+  function duelSide(h, side) {
+    const t = S.t;
+    const champ = t.champ === h.number && t.streak > 0;
+    const nlen = [...String(h.name || '')].length;
+    const nfs = nlen <= 7 ? 16 : nlen <= 8 ? 14.5 : nlen <= 9 ? 13 : 12;
     const pop = h.popularity != null ? `${h.popularity}人気` : '';
-    return `<button type="button" class="yf-pick" data-pick="${h.number}">
-      <span class="l1">${umaBox(h.number, h.gate)}<span class="n">${esc(h.name)}</span><span class="race20">${P(h.number).badge}</span></span>
-      <span class="l2">${esc(h.sex_age)} ${esc(h.weight_carried)}kg ${esc(h.jockey)}</span>
-      <span class="l3"><span class="od">${h.odds != null ? h.odds.toFixed(1) : '—'}<small>倍 ${esc(pop)}</small></span>
-        <span class="fins">近3走 ${fins}</span></span>
-      <span class="more" data-more="${h.number}">詳しく見る ›</span>
-    </button>`;
+    return `<div class="dl-side ${side}${t.fresh === side ? ' fresh' : ''}${champ ? ' champ' : ''}" data-side="${h.number}">
+      ${champ ? `<span class="dl-streak${t.bump ? ' bump' : ''}">${t.streak}連勝中</span>` : '<span class="dl-streak z"></span>'}
+      <div class="dl-head">
+        <div class="dl-h1">${umaBox(h.number, h.gate)}<b class="dl-nm" data-hist="${h.number}" style="font-size:${nfs}px">${esc(h.name)}<i>›</i></b></div>
+        <div class="dl-h2">${esc(h.sex_age || '')} ${esc(h.weight_carried ?? '')}kg ${esc(h.jockey || '')}</div>
+        <div class="dl-h3"><b class="bt-num">${h.odds != null ? h.odds.toFixed(1) : '—'}</b><small>倍</small><span>${esc(pop)}</span><span class="race20">${P(h.number).badge}</span></div>
+      </div>
+      <div class="dl-sec dl-runsec"><i class="dl-cap">直近5走</i>${duelRuns(h)}</div>
+      <div class="dl-sec">${duelApt(h)}</div>
+      <button type="button" class="dl-go" data-pick="${h.number}">この馬を選ぶ</button>
+    </div>`;
   }
 
   function vDuel() {
     const t = S.t;
-    const [a, b] = t.pair.map(byNum);
     const mk = MARKS3[S.step];
-    return `${head('2 / 2　印を決める', `${mk} を決めよう`, Math.round((t.done / t.total) * 100))}
+    // 入ってくる馬・連勝の札・VS の動きは、選んだ直後の1回だけ（描き直しで繰り返さない）
+    const fresh = t.fresh;
+    const html = `${head('2 / 2　印を決める', `${mk} を決めよう`, Math.round((t.done / t.total) * 100))}
       <div class="yf-lead">どっちがいい？（${mk} まで あと${t.total - t.done}回）</div>
-      <div class="yf-duel">${pickCard(a)}<div class="yf-vs">VS</div>${pickCard(b)}</div>
-      <div class="yf-foot"></div>`;
+      <div class="dl-wrap mx" id="dl-wrap"><div class="dl-grid">${duelSide(byNum(t.left), 'l')}${duelSide(byNum(t.right), 'r')}<span class="dl-vs${fresh ? ' pop' : ''}">VS</span></div></div>
+      <label class="yf-haptic" aria-hidden="true"><input type="checkbox" switch id="yf-hap" tabindex="-1"></label>`;
+    t.fresh = null;
+    t.bump = false;
+    return html;
   }
 
   function vMarked() {
@@ -951,6 +1043,76 @@
       S.idx += 1; S.page = 0;
       if (S.idx >= H.length) go('ask'); else { S.promote = true; render(); }
     }, t * 1000);
+  }
+  // 戦績のシート（比べる画面で馬名を押したとき）。全戦績と同じ2行の一覧を、下から出る札の中で縦に動かして見る
+  // 下から出るシート（比べる画面の上に重ねる。閉じるボタンか外側を押すと閉じる）
+  function infoSheet(h, sub, body) {
+    const rootEl = document.querySelector('.yf');
+    if (!h || !rootEl || rootEl.querySelector('.yf-hist-bg:not(.out)')) return;
+    rootEl.querySelectorAll('.yf-hist-bg.out').forEach((x) => x.remove());   // 閉じかけのシートは待たずに外す
+    const bg = document.createElement('div');
+    bg.className = 'yf-hist-bg';
+    bg.innerHTML = `<div class="yf-hist">
+      <div class="yf-hist-hd">${umaBox(h.number, h.gate)}<b>${esc(h.name)}</b><span>${esc(sub)}</span><button type="button" class="yf-hist-x" data-hx="1">閉じる</button></div>
+      <div class="yf-hist-body">${body}</div>
+    </div>`;
+    rootEl.appendChild(bg);
+    const shut = () => { bg.classList.add('out'); setTimeout(() => bg.remove(), 260); };
+    bg.addEventListener('click', (e) => { if (e.target === bg || e.target.closest('[data-hx]')) shut(); });
+  }
+  function histSheet(h) {
+    const n = allRuns(h).length;
+    infoSheet(h, `戦績 ${n}走`, n ? allPage(h, 0, n).replace(/ data-goto="\d+"/g, '') : '<p class="dl-none">出走記録なし</p>');
+  }
+  // 適性の札の詳しい版。コースと今日の流れは1ページ目（基本）の札を、脚質と枠は展開のページをそのまま使う
+  const GAP_LAB = ['中2週まで', '中3〜5週', '中6〜9週', '中10週以上'];
+  function pickCard(html, sel) {
+    const w = document.createElement('div');
+    w.innerHTML = html;
+    const el = w.querySelector(sel);
+    return el ? `<div class="race20 rvC c3 mx hd-r3 b-page yf-sheetpg">${el.outerHTML}</div>` : '';
+  }
+  function hitDetail(h) {
+    const c = condOf(h);
+    const A = aptData(h);
+    const td = c.today;
+    const nowTxt = {
+      gap: td.gap == null ? '初出走' : GAP_LAB[td.gap],
+      weight: td.weight == null ? '—' : `${String(td.weight).replace(/\.0$/, '')}kg`,
+      going: td.going || '—',
+      jockey: h.jockey || '—',
+    };
+    const tot = c.runs.length;
+    const top = c.runs.filter((x) => finN(x.finish) <= 3).length;
+    const rows = Object.keys(A.hitLab).map((k) => {
+      const xs = c.runs.filter(c.same[k]);
+      const t3 = xs.filter((x) => finN(x.finish) <= 3).length;
+      const list = xs.slice(0, 6).map((x) => {
+        const f = finN(x.finish);
+        return `<div class="ht-run"><span class="bt-num">${esc(String(x.date).slice(2))}</span><span>${esc(x.track || '')}</span>
+          <span class="ht-rn">${esc(stripClass(x.race_name))}</span><b class="bt-num ${f != null && f <= 3 ? `r${f}` : ''}">${esc(x.finish)}着</b></div>`;
+      }).join('');
+      return `<div class="ht-sec${c.lit[k] ? ' on' : ''}">
+        <div class="ht-h"><b class="ht-k">${A.hitLab[k]}</b><span>今回 <b>${esc(nowTxt[k])}</b></span><em>${c.lit[k] ? '好走あり' : '当てはまらない'}</em></div>
+        <div class="ht-s">同じ条件で <b class="bt-num">${xs.length}</b>走・3着内 <b class="bt-num">${t3}</b>回
+          <small>（${xs.length ? Math.round((t3 / xs.length) * 100) : 0}%／全戦績 ${tot ? Math.round((top / tot) * 100) : 0}%）</small></div>
+        ${list ? `<div class="ht-list">${list}${xs.length > 6 ? `<div class="ht-more">ほか${xs.length - 6}走</div>` : ''}</div>` : ''}
+      </div>`;
+    }).join('');
+    return `<div class="ht-page"><p class="ht-note">同じ条件の走で、3着内に入った割合が全戦績と同じか上なら緑（2走以上・3着内1回以上）</p>${rows}</div>`;
+  }
+  function aptSheet(h, kind) {
+    if (!h) return;
+    if (kind === 'course') infoSheet(h, 'コース適性', pickCard(basicPage(h), '.b-crd'));
+    else if (kind === 'flow') infoSheet(h, 'レースの型べつ成績', pickCard(basicPage(h), '.b-rtd'));
+    else if (kind === 'fit') {
+      // 展開のページから、馬場の2枚を外して「ペース・脚質・枠」の札だけ残す
+      const w = document.createElement('div');
+      w.innerHTML = tenkaiPage(h);
+      w.querySelectorAll('.w2-hero, .w2-week').forEach((x) => x.remove());
+      infoSheet(h, '脚質と枠', `<div class="yf-sheetpg">${w.innerHTML}</div>`);
+    }
+    else if (kind === 'hit') infoSheet(h, '同じ条件で好走', hitDetail(h));
   }
   function quitSheet(onCancel) {
     const root = document.querySelector('.yf');
@@ -1076,7 +1238,9 @@
     card.addEventListener('pointercancel', (e) => end(e, true));
   }
 
-  // ---------- 印（勝ち抜き戦・毎回やり直す） ----------
+  // ---------- 印（勝ち残り型・毎回やり直す） ----------
+  //   選んだ馬は画面に残り、負けた馬の側だけ次の馬（馬番の若い順）に入れ替わる（2026-09-17 決定。前は勝ち抜き戦）。
+  //   ✓が8頭なら◎まで7回。○・▲は◎を外して最初からやり直す
   const pool = () => checked().filter((h) => !MARKS3.includes(S.my[h.number])).map((h) => h.number);
 
   function startMark(step) {
@@ -1084,18 +1248,50 @@
     const p = pool();
     if (p.length === 0) { close(true); return; }
     if (p.length === 1) { setWinner(p[0]); return; }
-    S.t = { round: p, next: [], i: 0, total: p.length - 1, done: 0, pair: null };
-    advance();
-    if (S.t.pair) go('duel');
+    S.t = { left: p[0], right: p[1], queue: p.slice(2), total: p.length - 1, done: 0, champ: null, streak: 0, fresh: null };
+    go('duel');
   }
 
-  function advance() {
+  function pickWinner(n) {
     const t = S.t;
-    for (;;) {
-      if (t.i + 1 < t.round.length) { t.pair = [t.round[t.i], t.round[t.i + 1]]; return; }
-      if (t.i < t.round.length) { t.next.push(t.round[t.i]); t.i += 1; }   // 奇数のときの不戦勝
-      if (t.next.length === 1) { t.pair = null; setWinner(t.next[0]); return; }
-      t.round = t.next; t.next = []; t.i = 0;
+    t.done += 1;
+    if (t.champ === n) t.streak += 1; else { t.champ = n; t.streak = 1; }
+    t.bump = true;
+    if (!t.queue.length) { setWinner(n); return; }
+    const next = t.queue.shift();
+    if (t.left === n) { t.right = next; t.fresh = 'r'; } else { t.left = next; t.fresh = 'l'; }
+    render();
+  }
+
+  // 選んだ瞬間の動き（Apple の写真アプリの「選ぶ」に近い手ざわり）
+  //   押したボタン：✓ に変わる／選んだ馬：ふわっと持ち上がって戻る／もう一方：外側へ傾きながら抜けていく
+  function duelPickMotion(n, btn) {
+    const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    btn.classList.add('done');
+    btn.innerHTML = '<span class="dl-ck">✓</span>選びました';
+    root.querySelectorAll('.dl-side').forEach((c) => {
+      const win = Number(c.dataset.side) === n;
+      c.classList.add(win ? 'win' : 'lose');
+      if (reduce || !c.animate) return;
+      if (win) {
+        c.animate([
+          { transform: 'scale(1)' },
+          { transform: 'scale(1.045) translateY(-4px)', offset: 0.35 },
+          { transform: 'scale(1)' },
+        ], { duration: 440, easing: 'cubic-bezier(.32,.72,0,1)' });
+      } else {
+        const dir = c.classList.contains('l') ? -1 : 1;
+        c.animate([
+          { transform: 'none', opacity: 1, filter: 'saturate(1)' },
+          { transform: 'scale(.94)', opacity: 0.85, filter: 'saturate(.3)', offset: 0.3 },
+          { transform: `translateX(${dir * 115}%) rotate(${dir * 8}deg) scale(.88)`, opacity: 0, filter: 'saturate(0)' },
+        ], { duration: 420, delay: 60, easing: 'cubic-bezier(.55,0,.75,.2)', fill: 'forwards' });
+      }
+    });
+    const vs = root.querySelector('.dl-vs');
+    if (vs && vs.animate && !reduce) {
+      vs.animate([{ transform: 'translate(-50%,-50%) scale(1)' }, { transform: 'translate(-50%,-50%) scale(.6)', opacity: 0 }],
+        { duration: 220, easing: 'ease-in', fill: 'forwards' });
     }
   }
 
@@ -1115,18 +1311,23 @@
       if (btn) btn.click();
       return;
     }
+    // 比べる画面で馬名を押したら、その馬の戦績を下から出す（選ぶ動作にはしない）
+    const hist = e.target.closest('[data-hist]');
+    if (hist) { e.stopPropagation(); histSheet(byNum(Number(hist.dataset.hist))); return; }
+    // 比べる画面で適性の札を押したら、その中身の詳しい版を下から出す（選ぶ動作にはしない）
+    const apt = e.target.closest('[data-apt]');
+    if (apt && S.screen === 'duel') {
+      const side = apt.closest('[data-side]');
+      if (side) { e.stopPropagation(); aptSheet(byNum(Number(side.dataset.side)), apt.dataset.apt); }
+      return;
+    }
     const pk = e.target.closest('[data-pick]');
     if (pk && S.screen === 'duel' && !S.busy) {
       S.busy = true;
       const n = Number(pk.dataset.pick);
-      root.querySelectorAll('.yf-pick').forEach((c) => c.classList.add(Number(c.dataset.pick) === n ? 'win' : 'lose'));
-      setTimeout(() => {
-        S.busy = false;
-        const t = S.t;
-        t.next.push(n); t.i += 2; t.done += 1;
-        advance();
-        if (t.pair) render();
-      }, 360);
+      duelPickMotion(n, pk);
+      haptic();
+      setTimeout(() => { S.busy = false; pickWinner(n); }, 460);
       return;
     }
     const a = e.target.closest('[data-act]');
