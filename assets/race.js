@@ -3050,11 +3050,12 @@ function crsBand(site) {
     ? '<button type="button" class="crsb2" data-pop="course">コース</button>' : '';
 }
 
+// 2026-09-17: 「戦績」の面を切り替えバーから外した（予想をはじめる・仕様 2026-09-17_払う比べるだけで印が決まる画面.md）。
+// 札の一覧（.shlist）は予想の画面が部品として読むので、DOM には残している。
 function mmBar(site) {
   return `<div class="mm-bar">
     <span class="mm-seg">
       <button type="button" data-view="mark" class="on">印</button>
-      <button type="button" data-view="runs">戦績</button>
       <button type="button" data-view="paper">新聞</button>
       <button type="button" data-view="tenkai">展開</button>
       <button type="button" data-view="baken">馬券</button>
