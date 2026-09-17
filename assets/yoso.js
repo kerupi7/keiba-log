@@ -105,17 +105,27 @@
 
   function render() {
     const col = document.getElementById('yf-col');
+    // ページをめくっただけなら、後ろの札（次の馬）は描き直さずに残す
+    const oldBack = document.getElementById('yf-back');
+    const keepBack = S.screen === 'swipe' && oldBack && Number(oldBack.dataset.n) === (H[S.idx + 1] || {}).number ? oldBack : null;
+    const keepLater = S.screen === 'swipe' ? [...document.querySelectorAll('.yf-card.later')] : [];
     col.innerHTML = { swipe: vSwipe, ask: vAsk, duel: vDuel, marked: vMarked }[S.screen]();
-    if (S.screen === 'swipe') { fitPage(); bindCard(); }
+    if (S.screen === 'swipe') {
+      fitPage();
+      const deck = document.getElementById('yf-deck');
+      if (keepBack) deck.insertBefore(keepBack, document.getElementById('yf-card'));
+      keepLater.forEach((x) => deck.insertBefore(x, deck.firstChild));
+      bindCard();
+      // 次の後ろの札は、切り替えが済んでから描く
+      fillBack();
+    }
     if (S.screen === 'duel') fitDuel();
   }
 
   // 1ページを画面の高さに収める（2026-09-17 ユーザー「縦スクロールせずに1画面に収めたい」）。
   //   中身が札より長いときは、中身ごと縮めて収める（字の大きさの比は変えない）。全戦績だけは縦に動かして見る形のまま（同日決定・案B）
-  function fitPage() {
-    const pe = document.getElementById('yf-page');
+  function fitPage(pe = document.getElementById('yf-page'), pg = pagesOf(H[S.idx])[S.page]) {
     if (!pe) return;
-    const pg = pagesOf(H[S.idx])[S.page];
     if (pg && pg.k === 'all') { pe.classList.remove('fit'); return; }
     pe.classList.add('fit');
     const inner = pe.firstElementChild;
@@ -827,12 +837,10 @@
     const pg = pages[S.page];
     const dots = pages.map((_, i) => `<i class="${i <= S.page ? 'on' : ''}"></i>`).join('');
     // カード上の見出し（段階・「残す？ 消す？」・やめる）も外した（同日ユーザー指示）。この画面から抜ける手段は今は無い
-    const promoted = S.promote;
-    S.promote = false;
-    return `<div class="yf-deck top apple">
-        ${H[S.idx + 1] ? `<div class="yf-card back${promoted ? ' arrive' : ''}" id="yf-back"></div>` : ''}
-        <div class="yf-card${promoted ? ' promoted' : ''}" id="yf-card">
-          <div class="yf-stamp ok" id="yf-ok">✓</div><div class="yf-stamp ng" id="yf-ng">消</div>
+    return `<div class="yf-deck top apple" id="yf-deck">
+        <div class="yf-card" id="yf-card">
+          <div class="yf-tint" id="yf-tint"></div>
+          <div class="yf-stamp ok" id="yf-ok"><i>✓</i>残す</div><div class="yf-stamp ng" id="yf-ng"><i>✕</i>消す</div>
           <div class="yf-dots">${dots}</div>
           <div class="yf-plab"><span class="yf-pl"><b>${esc(pg.label)}</b>${TODAY_PAGES.includes(pg.k) ? todayTag : ''}</span><span>${S.idx + 1} / ${H.length}頭</span></div>
           <div class="yf-page" id="yf-page">${pageHtml(h, pg)}</div>
@@ -843,6 +851,82 @@
       <div class="yf-deck-foot"></div>
       <label class="yf-haptic" aria-hidden="true"><input type="checkbox" switch id="yf-hap" tabindex="-1"></label>`;
   }
+
+  // 後ろの札には次の馬の1ページ目を描いておく（払った瞬間に中身がもう見えているように。2026-09-17 ユーザー指摘「後ろが白い」）。
+  //   さらにその次の馬の札も、手が空いているうちに隠して作っておく（払った直後に組み立てると、iPhone で一瞬止まったため）
+  function backHtml(i) {
+    const h = H[i];
+    const pages = pagesOf(h);
+    return `<div class="yf-dots">${pages.map((_, k) => `<i class="${k === 0 ? 'on' : ''}"></i>`).join('')}</div>
+      <div class="yf-plab"><span class="yf-pl"><b>${esc(pages[0].label)}</b>${todayTag}</span><span>${i + 1} / ${H.length}頭</span></div>
+      <div class="yf-page">${pageHtml(h, pages[0])}</div>
+      <div class="yf-shade"></div>`;
+  }
+  function buildBack(i, cls, html = backHtml(i)) {
+    const deck = document.getElementById('yf-deck');
+    const el = document.createElement('div');
+    el.className = `yf-card back ${cls}`;
+    el.dataset.n = H[i].number;
+    el.setAttribute('aria-hidden', 'true');
+    el.innerHTML = html;
+    deck.insertBefore(el, deck.firstChild);
+    fitPage(el.querySelector('.yf-page'), pagesOf(H[i])[0]);
+    return el;
+  }
+  function fillBack() {
+    const deck = document.getElementById('yf-deck');
+    const nx = H[S.idx + 1];
+    if (!deck || !nx || S.screen !== 'swipe') return;
+    const arrive = S.promote;
+    S.promote = false;
+    if (!document.getElementById('yf-back')) {
+      const later = [...deck.querySelectorAll('.yf-card.later')].find((x) => Number(x.dataset.n) === nx.number);
+      let el;
+      if (later) {
+        el = later;                                   // 作っておいた札を使う（組み立て済みなので止まらない）
+        el.classList.replace('later', arrive ? 'pre' : 'ready');
+      } else {
+        el = buildBack(S.idx + 1, arrive ? 'pre' : 'ready');
+      }
+      el.id = 'yf-back';
+      if (arrive) {
+        let done = false;
+        const start = () => {
+          if (done) return;
+          done = true;
+          el.classList.remove('pre');
+          // 次の札は、奥から小さく浮かび上がって後ろの定位置に収まる
+          springTo(el, (x) => ({
+            transform: backTf(BACK_Y + 36 * (1 - x), 0.88 + (BACK_S - 0.88) * x),
+            opacity: Math.min(1, x * 1.6),
+          }), { response: 0.55, damping: 0.88 });
+        };
+        requestAnimationFrame(() => requestAnimationFrame(start));
+        setTimeout(start, 80);   // 画面が裏にあって描画の合図が来ないときも、後ろの札が隠れたままにならないように
+      }
+    }
+    // その先の2頭ぶんの札も、すぐに1枚ずつ作っておく（札の動きは描画の別の係が受け持つので、作っている間も止まらない）
+    clearTimeout(S.prepT);
+    S.prepT = setTimeout(prepNext, arrive ? 120 : 250);
+  }
+  function prepNext() {
+    const deck = document.getElementById('yf-deck');
+    if (!deck || S.screen !== 'swipe') return;
+    const want = [S.idx + 2, S.idx + 3].filter((i) => H[i]);
+    const pool = [...deck.querySelectorAll('.yf-card.later')];
+    pool.forEach((x) => { if (!want.some((i) => H[i].number === Number(x.dataset.n))) x.remove(); });
+    const i = want.find((k) => !pool.some((x) => x.isConnected && Number(x.dataset.n) === H[k].number));
+    if (i == null) return;
+    // 中身の文字を作る仕事と、並べて大きさを合わせる仕事を分けて、1回の止まりを短くする
+    const html = backHtml(i);
+    S.prepT = setTimeout(() => {
+      if (S.screen !== 'swipe' || !want.includes(i) || S.idx + 1 >= i) return;
+      if ([...deck.querySelectorAll('.yf-card.later')].some((x) => Number(x.dataset.n) === H[i].number)) return;
+      buildBack(i, 'later', html);
+      S.prepT = setTimeout(prepNext, 60);
+    }, 30);
+  }
+
 
   const checked = () => H.filter((h) => S.my[h.number] === '✓');
   const byNum = (n) => H.find((h) => h.number === n);
@@ -1003,6 +1087,33 @@
   //   ・しきい値を越えた瞬間と、決まった瞬間に、iPhone の軽い振動（iOS 18 の Safari の切り替えスイッチを使う。実機未確認）
   //   ・下に払う：札が下がり、確認は画面の下から出る iPhone の選択シートに
   const EASE_IOS = 'cubic-bezier(.32,.72,0,1)';
+  // 後ろの札が休んでいる位置（少し下・少し小さい）。CSS の .yf-card.back と同じ値
+  const BACK_Y = 12, BACK_S = 0.955;
+  const backTf = (y, sc) => `translateY(${y.toFixed(2)}px) scale(${sc.toFixed(4)})`;
+  // iPhone と同じ「ばね」の動き（UIKit の spring：response＝揺れの周期、damping＝減衰の強さ）。
+  //   CSS の決まった曲線ではなく、ばねの式から途中の形を細かく作って Web Animations で動かす
+  function springFrames(fn, { response = 0.42, damping = 0.86, v0 = 0 } = {}) {
+    const w = (2 * Math.PI) / response;
+    const zw = damping * w;
+    const wd = w * Math.sqrt(1 - damping * damping);
+    const dur = Math.min(1.2, (response * 4) / (damping * 2 * Math.PI) * 1.9);
+    const N = 48;
+    const frames = [];
+    for (let i = 0; i <= N; i += 1) {
+      const t = (dur * i) / N;
+      // 0→1 へ向かう変位（初速 v0 は 1秒あたりの進み）
+      const e = Math.exp(-zw * t);
+      const x = 1 - e * (Math.cos(wd * t) + ((zw - v0) / wd) * Math.sin(wd * t));
+      frames.push({ ...fn(i === N ? 1 : x), offset: i / N });
+    }
+    return { frames, dur: dur * 1000 };
+  }
+  function springTo(el, fn, opts, done) {
+    const { frames, dur } = springFrames(fn, opts);
+    const a = el.animate(frames, { duration: dur, easing: 'linear', fill: 'forwards' });
+    a.onfinish = () => { if (done) done(); a.cancel(); };
+    return a;
+  }
   function haptic() {
     const i = document.getElementById('yf-hap');
     if (i && i.parentElement) { try { i.parentElement.click(); } catch (_) { /* 振動できない端末では何もしない */ } }
@@ -1025,26 +1136,64 @@
     setTimeout(() => { snap.remove(); nu.classList.remove('in-r', 'in-l'); }, 420);
   }
   function decideApple(mark, vx, vy, rot, dy) {
-    if (S.busy) return;
-    S.busy = true;
     const card = document.getElementById('yf-card');
+    if (!card || card.dataset.gone) return;
+    card.dataset.gone = '1';
     const back = document.getElementById('yf-back');
     const dir = mark === '✓' ? 1 : -1;
     const w = window.innerWidth;
     const speed = Math.max(Math.abs(vx), 1.2);                 // 画面の点／ミリ秒
     const t = Math.max(0.16, Math.min(0.32, (w * 0.9) / speed / 1000));
+    // 払った札は「抜け殻」にして飛ばす。指はもう次の札をつかめる（速く続けて払っても待たされない）
+    card.querySelectorAll('[id]').forEach((x) => x.removeAttribute('id'));
+    card.removeAttribute('id');
+    card.style.pointerEvents = 'none';
     card.classList.remove('spring', 'press');
     card.style.transition = `transform ${t}s cubic-bezier(.2,.6,.35,1), opacity ${t}s linear`;
     card.style.transform = `translate(${dir * w * 1.25}px, ${dy + vy * t * 1000}px) rotate(${rot * 2.2}deg)`;
     card.style.opacity = '.4';
-    if (back) { back.style.transition = `transform ${t}s ${EASE_IOS}, opacity ${t}s ${EASE_IOS}`; back.style.transform = 'none'; back.style.opacity = '1'; }
+    setTimeout(() => card.remove(), t * 1000 + 30);
     haptic();
-    setTimeout(() => {
-      S.busy = false;
-      S.my[H[S.idx].number] = mark;
-      S.idx += 1; S.page = 0;
-      if (S.idx >= H.length) go('ask'); else { S.promote = true; render(); }
-    }, t * 1000);
+    S.my[H[S.idx].number] = mark;
+    S.idx += 1; S.page = 0;
+    if (S.idx >= H.length || !back) { setTimeout(() => go('ask'), t * 1000); return; }
+    // 後ろの札は、払った札が抜けるのと同時に、ばねの動きで前へせり上がる。
+    //   せり上がる札をそのまま「前の札」にする（作り直さないので、動きの途中で絵が替わらない）
+    const p0 = Number(back.dataset.p || 0);
+    back.getAnimations().forEach((a) => a.cancel());
+    back.style.transition = 'none';
+    back.style.transform = '';
+    back.style.transformOrigin = '50% 100%';
+    const v = Math.min(3, Math.abs(vx) * 2.2);          // 払った勢いを、せり上がりの初速に少し分ける
+    springTo(back, (x) => {
+      const q = p0 + (1 - p0) * x;
+      return { transform: backTf(BACK_Y * (1 - q), BACK_S + (1 - BACK_S) * q) };
+    }, { response: 0.5, damping: 0.8, v0: v }, () => { back.style.transformOrigin = ''; });
+    const sh = back.querySelector('.yf-shade');
+    if (sh) {
+      const o0 = Number(getComputedStyle(sh).opacity);
+      sh.style.transition = 'none';
+      sh.animate([{ opacity: o0 }, { opacity: 0 }], { duration: 260, easing: 'ease-out', fill: 'forwards' }).onfinish = () => sh.remove();
+    }
+    promoteBack(back);
+  }
+  // 後ろの札を、その場で前の札に変える（中身・位置・動きはそのまま）
+  function promoteBack(el) {
+    el.id = 'yf-card';
+    el.classList.remove('back', 'ready', 'pre', 'arrive');
+    el.removeAttribute('aria-hidden');
+    delete el.dataset.n;
+    delete el.dataset.p;
+    const pg = el.querySelector('.yf-page');
+    if (pg) pg.id = 'yf-page';
+    el.insertAdjacentHTML('afterbegin', '<div class="yf-tint" id="yf-tint"></div><div class="yf-stamp ok" id="yf-ok"><i>✓</i>残す</div><div class="yf-stamp ng" id="yf-ng"><i>✕</i>消す</div>');
+    if (pagesOf(H[S.idx]).length > 1) el.insertAdjacentHTML('beforeend', '<span class="yf-edge r">›</span>');
+    // 飛んでいく抜け殻より手前に来ないよう、前の札は抜け殻の直前に置く（重なり順）
+    const ghost = el.parentElement.querySelector('.yf-card[data-gone]');
+    if (ghost) el.parentElement.insertBefore(el, ghost);
+    bindCard();
+    S.promote = true;
+    fillBack();
   }
   // 戦績のシート（比べる画面で馬名を押したとき）。全戦績と同じ2行の一覧を、下から出る札の中で縦に動かして見る
   // 下から出るシート（比べる画面の上に重ねる。閉じるボタンか外側を押すと閉じる）
@@ -1137,7 +1286,7 @@
   // 払う・端を押す。しきい値（100px・速さ0.6）は仮の値で、実機で決める（仕様書「未確定」）
   function bindCard() {
     const card = document.getElementById('yf-card');
-    const back = document.getElementById('yf-back');
+    const backEl = () => document.getElementById('yf-back');
     const ok = document.getElementById('yf-ok');
     const ng = document.getElementById('yf-ng');
     const pageEl = document.getElementById('yf-page');
@@ -1145,22 +1294,51 @@
     const TH = 100;
     let sx = 0, sy = 0, st = 0, dx = 0, dy = 0, g = 1, drag = false, vdrag = false, down = false, vscroll = false, top0 = 0, over = false;
     let hist = [];
+    let base = '';
     const scrollable = () => pageEl && pageEl.scrollHeight > pageEl.clientHeight + 1;
+    const tint = document.getElementById('yf-tint');
     const setBack = (p) => {
+      const back = backEl();
       if (!back) return;
+      if (back.getAnimations().length) back.getAnimations().forEach((a) => a.cancel());
+      back.classList.remove('pre');
       back.style.transition = 'none';
-      back.style.transform = `translateY(${(8 - 8 * p).toFixed(1)}px) scale(${(0.96 + 0.04 * p).toFixed(4)})`;
-      back.style.opacity = String(0.55 + 0.45 * p);
+      back.style.transform = backTf(BACK_Y * (1 - p), BACK_S + (1 - BACK_S) * p);
+      back.dataset.p = p.toFixed(3);
+      // 影は子の要素の透明度だけを変える（札全体の指定を変えると、中身ごと毎回計算し直しになり iPhone でかくついた）
+      const sh = back.querySelector('.yf-shade');
+      if (sh) { sh.style.transition = 'none'; sh.style.opacity = ((1 - p) * 0.55).toFixed(3); }
     };
     const springHome = () => {
+      base = '';
+      card.style.transformOrigin = '';
       card.classList.add('spring');
       card.style.transform = '';
       ok.style.opacity = 0; ng.style.opacity = 0; ok.style.transform = ''; ng.style.transform = '';
-      if (back) { back.style.transition = `transform .5s ${EASE_IOS}, opacity .5s ${EASE_IOS}`; back.style.transform = ''; back.style.opacity = ''; }
+      if (tint) { tint.style.transition = 'opacity .35s'; tint.style.opacity = 0; }
+      const back = backEl();
+      if (back) {
+        const p0 = Number(back.dataset.p || 0);
+        back.style.transition = 'none';
+        back.style.transform = '';
+        back.dataset.p = '0';
+        if (p0 > 0) springTo(back, (x) => { const q = p0 * (1 - x); return { transform: backTf(BACK_Y * (1 - q), BACK_S + (1 - BACK_S) * q) }; }, { response: 0.45, damping: 0.9 });
+        const sh = back.querySelector('.yf-shade');
+        if (sh) { sh.style.transition = `opacity .5s ${EASE_IOS}`; sh.style.opacity = ''; }
+      }
       deck.style.setProperty('--dim', '0');
     };
     card.addEventListener('pointerdown', (e) => {
-      if (e.button !== 0 || S.busy) return;
+      if (e.button !== 0 || card.dataset.gone) return;
+      // せり上がりの途中でつかんだら、その場の位置で止めて指に付ける（最後まで飛ばすと、かくっと跳ねたため）
+      base = '';
+      if (card.getAnimations().length) {
+        const m = getComputedStyle(card).transform;
+        card.getAnimations().forEach((a) => a.cancel());
+        base = m && m !== 'none' ? ` ${m}` : '';
+        card.style.transformOrigin = '50% 100%';
+        card.style.transform = base.trim();
+      }
       down = true; drag = false; vdrag = false; vscroll = false; over = false; dx = 0; dy = 0;
       sx = e.clientX; sy = e.clientY; st = performance.now(); hist = [[st, sx, sy]];
       top0 = pageEl ? pageEl.scrollTop : 0;
@@ -1194,10 +1372,17 @@
       if (!drag) return;
       const p = Math.min(1, Math.abs(dx) / TH);
       const rot = (dx / 18) * g;
-      card.style.transform = `translate(${dx}px, ${(dy * 0.2).toFixed(1)}px) rotate(${rot.toFixed(2)}deg)`;
+      card.style.transform = `translate(${dx}px, ${(dy * 0.2).toFixed(1)}px) rotate(${rot.toFixed(2)}deg)${base}`;
       const sOk = dx > 0 ? p : 0, sNg = dx < 0 ? p : 0;
-      ok.style.opacity = sOk; ok.style.transform = `rotate(-14deg) scale(${(0.6 + 0.4 * sOk).toFixed(3)})`;
-      ng.style.opacity = sNg; ng.style.transform = `rotate(14deg) scale(${(0.6 + 0.4 * sNg).toFixed(3)})`;
+      // しきい値を越えたら札がぽんと大きくなる（越える前は控えめ）
+      const pop = (v) => (v >= 1 ? 1.08 : 0.7 + 0.25 * v).toFixed(3);
+      ok.style.opacity = sOk; ok.style.transform = `scale(${pop(sOk)})`;
+      ng.style.opacity = sNg; ng.style.transform = `scale(${pop(sNg)})`;
+      if (tint) {
+        tint.style.transition = 'none';
+        tint.style.background = dx > 0 ? 'var(--mk-chk)' : 'var(--keshi)';
+        tint.style.opacity = (p * 0.14).toFixed(3);
+      }
       setBack(p);
       const o = Math.abs(dx) > TH;
       if (o !== over) { over = o; if (o) haptic(); }

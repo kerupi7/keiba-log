@@ -558,16 +558,23 @@ html.rc-frame .mx .mg-close .mg-tag{background:#5E7185}
 .yf-haptic{position:fixed;left:-9999px;top:0;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none}
 .yf-deck.apple{--dim:0}
 .yf-deck.apple::before{content:"";position:absolute;inset:-20px -20px -40px;background:#000;opacity:calc(var(--dim) * .18);pointer-events:none;border-radius:20px}
-.yf-deck.apple .yf-card{border-radius:18px;border-color:rgba(0,0,0,.06);box-shadow:0 10px 30px rgba(0,0,0,.10),0 1px 3px rgba(0,0,0,.06)}
+.yf-deck.apple .yf-card{backface-visibility:hidden;border-radius:18px;border-color:rgba(0,0,0,.06);box-shadow:0 10px 30px rgba(0,0,0,.10),0 1px 3px rgba(0,0,0,.06)}
 /* 押した瞬間だけ少し沈む。払っている間は指に遅れずついてくるよう、動きの時間を付けない */
 .yf-deck.apple .yf-card.press{transform:scale(.985);transition:transform .18s cubic-bezier(.32,.72,0,1)}
 .yf-deck.apple .yf-card.spring{transition:transform .55s cubic-bezier(.2,1.35,.4,1),opacity .3s}
 .yf-deck.apple .yf-card.back{transition:none}
-.yf-deck.apple .yf-card.back.arrive{animation:yfArrive .45s cubic-bezier(.32,.72,0,1) both}
-@keyframes yfArrive{from{opacity:0;transform:scale(.9) translateY(16px)}to{opacity:.55;transform:scale(.96) translateY(8px)}}
-.yf-deck.apple .yf-card.promoted .yf-dots,.yf-deck.apple .yf-card.promoted .yf-plab,.yf-deck.apple .yf-card.promoted .yf-page{animation:yfFadeUp .32s cubic-bezier(.32,.72,0,1) both}
-@keyframes yfFadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-.yf-deck.apple .yf-stamp{transition:none;transform-origin:center}
+/* 後ろの札：次の馬の中身をそのまま描き、薄い影で奥にあることを示す（白い札に見えたため・2026-09-17） */
+.yf-deck.apple .yf-card.back{transform:translateY(12px) scale(.955);transform-origin:50% 100%;opacity:1;backface-visibility:hidden}
+.yf-deck.apple .yf-card.back.pre,.yf-deck.apple .yf-card.back.later{visibility:hidden}
+.yf-deck.apple .yf-card.back .yf-shade{position:absolute;inset:0;background:#E9E9EE;opacity:.55;pointer-events:none;border-radius:inherit;will-change:opacity}
+/* 払っている向きに合わせて、札全体がうっすら緑／赤に染まる */
+.yf-deck.apple .yf-tint{position:absolute;inset:0;z-index:4;opacity:0;pointer-events:none;border-radius:inherit}
+/* 「残す」「消す」の札：傾けず、iPhone の通知のような丸い札 */
+.yf-deck.apple .yf-stamp{top:14px;display:flex;align-items:center;gap:6px;padding:7px 16px 7px 8px;border:0;border-radius:999px;font-size:17px;font-weight:800;
+  color:#fff;box-shadow:0 8px 20px rgba(0,0,0,.18);transition:transform .22s cubic-bezier(.34,1.56,.64,1);transform-origin:center;transform:scale(.7)}
+.yf-deck.apple .yf-stamp i{font-style:normal;width:24px;height:24px;border-radius:50%;background:rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;font-size:14px}
+.yf-deck.apple .yf-stamp.ok{left:14px;background:var(--mk-chk)}
+.yf-deck.apple .yf-stamp.ng{right:14px;background:var(--keshi)}
 .yf-deck.apple .yf-dots i{transition:background-color .3s cubic-bezier(.32,.72,0,1)}
 .yf-deck.apple .yf-page{position:relative;will-change:transform}
 .yf-deck.apple .yf-old{position:absolute;left:0;right:0;pointer-events:none;overflow:hidden;z-index:1;background:#fff}
