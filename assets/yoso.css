@@ -649,11 +649,13 @@ html.rc-frame .mx .mg-close .mg-tag{background:#5E7185}
 .dl-side.win{box-shadow:0 0 0 3px var(--navy),0 14px 30px rgba(0,0,0,.18);z-index:2}
 .dl-side.champ.win{box-shadow:0 0 0 3px #C8A200,0 14px 30px rgba(0,0,0,.18)}
 .dl-side.lose{pointer-events:none}
-/* 入ってくる馬：外側から滑り込み、少しだけ行き過ぎて止まる */
-.dl-side.fresh.l{animation:dlInL .56s cubic-bezier(.32,.72,0,1) both}
+/* 入ってくる馬：右の外から滑り込み、少しだけ行き過ぎて止まる */
 .dl-side.fresh.r{animation:dlInR .56s cubic-bezier(.32,.72,0,1) both}
-@keyframes dlInL{0%{transform:translateX(-115%) rotate(-6deg) scale(.9);opacity:0}60%{opacity:1}75%{transform:translateX(2%) rotate(.4deg)}100%{transform:none;opacity:1}}
 @keyframes dlInR{0%{transform:translateX(115%) rotate(6deg) scale(.9);opacity:0}60%{opacity:1}75%{transform:translateX(-2%) rotate(-.4deg)}100%{transform:none;opacity:1}}
+/* 右で選んだ馬は左へ移る（選んだ馬はいつも左）。次の馬はそのあと右から入る */
+.dl-side.shift.l{animation:dlShift .5s cubic-bezier(.32,.72,0,1) both}
+@keyframes dlShift{from{transform:translateX(calc(100% + 16px))}to{transform:none}}
+.dl-side.fresh.r{animation-delay:.06s}
 /* 勝ち残った馬は、連勝の帯が光りながら数字が替わる */
 .dl-streak.bump{animation:dlBump .6s cubic-bezier(.32,.72,0,1) both;background:linear-gradient(100deg,#C8A200 30%,#F3DC7A 50%,#C8A200 70%) 0 0/300% 100%}
 @keyframes dlBump{0%{transform:scaleY(.2);background-position:100% 0}40%{transform:scaleY(1.15)}100%{transform:none;background-position:0 0}}
@@ -662,7 +664,7 @@ html.rc-frame .mx .mg-close .mg-tag{background:#5E7185}
 .dl-go.done{background:#1F7A45 !important;transform:scale(.98)}
 .dl-ck{display:inline-block;margin-right:5px;animation:dlCk .35s cubic-bezier(.34,1.56,.64,1) both}
 @keyframes dlCk{from{transform:scale(0) rotate(-30deg)}to{transform:none}}
-@media (prefers-reduced-motion: reduce){.dl-side.fresh.l,.dl-side.fresh.r,.dl-streak.bump,.dl-vs.pop,.dl-ck{animation:none}}
+@media (prefers-reduced-motion: reduce){.dl-side.shift.l,.dl-side.fresh.r,.dl-streak.bump,.dl-vs.pop,.dl-ck{animation:none}}
 .dl-side.champ{box-shadow:0 0 0 2px #C8A200,0 6px 18px rgba(0,0,0,.08)}
 .dl-streak{display:block;height:17px;line-height:17px;text-align:center;font-size:9.5px;font-weight:700;letter-spacing:.04em;color:#fff;background:#C8A200}
 .dl-streak.z{background:transparent}

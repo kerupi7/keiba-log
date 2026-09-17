@@ -938,7 +938,8 @@
     const nlen = [...String(h.name || '')].length;
     const nfs = nlen <= 7 ? 16 : nlen <= 8 ? 14.5 : nlen <= 9 ? 13 : 12;
     const pop = h.popularity != null ? `${h.popularity}人気` : '';
-    return `<div class="dl-side ${side}${t.fresh === side ? ' fresh' : ''}${champ ? ' champ' : ''}" data-side="${h.number}">
+    const moved = side === 'l' && t.shift;
+    return `<div class="dl-side ${side}${t.fresh === side ? ' fresh' : ''}${moved ? ' shift' : ''}${champ ? ' champ' : ''}" data-side="${h.number}">
       ${champ ? `<span class="dl-streak${t.bump ? ' bump' : ''}">${t.streak}連勝中</span>` : '<span class="dl-streak z"></span>'}
       <div class="dl-head">
         <div class="dl-h1">${umaBox(h.number, h.gate)}<b class="dl-nm" data-hist="${h.number}" style="font-size:${nfs}px">${esc(h.name)}<i>›</i></b></div>
@@ -962,6 +963,7 @@
       <label class="yf-haptic" aria-hidden="true"><input type="checkbox" switch id="yf-hap" tabindex="-1"></label>`;
     t.fresh = null;
     t.bump = false;
+    t.shift = false;
     return html;
   }
 
@@ -1259,7 +1261,11 @@
     t.bump = true;
     if (!t.queue.length) { setWinner(n); return; }
     const next = t.queue.shift();
-    if (t.left === n) { t.right = next; t.fresh = 'r'; } else { t.left = next; t.fresh = 'l'; }
+    // 選んだ馬はいつも左へ。右で選ばれたときは、右から左へ移る動きを付ける。次の馬はいつも右から入る
+    t.shift = t.right === n;
+    t.left = n;
+    t.right = next;
+    t.fresh = 'r';
     render();
   }
 
