@@ -174,12 +174,15 @@
         }
       }
     }
-    // 全戦績の前に、出馬表の「展開」の中身（馬場・枠順・脚質と展開）を1ページ置く（2026-09-17 ユーザー指示）
+    // 出馬表の「展開」の中身（馬場・枠順・脚質と展開）を1ページ置く（2026-09-17 ユーザー指示）。
+    // 場所は直近5走のすぐ後ろ（同日ユーザー指示で、全戦績の前から移した）。並び：基本→直近5走→展開→前走…5走前→全戦績
     return [{ k: 'p1', label: '基本' }].concat(sum)
-      .concat(runs.map((run, i) => ({ k: 'run', label: RUN_LABEL[i], i })))
       .concat(RV === 'm3' ? [{ k: 'tenkai', label: '展開' }] : [])
+      .concat(runs.map((run, i) => ({ k: 'run', label: RUN_LABEL[i], i })))
       .concat(allPages);
   }
+  // 前走のページの位置（基本・直近5走・展開の後ろ）。直近5走の札や全戦績の行を押したときの行き先に使う
+  const RUN_PAGE0 = 3;
   const CR = 's';   // 2026-09-17 案B（縦に動かす）に決定
   const CR_PER = 14;   // 15走だと休養の帯が4本ある馬で最大27pxはみ出したため14走
   // 全戦績は新しい順。直近5走（past_runs）＋それより前（career_runs）。同じ走が両方にあれば1つにする
@@ -546,7 +549,7 @@
 
   // s0：今の形（1走5行）
   function smCard0(d) {
-    return `<div class="sm-card ${d.band ? `bd-${d.band}` : ''}" data-goto="${d.i + 2}">
+    return `<div class="sm-card ${d.band ? `bd-${d.band}` : ''}" data-goto="${d.i + RUN_PAGE0}">
       <div class="sm-l"><i>${d.label}</i><b class="bt-num ${d.finMd}">${esc(d.finTxt)}</b><small>着</small></div>
       <div class="sm-m">
         <div class="sm-r1">${smRaceLine(d)}</div>
@@ -601,7 +604,7 @@
     }
     // 色の案（c1〜c3）は札が増えるので、脚質の札を下の行（展開の横）へ移し、左の列を少し広げる
     const moveSt = SC !== 'c0';
-    return `<div class="s1-card ${bg}${moveSt ? ' sc-alt' : ''}" data-goto="${d.i + 2}">
+    return `<div class="s1-card ${bg}${moveSt ? ' sc-alt' : ''}" data-goto="${d.i + RUN_PAGE0}">
       <div class="s1-l"><i>${d.label}</i><b class="bt-num ${finCls}">${esc(d.finTxt)}<small>着</small></b>
         ${mg}</div>
       <div class="s1-m">
@@ -621,7 +624,7 @@
   }
   // S2 列そろえ：数字を同じ縦の列に置き、上の見出し1本で単位を省く。5走を縦に見比べられる
   function smCard2(d) {
-    return `<div class="s2-card ${d.band ? `bd-${d.band}` : ''}" data-goto="${d.i + 2}">
+    return `<div class="s2-card ${d.band ? `bd-${d.band}` : ''}" data-goto="${d.i + RUN_PAGE0}">
       <div class="s2-top">${smRaceLine(d)}</div>
       <div class="s2-grid">
         <span class="s2-lab"><i>${d.label}</i></span>
@@ -642,7 +645,7 @@
   // S3 ウィジェット：レースを上の帯に、数字を小さな見出しつきの6マスに入れる
   function smCard3(d) {
     const cell = (lab, v, c = '') => `<div class="s3-c"><i>${lab}</i><b class="bt-num ${c}">${v}</b></div>`;
-    return `<div class="s3-card ${d.band ? `bd-${d.band}` : ''}" data-goto="${d.i + 2}">
+    return `<div class="s3-card ${d.band ? `bd-${d.band}` : ''}" data-goto="${d.i + RUN_PAGE0}">
       <div class="s3-head">${smRaceLine(d)}</div>
       <div class="s3-body">
         <div class="s3-l"><i>${d.label}</i><b class="bt-num ${d.finMd}">${esc(d.finTxt)}<small>着</small></b></div>
@@ -1087,7 +1090,7 @@
     for (let i = from; i < to; i += 1) {
       const r = all[i];
       const d = summaryRun(h, r, Math.min(i, 4));
-      const go = i < 5 ? ` data-goto="${i + 2}"` : '';
+      const go = i < 5 ? ` data-goto="${i + RUN_PAGE0}"` : '';
       out.push(`<div class="al-row ${d.band ? `bd-${d.band}` : ''}${i < 5 ? ' al-go' : ''}"${go}>
         <b class="al-fin bt-num ${d.finMd}">${esc(d.finTxt)}</b>
         <div class="al-m">
