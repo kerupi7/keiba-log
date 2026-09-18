@@ -886,7 +886,9 @@ html.rc-frame .mx .mg-close .mg-tag{background:#5E7185}
 /* 画面6（カードの最後のページ「全戦績」）の数字の書体（2026-09-18 ユーザー決定・T1）
    Futura は左の着順だけ。日付・距離・着差・タイム・上がり・通過順・人気・斤量は本文の書体 */
 .yf .al-page.hd-r3 *{font-family:var(--font)}
-.yf .al-page .al-row>.al-fin{font-family:Futura,Jost,var(--font)}
+/* C「左の箱」で着順が .al-lb の中に入ったため、子の指定（.al-row>.al-fin）では届かなくなっていた（2026-09-18 直し）。
+   着差の札は直近5走のページの札（.s1-mg）と同じく Futura */
+.yf .al-page .al-row .al-fin,.yf .al-page .al-row .al-pill{font-family:Futura,Jost,var(--font)}
 /* 画面7（印を決める・2頭を比べる画面）の数字の書体（2026-09-18 ユーザー決定・U3）
    Futura：オッズ・今日の流れの3着内率・直近5走の着順・着差。距離・通過順・斤量・コースの成績・過去の成績は本文の書体。
    「VS」と S/D/A の札は文字なので今のまま */
