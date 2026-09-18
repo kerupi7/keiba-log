@@ -138,13 +138,17 @@
   function startMarkOnly() {
     const m = loadMarks();
     open('none');
+    // 決まっている印は残し、まだの印から始める（◎が決まっていれば○から。2026-09-18 ユーザー指示）。
+    //   3つとも決まっていれば、前と同じく◎から決め直す
+    const all3 = MARKS3.every((k) => Object.values(m).includes(k));
     for (const h of H) {
       const x = m[h.number];
-      if (x === '✓' || MARKS3.includes(x)) S.my[h.number] = '✓';
+      if (MARKS3.includes(x) && !all3) S.my[h.number] = x;
+      else if (x === '✓' || MARKS3.includes(x)) S.my[h.number] = '✓';
       else if (x === '消') S.my[h.number] = '消';
     }
     S.idx = H.length;
-    startMark(0);
+    startMark(nextStep(0));
   }
 
   function menuRow(st, which) {
@@ -1187,7 +1191,8 @@
   function vMarked() {
     const mk = MARKS3[S.step];
     const h = byNum(S.lastWinner);
-    const more = S.step < 2 && pool().length > 0;
+    const nx = nextStep(S.step + 1);
+    const more = nx < MARKS3.length && pool().length > 0;
     return `${head('2 / 2　印を決める', `${mk} が決まりました`, 100)}
       <div class="yf-mid">
         <div class="yf-big ${KCLS[mk]}">${mk}</div>
@@ -1195,7 +1200,7 @@
         <div class="s">${esc(h.jockey)}／${h.odds != null ? h.odds.toFixed(1) : '—'}倍 ${esc(h.popularity ?? '—')}人気</div>
       </div>
       <div class="yf-foot">
-        ${more ? `<button type="button" class="yf-btn" data-act="next">次の印へ（${MARKS3[S.step + 1]}）</button>` : ''}
+        ${more ? `<button type="button" class="yf-btn" data-act="next">次の印へ（${MARKS3[nx]}）</button>` : ''}
         <button type="button" class="yf-btn ${more ? 'sub' : ''}" data-act="done">ここで終える</button>
       </div>`;
   }
@@ -1567,9 +1572,16 @@
   // ---------- 印（勝ち残り型・毎回やり直す） ----------
   //   選んだ馬は画面に残り、負けた馬の側だけ次の馬（馬番の若い順）に入れ替わる（2026-09-17 決定。前は勝ち抜き戦）。
   //   ✓が8頭なら◎まで7回。○・▲は◎を外して最初からやり直す
+  // from 番目以降で、まだどの馬にも付いていない印の位置。無ければ 3
+  const nextStep = (from) => {
+    const held = Object.values(S.my);
+    for (let k = from; k < MARKS3.length; k += 1) if (!held.includes(MARKS3[k])) return k;
+    return MARKS3.length;
+  };
   const pool = () => checked().filter((h) => !MARKS3.includes(S.my[h.number])).map((h) => h.number);
 
   function startMark(step) {
+    if (step >= MARKS3.length) { close(true); return; }
     S.step = step;
     const p = pool();
     if (p.length === 0) { close(true); return; }
@@ -1664,7 +1676,7 @@
     if (!a) return;
     switch (a.dataset.act) {
       case 'mark0': startMark(0); break;
-      case 'next': startMark(S.step + 1); break;
+      case 'next': startMark(nextStep(S.step + 1)); break;
       case 'restart': Q = H; S.idx = 0; S.page = 0; S.my = {}; go('swipe'); break;
       case 'done': close(true); break;
       case 'quit':
