@@ -837,15 +837,21 @@
     const cell = (lab, body, wide) => `<div class="al-dc${wide ? ' w' : ''}"><i>${lab}</i>${body}</div>`;
     const memo = [...(r.note_labels || []), r.note_text].filter(Boolean);
     const resid = r.time_resid != null ? `基準比 ${r.time_resid > 0 ? '+' : ''}${esc(r.time_resid)}秒` : esc(r.time_note || '');
-    return `<div class="al-det"><div class="al-dg">
-      ${cell(`${d.winLab === '2着' ? '2着馬' : '勝ち馬'}（今の最高成績）`, `<b>${esc(d.winner)}</b>${d.bpHtml || (r.winner_best ? ` <b>${esc(r.winner_best)}</b>` : '')}`, true)}
+    // 先頭の段に レースレベル・勝ち馬・勝ち馬の最高成績 の3つ（2026-09-18 ユーザー指示）。自分が勝った走は2着馬
+    const who = d.winLab === '2着' ? '2着馬' : '勝ち馬';
+    const lvMiss = { local: '地方', jump: '対象外' }[r.level_miss] || '—';
+    const best = d.bpHtml || (r.winner_best ? `<b>${esc(r.winner_best)}</b>` : '<b>—</b>');
+    return `<div class="al-det"><div class="al-top">
+      ${cell('レースレベル', d.lv || `<b>${lvMiss}</b>`)}
+      ${cell(who, `<b class="al-wn">${esc(d.winner)}</b>`)}
+      ${cell(`${who}の最高成績`, best)}
+    </div><div class="al-dg">
       ${cell('コーナーごとの位置', `<span class="al-dcn">${d.corners.map((c) => `<em class="bt-num">${esc(c)}</em>`).join('') || '—'}${smStyle(d)}</span>`)}
       ${cell('レースの流れ', `<b>${esc(d.sc || '—')}</b>`)}
       ${cell('タイム（当日の馬場を補正）', `<b class="bt-num ${d.tg}">${esc(d.time)}</b> <small>${resid}</small>`)}
       ${cell('上がり', `<b class="bt-num ${d.rkMd}">${esc(d.up)}</b> <small>${d.rk != null ? `${d.rk}位／${d.field}頭` : ''}</small>`)}
       ${cell('枠・馬番', `<b class="bt-num">${esc(d.waku)}枠${esc(d.umaban)}番</b> <small>${d.field}頭 ${esc(d.pop)}人気</small>`)}
       ${cell('騎手・斤量・馬体重', `<b>${esc(d.jockey || '—')}</b> <small class="bt-num">${esc(d.weight)}kg ${esc(d.bw)}kg</small>`)}
-      ${cell('レースの強さ', d.lv || '<b>—</b>')}
       ${cell('馬場', `<b class="bt-num ${d.sf}">${esc(d.sfTxt)}${esc(d.dist)}m</b> <b>${esc(d.going)}</b>`)}
       ${memo.length ? cell('メモ', `<div class="al-memo">${memo.map((m) => `<em>${esc(m)}</em>`).join('')}</div>`, true) : ''}
     </div></div>`;
