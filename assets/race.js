@@ -54,6 +54,18 @@ function sortedBets(site) {
   return [...(site.bets || [])].sort((a, b) => (BET_JA_ORDER[a.type] ?? 99) - (BET_JA_ORDER[b.type] ?? 99));
 }
 
+// 134-spec T4: 前日13:30の先行公開はオッズの発売前で、買い目を計算しようがない。
+// 「見送り（買い目なし）」だと、買う価値がないと判断したように読めるので文言を分ける。
+// 当日の朝に作り直されると odds_basis が変わり、この分岐に入らなくなる。
+function oddsPending(site) {
+  return ((site || {}).prediction || {}).odds_basis === 'オッズ未取得';
+}
+const BETS_PENDING_TEXT = '買い目はオッズが出てから決まります（当日の朝から）';
+
+function betsEmptyText(site) {
+  return oddsPending(site) ? BETS_PENDING_TEXT : '見送り（買い目なし）';
+}
+
 // ===== 4.1 ヘッダブロック =====
 function renderHeaderBlock(site) {
   const r = site.race;
@@ -203,7 +215,7 @@ function renderMarksBlock(site) {
 function renderBetsSectionV11(site) {
   const bets = sortedBets(site);
   if (!bets.length) {
-    return `<div class="eyebrow">買い目</div><div>見送り（買い目なし）</div>`;
+    return `<div class="eyebrow">買い目</div><div>${betsEmptyText(site)}</div>`;
   }
   const byNumberV11 = {};
   for (const h of site.horses) byNumberV11[h.number] = h;
@@ -247,7 +259,7 @@ function renderBetsSection(site) {
   const bets = sortedBets(site);
   const totalPoints = bets.reduce((sum, b) => sum + b.tickets.length, 0);
   if (!bets.length) {
-    return `<div class="eyebrow">買い目</div><div>見送り（買い目なし）</div>`;
+    return `<div class="eyebrow">買い目</div><div>${betsEmptyText(site)}</div>`;
   }
   const byNumberBets = {};
   for (const h of site.horses) byNumberBets[h.number] = h;
@@ -4052,7 +4064,7 @@ function renderBetRuleGroup(site, br, order, headCls) {
     // 代わりに点数（確定後は払戻）を出し、帯を押すと表が開く形にする（既定は閉じる）
     if (!pl.points) {
       return `<div class="secthead${hcls}">${escapeHtml(name)}</div>`
-        + '<div class="conf">本レースは見送り（買い目なし）</div>';
+        + `<div class="conf">${oddsPending(site) ? BETS_PENDING_TEXT : '本レースは見送り（買い目なし）'}</div>`;
     }
     // 2026-09-09 ユーザー決定: 券種は行ごとに書かず、券種ごとの見出し行でまとめる
     const header = showResult
@@ -4133,7 +4145,7 @@ function renderBets20(site) {
   if (site.prediction.stance === 'pass' || !bets.length) {
     return `
       <div class="secthead">買い目</div>
-      <div class="conf">本レースは見送り（買い目なし）</div>
+      <div class="conf">${oddsPending(site) ? BETS_PENDING_TEXT : '本レースは見送り（買い目なし）'}</div>
     `;
   }
   const byNumberBets20 = {};

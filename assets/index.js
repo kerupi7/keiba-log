@@ -276,6 +276,16 @@ function renderRaceRow(race) {
   const tags = (uchip || bchip) ? `<span class="rtags">${bchip}${uchip}</span>` : '';
 
   let pickHtml = planChipsHtml(race);
+  // 134-spec T4: 前日の先行公開はオッズの発売前で、買い目を出しようがないだけ。
+  // 「対象外」（新馬・少頭数）や「見送り」（買う価値なしの判断）と同じ見た目にすると
+  // 読む人が区別できないので、専用の札を出し、◎も出す。当日朝に作り直されると消える。
+  if (!pickHtml && race.odds_pending) {
+    const pick = race.pick || {};
+    const honmeiBox = pick.honmei_number != null
+      ? umaBox(pick.honmei_number, pick.honmei_gate, 'sm') : '—';
+    pickHtml = `<div class="rpick">${pillHtml('pre', 'オッズ待ち')}`
+      + `<span class="pk">◎${honmeiBox} ${escapeHtml(pick.honmei_name ?? '')}</span></div>`;
+  }
   // 5案が始まった日以降で買い目が無いレース（新馬・2歳未勝利・8頭未満）は「対象外」。
   // それより前のレースは旧方式なので、下の従来表示（◎と収支）をそのまま出す。
   if (!pickHtml && BETRULE_FROM && race.date >= BETRULE_FROM) {
