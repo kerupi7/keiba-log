@@ -314,6 +314,8 @@
   }
   // 前走のページの位置（基本・直近5走・展開の後ろ）。直近5走の札や全戦績の行を押したときの行き先に使う
   const RUN_PAGE0 = 3;
+  // 着差（秒）。数字で読めないもの（'クビ' '1.1/4' など馬身の表記）は「—」にする。NaN を出さない（2026-09-18）
+  const marginSec = (v) => { const n = v == null || v === '' ? NaN : Number(v); return Number.isFinite(n) ? n : null; };
   // 全戦績は新しい順。直近5走（past_runs）＋それより前（career_runs）。同じ走が両方にあれば1つにする
   function allRuns(h) {
     const seen = new Set();
@@ -590,7 +592,7 @@
     const race = site.race || {};
     const field = Number(r.field_size || r.runners) || null;
     const fin = Number(r.finish);
-    const mg = r.margin != null && r.margin !== '' ? Number(r.margin) : null;
+    const mg = marginSec(r.margin);
     const c1 = Number(String(r.corners || '').split('-')[0]) || null;
     const st = !c1 || !field ? null : c1 === 1 ? '逃げ' : c1 / field <= 0.33 ? '先行' : c1 / field <= 0.66 ? '差し' : '追込';
     const closeTh = { '芝': 0.4, 'ダート': 0.6 }[r.surface] ?? 0.5;
@@ -835,7 +837,7 @@
     const race = site.race || {};
     const field = Number(r.field_size || r.runners) || null;
     const fin = Number(r.finish);
-    const mg = r.margin != null && r.margin !== '' ? Number(r.margin) : null;
+    const mg = marginSec(r.margin);
     // 1〜3着は金・銀・銅（2026-09-17 ユーザー指示）
     const finCls = fin === 1 ? 'w1' : fin === 2 ? 'w2' : fin === 3 ? 'w3' : '';
 
