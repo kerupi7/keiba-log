@@ -301,10 +301,10 @@
     const runs = (h.past_runs || []).slice(0, 5);
     // 2ページ目に直近5走のまとめを置く（2026-09-17 ユーザー指示）。過去走の各ページはその後ろ
     const sum = runs.length ? [{ k: 'sum', label: `直近${runs.length}走` }] : [];
-    // 5走ページの後ろに全戦績（2026-09-17 ユーザー指示）。5走以下の馬は直近5走と同じなので出さない。
+    // 5走ページの後ろに全戦績（2026-09-17 ユーザー指示）。5走以下の馬にも出す（2026-09-18 ユーザー指示。前日は出さない決めだった）
     // 見せ方は1ページにまとめて縦に動かす（2026-09-17 決定。14走ずつページを分ける案は選ばなかった）
     const all = allRuns(h);
-    const allPages = all.length > 5 ? [{ k: 'all', from: 0, to: all.length, label: `全戦績 ${all.length}走` }] : [];
+    const allPages = all.length ? [{ k: 'all', from: 0, to: all.length, label: `全戦績 ${all.length}走` }] : [];
     // 出馬表の「展開」の中身（馬場・枠順・脚質と展開）を1ページ置く（2026-09-17 ユーザー指示）。
     // 場所は直近5走のすぐ後ろ（同日ユーザー指示で、全戦績の前から移した）。並び：基本→直近5走→展開→前走…5走前→全戦績
     return [{ k: 'p1', label: '基本' }].concat(sum)
@@ -1251,7 +1251,11 @@
     const i = document.getElementById('yf-hap');
     if (i && i.parentElement) { try { i.parentElement.click(); } catch (_) { /* 振動できない端末では何もしない */ } }
   }
+  // 最後にページを送った時刻。送った直後の押し直しを、行の押し間違いとして扱わないために使う
+  let lastTurnAt = 0;
+  const TURN_GUARD_MS = 700;
   function goPage(p, d) {
+    lastTurnAt = performance.now();
     const oldEl = document.getElementById('yf-page');
     const snap = oldEl ? oldEl.cloneNode(true) : null;
     const box = oldEl ? { top: oldEl.offsetTop, height: oldEl.offsetHeight, scroll: oldEl.scrollTop } : null;
@@ -1550,7 +1554,9 @@
       const x = (e.clientX - rc.left) / rc.width;
       if (x < 0.15) { turn(-1); return; }
       if (x > 0.85) { turn(1); return; }
-      const go2 = e.target.closest('[data-goto]');
+      // ページを送った直後の押し直しは、行（直近5走の札・全戦績の行）に当たっても左右の送りとして扱う。
+      //   左を続けて押すと、2回目が入れ替わった直近5走の札に当たって4走前へ飛んでいた（2026-09-18 ユーザー指摘）
+      const go2 = now - lastTurnAt < TURN_GUARD_MS ? null : e.target.closest('[data-goto]');
       if (go2) { const to = Number(go2.dataset.goto); goPage(to, to >= S.page ? 1 : -1); return; }
       if (x < 0.3) turn(-1); else if (x > 0.7) turn(1);
     };
