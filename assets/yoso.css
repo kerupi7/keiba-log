@@ -683,6 +683,35 @@ html.rc-frame .mx .mg-close .mg-tag{background:#5E7185}
 .sm-page.bc-b4 .bd-close .s1-mg{background:#5E7185}
 .al-page.bc-b4 .al-row.bd-close{background:#E4E9EF}
 
+/* 全戦績の行 C「左の箱」（2026-09-18 決定・mockup-170）：着順の下に着差の札、距離はその右。項目は列の幅を決めて上下でそろえる */
+.al-row.al-c{grid-template-columns:40px 1fr;gap:6px;padding:4px 6px 4px 2px}
+.al-c .al-lb{display:flex;flex-direction:column;align-items:center;gap:2px}
+.al-c .al-fin{font-size:20px}
+.al-c .al-pill{font-size:10.5px;font-weight:700;line-height:1;padding:3px 5px;border-radius:999px;background:rgba(0,0,0,.06);color:#3C3C43;min-width:30px;text-align:center}
+.al-c.bd-win .al-pill{background:#C8A200;color:#fff}.al-c.bd-close .al-pill{background:#5E7185;color:#fff}
+.al-c .al-m>div{display:grid;column-gap:5px}
+.al-c .al-r1{grid-template-columns:62px 52px 30px minmax(0,1fr)}
+.al-c .al-r2{grid-template-columns:44px 52px minmax(0,1fr) 38px 62px;gap:0 5px !important}
+.al-c .al-r1>b{margin-left:0;font-size:12px}
+.al-c .al-nm{display:flex;align-items:center;gap:4px;min-width:0}
+.al-c .al-tk,.al-c .al-r2>*{min-width:0;overflow:hidden;white-space:nowrap}
+.al-c .al-pop{margin-left:0;text-align:right}
+.al-c .al-jk{text-overflow:ellipsis}
+/* 戦績シートで押すと開く中身 */
+.al-c .al-det{display:none;grid-column:1/-1;padding:2px 2px 8px}
+.al-c.open .al-det{display:block}
+.al-c.open{background:#F7F9FC}.al-c.open.bd-win{background:#FFF9E8}.al-c.open.bd-close{background:#EEF1F5}
+.al-dg{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.al-dc{background:#fff;border:1px solid rgba(0,0,0,.07);border-radius:10px;padding:6px 8px;min-width:0;font-size:12px;line-height:1.4}
+.al-dc.w{grid-column:1/-1}
+.al-dc>i{display:block;font-style:normal;font-size:10px;color:#8E8E93;margin-bottom:1px}
+.al-dc b{font-size:13px}
+.al-dc small{font-size:10px;color:#8E8E93}
+.al-dc .sm-bp{margin-left:6px}
+.al-dcn{display:flex;gap:3px;align-items:center;flex-wrap:wrap}
+.al-dcn em{font-style:normal;font-size:11px;font-weight:700;border:1px solid #C7C7CC;border-radius:4px;min-width:17px;text-align:center;padding:1px 2px}
+.al-memo{display:flex;flex-wrap:wrap;gap:4px}
+.al-memo em{font-style:normal;font-size:11px;background:#EEF0F3;border-radius:6px;padding:2px 6px}
 .sm-page .s1-l .s1-mg i{font-style:normal;font-size:9.5px;font-weight:700;margin-right:3px;color:inherit}
 
 /* 印を決める：2頭を左右に並べる（2026-09-17 作り直し・勝ち残り型） */

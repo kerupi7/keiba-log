@@ -801,33 +801,54 @@
     return `<div class="race20 rvC tk2 t2 t2-w2">${hero}${field}${week}</div>`;
   }
 
-  // 全戦績のページ（2026-09-17 ユーザー指示・試作中）。1走＝2行の細い行。
-  //   1行目：着順・日付・場・クラスの札・レース名・距離と馬場
-  //   2行目：着差・タイム（金銀銅）・上がりと順位（金銀銅）・通過順・人気／頭数・騎手と斤量
-  //   地の色は直近5走と同じ（1着＝金・僅差＝青）。直近5走の行を押すとその走のページへ
-  function allPage(h, from, to) {
+  // 全戦績のページ（2026-09-17 ユーザー指示）。1走＝2行の細い行。
+  //   形は C「左の箱」（2026-09-18 決定・mockup-170。A 着差の列・B 1行目にまとめる は選ばなかった）：
+  //   左＝着順とその下に着差の札（直近5走のページと同じ）／1行目＝距離と馬場・日付・場・クラスの札・レース名
+  //   ／2行目＝タイム（金銀銅）・上がりと順位・通過順・人気／頭数・騎手と斤量。各項目は列の幅を決めて上下でそろえる
+  //   地の色は直近5走と同じ（1着＝金・僅差＝銀）。直近5走の行を押すとその走のページへ
+  //   sheet=true（比べる画面の戦績シート）は、行を押すとその走の中身が開く（2026-09-18 ユーザー指示）
+  function allPage(h, from, to, sheet) {
     const all = allRuns(h);
     const out = [];
     for (let i = from; i < to; i += 1) {
       const r = all[i];
       const d = summaryRun(h, r, Math.min(i, 4));
-      const go = i < 5 ? ` data-goto="${i + RUN_PAGE0}"` : '';
-      out.push(`<div class="al-row ${d.band ? `bd-${d.band}` : ''}${i < 5 ? ' al-go' : ''}"${go}>
-        <b class="al-fin bt-num ${d.finMd}">${esc(d.finTxt)}</b>
+      const go = sheet ? ` data-ex="${i}"` : i < 5 ? ` data-goto="${i + RUN_PAGE0}"` : '';
+      out.push(`<div class="al-row al-c ${d.band ? `bd-${d.band}` : ''}${sheet || i < 5 ? ' al-go' : ''}"${go}>
+        <div class="al-lb"><b class="al-fin bt-num ${d.finMd}">${esc(d.finTxt)}</b><span class="al-pill bt-num">${d.mgTxt}</span></div>
         <div class="al-m">
-          <div class="al-r1"><span class="bt-num al-dt">${esc(d.date)}</span><span>${esc(d.track)}</span>${d.clsHtml}
-            <span class="al-rn">${esc(d.rn)}</span>
-            <b class="bt-num ${d.sf}">${esc(d.sfTxt)}${esc(d.dist)}<small>${esc(d.going)}</small></b></div>
-          <div class="al-r2"><b class="bt-num al-mg">${d.mgTxt}</b><b class="bt-num ${d.tg}">${esc(d.time)}</b>
+          <div class="al-r1"><b class="bt-num al-ds ${d.sf}">${esc(d.sfTxt)}${esc(d.dist)}<small>${esc(d.going)}</small></b>
+            <span class="bt-num al-dt">${esc(d.date)}</span><span class="al-tk">${esc(d.track)}</span>
+            <span class="al-nm">${d.clsHtml}<span class="al-rn">${esc(d.rn)}</span></span></div>
+          <div class="al-r2"><b class="bt-num ${d.tg}">${esc(d.time)}</b>
             <span class="al-up"><b class="bt-num ${d.rkMd}">${esc(d.up)}</b><small>${d.rk != null ? `${d.rk}位` : ''}</small></span>
             <span class="bt-num al-cn">${esc(d.corners.join('-'))}</span>
             <span class="bt-num al-pop">${esc(d.pop)}<small>人/${d.field}</small></span>
             <span class="al-jk" style="font-size:${[...d.jockey].length >= 5 ? 9 : 10.5}px">${esc(d.jockey)}<small class="bt-num">${esc(d.weight)}</small></span></div>
         </div>
+        ${sheet ? allDetail(d, r) : ''}
       </div>`);
       // 休養の帯は全戦績には出さない（2026-09-17 ユーザー「ここに休養は不要」）。直近5走のページには残す
     }
     return `<div class="race20 rvC c3 mx hd-r3 sm-page al-page al-s bc-b4">${out.join('')}</div>`;
+  }
+  // 戦績シートで行を押すと開く中身（mockup-170 と同じ項目）
+  function allDetail(d, r) {
+    const cell = (lab, body, wide) => `<div class="al-dc${wide ? ' w' : ''}"><i>${lab}</i>${body}</div>`;
+    const memo = [...(r.note_labels || []), r.note_text].filter(Boolean);
+    const resid = r.time_resid != null ? `基準比 ${r.time_resid > 0 ? '+' : ''}${esc(r.time_resid)}秒` : esc(r.time_note || '');
+    return `<div class="al-det"><div class="al-dg">
+      ${cell(`${d.winLab === '2着' ? '2着馬' : '勝ち馬'}（今の最高成績）`, `<b>${esc(d.winner)}</b>${d.bpHtml || (r.winner_best ? ` <b>${esc(r.winner_best)}</b>` : '')}`, true)}
+      ${cell('コーナーごとの位置', `<span class="al-dcn">${d.corners.map((c) => `<em class="bt-num">${esc(c)}</em>`).join('') || '—'}${smStyle(d)}</span>`)}
+      ${cell('レースの流れ', `<b>${esc(d.sc || '—')}</b>`)}
+      ${cell('タイム（当日の馬場を補正）', `<b class="bt-num ${d.tg}">${esc(d.time)}</b> <small>${resid}</small>`)}
+      ${cell('上がり', `<b class="bt-num ${d.rkMd}">${esc(d.up)}</b> <small>${d.rk != null ? `${d.rk}位／${d.field}頭` : ''}</small>`)}
+      ${cell('枠・馬番', `<b class="bt-num">${esc(d.waku)}枠${esc(d.umaban)}番</b> <small>${d.field}頭 ${esc(d.pop)}人気</small>`)}
+      ${cell('騎手・斤量・馬体重', `<b>${esc(d.jockey || '—')}</b> <small class="bt-num">${esc(d.weight)}kg ${esc(d.bw)}kg</small>`)}
+      ${cell('レースの強さ', d.lv || '<b>—</b>')}
+      ${cell('馬場', `<b class="bt-num ${d.sf}">${esc(d.sfTxt)}${esc(d.dist)}m</b> <b>${esc(d.going)}</b>`)}
+      ${memo.length ? cell('メモ', `<div class="al-memo">${memo.map((m) => `<em>${esc(m)}</em>`).join('')}</div>`, true) : ''}
+    </div></div>`;
   }
 
   // 過去走のページ（2026-09-17 決定の形）：
@@ -1351,11 +1372,20 @@
     </div>`;
     rootEl.appendChild(bg);
     const shut = () => { bg.classList.add('out'); setTimeout(() => bg.remove(), 260); };
-    bg.addEventListener('click', (e) => { if (e.target === bg || e.target.closest('[data-hx]')) shut(); });
+    bg.addEventListener('click', (e) => {
+      if (e.target === bg || e.target.closest('[data-hx]')) { shut(); return; }
+      // 戦績の行を押すと、その走の中身を開く。開くのは1走だけ（ほかの開いている行は閉じる）
+      const row = e.target.closest('[data-ex]');
+      if (!row) return;
+      e.stopPropagation();
+      const was = row.classList.contains('open');
+      bg.querySelectorAll('[data-ex].open').forEach((x) => x.classList.remove('open'));
+      if (!was) { row.classList.add('open'); haptic(); }
+    });
   }
   function histSheet(h) {
     const n = allRuns(h).length;
-    infoSheet(h, `戦績 ${n}走`, n ? allPage(h, 0, n).replace(/ data-goto="\d+"/g, '') : '<p class="dl-none">出走記録なし</p>');
+    infoSheet(h, `戦績 ${n}走`, n ? allPage(h, 0, n, true) : '<p class="dl-none">出走記録なし</p>');
   }
   // 適性の札の詳しい版。コースと今日の流れは1ページ目（基本）の札を、脚質と枠は展開のページをそのまま使う
   const GAP_LAB = ['中2週まで', '中3〜5週', '中6〜9週', '中10週以上'];
