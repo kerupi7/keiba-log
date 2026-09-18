@@ -18,6 +18,7 @@
   const H = [...site.horses].filter((h) => !h.scratched).sort((a, b) => a.number - b.number);
   const KEY = `mymark:${raceId}`;
   let S = null;
+  let Q = H;         // この回にスワイプで出す馬（2026-09-18：未入力の馬だけ。全頭済みなら16頭やり直し）
   let root = null;   // 重ねる画面
 
   function toast(msg) {
@@ -28,7 +29,8 @@
   }
 
   // ---------- 印の保存（本番と同じ mymark:{race_id}） ----------
-  function loadMarks() { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { return {}; } }
+  let MOCK_M = null;   // 試作で状態を見せるときだけ使う（本番では常に null）
+  function loadMarks() { if (MOCK_M) return MOCK_M; try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { return {}; } }
   function saveMarks(m) { try { localStorage.setItem(KEY, JSON.stringify(m)); } catch (e) { /* 保存しないだけ */ } }
 
   // ---------- 本番の部品を借りる ----------
@@ -50,23 +52,152 @@
   const P = (n) => (PARTS[n] = PARTS[n] || parts(n));
 
   // ---------- 入口（印の一覧の一番上） ----------
+  //   2026-09-18：押すと下からのシートで「絞り込み」「印」の2つを出す（3案から M1 に決定）。
+  //   印は、絞り込みを全頭終えてからでないと選べない（同日ユーザー指示）
+
+  // いまの自分の印から、2つのメニューの状態を数える。◎○▲の馬も✓を通った馬なので、印の候補に入れる
+  function markState() {
+    const m = loadMarks();
+    const v = Object.values(m);
+    const chk = v.filter((x) => x === '✓').length;
+    const kesi = v.filter((x) => x === '消').length;
+    const got = MARKS3.filter((k) => v.includes(k));
+    // 全頭に ✓・消・◎○▲ のどれかが付いていれば、絞り込みは終わっている
+    const fin = (x) => x === '✓' || x === '消' || MARKS3.includes(x);
+    const n = H.filter((h) => fin(m[h.number])).length;
+    const done = n === H.length;
+    return { chk, kesi, got, cand: chk + got.length, swiped: n > 0, done, n, total: H.length };
+  }
+  const canMark = (st) => st.done && st.cand > 0;
+
+  const MENU_ICON = {
+    swipe: '<span class="yfm-ic sw"><i>✕</i><i>✓</i></span>',
+    mark: '<span class="yfm-ic mk">◎</span>',
+  };
+  const MENU_TXT = {
+    swipe: { t: '絞り込み', s: '1頭ずつスワイプして、残す馬（✓）と消す馬を決める' },
+    mark: { t: '印', s: '✓の馬を2頭ずつ比べて、◎○▲を決める' },
+  };
+  // 行の右端の状態は文字でなく記号で出す（2026-09-18 ユーザー「まだ・先に消しとチェックは芸がない」）。
+  //   3案から S2 に決定：絞り込みは何頭終えたかを輪と「3/16」で、済むと緑の✓。印は鍵 → ◎○▲ の丸が埋まっていく
+
+  // 状態をひとつの言葉にまとめる（swipe: none/part/done、mark: lock/ready/part/done）
+  function phase(st, which) {
+    if (which === 'swipe') return st.done ? 'done' : st.swiped ? 'part' : 'none';
+    if (!canMark(st)) return 'lock';
+    if (!st.got.length) return 'ready';
+    return st.got.length >= Math.min(3, st.cand) ? 'done' : 'part';
+  }
+  const LOCK = '<svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><rect x="5" y="10.5" width="14" height="10" rx="2.5" fill="currentColor"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" fill="none" stroke="currentColor" stroke-width="2.2"/></svg>';
+  const CHECK = '<svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const marks3 = (st) => `<span class="yfs-m3">${MARKS3.map((k) => `<i class="${st.got.includes(k) ? `on ${KCLS[k] || 'k1'}` : ''}">${k}</i>`).join('')}</span>`;
+  const ring = (frac, done) => {
+    const r = 10, c = 2 * Math.PI * r;
+    return `<svg class="yfs-ring${done ? ' done' : ''}" viewBox="0 0 26 26" width="26" height="26" aria-hidden="true">
+      <circle cx="13" cy="13" r="${r}" class="bg"/>
+      <circle cx="13" cy="13" r="${r}" class="fg" stroke-dasharray="${(c * frac).toFixed(1)} ${c.toFixed(1)}" transform="rotate(-90 13 13)"/>
+      ${done ? `<circle cx="13" cy="13" r="${r + 1.5}" class="fill"/><g transform="translate(6.5 6.5)">${CHECK}</g>` : ''}</svg>`;
+  };
+  function statusHtml(st, which) {
+    const ph = phase(st, which);
+    if (which === 'swipe') {
+      return `<span class="yfs-rw">${ring(st.n / st.total, ph === 'done')}<small>${ph === 'done' ? '' : `${st.n}/${st.total}`}</small></span>`;
+    }
+    if (ph === 'lock') return `<span class="yfs-lock">${LOCK}</span>`;
+    return marks3(st);
+  }
+
   function mountEntry() {
     const list = document.querySelector('.race20 .mm-list');
     if (!list || list.querySelector('.yf-entry')) return;
-    const any = Object.keys(loadMarks()).length > 0;
+    const st = markState();
     const box = document.createElement('div');
     box.className = 'yf-entry';
-    box.innerHTML = `<button type="button" class="yf-btn" id="yf-go">${any ? '予想をやり直す' : '予想をはじめる'}</button>
-      <p>1頭ずつ払って消す馬を決め、2頭ずつ比べて◎○▲を決めます</p>`;
+    const line = st.swiped
+      ? `いまの予想：✓${st.cand}・消${st.kesi}${st.got.length ? `・${st.got.join('')}` : '・印はまだ'}`
+      : '絞り込み → 印 の順に決めます';
+    box.innerHTML = `<button type="button" class="yf-btn" id="yf-go">予想をはじめる</button>
+      <p>${line}</p>`;
     list.insertBefore(box, list.firstChild);
-    box.querySelector('#yf-go').addEventListener('click', () => {
-      if (Object.keys(loadMarks()).length && !window.confirm('付けた印を消して、はじめからやり直します')) return;
-      open();
-    });
+    box.querySelector('#yf-go').addEventListener('click', openMenu);
+  }
+
+  // 絞り込み：まだ印の無い馬だけを出す。済んだ馬の答えはそのまま持っていく（全頭済みなら16頭すべてやり直し）。
+  //   ◎○▲ が付いた馬は✓として持っていく（印は絞り込みの後に決め直すため）
+  function startSwipe() {
+    const m = loadMarks();
+    const fin = (x) => x === '✓' || x === '消' || MARKS3.includes(x);
+    const all = markState().done;
+    Q = all ? H : H.filter((h) => !fin(m[h.number]));
+    open('none');
+    if (!all) for (const h of H) { const x = m[h.number]; if (x === '消') S.my[h.number] = '消'; else if (fin(x)) S.my[h.number] = '✓'; }
+    go('swipe');
+  }
+
+  // 印だけやり直す：いまの✓（と◎○▲）を候補にし、消はそのまま。前の◎○▲は、選び直さなければ✓に戻る
+  function startMarkOnly() {
+    const m = loadMarks();
+    open('none');
+    for (const h of H) {
+      const x = m[h.number];
+      if (x === '✓' || MARKS3.includes(x)) S.my[h.number] = '✓';
+      else if (x === '消') S.my[h.number] = '消';
+    }
+    S.idx = H.length;
+    startMark(0);
+  }
+
+  function menuRow(st, which) {
+    const dis = which === 'mark' && !canMark(st);
+    const ph = phase(st, which);
+    return `<button type="button" class="yfm-srow${dis ? ' dis' : ''}" data-menu="${which}" data-ph="${ph}"${dis ? ' aria-disabled="true"' : ''}>
+      ${MENU_ICON[which]}
+      <span class="yfm-tx"><b>${MENU_TXT[which].t}</b><small>${MENU_TXT[which].s}</small></span>
+      <span class="yfm-st">${statusHtml(st, which)}</span>
+    </button>`;
+  }
+
+  // 下からのシート：「予想をやめますか？」のシートと同じ作り。2行とキャンセル
+  let MENU = null;
+  function openMenu() {
+    if (MENU) return;
+    const st = markState();
+    haptic();
+    const bg = document.createElement('div');
+    bg.className = 'yfm-bg';
+    bg.innerHTML = `<div class="yfm-sheet">
+      <div class="yfm-grp"><div class="yfm-hd">予想をはじめる</div>${menuRow(st, 'swipe')}${menuRow(st, 'mark')}</div>
+      <button type="button" class="yfm-cancel" data-menu="cancel">キャンセル</button></div>`;
+    document.body.appendChild(bg);
+    document.body.style.overflow = 'hidden';
+    MENU = bg;
+    bg.addEventListener('click', onMenuClick);
+  }
+  function onMenuClick(e) {
+    const b = e.target.closest('[data-menu]');
+    if (!b) { if (e.target === MENU) closeMenu(); return; }
+    if (b.dataset.menu === 'cancel') { closeMenu(); return; }
+    if (b.classList.contains('dis')) {
+      // 選べない行は小さく揺らす
+      if (b.animate) b.animate([{ transform: 'translateX(0)' }, { transform: 'translateX(-6px)' }, { transform: 'translateX(5px)' }, { transform: 'translateX(0)' }], { duration: 260 });
+      return;
+    }
+    closeMenu(true);
+    if (b.dataset.menu === 'swipe') startSwipe(); else startMarkOnly();
+  }
+  function closeMenu(now) {
+    if (!MENU) return;
+    const el = MENU;
+    MENU = null;
+    document.body.style.overflow = '';
+    if (now) { el.remove(); return; }
+    el.classList.add('out');
+    setTimeout(() => el.remove(), 240);
   }
 
   // ---------- 重ねる画面 ----------
-  function open() {
+  function open(first = 'swipe') {
+    if (first === 'swipe') Q = H;
     S = { screen: 'swipe', idx: 0, page: 0, my: {}, step: 0, t: null, busy: false };
     root = document.createElement('div');
     root.className = 'yf';
@@ -75,7 +206,7 @@
     document.body.style.overflow = 'hidden';
     document.body.classList.add('yf-open');
     root.addEventListener('click', onClick);
-    go('swipe');
+    if (first === 'swipe') go('swipe');
   }
 
   function close(apply) {
@@ -107,7 +238,7 @@
     const col = document.getElementById('yf-col');
     // ページをめくっただけなら、後ろの札（次の馬）は描き直さずに残す
     const oldBack = document.getElementById('yf-back');
-    const keepBack = S.screen === 'swipe' && oldBack && Number(oldBack.dataset.n) === (H[S.idx + 1] || {}).number ? oldBack : null;
+    const keepBack = S.screen === 'swipe' && oldBack && Number(oldBack.dataset.n) === (Q[S.idx + 1] || {}).number ? oldBack : null;
     const keepLater = S.screen === 'swipe' ? [...document.querySelectorAll('.yf-card.later')] : [];
     col.innerHTML = { swipe: vSwipe, ask: vAsk, duel: vDuel, marked: vMarked }[S.screen]();
     if (S.screen === 'swipe') {
@@ -124,7 +255,7 @@
 
   // 1ページを画面の高さに収める（2026-09-17 ユーザー「縦スクロールせずに1画面に収めたい」）。
   //   中身が札より長いときは、中身ごと縮めて収める（字の大きさの比は変えない）。全戦績だけは縦に動かして見る形のまま（同日決定・案B）
-  function fitPage(pe = document.getElementById('yf-page'), pg = pagesOf(H[S.idx])[S.page]) {
+  function fitPage(pe = document.getElementById('yf-page'), pg = pagesOf(Q[S.idx])[S.page]) {
     if (!pe) return;
     if (pg && pg.k === 'all') { pe.classList.remove('fit'); return; }
     pe.classList.add('fit');
@@ -832,7 +963,7 @@
     return `<em class="yf-today ${sf}"><i>今回</i>${esc(r.surface)}<b class="bt-num">${esc(r.distance)}</b>m</em>`;
   })();
   function vSwipe() {
-    const h = H[S.idx];
+    const h = Q[S.idx];
     const pages = pagesOf(h);
     const pg = pages[S.page];
     const dots = pages.map((_, i) => `<i class="${i <= S.page ? 'on' : ''}"></i>`).join('');
@@ -842,7 +973,7 @@
           <div class="yf-tint" id="yf-tint"></div>
           <div class="yf-stamp ok" id="yf-ok"><i>✓</i>残す</div><div class="yf-stamp ng" id="yf-ng"><i>✕</i>消す</div>
           <div class="yf-dots">${dots}</div>
-          <div class="yf-plab"><span class="yf-pl"><b>${esc(pg.label)}</b>${TODAY_PAGES.includes(pg.k) ? todayTag : ''}</span><span>${S.idx + 1} / ${H.length}頭</span></div>
+          <div class="yf-plab"><span class="yf-pl"><b>${esc(pg.label)}</b>${TODAY_PAGES.includes(pg.k) ? todayTag : ''}</span><span>${H.length - Q.length + S.idx + 1} / ${H.length}頭</span></div>
           <div class="yf-page" id="yf-page">${pageHtml(h, pg)}</div>
           ${S.page > 0 ? '<span class="yf-edge l">‹</span>' : ''}
           ${S.page < pages.length - 1 ? '<span class="yf-edge r">›</span>' : ''}
@@ -855,10 +986,10 @@
   // 後ろの札には次の馬の1ページ目を描いておく（払った瞬間に中身がもう見えているように。2026-09-17 ユーザー指摘「後ろが白い」）。
   //   さらにその次の馬の札も、手が空いているうちに隠して作っておく（払った直後に組み立てると、iPhone で一瞬止まったため）
   function backHtml(i) {
-    const h = H[i];
+    const h = Q[i];
     const pages = pagesOf(h);
     return `<div class="yf-dots">${pages.map((_, k) => `<i class="${k === 0 ? 'on' : ''}"></i>`).join('')}</div>
-      <div class="yf-plab"><span class="yf-pl"><b>${esc(pages[0].label)}</b>${todayTag}</span><span>${i + 1} / ${H.length}頭</span></div>
+      <div class="yf-plab"><span class="yf-pl"><b>${esc(pages[0].label)}</b>${todayTag}</span><span>${H.length - Q.length + i + 1} / ${H.length}頭</span></div>
       <div class="yf-page">${pageHtml(h, pages[0])}</div>
       <div class="yf-shade"></div>`;
   }
@@ -866,16 +997,16 @@
     const deck = document.getElementById('yf-deck');
     const el = document.createElement('div');
     el.className = `yf-card back ${cls}`;
-    el.dataset.n = H[i].number;
+    el.dataset.n = Q[i].number;
     el.setAttribute('aria-hidden', 'true');
     el.innerHTML = html;
     deck.insertBefore(el, deck.firstChild);
-    fitPage(el.querySelector('.yf-page'), pagesOf(H[i])[0]);
+    fitPage(el.querySelector('.yf-page'), pagesOf(Q[i])[0]);
     return el;
   }
   function fillBack() {
     const deck = document.getElementById('yf-deck');
-    const nx = H[S.idx + 1];
+    const nx = Q[S.idx + 1];
     if (!deck || !nx || S.screen !== 'swipe') return;
     const arrive = S.promote;
     S.promote = false;
@@ -912,16 +1043,16 @@
   function prepNext() {
     const deck = document.getElementById('yf-deck');
     if (!deck || S.screen !== 'swipe') return;
-    const want = [S.idx + 2, S.idx + 3].filter((i) => H[i]);
+    const want = [S.idx + 2, S.idx + 3].filter((i) => Q[i]);
     const pool = [...deck.querySelectorAll('.yf-card.later')];
-    pool.forEach((x) => { if (!want.some((i) => H[i].number === Number(x.dataset.n))) x.remove(); });
-    const i = want.find((k) => !pool.some((x) => x.isConnected && Number(x.dataset.n) === H[k].number));
+    pool.forEach((x) => { if (!want.some((i) => Q[i].number === Number(x.dataset.n))) x.remove(); });
+    const i = want.find((k) => !pool.some((x) => x.isConnected && Number(x.dataset.n) === Q[k].number));
     if (i == null) return;
     // 中身の文字を作る仕事と、並べて大きさを合わせる仕事を分けて、1回の止まりを短くする
     const html = backHtml(i);
     S.prepT = setTimeout(() => {
       if (S.screen !== 'swipe' || !want.includes(i) || S.idx + 1 >= i) return;
-      if ([...deck.querySelectorAll('.yf-card.later')].some((x) => Number(x.dataset.n) === H[i].number)) return;
+      if ([...deck.querySelectorAll('.yf-card.later')].some((x) => Number(x.dataset.n) === Q[i].number)) return;
       buildBack(i, 'later', html);
       S.prepT = setTimeout(prepNext, 60);
     }, 30);
@@ -934,18 +1065,18 @@
   function vAsk() {
     const c = checked().length;
     const k = H.filter((h) => S.my[h.number] === '消').length;
-    return `${head('1 / 2　消す馬を決める', '消す馬が決まりました', 100)}
+    return `${head('1 / 2　絞り込み', '絞り込みが終わりました', 100)}
       <div class="yf-mid">
         <div class="yf-big chk">✓</div>
         <div class="yf-cnt"><span class="c1">✓ ${c}頭</span><span class="c2">消 ${k}頭</span></div>
         <div class="q">${c ? '印を決めるに進みますか？' : '✓の馬がいません'}</div>
-        <div class="s">${c === 0 ? '1頭以上を右に払うと、印を決められます'
+        <div class="s">${c === 0 ? '1頭以上を右にスワイプすると、印を決められます'
           : c === 1 ? '✓が1頭なので、比べずに◎になります'
             : `✓の${c}頭を2頭ずつ比べて◎を決めます（${c - 1}回）`}</div>
       </div>
       <div class="yf-foot">
         ${c ? '<button type="button" class="yf-btn" data-act="mark0">印を決める</button>'
-          : '<button type="button" class="yf-btn" data-act="restart">消す馬を決め直す</button>'}
+          : '<button type="button" class="yf-btn" data-act="restart">絞り込みをやり直す</button>'}
         <button type="button" class="yf-btn text" data-act="done">ここで終える（消と✓だけ付ける）</button>
       </div>`;
   }
@@ -1069,7 +1200,7 @@
 
   // ---------- 消し馬 ----------
   function turn(d) {
-    const n = pagesOf(H[S.idx]).length;
+    const n = pagesOf(Q[S.idx]).length;
     const p = S.page + d;
     if (p < 0 || p >= n) {
       // 端のページでさらに押したときは、札を小さく揺らして「これ以上ない」を伝える（iPhoneの端で跳ね返る動きに寄せる）
@@ -1154,9 +1285,9 @@
     card.style.opacity = '.4';
     setTimeout(() => card.remove(), t * 1000 + 30);
     haptic();
-    S.my[H[S.idx].number] = mark;
+    S.my[Q[S.idx].number] = mark;
     S.idx += 1; S.page = 0;
-    if (S.idx >= H.length || !back) { setTimeout(() => go('ask'), t * 1000); return; }
+    if (S.idx >= Q.length || !back) { setTimeout(() => go('ask'), t * 1000); return; }
     // 後ろの札は、払った札が抜けるのと同時に、ばねの動きで前へせり上がる。
     //   せり上がる札をそのまま「前の札」にする（作り直さないので、動きの途中で絵が替わらない）
     const p0 = Number(back.dataset.p || 0);
@@ -1187,7 +1318,7 @@
     const pg = el.querySelector('.yf-page');
     if (pg) pg.id = 'yf-page';
     el.insertAdjacentHTML('afterbegin', '<div class="yf-tint" id="yf-tint"></div><div class="yf-stamp ok" id="yf-ok"><i>✓</i>残す</div><div class="yf-stamp ng" id="yf-ng"><i>✕</i>消す</div>');
-    if (pagesOf(H[S.idx]).length > 1) el.insertAdjacentHTML('beforeend', '<span class="yf-edge r">›</span>');
+    if (pagesOf(Q[S.idx]).length > 1) el.insertAdjacentHTML('beforeend', '<span class="yf-edge r">›</span>');
     // 飛んでいく抜け殻より手前に来ないよう、前の札は抜け殻の直前に置く（重なり順）
     const ghost = el.parentElement.querySelector('.yf-card[data-gone]');
     if (ghost) el.parentElement.insertBefore(el, ghost);
@@ -1526,7 +1657,7 @@
     switch (a.dataset.act) {
       case 'mark0': startMark(0); break;
       case 'next': startMark(S.step + 1); break;
-      case 'restart': S.idx = 0; S.page = 0; S.my = {}; go('swipe'); break;
+      case 'restart': Q = H; S.idx = 0; S.page = 0; S.my = {}; go('swipe'); break;
       case 'done': close(true); break;
       case 'quit':
         if (window.confirm('予想をやめますか？ ここまでの答えは消えます')) close(false);

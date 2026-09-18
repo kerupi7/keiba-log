@@ -19,6 +19,50 @@
 .yf-btn.text{background:none;color:var(--link);font-size:14px;font-weight:600;padding:8px}
 .race20 .yf-entry p{margin:5px 2px 0;font-size:11px;color:var(--cap)}
 
+/* 入口のメニュー（2026-09-18・M1 下からのシートに決定）：絞り込み／印 の2つ */
+.yfm-ic{flex:none;width:34px;height:34px;border-radius:9px;display:inline-flex;align-items:center;justify-content:center;
+  color:#fff;font-weight:800;font-size:17px;font-family:inherit}
+.yfm-ic.sw{background:linear-gradient(90deg,var(--keshi) 50%,var(--mk-chk) 50%);gap:4px;font-size:12px}
+.yfm-ic.sw i{font-style:normal}
+.yfm-ic.mk{background:var(--mk-hon)}
+.yfm-tx{flex:1;min-width:0;display:flex;flex-direction:column;text-align:left}
+.yfm-tx b{font-size:16px;color:var(--text,#111);font-weight:700}
+.yfm-tx small{font-size:11.5px;color:#8E8E93;line-height:1.35;margin-top:1px}
+.yfm-st{flex:none;font-size:12px;color:#8E8E93;white-space:nowrap}
+.yfm-st.on{color:var(--mk-chk);font-weight:700}
+.dis .yfm-ic{opacity:.35}
+.dis .yfm-tx b{color:#AEAEB2}
+.yfm-bg{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.28);display:flex;align-items:flex-end;justify-content:center;
+  animation:yfmBgIn .25s ease-out both}
+.yfm-bg.out{animation:yfBgOut .24s ease-in both}
+@keyframes yfmBgIn{from{background:rgba(0,0,0,0)}}
+.yfm-sheet{width:100%;max-width:500px;padding:0 8px calc(8px + env(safe-area-inset-bottom));animation:yfSheetIn .42s cubic-bezier(.32,.72,0,1) both}
+.yfm-bg.out .yfm-sheet{animation:yfSheetOut .24s ease-in both}
+.yfm-grp{background:rgba(250,250,252,.94);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);border-radius:14px;overflow:hidden}
+.yfm-hd{padding:13px 16px;font-size:13px;font-weight:600;color:#8E8E93;text-align:center;border-bottom:.5px solid rgba(60,60,67,.29)}
+.yfm-srow{appearance:none;display:flex;align-items:center;gap:12px;width:100%;border:0;background:transparent;font:inherit;
+  padding:14px 16px;cursor:pointer;text-align:left}
+.yfm-srow+.yfm-srow{border-top:.5px solid rgba(60,60,67,.29)}
+.yfm-srow:active{background:rgba(0,0,0,.06)}
+/* 行の右端の状態（2026-09-18・記号で出す。3案から S2＝進み具合の輪に決定） */
+.yfm-st{display:flex;align-items:center}
+.yfs-lock{color:#C7C7CC;display:inline-flex}
+.yfs-m3{display:inline-flex;gap:3px}
+.yfs-m3 i{font-style:normal;width:21px;height:21px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:800;color:#C7C7CC;border:1.5px dashed #D1D1D6;box-sizing:border-box}
+.yfs-m3 i.on{color:#fff;border:0;background:var(--mkb-hon)}
+.yfs-m3 i.on.k2{background:var(--mkb-tai)}.yfs-m3 i.on.k3{background:var(--mkb-tan)}
+.yfs-rw{display:inline-flex;flex-direction:column;align-items:center;gap:1px}
+.yfs-rw small{font-size:10px;color:#8E8E93;font-family:Futura,Jost,sans-serif;letter-spacing:.02em}
+.yfs-ring .bg{fill:none;stroke:#E5E5EA;stroke-width:3}
+.yfs-ring .fg{fill:none;stroke:var(--mk-chk);stroke-width:3;stroke-linecap:round}
+.yfs-ring .fill{fill:var(--mk-chk)}
+  font-size:15px;font-weight:800;font-family:Futura,Jost,sans-serif;box-sizing:border-box;position:relative;z-index:1;
+  background:#fff;color:var(--navy);border:2px solid var(--navy)}
+  background:repeating-linear-gradient(#D1D1D6 0 3px,transparent 3px 6px);z-index:0}
+.yfm-cancel{display:block;width:100%;margin-top:8px;border:0;background:#fff;border-radius:14px;font:inherit;font-size:19px;
+  font-weight:600;color:#007AFF;padding:16px;cursor:pointer}
+
 /* 流れの画面（ポップアップと同じ白・角10px・見出しの下に太線） */
 .yf{position:fixed;inset:0;z-index:39;background:var(--sub-bg2);display:flex;justify-content:center;color:var(--text)}
 .yf-col{width:100%;max-width:520px;display:flex;flex-direction:column;background:var(--sub-bg2)}
