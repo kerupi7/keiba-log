@@ -21,9 +21,9 @@
     "win5": null
   },
   "prediction": {
-    "predicted_at": "2026-09-19T10:07:57",
+    "predicted_at": "2026-09-19T10:37:00",
     "odds_basis": "中間オッズ",
-    "odds_fetched_at": "2026-09-19T10:06",
+    "odds_fetched_at": "2026-09-19T10:36",
     "info_sufficiency": 85,
     "analysis_state": "中間オッズ版",
     "stance": "pass",
@@ -657,14 +657,14 @@
       "note": "オッズと頭数から出した目安です。買い目には影響しません。",
       "model_version": "upset-3",
       "threshold_line": "大荒れ19%・堅い43%のどちらにも届かないので中荒れ",
-      "average_line": "全レース平均57%より16ポイント多い",
+      "average_line": "全レース平均57%より8ポイント多い",
       "classes": [
         {
           "key": "kata",
           "name": "堅い",
-          "percent": 17,
+          "percent": 25,
           "base_percent": 32,
-          "prob": 0.17299,
+          "prob": 0.249576,
           "card": "3番人気以内で決まる",
           "selected": false,
           "tendency_caption": "「堅い」で決まったレースでは（過去11,960レース）",
@@ -690,9 +690,9 @@
         {
           "key": "naka",
           "name": "中荒れ",
-          "percent": 73,
+          "percent": 65,
           "base_percent": 57,
-          "prob": 0.726669,
+          "prob": 0.647587,
           "card": "4番人気以下が1頭絡む",
           "selected": true,
           "tendency_caption": "「中荒れ」で決まったレースでは（過去11,960レース）",
@@ -720,7 +720,7 @@
           "name": "大荒れ",
           "percent": 10,
           "base_percent": 12,
-          "prob": 0.100341,
+          "prob": 0.102836,
           "card": "8番人気以下が突っ込む",
           "selected": false,
           "tendency_caption": "「大荒れ」で決まったレースでは（過去11,960レース）",
@@ -746,7 +746,7 @@
       ]
     },
     "bigpay": {
-      "percent": "1.2",
+      "percent": "1.3",
       "ratio_line": "全体2.3%の0.5倍",
       "highlight": false,
       "band_lo": 4,
@@ -874,9 +874,9 @@
       "sex_age": "牡2",
       "weight_carried": 55.0,
       "jockey": "田辺裕信",
-      "body_weight": null,
-      "body_weight_diff": null,
-      "body_weight_source": null,
+      "body_weight": 482,
+      "body_weight_diff": 4,
+      "body_weight_source": "live",
       "sire": "グレーターロンドン",
       "damsire": "Awesome Again",
       "trainer": "美浦・栗田",
@@ -1544,8 +1544,20 @@
             "exp": 0.2145,
             "lift": 0.977
           },
-          "bweight": null,
-          "wratio": null,
+          "bweight": {
+            "level": "460-500",
+            "n": 1485,
+            "rate": 0.231,
+            "exp": 0.2301,
+            "lift": 1.004
+          },
+          "wratio": {
+            "level": "軽い",
+            "n": 860,
+            "rate": 0.2523,
+            "exp": 0.2292,
+            "lift": 1.101
+          },
           "age": {
             "level": "4-5歳",
             "n": 1181,
@@ -1574,7 +1586,13 @@
             "exp": 0.1093,
             "lift": 0.892
           },
-          "bwdelta": null,
+          "bwdelta": {
+            "level": "±9kg内",
+            "n": 2666,
+            "rate": 0.2254,
+            "exp": 0.2211,
+            "lift": 1.019
+          },
           "jchange": {
             "level": "乗り替わり",
             "n": 2396,
@@ -1604,10 +1622,32 @@
             "lift": 1.007
           }
         },
-        "up": 2,
-        "dn": 0,
-        "net": 2,
+        "up": 8,
+        "dn": 1,
+        "net": 7,
         "conds": [
+          {
+            "c": [
+              [
+                "bwdelta",
+                "±9kg内"
+              ],
+              [
+                "distchg",
+                "短縮"
+              ],
+              [
+                "numpos",
+                "内"
+              ]
+            ],
+            "sign": 1,
+            "n": 210,
+            "rate": 0.3,
+            "exp": 0.2201,
+            "lift": 1.363,
+            "z": 3.14
+          },
           {
             "c": [
               [
@@ -1651,20 +1691,152 @@
             "exp": 0.2178,
             "lift": 1.315,
             "z": 2.69
+          },
+          {
+            "c": [
+              [
+                "age",
+                "4-5歳"
+              ],
+              [
+                "sex",
+                "牡セ"
+              ],
+              [
+                "wratio",
+                "軽い"
+              ]
+            ],
+            "sign": 1,
+            "n": 232,
+            "rate": 0.3448,
+            "exp": 0.2703,
+            "lift": 1.276,
+            "z": 2.86
+          },
+          {
+            "c": [
+              [
+                "age",
+                "4-5歳"
+              ],
+              [
+                "homeaway",
+                "地元"
+              ],
+              [
+                "wratio",
+                "軽い"
+              ]
+            ],
+            "sign": 1,
+            "n": 283,
+            "rate": 0.3145,
+            "exp": 0.2504,
+            "lift": 1.256,
+            "z": 2.8
+          },
+          {
+            "c": [
+              [
+                "bwdelta",
+                "±9kg内"
+              ],
+              [
+                "prevcorner",
+                "中団"
+              ],
+              [
+                "sire",
+                "その他"
+              ]
+            ],
+            "sign": 1,
+            "n": 403,
+            "rate": 0.2556,
+            "exp": 0.2043,
+            "lift": 1.251,
+            "z": 2.84
+          },
+          {
+            "c": [
+              [
+                "bwdelta",
+                "±9kg内"
+              ],
+              [
+                "sex",
+                "牡セ"
+              ],
+              [
+                "wratio",
+                "軽い"
+              ]
+            ],
+            "sign": 1,
+            "n": 452,
+            "rate": 0.2942,
+            "exp": 0.2406,
+            "lift": 1.223,
+            "z": 3.01
+          },
+          {
+            "c": [
+              [
+                "homeaway",
+                "地元"
+              ],
+              [
+                "sex",
+                "牡セ"
+              ],
+              [
+                "wratio",
+                "軽い"
+              ]
+            ],
+            "sign": 1,
+            "n": 443,
+            "rate": 0.2912,
+            "exp": 0.2432,
+            "lift": 1.198,
+            "z": 2.66
+          },
+          {
+            "c": [
+              [
+                "bweight",
+                "460-500"
+              ],
+              [
+                "damsire",
+                "その他"
+              ],
+              [
+                "waku",
+                "内枠"
+              ]
+            ],
+            "sign": -1,
+            "n": 165,
+            "rate": 0.1515,
+            "exp": 0.2339,
+            "lift": 0.648,
+            "z": -2.79
           }
         ],
-        "conds_total": 2
+        "conds_total": 9
       },
       "scores": null,
       "total": null,
       "rank": null,
       "win_score": 57.8,
       "win_grade": "C",
-      "estimated_prob": 0.054007,
-      "fair_odds": 18.5,
-      "odds": 13.4,
+      "estimated_prob": 0.04699,
+      "fair_odds": 21.3,
+      "odds": 16.1,
       "popularity": 7,
-      "ev": -0.28,
+      "ev": -0.24,
       "ability_mark": null,
       "bet_mark": null,
       "landmine_reason": null,
@@ -1689,9 +1861,9 @@
       "sex_age": "牡2",
       "weight_carried": 55.0,
       "jockey": "大野拓弥",
-      "body_weight": null,
-      "body_weight_diff": null,
-      "body_weight_source": null,
+      "body_weight": 494,
+      "body_weight_diff": 10,
+      "body_weight_source": "live",
       "sire": "サリオス",
       "damsire": "エピファネイア",
       "trainer": "美浦・松山",
@@ -2359,8 +2531,20 @@
             "exp": 0.2145,
             "lift": 0.977
           },
-          "bweight": null,
-          "wratio": null,
+          "bweight": {
+            "level": "460-500",
+            "n": 1485,
+            "rate": 0.231,
+            "exp": 0.2301,
+            "lift": 1.004
+          },
+          "wratio": {
+            "level": "軽い",
+            "n": 860,
+            "rate": 0.2523,
+            "exp": 0.2292,
+            "lift": 1.101
+          },
           "age": {
             "level": "4-5歳",
             "n": 1181,
@@ -2389,7 +2573,13 @@
             "exp": 0.3545,
             "lift": 1.06
           },
-          "bwdelta": null,
+          "bwdelta": {
+            "level": "+10kg以上",
+            "n": 296,
+            "rate": 0.2162,
+            "exp": 0.2185,
+            "lift": 0.989
+          },
           "jchange": {
             "level": "乗り替わり",
             "n": 2396,
@@ -2419,9 +2609,9 @@
             "lift": 1.007
           }
         },
-        "up": 8,
-        "dn": 1,
-        "net": 7,
+        "up": 15,
+        "dn": 2,
+        "net": 13,
         "conds": [
           {
             "c": [
@@ -2470,6 +2660,50 @@
           {
             "c": [
               [
+                "age",
+                "4-5歳"
+              ],
+              [
+                "sex",
+                "牡セ"
+              ],
+              [
+                "wratio",
+                "軽い"
+              ]
+            ],
+            "sign": 1,
+            "n": 232,
+            "rate": 0.3448,
+            "exp": 0.2703,
+            "lift": 1.276,
+            "z": 2.86
+          },
+          {
+            "c": [
+              [
+                "age",
+                "4-5歳"
+              ],
+              [
+                "homeaway",
+                "地元"
+              ],
+              [
+                "wratio",
+                "軽い"
+              ]
+            ],
+            "sign": 1,
+            "n": 283,
+            "rate": 0.3145,
+            "exp": 0.2504,
+            "lift": 1.256,
+            "z": 2.8
+          },
+          {
+            "c": [
+              [
                 "distchg",
                 "同距離"
               ],
@@ -2487,6 +2721,72 @@
             "rate": 0.3538,
             "exp": 0.2835,
             "lift": 1.248,
+            "z": 2.51
+          },
+          {
+            "c": [
+              [
+                "distchg",
+                "同距離"
+              ],
+              [
+                "jockey",
+                "その他"
+              ],
+              [
+                "wratio",
+                "軽い"
+              ]
+            ],
+            "sign": 1,
+            "n": 293,
+            "rate": 0.3208,
+            "exp": 0.2595,
+            "lift": 1.236,
+            "z": 2.69
+          },
+          {
+            "c": [
+              [
+                "distchg",
+                "同距離"
+              ],
+              [
+                "sex",
+                "牡セ"
+              ],
+              [
+                "wratio",
+                "軽い"
+              ]
+            ],
+            "sign": 1,
+            "n": 290,
+            "rate": 0.3379,
+            "exp": 0.2739,
+            "lift": 1.234,
+            "z": 2.73
+          },
+          {
+            "c": [
+              [
+                "prevfin",
+                "1-3着"
+              ],
+              [
+                "sex",
+                "牡セ"
+              ],
+              [
+                "wratio",
+                "軽い"
+              ]
+            ],
+            "sign": 1,
+            "n": 165,
+            "rate": 0.4667,
+            "exp": 0.38,
+            "lift": 1.228,
             "z": 2.51
           },
           {
@@ -2514,6 +2814,28 @@
           {
             "c": [
               [
+                "distchg",
+                "同距離"
+              ],
+              [
+                "homeaway",
+                "地元"
+              ],
+              [
+                "wratio",
+                "軽い"
+              ]
+            ],
+            "sign": 1,
+            "n": 338,
+            "rate": 0.3284,
+            "exp": 0.2703,
+            "lift": 1.215,
+            "z": 2.69
+          },
+          {
+            "c": [
+              [
                 "homeaway",
                 "地元"
               ],
@@ -2532,6 +2854,28 @@
             "exp": 0.3202,
             "lift": 1.205,
             "z": 2.74
+          },
+          {
+            "c": [
+              [
+                "homeaway",
+                "地元"
+              ],
+              [
+                "sex",
+                "牡セ"
+              ],
+              [
+                "wratio",
+                "軽い"
+              ]
+            ],
+            "sign": 1,
+            "n": 443,
+            "rate": 0.2912,
+            "exp": 0.2432,
+            "lift": 1.198,
+            "z": 2.66
           },
           {
             "c": [
@@ -2594,6 +2938,28 @@
           {
             "c": [
               [
+                "bweight",
+                "460-500"
+              ],
+              [
+                "damsire",
+                "その他"
+              ],
+              [
+                "waku",
+                "内枠"
+              ]
+            ],
+            "sign": -1,
+            "n": 165,
+            "rate": 0.1515,
+            "exp": 0.2339,
+            "lift": 0.648,
+            "z": -2.79
+          },
+          {
+            "c": [
+              [
                 "damsire",
                 "その他"
               ],
@@ -2614,18 +2980,18 @@
             "z": -2.68
           }
         ],
-        "conds_total": 9
+        "conds_total": 17
       },
       "scores": null,
       "total": null,
       "rank": null,
       "win_score": 61.1,
       "win_grade": "C+",
-      "estimated_prob": 0.10499,
-      "fair_odds": 9.5,
-      "odds": 7.2,
-      "popularity": 4,
-      "ev": -0.24,
+      "estimated_prob": 0.105882,
+      "fair_odds": 9.4,
+      "odds": 7.1,
+      "popularity": 2,
+      "ev": -0.25,
       "ability_mark": "▲",
       "bet_mark": null,
       "landmine_reason": null,
@@ -2650,9 +3016,9 @@
       "sex_age": "牝2",
       "weight_carried": 54.0,
       "jockey": "長浜鴻緒",
-      "body_weight": null,
-      "body_weight_diff": null,
-      "body_weight_source": null,
+      "body_weight": 430,
+      "body_weight_diff": 12,
+      "body_weight_source": "live",
       "sire": "ステルヴィオ",
       "damsire": "モーリス",
       "trainer": "美浦・柄崎",
@@ -3389,8 +3755,20 @@
             "exp": 0.2145,
             "lift": 0.977
           },
-          "bweight": null,
-          "wratio": null,
+          "bweight": {
+            "level": "〜460",
+            "n": 1211,
+            "rate": 0.1825,
+            "exp": 0.1927,
+            "lift": 0.947
+          },
+          "wratio": {
+            "level": "重い",
+            "n": 685,
+            "rate": 0.1679,
+            "exp": 0.1831,
+            "lift": 0.917
+          },
           "age": {
             "level": "4-5歳",
             "n": 1181,
@@ -3419,7 +3797,13 @@
             "exp": 0.1093,
             "lift": 0.892
           },
-          "bwdelta": null,
+          "bwdelta": {
+            "level": "+10kg以上",
+            "n": 296,
+            "rate": 0.2162,
+            "exp": 0.2185,
+            "lift": 0.989
+          },
           "jchange": {
             "level": "乗り替わり",
             "n": 2396,
@@ -3651,11 +4035,11 @@
       "rank": null,
       "win_score": 48.7,
       "win_grade": "E",
-      "estimated_prob": 0.01636,
-      "fair_odds": 61.1,
-      "odds": 37.0,
+      "estimated_prob": 0.01262,
+      "fair_odds": 79.2,
+      "odds": 49.2,
       "popularity": 9,
-      "ev": -0.39,
+      "ev": -0.38,
       "ability_mark": null,
       "bet_mark": null,
       "landmine_reason": null,
@@ -3680,9 +4064,9 @@
       "sex_age": "牝2",
       "weight_carried": 53.0,
       "jockey": "石神深道",
-      "body_weight": null,
-      "body_weight_diff": null,
-      "body_weight_source": null,
+      "body_weight": 438,
+      "body_weight_diff": 0,
+      "body_weight_source": "live",
       "sire": "ジャンダルム",
       "damsire": "ヘニーヒューズ",
       "trainer": "美浦・和田郎",
@@ -4514,8 +4898,20 @@
             "exp": 0.2145,
             "lift": 0.977
           },
-          "bweight": null,
-          "wratio": null,
+          "bweight": {
+            "level": "〜460",
+            "n": 1211,
+            "rate": 0.1825,
+            "exp": 0.1927,
+            "lift": 0.947
+          },
+          "wratio": {
+            "level": "標準",
+            "n": 1597,
+            "rate": 0.221,
+            "exp": 0.2267,
+            "lift": 0.975
+          },
           "age": {
             "level": "4-5歳",
             "n": 1181,
@@ -4544,7 +4940,13 @@
             "exp": 0.2084,
             "lift": 0.988
           },
-          "bwdelta": null,
+          "bwdelta": {
+            "level": "±9kg内",
+            "n": 2666,
+            "rate": 0.2254,
+            "exp": 0.2211,
+            "lift": 1.019
+          },
           "jchange": {
             "level": "乗り替わり",
             "n": 2396,
@@ -4574,9 +4976,9 @@
             "lift": 1.007
           }
         },
-        "up": 9,
-        "dn": 0,
-        "net": 9,
+        "up": 11,
+        "dn": 1,
+        "net": 10,
         "conds": [
           {
             "c": [
@@ -4621,6 +5023,28 @@
             "exp": 0.1266,
             "lift": 1.784,
             "z": 3.61
+          },
+          {
+            "c": [
+              [
+                "distexp",
+                "浅・実績なし"
+              ],
+              [
+                "sex",
+                "牝"
+              ],
+              [
+                "wratio",
+                "標準"
+              ]
+            ],
+            "sign": 1,
+            "n": 133,
+            "rate": 0.2105,
+            "exp": 0.1229,
+            "lift": 1.713,
+            "z": 3.28
           },
           {
             "c": [
@@ -4735,6 +5159,28 @@
           {
             "c": [
               [
+                "bwdelta",
+                "±9kg内"
+              ],
+              [
+                "rota",
+                "中3-5週"
+              ],
+              [
+                "waku",
+                "中枠"
+              ]
+            ],
+            "sign": 1,
+            "n": 230,
+            "rate": 0.3435,
+            "exp": 0.2609,
+            "lift": 1.316,
+            "z": 3.2
+          },
+          {
+            "c": [
+              [
                 "rota",
                 "中3-5週"
               ],
@@ -4767,24 +5213,46 @@
             "exp": 0.2445,
             "lift": 1.172,
             "z": 2.55
+          },
+          {
+            "c": [
+              [
+                "homeaway",
+                "地元"
+              ],
+              [
+                "prevcorner",
+                "後方"
+              ],
+              [
+                "wratio",
+                "標準"
+              ]
+            ],
+            "sign": -1,
+            "n": 400,
+            "rate": 0.1175,
+            "exp": 0.1612,
+            "lift": 0.729,
+            "z": -2.65
           }
         ],
-        "conds_total": 9
+        "conds_total": 12
       },
       "scores": null,
       "total": null,
       "rank": null,
       "win_score": 52.5,
       "win_grade": "E",
-      "estimated_prob": 0.009143,
-      "fair_odds": 109.4,
-      "odds": 97.5,
+      "estimated_prob": 0.008911,
+      "fair_odds": 112.2,
+      "odds": 101.4,
       "popularity": 11,
-      "ev": -0.11,
+      "ev": -0.1,
       "ability_mark": null,
       "bet_mark": "穴",
       "landmine_reason": null,
-      "ana_reason": "97.5倍(11番人気)だが3着以内に入る確率は7%（オッズ相応なら5%）",
+      "ana_reason": "101.4倍(11番人気)だが3着以内に入る確率は7%（オッズ相応なら5%）",
       "keshi": false,
       "finish": null,
       "finish_text": null,
@@ -4811,9 +5279,9 @@
       "sex_age": "牝2",
       "weight_carried": 55.0,
       "jockey": "ルメール",
-      "body_weight": null,
-      "body_weight_diff": null,
-      "body_weight_source": null,
+      "body_weight": 468,
+      "body_weight_diff": 8,
+      "body_weight_source": "live",
       "sire": "リアルスティール",
       "damsire": "ハービンジャー",
       "trainer": "美浦・黒岩",
@@ -5481,8 +5949,20 @@
             "exp": 0.2112,
             "lift": 1.094
           },
-          "bweight": null,
-          "wratio": null,
+          "bweight": {
+            "level": "460-500",
+            "n": 1485,
+            "rate": 0.231,
+            "exp": 0.2301,
+            "lift": 1.004
+          },
+          "wratio": {
+            "level": "標準",
+            "n": 1597,
+            "rate": 0.221,
+            "exp": 0.2267,
+            "lift": 0.975
+          },
           "age": {
             "level": "4-5歳",
             "n": 1181,
@@ -5511,7 +5991,13 @@
             "exp": 0.3545,
             "lift": 1.06
           },
-          "bwdelta": null,
+          "bwdelta": {
+            "level": "±9kg内",
+            "n": 2666,
+            "rate": 0.2254,
+            "exp": 0.2211,
+            "lift": 1.019
+          },
           "jchange": {
             "level": "乗り替わり",
             "n": 2396,
@@ -5541,9 +6027,9 @@
             "lift": 1.007
           }
         },
-        "up": 11,
+        "up": 17,
         "dn": 2,
-        "net": 9,
+        "net": 15,
         "conds": [
           {
             "c": [
@@ -5588,6 +6074,28 @@
             "exp": 0.2487,
             "lift": 1.449,
             "z": 3.72
+          },
+          {
+            "c": [
+              [
+                "bweight",
+                "460-500"
+              ],
+              [
+                "prevcorner",
+                "3番手以内"
+              ],
+              [
+                "sire",
+                "中位"
+              ]
+            ],
+            "sign": 1,
+            "n": 107,
+            "rate": 0.3925,
+            "exp": 0.2841,
+            "lift": 1.381,
+            "z": 2.74
           },
           {
             "c": [
@@ -5676,6 +6184,28 @@
           {
             "c": [
               [
+                "bwdelta",
+                "±9kg内"
+              ],
+              [
+                "damsire",
+                "中位"
+              ],
+              [
+                "prevcorner",
+                "3番手以内"
+              ]
+            ],
+            "sign": 1,
+            "n": 146,
+            "rate": 0.3699,
+            "exp": 0.2805,
+            "lift": 1.318,
+            "z": 2.66
+          },
+          {
+            "c": [
+              [
                 "damsire",
                 "中位"
               ],
@@ -5742,6 +6272,72 @@
           {
             "c": [
               [
+                "age",
+                "4-5歳"
+              ],
+              [
+                "bwdelta",
+                "±9kg内"
+              ],
+              [
+                "damsire",
+                "中位"
+              ]
+            ],
+            "sign": 1,
+            "n": 184,
+            "rate": 0.3424,
+            "exp": 0.2627,
+            "lift": 1.304,
+            "z": 2.74
+          },
+          {
+            "c": [
+              [
+                "bwdelta",
+                "±9kg内"
+              ],
+              [
+                "damsire",
+                "中位"
+              ],
+              [
+                "prevfin",
+                "1-3着"
+              ]
+            ],
+            "sign": 1,
+            "n": 144,
+            "rate": 0.4583,
+            "exp": 0.3523,
+            "lift": 1.301,
+            "z": 2.94
+          },
+          {
+            "c": [
+              [
+                "bwdelta",
+                "±9kg内"
+              ],
+              [
+                "prevcorner",
+                "3番手以内"
+              ],
+              [
+                "sire",
+                "中位"
+              ]
+            ],
+            "sign": 1,
+            "n": 195,
+            "rate": 0.3487,
+            "exp": 0.2681,
+            "lift": 1.301,
+            "z": 2.79
+          },
+          {
+            "c": [
+              [
                 "jockey",
                 "その他"
               ],
@@ -5778,6 +6374,28 @@
             "exp": 0.3394,
             "lift": 1.246,
             "z": 2.59
+          },
+          {
+            "c": [
+              [
+                "bweight",
+                "460-500"
+              ],
+              [
+                "prevfin",
+                "1-3着"
+              ],
+              [
+                "waku",
+                "中枠"
+              ]
+            ],
+            "sign": 1,
+            "n": 161,
+            "rate": 0.5093,
+            "exp": 0.4133,
+            "lift": 1.232,
+            "z": 2.69
           },
           {
             "c": [
@@ -5824,21 +6442,21 @@
             "z": -2.73
           }
         ],
-        "conds_total": 13
+        "conds_total": 19
       },
       "scores": null,
       "total": null,
       "rank": null,
       "win_score": 66.6,
       "win_grade": "A+",
-      "estimated_prob": 0.359035,
-      "fair_odds": 2.8,
-      "odds": 2.2,
+      "estimated_prob": 0.398075,
+      "fair_odds": 2.5,
+      "odds": 1.9,
       "popularity": 1,
-      "ev": -0.21,
+      "ev": -0.24,
       "ability_mark": "◎",
       "bet_mark": "地雷",
-      "landmine_reason": "2.2倍(1番人気)だが3着内を外す確率は37%（オッズ相応なら30%）",
+      "landmine_reason": "1.9倍(1番人気)だが3着内を外す確率は33%（オッズ相応なら26%）",
       "ana_reason": null,
       "keshi": false,
       "finish": null,
@@ -5860,9 +6478,9 @@
       "sex_age": "牡2",
       "weight_carried": 55.0,
       "jockey": "津村明秀",
-      "body_weight": null,
-      "body_weight_diff": null,
-      "body_weight_source": null,
+      "body_weight": 438,
+      "body_weight_diff": -10,
+      "body_weight_source": "live",
       "sire": "ダノンバラード",
       "damsire": "スウェプトオーヴァーボード",
       "trainer": "美浦・水野",
@@ -6599,8 +7217,20 @@
             "exp": 0.2145,
             "lift": 0.977
           },
-          "bweight": null,
-          "wratio": null,
+          "bweight": {
+            "level": "〜460",
+            "n": 1211,
+            "rate": 0.1825,
+            "exp": 0.1927,
+            "lift": 0.947
+          },
+          "wratio": {
+            "level": "重い",
+            "n": 685,
+            "rate": 0.1679,
+            "exp": 0.1831,
+            "lift": 0.917
+          },
           "age": {
             "level": "4-5歳",
             "n": 1181,
@@ -6629,7 +7259,13 @@
             "exp": 0.1093,
             "lift": 0.892
           },
-          "bwdelta": null,
+          "bwdelta": {
+            "level": "-10kg以下",
+            "n": 180,
+            "rate": 0.1111,
+            "exp": 0.1693,
+            "lift": 0.656
+          },
           "jchange": {
             "level": "乗り替わり",
             "n": 2396,
@@ -6660,8 +7296,8 @@
           }
         },
         "up": 3,
-        "dn": 1,
-        "net": 2,
+        "dn": 5,
+        "net": -2,
         "conds": [
           {
             "c": [
@@ -6750,20 +7386,104 @@
             "exp": 0.1056,
             "lift": 0.514,
             "z": -2.7
+          },
+          {
+            "c": [
+              [
+                "rota",
+                "中6週以上"
+              ],
+              [
+                "waku",
+                "中枠"
+              ],
+              [
+                "wratio",
+                "重い"
+              ]
+            ],
+            "sign": -1,
+            "n": 127,
+            "rate": 0.126,
+            "exp": 0.209,
+            "lift": 0.603,
+            "z": -2.61
+          },
+          {
+            "c": [
+              [
+                "homeaway",
+                "地元"
+              ],
+              [
+                "rota",
+                "中6週以上"
+              ],
+              [
+                "wratio",
+                "重い"
+              ]
+            ],
+            "sign": -1,
+            "n": 299,
+            "rate": 0.1204,
+            "exp": 0.1776,
+            "lift": 0.678,
+            "z": -2.94
+          },
+          {
+            "c": [
+              [
+                "bweight",
+                "〜460"
+              ],
+              [
+                "rota",
+                "中6週以上"
+              ],
+              [
+                "wratio",
+                "重い"
+              ]
+            ],
+            "sign": -1,
+            "n": 324,
+            "rate": 0.1235,
+            "exp": 0.1787,
+            "lift": 0.691,
+            "z": -2.94
+          },
+          {
+            "c": [
+              [
+                "rota",
+                "中6週以上"
+              ],
+              [
+                "wratio",
+                "重い"
+              ]
+            ],
+            "sign": -1,
+            "n": 336,
+            "rate": 0.1339,
+            "exp": 0.1821,
+            "lift": 0.735,
+            "z": -2.6
           }
         ],
-        "conds_total": 4
+        "conds_total": 8
       },
       "scores": null,
       "total": null,
       "rank": null,
       "win_score": 58.0,
       "win_grade": "C",
-      "estimated_prob": 0.091359,
-      "fair_odds": 10.9,
-      "odds": 7.1,
-      "popularity": 3,
-      "ev": -0.35,
+      "estimated_prob": 0.083287,
+      "fair_odds": 12.0,
+      "odds": 7.9,
+      "popularity": 4,
+      "ev": -0.34,
       "ability_mark": null,
       "bet_mark": null,
       "landmine_reason": null,
@@ -6788,9 +7508,9 @@
       "sex_age": "牡2",
       "weight_carried": 55.0,
       "jockey": "木幡巧也",
-      "body_weight": null,
-      "body_weight_diff": null,
-      "body_weight_source": null,
+      "body_weight": 468,
+      "body_weight_diff": -4,
+      "body_weight_source": "live",
       "sire": "ダノンスマッシュ",
       "damsire": "ハーツクライ",
       "trainer": "美浦・杉浦",
@@ -6918,7 +7638,7 @@
           "ai_field": 12,
           "ai_miss": null,
           "level_grade": "D",
-          "level_score": 0.108,
+          "level_score": 0.158,
           "level_miss": null
         },
         {
@@ -7663,8 +8383,20 @@
             "exp": 0.2286,
             "lift": 0.981
           },
-          "bweight": null,
-          "wratio": null,
+          "bweight": {
+            "level": "460-500",
+            "n": 1485,
+            "rate": 0.231,
+            "exp": 0.2301,
+            "lift": 1.004
+          },
+          "wratio": {
+            "level": "標準",
+            "n": 1597,
+            "rate": 0.221,
+            "exp": 0.2267,
+            "lift": 0.975
+          },
           "age": {
             "level": "4-5歳",
             "n": 1181,
@@ -7693,7 +8425,13 @@
             "exp": 0.1093,
             "lift": 0.892
           },
-          "bwdelta": null,
+          "bwdelta": {
+            "level": "±9kg内",
+            "n": 2666,
+            "rate": 0.2254,
+            "exp": 0.2211,
+            "lift": 1.019
+          },
           "jchange": {
             "level": "継続",
             "n": 586,
@@ -7724,8 +8462,8 @@
           }
         },
         "up": 2,
-        "dn": 4,
-        "net": -2,
+        "dn": 6,
+        "net": -4,
         "conds": [
           {
             "c": [
@@ -7770,6 +8508,28 @@
             "exp": 0.2952,
             "lift": 1.22,
             "z": 2.58
+          },
+          {
+            "c": [
+              [
+                "prevfin",
+                "10着以下"
+              ],
+              [
+                "style",
+                "追"
+              ],
+              [
+                "wratio",
+                "標準"
+              ]
+            ],
+            "sign": -1,
+            "n": 131,
+            "rate": 0.0229,
+            "exp": 0.0855,
+            "lift": 0.268,
+            "z": -2.8
           },
           {
             "c": [
@@ -7858,20 +8618,42 @@
             "exp": 0.0889,
             "lift": 0.614,
             "z": -2.51
+          },
+          {
+            "c": [
+              [
+                "homeaway",
+                "地元"
+              ],
+              [
+                "prevcorner",
+                "後方"
+              ],
+              [
+                "wratio",
+                "標準"
+              ]
+            ],
+            "sign": -1,
+            "n": 400,
+            "rate": 0.1175,
+            "exp": 0.1612,
+            "lift": 0.729,
+            "z": -2.65
           }
         ],
-        "conds_total": 6
+        "conds_total": 8
       },
       "scores": null,
       "total": null,
       "rank": null,
       "win_score": 45.2,
       "win_grade": "E",
-      "estimated_prob": 0.005889,
-      "fair_odds": 169.8,
-      "odds": 104.7,
+      "estimated_prob": 0.004694,
+      "fair_odds": 213.0,
+      "odds": 134.9,
       "popularity": 12,
-      "ev": -0.38,
+      "ev": -0.37,
       "ability_mark": null,
       "bet_mark": null,
       "landmine_reason": null,
@@ -7902,9 +8684,9 @@
       "sex_age": "牝2",
       "weight_carried": 53.0,
       "jockey": "小林美駒",
-      "body_weight": null,
-      "body_weight_diff": null,
-      "body_weight_source": null,
+      "body_weight": 442,
+      "body_weight_diff": -2,
+      "body_weight_source": "live",
       "sire": "ビッグアーサー",
       "damsire": "トビーズコーナー",
       "trainer": "美浦・深山",
@@ -8572,8 +9354,20 @@
             "exp": 0.2145,
             "lift": 0.977
           },
-          "bweight": null,
-          "wratio": null,
+          "bweight": {
+            "level": "〜460",
+            "n": 1211,
+            "rate": 0.1825,
+            "exp": 0.1927,
+            "lift": 0.947
+          },
+          "wratio": {
+            "level": "標準",
+            "n": 1597,
+            "rate": 0.221,
+            "exp": 0.2267,
+            "lift": 0.975
+          },
           "age": {
             "level": "4-5歳",
             "n": 1181,
@@ -8602,7 +9396,13 @@
             "exp": 0.3545,
             "lift": 1.06
           },
-          "bwdelta": null,
+          "bwdelta": {
+            "level": "±9kg内",
+            "n": 2666,
+            "rate": 0.2254,
+            "exp": 0.2211,
+            "lift": 1.019
+          },
           "jchange": {
             "level": "乗り替わり",
             "n": 2396,
@@ -8632,9 +9432,9 @@
             "lift": 1.007
           }
         },
-        "up": 10,
+        "up": 11,
         "dn": 0,
-        "net": 10,
+        "net": 11,
         "conds": [
           {
             "c": [
@@ -8789,6 +9589,28 @@
           {
             "c": [
               [
+                "bwdelta",
+                "±9kg内"
+              ],
+              [
+                "prevcorner",
+                "3番手以内"
+              ],
+              [
+                "sire",
+                "中位"
+              ]
+            ],
+            "sign": 1,
+            "n": 195,
+            "rate": 0.3487,
+            "exp": 0.2681,
+            "lift": 1.301,
+            "z": 2.79
+          },
+          {
+            "c": [
+              [
                 "damsire",
                 "その他"
               ],
@@ -8853,21 +9675,21 @@
             "z": 2.53
           }
         ],
-        "conds_total": 10
+        "conds_total": 11
       },
       "scores": null,
       "total": null,
       "rank": null,
       "win_score": 58.5,
       "win_grade": "C",
-      "estimated_prob": 0.05748,
-      "fair_odds": 17.4,
-      "odds": 13.1,
+      "estimated_prob": 0.052033,
+      "fair_odds": 19.2,
+      "odds": 15.0,
       "popularity": 6,
-      "ev": -0.25,
+      "ev": -0.22,
       "ability_mark": null,
       "bet_mark": "地雷",
-      "landmine_reason": "13.1倍(6番人気)だが3着内を外す確率は75%（オッズ相応なら71%）",
+      "landmine_reason": "15.0倍(6番人気)だが3着内を外す確率は76%（オッズ相応なら73%）",
       "ana_reason": null,
       "keshi": false,
       "finish": null,
@@ -8889,9 +9711,9 @@
       "sex_age": "牡2",
       "weight_carried": 55.0,
       "jockey": "三浦皇成",
-      "body_weight": null,
-      "body_weight_diff": null,
-      "body_weight_source": null,
+      "body_weight": 450,
+      "body_weight_diff": 6,
+      "body_weight_source": "live",
       "sire": "イスラボニータ",
       "damsire": "Reliable Man",
       "trainer": "美浦・菊沢",
@@ -9628,8 +10450,20 @@
             "exp": 0.2145,
             "lift": 0.977
           },
-          "bweight": null,
-          "wratio": null,
+          "bweight": {
+            "level": "〜460",
+            "n": 1211,
+            "rate": 0.1825,
+            "exp": 0.1927,
+            "lift": 0.947
+          },
+          "wratio": {
+            "level": "標準",
+            "n": 1597,
+            "rate": 0.221,
+            "exp": 0.2267,
+            "lift": 0.975
+          },
           "age": {
             "level": "4-5歳",
             "n": 1181,
@@ -9658,7 +10492,13 @@
             "exp": 0.3545,
             "lift": 1.06
           },
-          "bwdelta": null,
+          "bwdelta": {
+            "level": "±9kg内",
+            "n": 2666,
+            "rate": 0.2254,
+            "exp": 0.2211,
+            "lift": 1.019
+          },
           "jchange": {
             "level": "乗り替わり",
             "n": 2396,
@@ -9688,9 +10528,9 @@
             "lift": 1.007
           }
         },
-        "up": 9,
-        "dn": 0,
-        "net": 9,
+        "up": 11,
+        "dn": 1,
+        "net": 10,
         "conds": [
           {
             "c": [
@@ -9849,6 +10689,28 @@
           {
             "c": [
               [
+                "bwdelta",
+                "±9kg内"
+              ],
+              [
+                "distexp",
+                "浅・実績あり"
+              ],
+              [
+                "sex",
+                "牡セ"
+              ]
+            ],
+            "sign": 1,
+            "n": 257,
+            "rate": 0.4319,
+            "exp": 0.3579,
+            "lift": 1.207,
+            "z": 2.71
+          },
+          {
+            "c": [
+              [
                 "jockey",
                 "その他"
               ],
@@ -9871,6 +10733,28 @@
           {
             "c": [
               [
+                "bwdelta",
+                "±9kg内"
+              ],
+              [
+                "prevfin",
+                "1-3着"
+              ],
+              [
+                "sex",
+                "牡セ"
+              ]
+            ],
+            "sign": 1,
+            "n": 392,
+            "rate": 0.4515,
+            "exp": 0.3843,
+            "lift": 1.175,
+            "z": 2.99
+          },
+          {
+            "c": [
+              [
                 "prevfin",
                 "1-3着"
               ],
@@ -9885,20 +10769,42 @@
             "exp": 0.3833,
             "lift": 1.151,
             "z": 2.78
+          },
+          {
+            "c": [
+              [
+                "homeaway",
+                "地元"
+              ],
+              [
+                "numpos",
+                "外"
+              ],
+              [
+                "wratio",
+                "標準"
+              ]
+            ],
+            "sign": -1,
+            "n": 448,
+            "rate": 0.1473,
+            "exp": 0.1987,
+            "lift": 0.742,
+            "z": -3.03
           }
         ],
-        "conds_total": 9
+        "conds_total": 12
       },
       "scores": null,
       "total": null,
       "rank": null,
       "win_score": 60.6,
       "win_grade": "C+",
-      "estimated_prob": 0.104314,
-      "fair_odds": 9.6,
-      "odds": 7.0,
-      "popularity": 2,
-      "ev": -0.27,
+      "estimated_prob": 0.097888,
+      "fair_odds": 10.2,
+      "odds": 7.6,
+      "popularity": 3,
+      "ev": -0.26,
       "ability_mark": "△",
       "bet_mark": null,
       "landmine_reason": null,
@@ -9923,9 +10829,9 @@
       "sex_age": "牡2",
       "weight_carried": 55.0,
       "jockey": "丸山元気",
-      "body_weight": null,
-      "body_weight_diff": null,
-      "body_weight_source": null,
+      "body_weight": 454,
+      "body_weight_diff": 0,
+      "body_weight_source": "live",
       "sire": "カラヴァッジオ",
       "damsire": "キンシャサノキセキ",
       "trainer": "美浦・古賀大",
@@ -10593,8 +11499,20 @@
             "exp": 0.2145,
             "lift": 0.977
           },
-          "bweight": null,
-          "wratio": null,
+          "bweight": {
+            "level": "〜460",
+            "n": 1211,
+            "rate": 0.1825,
+            "exp": 0.1927,
+            "lift": 0.947
+          },
+          "wratio": {
+            "level": "標準",
+            "n": 1597,
+            "rate": 0.221,
+            "exp": 0.2267,
+            "lift": 0.975
+          },
           "age": {
             "level": "4-5歳",
             "n": 1181,
@@ -10623,7 +11541,13 @@
             "exp": 0.2084,
             "lift": 0.988
           },
-          "bwdelta": null,
+          "bwdelta": {
+            "level": "±9kg内",
+            "n": 2666,
+            "rate": 0.2254,
+            "exp": 0.2211,
+            "lift": 1.019
+          },
           "jchange": {
             "level": "乗り替わり",
             "n": 2396,
@@ -10653,8 +11577,8 @@
             "lift": 1.007
           }
         },
-        "up": 1,
-        "dn": 0,
+        "up": 2,
+        "dn": 1,
         "net": 1,
         "conds": [
           {
@@ -10678,24 +11602,68 @@
             "exp": 0.2064,
             "lift": 1.315,
             "z": 2.93
+          },
+          {
+            "c": [
+              [
+                "bwdelta",
+                "±9kg内"
+              ],
+              [
+                "prevcorner",
+                "中団"
+              ],
+              [
+                "sire",
+                "その他"
+              ]
+            ],
+            "sign": 1,
+            "n": 403,
+            "rate": 0.2556,
+            "exp": 0.2043,
+            "lift": 1.251,
+            "z": 2.84
+          },
+          {
+            "c": [
+              [
+                "homeaway",
+                "地元"
+              ],
+              [
+                "numpos",
+                "外"
+              ],
+              [
+                "wratio",
+                "標準"
+              ]
+            ],
+            "sign": -1,
+            "n": 448,
+            "rate": 0.1473,
+            "exp": 0.1987,
+            "lift": 0.742,
+            "z": -3.03
           }
         ],
-        "conds_total": 1
+        "conds_total": 3
       },
       "scores": null,
       "total": null,
       "rank": null,
       "win_score": 60.5,
       "win_grade": "C+",
-      "estimated_prob": 0.048076,
-      "fair_odds": 20.8,
-      "odds": 23.5,
+      "estimated_prob": 0.049063,
+      "fair_odds": 20.4,
+      "odds": 22.5,
       "popularity": 8,
-      "ev": 0.13,
+      "ev": 0.1,
       "ability_mark": "△",
       "bet_mark": "穴",
       "landmine_reason": null,
-      "ana_reason": "23.5倍(8番人気)だが3着以内に入る確率は21%（オッズ相応なら18%）",
+      "ana_reason": "22.5倍(8番人気)だが3着以内に入る確率は22%（オッズ相応なら20%）",
       "keshi": false,
       "finish": null,
       "finish_text": null,
@@ -10716,9 +11684,9 @@
       "sex_age": "牝2",
       "weight_carried": 55.0,
       "jockey": "丹内祐次",
-      "body_weight": null,
-      "body_weight_diff": null,
-      "body_weight_source": null,
+      "body_weight": 442,
+      "body_weight_diff": 0,
+      "body_weight_source": "live",
       "sire": "Flightline",
       "damsire": "Malibu Moon",
       "trainer": "美浦・高木",
@@ -11386,8 +12354,20 @@
             "exp": 0.2145,
             "lift": 0.977
           },
-          "bweight": null,
-          "wratio": null,
+          "bweight": {
+            "level": "〜460",
+            "n": 1211,
+            "rate": 0.1825,
+            "exp": 0.1927,
+            "lift": 0.947
+          },
+          "wratio": {
+            "level": "標準",
+            "n": 1597,
+            "rate": 0.221,
+            "exp": 0.2267,
+            "lift": 0.975
+          },
           "age": {
             "level": "4-5歳",
             "n": 1181,
@@ -11416,7 +12396,13 @@
             "exp": 0.3545,
             "lift": 1.06
           },
-          "bwdelta": null,
+          "bwdelta": {
+            "level": "±9kg内",
+            "n": 2666,
+            "rate": 0.2254,
+            "exp": 0.2211,
+            "lift": 1.019
+          },
           "jchange": {
             "level": "乗り替わり",
             "n": 2396,
@@ -11446,10 +12432,54 @@
             "lift": 1.007
           }
         },
-        "up": 1,
-        "dn": 1,
-        "net": 0,
+        "up": 3,
+        "dn": 4,
+        "net": -1,
         "conds": [
+          {
+            "c": [
+              [
+                "distexp",
+                "浅・実績なし"
+              ],
+              [
+                "sex",
+                "牝"
+              ],
+              [
+                "wratio",
+                "標準"
+              ]
+            ],
+            "sign": 1,
+            "n": 133,
+            "rate": 0.2105,
+            "exp": 0.1229,
+            "lift": 1.713,
+            "z": 3.28
+          },
+          {
+            "c": [
+              [
+                "bwdelta",
+                "±9kg内"
+              ],
+              [
+                "prevfin",
+                "1-3着"
+              ],
+              [
+                "sire",
+                "その他"
+              ]
+            ],
+            "sign": 1,
+            "n": 296,
+            "rate": 0.402,
+            "exp": 0.3234,
+            "lift": 1.243,
+            "z": 3.19
+          },
           {
             "c": [
               [
@@ -11489,23 +12519,89 @@
             "exp": 0.1972,
             "lift": 0.534,
             "z": -2.93
+          },
+          {
+            "c": [
+              [
+                "bwdelta",
+                "±9kg内"
+              ],
+              [
+                "jchange",
+                "乗り替わり"
+              ],
+              [
+                "jockey",
+                "上位"
+              ]
+            ],
+            "sign": -1,
+            "n": 114,
+            "rate": 0.114,
+            "exp": 0.204,
+            "lift": 0.559,
+            "z": -2.63
+          },
+          {
+            "c": [
+              [
+                "homeaway",
+                "地元"
+              ],
+              [
+                "numpos",
+                "外"
+              ],
+              [
+                "wratio",
+                "標準"
+              ]
+            ],
+            "sign": -1,
+            "n": 448,
+            "rate": 0.1473,
+            "exp": 0.1987,
+            "lift": 0.742,
+            "z": -3.03
+          },
+          {
+            "c": [
+              [
+                "bweight",
+                "〜460"
+              ],
+              [
+                "rota",
+                "中6週以上"
+              ],
+              [
+                "sex",
+                "牝"
+              ]
+            ],
+            "sign": -1,
+            "n": 478,
+            "rate": 0.1423,
+            "exp": 0.1861,
+            "lift": 0.765,
+            "z": -2.78
           }
         ],
-        "conds_total": 2
+        "conds_total": 7
       },
       "scores": null,
       "total": null,
       "rank": null,
       "win_score": 64.3,
       "win_grade": "B+",
-      "estimated_prob": 0.13485,
-      "fair_odds": 7.4,
-      "odds": 7.6,
+      "estimated_prob": 0.126973,
+      "fair_odds": 7.9,
+      "odds": 8.5,
       "popularity": 5,
-      "ev": 0.02,
+      "ev": 0.08,
       "ability_mark": "○",
       "bet_mark": "地雷",
-      "landmine_reason": "7.6倍(5番人気)だが3着内を外す確率は66%（オッズ相応なら62%）",
+      "landmine_reason": "8.5倍(5番人気)だが3着内を外す確率は67%（オッズ相応なら63%）",
       "ana_reason": null,
       "keshi": false,
       "finish": null,
@@ -11527,9 +12623,9 @@
       "sex_age": "牡2",
       "weight_carried": 55.0,
       "jockey": "黛弘人",
-      "body_weight": null,
-      "body_weight_diff": null,
-      "body_weight_source": null,
+      "body_weight": 454,
+      "body_weight_diff": -4,
+      "body_weight_source": "live",
       "sire": "ニューイヤーズデイ",
       "damsire": "オルフェーヴル",
       "trainer": "美浦・伊藤圭",
@@ -12197,8 +13293,20 @@
             "exp": 0.2145,
             "lift": 0.977
           },
-          "bweight": null,
-          "wratio": null,
+          "bweight": {
+            "level": "〜460",
+            "n": 1211,
+            "rate": 0.1825,
+            "exp": 0.1927,
+            "lift": 0.947
+          },
+          "wratio": {
+            "level": "標準",
+            "n": 1597,
+            "rate": 0.221,
+            "exp": 0.2267,
+            "lift": 0.975
+          },
           "age": {
             "level": "4-5歳",
             "n": 1181,
@@ -12227,7 +13335,13 @@
             "exp": 0.2084,
             "lift": 0.988
           },
-          "bwdelta": null,
+          "bwdelta": {
+            "level": "±9kg内",
+            "n": 2666,
+            "rate": 0.2254,
+            "exp": 0.2211,
+            "lift": 1.019
+          },
           "jchange": {
             "level": "乗り替わり",
             "n": 2396,
@@ -12258,8 +13372,8 @@
           }
         },
         "up": 1,
-        "dn": 3,
-        "net": -2,
+        "dn": 6,
+        "net": -5,
         "conds": [
           {
             "c": [
@@ -12348,20 +13462,86 @@
             "exp": 0.1262,
             "lift": 0.657,
             "z": -2.68
+          },
+          {
+            "c": [
+              [
+                "bwdelta",
+                "±9kg内"
+              ],
+              [
+                "damsire",
+                "その他"
+              ],
+              [
+                "style",
+                "追"
+              ]
+            ],
+            "sign": -1,
+            "n": 361,
+            "rate": 0.0914,
+            "exp": 0.1329,
+            "lift": 0.688,
+            "z": -2.56
+          },
+          {
+            "c": [
+              [
+                "homeaway",
+                "地元"
+              ],
+              [
+                "prevcorner",
+                "後方"
+              ],
+              [
+                "wratio",
+                "標準"
+              ]
+            ],
+            "sign": -1,
+            "n": 400,
+            "rate": 0.1175,
+            "exp": 0.1612,
+            "lift": 0.729,
+            "z": -2.65
+          },
+          {
+            "c": [
+              [
+                "homeaway",
+                "地元"
+              ],
+              [
+                "numpos",
+                "外"
+              ],
+              [
+                "wratio",
+                "標準"
+              ]
+            ],
+            "sign": -1,
+            "n": 448,
+            "rate": 0.1473,
+            "exp": 0.1987,
+            "lift": 0.742,
+            "z": -3.03
           }
         ],
-        "conds_total": 4
+        "conds_total": 7
       },
       "scores": null,
       "total": null,
       "rank": null,
       "win_score": 55.0,
       "win_grade": "D",
-      "estimated_prob": 0.014497,
-      "fair_odds": 69.0,
-      "odds": 68.4,
+      "estimated_prob": 0.013585,
+      "fair_odds": 73.6,
+      "odds": 76.9,
       "popularity": 10,
-      "ev": -0.01,
+      "ev": 0.04,
       "ability_mark": null,
       "bet_mark": null,
       "landmine_reason": null,
