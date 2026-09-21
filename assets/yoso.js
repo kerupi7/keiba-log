@@ -645,7 +645,8 @@
   function smCard1(d) {
     const bg = d.band ? `bd-${d.band}` : '';
     const upTag = d.rk != null ? `<small>${d.rk}位</small>` : '';
-    return `<div class="s1-card ${bg}" data-goto="${d.i + RUN_PAGE0}">
+    // 2026-09-21：札を押してもその走のページへは飛ばさない（ユーザー指示）。その走を見るのはページ送りで
+    return `<div class="s1-card ${bg}">
       <div class="s1-l"><i>${d.label}</i><b class="bt-num ${d.finMd}">${esc(d.finTxt)}<small>着</small></b>
         <span class="s1-mg bt-num">${d.mgTxt}</span></div>
       <div class="s1-m">
