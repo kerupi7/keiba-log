@@ -1531,9 +1531,21 @@
       const now = performance.now();
       dx = e.clientX - sx; dy = e.clientY - sy;
       hist.push([now, e.clientX, e.clientY]); if (hist.length > 6) hist.shift();
-      if (!drag && !vdrag && !vscroll && Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy)) drag = true;
-      if (!drag && !vdrag && !vscroll && Math.abs(dy) > 8 && Math.abs(dy) > Math.abs(dx) && scrollable() && (dy < 0 || top0 > 0)) vscroll = true;
-      if (!drag && !vdrag && !vscroll && dy > 8 && dy > Math.abs(dx)) vdrag = true;
+      // 向きの決め方（2026-09-21 に見直し）。前は「横と縦のどちらが1pxでも大きいか」で決めていたので、
+      //   斜めの払いが縦に取られ、全戦績のページ（縦に動かせる）では、そのあと横へ大きく振っても払えなかった。
+      //   実測：横20・縦21 で縦に決まり、そこから横150まで振っても払えない（9/21・試作169）。
+      //   ・横は少し甘く（縦の 0.8 倍を超えたら横）、縦は少し辛く（横の 1.25 倍を超えたら縦）。
+      //     その間（だいたい39°〜51°）はまだ決めない。指を動かし続ければどちらかに決まる
+      //   ・縦に動かし始めた後でも、横がはっきり勝ったら払うほうへ乗り換える
+      if (!drag && !vdrag && !vscroll && Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy) * 0.8) drag = true;
+      if (!drag && !vdrag && !vscroll && Math.abs(dy) > 8 && Math.abs(dy) > Math.abs(dx) * 1.25 && scrollable() && (dy < 0 || top0 > 0)) vscroll = true;
+      if (!drag && !vdrag && !vscroll && dy > 8 && dy > Math.abs(dx) * 1.25) vdrag = true;
+      // 乗り換え。指の今いる所を始点に取り直すので、カードは跳ねずに0から付いてくる。
+      //   縦に動かしている最中の小さな横ぶれで払ってしまわないよう、横40px以上・縦との差24px以上にしてある
+      if (vscroll && Math.abs(dx) > 40 && Math.abs(dx) - Math.abs(dy) > 24) {
+        vscroll = false; drag = true;
+        sx = e.clientX; sy = e.clientY; st = now; dx = 0; dy = 0; hist = [[now, sx, sy]];
+      }
       if (drag || vdrag || vscroll) card.classList.remove('press');
       if (vscroll) { pageEl.scrollTop = top0 - dy; return; }
       if ((drag || vdrag) && !card.hasPointerCapture?.(e.pointerId)) {
