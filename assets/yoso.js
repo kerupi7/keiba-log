@@ -768,7 +768,11 @@
   const LV5D = ['湿っている', 'やや湿っている', 'いつも通り', 'やや乾いている', '乾いている'];
   function tkDesign(h, D) {
     const paceSum = D.pace.reduce((a, r) => a + r.pp, 0);
-    const gatesRow = `<div class="tk-gates">${D.gates.map((g) => `<div class="tk-gate">${g.hn}${tkG(g.grade)}</div>`).join('')}</div>`;
+    // 今回の馬の枠に印を付ける（2026-09-21 ユーザー指示）。脚質の区画と違って、他の枠は薄くしない
+    //   （枠ごとの成績 A〜D を見比べる所なので、読めなくなると困る）
+    const myGate = Number(h.gate) || 0;
+    const gateNo = (html) => Number(String(html).replace(/<[^>]+>/g, '').trim());
+    const gatesRow = `<div class="tk-gates">${D.gates.map((g) => `<div class="tk-gate${myGate && gateNo(g.hn) === myGate ? ' me' : ''}">${g.hn}${tkG(g.grade)}</div>`).join('')}</div>`;
     const zones = D.zones.map((z) => `<div class="t2-zone${z.me ? ' me' : ''}">
       <span class="t2-st" style="background:${G_COLOR[z.grade] || '#4E5862'}">${esc(z.style)} ${esc(z.count)}</span>
       <div class="t2-gr">${tkG(z.grade)}<span class="bt-num">${esc(z.rate)}</span></div>
