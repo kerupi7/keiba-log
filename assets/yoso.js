@@ -470,8 +470,9 @@
   const RT_PACE = [['S', 'スロー'], ['M', '平均'], ['H', 'ハイ']];
   const RT_SIDE = [['前残り', '前残り'], ['差し・追込', '差し追込']];
   const RT_CUE = { main: '本命', sub: '対抗', other: '3番手' };
-  const medal = (i) => ['md1', 'md2', 'md3', ''][i];
-  const recHtml = (c) => `<span class="rec">${(c || [0, 0, 0, 0]).map((v, i) => `<b class="${v ? medal(i) : 'zr'}">${v}</b>`).join('<i>-</i>')}</span>`;
+  // 通算成績とコース適性の着別度数は、1着・2着・3着を金銀銅に塗らない（2026-09-21 ユーザー指示）。
+  //   0 の所だけ薄くして、走っていない条件が一目で分かるようにする
+  const recHtml = (c) => `<span class="rec">${(c || [0, 0, 0, 0]).map((v) => `<b class="${v ? '' : 'zr'}">${v}</b>`).join('<i>-</i>')}</span>`;
   const top3Pct = (c) => { const n = c.reduce((a, b) => a + b, 0); return n ? Math.round(((c[0] + c[1] + c[2]) / n) * 100) : null; };
   function basicPage(h) {
     const P0 = P(h.number);
