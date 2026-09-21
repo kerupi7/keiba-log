@@ -381,10 +381,6 @@
   // 過去走は past_runs と career_runs を race_id で合わせ、今回のレース日より前だけ使う。
   // 線の根拠：公開済み392レース・17,712組で、色あり今回3着内27.6%／同じ強さの色なし23.1%（+4.5pt）。
   const nj = (x) => String(x || '').normalize('NFKC').replace(/[\s.．・]/g, '');
-  // 馬場状態の書き方をそろえる（2026-09-21）。今回のレースは「稍重」「不良」で入るのに、
-  // 過去走は「稍」「不」の1文字で入っている。そのまま比べていたので、稍重と不良の日は
-  // どの馬も「今回と同じ条件で0走」になっていた（良と重はたまたま同じ字なので合っていた）。
-  const ng = (g) => ({ '稍重': '稍', '不良': '不' }[g] || g || '');
   const gapBand = (dd) => (dd == null ? null : dd / 7 <= 2.5 ? 0 : dd / 7 <= 5.5 ? 1 : dd / 7 <= 9.5 ? 2 : 3);
   const finN = (x) => { const v = parseInt(x, 10); return Number.isFinite(v) ? v : null; };
   const COND = {};
@@ -400,13 +396,13 @@
     const today = {
       gap: runs[0] ? gapBand(days(rd, toDate(runs[0].date))) : null,
       weight: h.weight_carried != null ? Number(h.weight_carried) : null,
-      going: ng((site.race || {}).going) || null,
+      going: (site.race || {}).going || null,
       jockey: nj(h.jockey),
     };
     const same = {
       gap: (x) => gapOf[x.race_id] != null && gapBand(gapOf[x.race_id]) === today.gap,
       weight: (x) => today.weight != null && Number(x.weight) === today.weight,
-      going: (x) => today.going != null && ng(x.condition) === today.going,
+      going: (x) => today.going != null && x.condition === today.going,
       jockey: (x) => today.jockey && nj(x.jockey) === today.jockey,
     };
     const tot = runs.length;
@@ -772,11 +768,12 @@
   const LV5D = ['湿っている', 'やや湿っている', 'いつも通り', 'やや乾いている', '乾いている'];
   function tkDesign(h, D) {
     const paceSum = D.pace.reduce((a, r) => a + r.pp, 0);
-    // 今回の馬の枠に印を付ける（2026-09-21 ユーザー指示）。脚質の区画と違って、他の枠は薄くしない
-    //   （枠ごとの成績 A〜D を見比べる所なので、読めなくなると困る）
+    // 今回の馬の枠を目立たせる（2026-09-21 ユーザー指示・試作172 の案C）。脚質の4区画と同じ考え方で、
+    //   今回の枠だけ白くくっきり・少し大きく、ほかの7つは緑の地に沈める（成績 S〜D は読める濃さに残す）。
+    //   枠が分からない馬では has-me を付けず、全部が薄くならないようにする
     const myGate = Number(h.gate) || 0;
     const gateNo = (html) => Number(String(html).replace(/<[^>]+>/g, '').trim());
-    const gatesRow = `<div class="tk-gates">${D.gates.map((g) => `<div class="tk-gate${myGate && gateNo(g.hn) === myGate ? ' me' : ''}">${g.hn}${tkG(g.grade)}</div>`).join('')}</div>`;
+    const gatesRow = `<div class="tk-gates${myGate ? ' has-me' : ''}">${D.gates.map((g) => `<div class="tk-gate${myGate && gateNo(g.hn) === myGate ? ' me' : ''}">${g.hn}${tkG(g.grade)}</div>`).join('')}</div>`;
     const zones = D.zones.map((z) => `<div class="t2-zone${z.me ? ' me' : ''}">
       <span class="t2-st" style="background:${G_COLOR[z.grade] || '#4E5862'}">${esc(z.style)} ${esc(z.count)}</span>
       <div class="t2-gr">${tkG(z.grade)}<span class="bt-num">${esc(z.rate)}</span></div>
@@ -915,11 +912,8 @@
     const kgNow = h.weight_carried != null ? String(h.weight_carried).replace(/\.0$/, '') : null;
     const kgShort = isFirst && r.weight && kgNow
       ? `<span class="cp-pill${Number(kgNow) !== Number(r.weight) ? ' on' : ''}">${Number(kgNow) === Number(r.weight) ? '今回も同じ' : `今回 ${esc(kgNow)}kg`}</span>` : '';
-    // 「稍重」と「稍」は同じもの。縮めてから比べる（2026-09-21。それまでは稍重・不良の日に
-    // 前走が同じ馬場でも「今回 稍重」と出て、違う日のように見えていた）
-    const goSame = ng(going) === ng(r.condition);
     const goShort = isFirst && going
-      ? `<span class="cp-pill${goSame ? '' : ' on'}">${goSame ? '今回も同じ' : `今回 ${esc(going)}`}</span>` : '';
+      ? `<span class="cp-pill${going !== r.condition ? ' on' : ''}">${going === r.condition ? '今回も同じ' : `今回 ${esc(going)}`}</span>` : '';
 
     // ---- 上：レースの札 → 着順｜人気｜タイム → 勝ち馬との差と勝ち馬 ----
     const ymd = String(r.date || '').split(/[/-]/);
@@ -1422,8 +1416,7 @@
     const nowTxt = {
       gap: td.gap == null ? '初出走' : GAP_LAB[td.gap],
       weight: td.weight == null ? '—' : `${String(td.weight).replace(/\.0$/, '')}kg`,
-      // 比べるときは「稍」に縮めるが、画面には発表どおり「稍重」と出す（2026-09-21）
-      going: (site.race || {}).going || td.going || '—',
+      going: td.going || '—',
       jockey: h.jockey || '—',
     };
     const tot = c.runs.length;

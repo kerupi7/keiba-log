@@ -153,18 +153,16 @@ body.yf-open{position:fixed;inset:0;width:100%}
 .rvC .cp-pill{display:inline-block;font-style:normal;font-size:10px;font-weight:600;color:#6D6D72;background:#EFEFF4;
   border-radius:999px;padding:1px 8px;margin-left:6px;vertical-align:middle}
 .rvC .cp-pill.on{color:#fff;background:var(--live)}
-/* C2 ウィジェット型は選ばなかった案で、2026-09-17 以降どこからも使っていない。
-   2026-09-21 に削除した。名前を .c2 のまま裸で置いていたせいで、本番側（race.js）の
-   荒れ度の3行目 .ucrow.c2 と、直線コースの説明文 <text class="c2"> にも当たっていた。
-   荒れ度の「大荒れ」の行だけ縦並びになり、棒の幅が3px・高さ0pxに潰れていた。 */
+/* C2 ウィジェット型 */
+.c2{display:flex;flex-direction:column;gap:8px;padding-top:6px}
 
 /* C3 ヘルスケア型（1まとまり＝1枚の札。決めた形の土台） */
-.rvC.c3{display:flex;flex-direction:column;gap:8px}
+.c3{display:flex;flex-direction:column;gap:8px}
 
-.rvC.c3 .h-card{background:#fff;border-radius:12px;padding:9px 14px 10px}
-.rvC.c3 .h-top{display:flex;justify-content:space-between;align-items:baseline}
-.rvC.c3 .h-t{font-size:12px;font-weight:700}
-.rvC.c3 .h-r{font-size:11px;color:#8E8E93}
+.c3 .h-card{background:#fff;border-radius:12px;padding:9px 14px 10px}
+.c3 .h-top{display:flex;justify-content:space-between;align-items:baseline}
+.c3 .h-t{font-size:12px;font-weight:700}
+.c3 .h-r{font-size:11px;color:#8E8E93}
 
 /* ===== C3＋C2（M3 に決定。2026-09-17） ===== */
 .mx .h-card{border-radius:14px;box-shadow:0 1px 2px rgba(0,0,0,.05);min-width:0}
@@ -545,11 +543,11 @@ html.rc-frame .mx .mg-close .mg-tag{background:#5E7185}
 .t2 .t2-gatehd{display:flex;justify-content:space-between;padding:6px 10px 3px;font-size:11px;color:#fff;font-weight:700;background:rgba(0,0,0,.18)}
 .t2 .t2-gatebox{padding:4px 6px 8px;background:rgba(0,0,0,.18)}
 .t2 .t2-gatebox .tk-gate{background:rgba(255,255,255,.88)}
-/* 今回の馬の枠（2026-09-21）。濃紺の縁と「今回」の小さな字で、8枠のどれかを一目で分かるようにする */
-.t2 .t2-gatebox .tk-gate.me{background:#fff;box-shadow:inset 0 0 0 2px var(--navy),0 1px 4px rgba(0,0,0,.3);position:relative}
-.t2 .t2-gatebox .tk-gate.me::after{content:'今回';position:absolute;top:-7px;left:50%;transform:translateX(-50%);
-  background:var(--navy);color:#fff;font-size:8.5px;font-weight:700;line-height:12px;padding:0 5px;border-radius:6px;white-space:nowrap}
-.t2 .t2-gatebox .tk-gate.me .hn{transform:scale(1.1)}
+/* 今回の馬の枠（2026-09-21・試作172 の案C）。今回の枠だけ白くくっきり・少し大きく、ほかは緑の地に沈める。
+   脚質の4区画（自分の馬以外は灰色）と同じ考え方。薄いほうも成績 S〜D は読める濃さに留める */
+.t2 .t2-gatebox .tk-gates.has-me .tk-gate{background:rgba(255,255,255,.45);opacity:.72}
+.t2 .t2-gatebox .tk-gates.has-me .tk-gate:not(.me) .hn{filter:saturate(.35)}
+.t2 .t2-gatebox .tk-gates.has-me .tk-gate.me{background:#fff;opacity:1;transform:scale(1.08);box-shadow:0 2px 6px rgba(0,0,0,.28)}
 
 /* T3 */
 .t3 h4{margin:12px 12px 4px;font-size:11px;font-weight:600;color:#6D6D72}
