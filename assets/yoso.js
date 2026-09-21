@@ -316,8 +316,8 @@
       .concat(runs.map((run, i) => ({ k: 'run', label: RUN_LABEL[i], i })))
       .concat(allPages);
   }
-  // 前走のページの位置（基本・直近5走・展開の後ろ）。直近5走の札や全戦績の行を押したときの行き先に使う
-  const RUN_PAGE0 = 3;
+  // 2026-09-21：直近5走の札・全戦績の行を押してその走のページへ飛ぶ動きはやめた（ユーザー指示）。
+  //   行き先に使っていた前走のページの位置（RUN_PAGE0 = 3）も要らなくなったので外した
   // 着差（秒）。数字で読めないもの（'クビ' '1.1/4' など馬身の表記）は「—」にする。NaN を出さない（2026-09-18）
   const marginSec = (v) => { const n = v == null || v === '' ? NaN : Number(v); return Number.isFinite(n) ? n : null; };
   // 全戦績は新しい順。直近5走（past_runs）＋それより前（career_runs）。同じ走が両方にあれば1つにする
@@ -807,7 +807,7 @@
   //   形は C「左の箱」（2026-09-18 決定・mockup-170。A 着差の列・B 1行目にまとめる は選ばなかった）：
   //   左＝着順とその下に着差の札（直近5走のページと同じ）／1行目＝距離と馬場・日付・場・クラスの札・レース名
   //   ／2行目＝タイム（金銀銅）・上がりと順位・通過順・人気／頭数・騎手と斤量。各項目は列の幅を決めて上下でそろえる
-  //   地の色は直近5走と同じ（1着＝金・僅差＝銀）。直近5走の行を押すとその走のページへ
+  //   地の色は直近5走と同じ（1着＝金・僅差＝銀）。行を押しても何も起きない（2026-09-21 ユーザー指示で飛び先を外した）
   //   sheet=true（比べる画面の戦績シート）は、行を押すとその走の中身が開く（2026-09-18 ユーザー指示）
   function allPage(h, from, to, sheet) {
     const all = allRuns(h);
@@ -815,8 +815,8 @@
     for (let i = from; i < to; i += 1) {
       const r = all[i];
       const d = summaryRun(h, r, Math.min(i, 4));
-      const go = sheet ? ` data-ex="${i}"` : i < 5 ? ` data-goto="${i + RUN_PAGE0}"` : '';
-      out.push(`<div class="al-row al-c ${d.band ? `bd-${d.band}` : ''}${sheet || i < 5 ? ' al-go' : ''}"${go}>
+      const go = sheet ? ` data-ex="${i}"` : '';
+      out.push(`<div class="al-row al-c ${d.band ? `bd-${d.band}` : ''}${sheet ? ' al-go' : ''}"${go}>
         <div class="al-lb"><b class="al-fin bt-num ${d.finMd}">${esc(d.finTxt)}</b><span class="al-pill bt-num">${d.mgTxt}</span></div>
         <div class="al-m">
           <div class="al-r1"><b class="bt-num al-ds ${d.sf}">${esc(d.sfTxt)}${esc(d.dist)}<small>${esc(d.going)}</small></b>
