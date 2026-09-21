@@ -153,16 +153,18 @@ body.yf-open{position:fixed;inset:0;width:100%}
 .rvC .cp-pill{display:inline-block;font-style:normal;font-size:10px;font-weight:600;color:#6D6D72;background:#EFEFF4;
   border-radius:999px;padding:1px 8px;margin-left:6px;vertical-align:middle}
 .rvC .cp-pill.on{color:#fff;background:var(--live)}
-/* C2 ウィジェット型 */
-.c2{display:flex;flex-direction:column;gap:8px;padding-top:6px}
+/* C2 ウィジェット型は選ばなかった案で、2026-09-17 以降どこからも使っていない。
+   2026-09-21 に削除した。名前を .c2 のまま裸で置いていたせいで、本番側（race.js）の
+   荒れ度の3行目 .ucrow.c2 と、直線コースの説明文 <text class="c2"> にも当たっていた。
+   荒れ度の「大荒れ」の行だけ縦並びになり、棒の幅が3px・高さ0pxに潰れていた。 */
 
 /* C3 ヘルスケア型（1まとまり＝1枚の札。決めた形の土台） */
-.c3{display:flex;flex-direction:column;gap:8px}
+.rvC.c3{display:flex;flex-direction:column;gap:8px}
 
-.c3 .h-card{background:#fff;border-radius:12px;padding:9px 14px 10px}
-.c3 .h-top{display:flex;justify-content:space-between;align-items:baseline}
-.c3 .h-t{font-size:12px;font-weight:700}
-.c3 .h-r{font-size:11px;color:#8E8E93}
+.rvC.c3 .h-card{background:#fff;border-radius:12px;padding:9px 14px 10px}
+.rvC.c3 .h-top{display:flex;justify-content:space-between;align-items:baseline}
+.rvC.c3 .h-t{font-size:12px;font-weight:700}
+.rvC.c3 .h-r{font-size:11px;color:#8E8E93}
 
 /* ===== C3＋C2（M3 に決定。2026-09-17） ===== */
 .mx .h-card{border-radius:14px;box-shadow:0 1px 2px rgba(0,0,0,.05);min-width:0}
