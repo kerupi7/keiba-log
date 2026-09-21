@@ -988,12 +988,13 @@
   // 払い間違えを戻す機能は置かない（同日ユーザー決定）
   // 1〜3ページ目（基本・直近5走・展開）の見出しの横に、今回の芝・ダートと距離を出す（2026-09-17 ユーザー指示）。
   //   過去走と見比べるときの基準なので、距離の色は過去走と同じ（芝＝緑・ダート＝橙）
+  //   2026-09-21：距離の左にクラスの札も出す（ユーザー指示）。過去走の札と同じ分け方・同じ色
   const TODAY_PAGES = ['p1', 'sum', 'tenkai'];
   const todayTag = (() => {
     const r = site.race || {};
     if (!r.surface || !r.distance) return '';
     const sf = String(r.surface).startsWith('ダ') ? 'sf-dt' : String(r.surface).startsWith('芝') ? 'sf-tf' : '';
-    return `<em class="yf-today ${sf}"><i>今回</i>${esc(r.surface)}<b class="bt-num">${esc(r.distance)}</b>m</em>`;
+    return `<em class="yf-today ${sf}"><i>今回</i>${clsBadge(raceClass(r.grade, r.race_name))}${esc(r.surface)}<b class="bt-num">${esc(r.distance)}</b>m</em>`;
   })();
   function vSwipe() {
     const h = Q[S.idx];
