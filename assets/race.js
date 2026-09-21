@@ -3721,6 +3721,16 @@ function setupPopups20(root, site) {
     }
     const nb = e.target.closest('[data-pop]');
     if (nb) {
+      // 2026-09-21 ユーザー指示：馬番のときは、絞り込み（予想をはじめる）と同じ戦績の画面を
+      //   1頭だけ開く（払って決める動きは無し・ページ送りと閉じるだけ）。入口はここ1本なので、
+      //   出馬表・新聞・コース・枠・買い目・比べる画面の馬名が一度に切り替わる。
+      //   yoso.js がまだ動いていない／その馬が居ない（取消など）ときは false が返り、
+      //   今までの札（#pop-N）に落ちる。course・upset・gate-* は今までどおり。
+      if (/^\d+$/.test(nb.dataset.pop) && window.YosoView) {
+        backTo = null;
+        closePopup();
+        if (window.YosoView.open(nb.dataset.pop)) return;
+      }
       // コースの中から馬番を押したときだけ、戻り先としてコースを覚える
       // 2026-09-03: 枠のポップアップからも同じように戻り先を覚える
       const cur = openPopup && openPopup.id.replace(/^pop-/, '');

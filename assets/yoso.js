@@ -200,9 +200,13 @@
   }
 
   // ---------- 重ねる画面 ----------
-  function open(first = 'swipe') {
+  // first='view' は「1頭だけ見る」（2026-09-21 ユーザー指示）。出馬表などで馬名を押したときに開く。
+  //   中身と並びは絞り込みの札と同じで、払って決める動きだけ無い（S.view で分かれる）
+  function open(first = 'swipe', horse = null) {
     if (first === 'swipe') Q = H;
-    S = { screen: 'swipe', idx: 0, page: 0, my: {}, step: 0, t: null, busy: false };
+    if (first === 'view') Q = [horse];
+    S = { screen: first === 'view' ? 'view' : 'swipe', idx: 0, page: 0, my: {}, step: 0,
+          t: null, busy: false, view: first === 'view' };
     root = document.createElement('div');
     root.className = 'yf';
     root.innerHTML = '<div class="yf-col" id="yf-col"></div>';
@@ -210,7 +214,7 @@
     document.body.style.overflow = 'hidden';
     document.body.classList.add('yf-open');
     root.addEventListener('click', onClick);
-    if (first === 'swipe') go('swipe');
+    if (first === 'swipe' || first === 'view') go(S.screen);
   }
 
   function close(apply) {
@@ -244,15 +248,15 @@
     const oldBack = document.getElementById('yf-back');
     const keepBack = S.screen === 'swipe' && oldBack && Number(oldBack.dataset.n) === (Q[S.idx + 1] || {}).number ? oldBack : null;
     const keepLater = S.screen === 'swipe' ? [...document.querySelectorAll('.yf-card.later')] : [];
-    col.innerHTML = { swipe: vSwipe, ask: vAsk, duel: vDuel, marked: vMarked }[S.screen]();
-    if (S.screen === 'swipe') {
+    col.innerHTML = { swipe: vSwipe, view: vSwipe, ask: vAsk, duel: vDuel, marked: vMarked }[S.screen]();
+    if (S.screen === 'swipe' || S.screen === 'view') {
       fitPage();
       const deck = document.getElementById('yf-deck');
       if (keepBack) deck.insertBefore(keepBack, document.getElementById('yf-card'));
       keepLater.forEach((x) => deck.insertBefore(x, deck.firstChild));
       bindCard();
-      // 次の後ろの札は、切り替えが済んでから描く
-      fillBack();
+      // 次の後ろの札は、切り替えが済んでから描く（1頭だけ見るときは後ろが無い）
+      if (S.screen === 'swipe') fillBack();
     }
     if (S.screen === 'duel') fitDuel();
   }
@@ -1016,12 +1020,18 @@
     const pg = pages[S.page];
     const dots = pages.map((_, i) => `<i class="${i <= S.page ? 'on' : ''}"></i>`).join('');
     // カード上の見出し（段階・「残す？ 消す？」・やめる）も外した（同日ユーザー指示）。この画面から抜ける手段は今は無い
-    return `<div class="yf-deck top apple" id="yf-deck">
+    // 1頭だけ見るとき（S.view）は、右側を「N / M頭」から馬番・馬名・閉じるに替える（2026-09-21）。
+    //   ✓／消の札と色は CSS（.yf-deck.view）で隠すだけにして、動きの側のコードは分けない
+    const right = S.view
+      ? `<span class="yf-vw">${umaBox(h.number, h.gate, 'sm')}<b>${esc(h.name)}</b>`
+        + '<button type="button" class="yf-x2" data-act="close">閉じる</button></span>'
+      : `<span>${H.length - Q.length + S.idx + 1} / ${H.length}頭</span>`;
+    return `<div class="yf-deck top apple${S.view ? ' view' : ''}" id="yf-deck">
         <div class="yf-card" id="yf-card">
           <div class="yf-tint" id="yf-tint"></div>
           <div class="yf-stamp ok" id="yf-ok"><i>✓</i>残す</div><div class="yf-stamp ng" id="yf-ng"><i>✕</i>消す</div>
           <div class="yf-dots">${dots}</div>
-          <div class="yf-plab"><span class="yf-pl"><b>${esc(pg.label)}</b>${TODAY_PAGES.includes(pg.k) ? todayTag : ''}</span><span>${H.length - Q.length + S.idx + 1} / ${H.length}頭</span></div>
+          <div class="yf-plab"><span class="yf-pl"><b>${esc(pg.label)}</b>${TODAY_PAGES.includes(pg.k) ? todayTag : ''}</span>${right}</div>
           <div class="yf-page" id="yf-page">${pageHtml(h, pg)}</div>
           ${S.page > 0 ? '<span class="yf-edge l">‹</span>' : ''}
           ${S.page < pages.length - 1 ? '<span class="yf-edge r">›</span>' : ''}
@@ -1606,6 +1616,8 @@
       if (cancel) { springHome(); return; }
       if (vdrag) {
         if (dy > 120 || vy > 0.9) {
+          // 1頭だけ見るときは、下に払ったらそのまま閉じる（やめるかの確認は要らない。2026-09-21）
+          if (S.view) { close(false); return; }
           card.classList.add('spring'); card.style.transform = 'translateY(40px) scale(.97)';
           quitSheet(() => springHome());
         } else springHome();
@@ -1613,7 +1625,11 @@
       }
       if (drag) {
         const fling = Math.abs(dx) > 40 && Math.abs(vx) > 0.5 && Math.sign(vx) === Math.sign(dx);
-        if (Math.abs(dx) > TH || fling) { decideApple(dx > 0 ? '✓' : '消', vx, vy, (dx / 18) * g, dy * 0.2); return; }
+        if (Math.abs(dx) > TH || fling) {
+          // 1頭だけ見るときは払わない。横に払ったらページを送る（右へ払う＝前のページ）
+          if (S.view) { springHome(); turn(dx > 0 ? -1 : 1); return; }
+          decideApple(dx > 0 ? '✓' : '消', vx, vy, (dx / 18) * g, dy * 0.2); return;
+        }
         springHome();
         return;
       }
@@ -1743,6 +1759,7 @@
       case 'next': startMark(nextStep(S.step + 1)); break;
       case 'restart': Q = H; S.idx = 0; S.page = 0; S.my = {}; go('swipe'); break;
       case 'done': close(true); break;
+      case 'close': close(false); break;   // 1頭だけ見るときの「閉じる」（2026-09-21）
       case 'quit':
         if (window.confirm('予想をやめますか？ ここまでの答えは消えます')) close(false);
         break;
@@ -1750,10 +1767,23 @@
     }
   }
   document.addEventListener('keydown', (e) => {
-    if (!root || S.screen !== 'swipe') return;
+    if (!root || (S.screen !== 'swipe' && S.screen !== 'view')) return;
     if (e.key === 'ArrowLeft') turn(-1);
     if (e.key === 'ArrowRight') turn(1);
   });
+
+  // 出馬表・新聞・買い目などで馬名を押したときに、この画面を1頭だけ開く入口（2026-09-21 ユーザー指示）。
+  //   本番の race.js が [data-pop]（馬番）でここを呼ぶ。開けたら true、その馬が居なければ false を返し、
+  //   false のときは race.js が今までの札（#pop-N）を出す。
+  window.YosoView = {
+    open(number) {
+      if (root) return false;                      // すでに何か開いているときは邪魔しない
+      const h = H.find((x) => Number(x.number) === Number(number));
+      if (!h) return false;
+      open('view', h);
+      return true;
+    },
+  };
 
   // ---------- 本番の組み立てを待つ ----------
   (async () => {
