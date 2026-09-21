@@ -202,11 +202,16 @@
   // ---------- 重ねる画面 ----------
   // first='view' は「1頭だけ見る」（2026-09-21 ユーザー指示）。出馬表などで馬名を押したときに開く。
   //   中身と並びは絞り込みの札と同じで、払って決める動きだけ無い（S.view で分かれる）
+  let pageY = 0;   // この画面を開く前に見ていたページの高さ（閉じたときに戻す）
   function open(first = 'swipe', horse = null) {
     if (first === 'swipe') Q = H;
     if (first === 'view') Q = [horse];
     S = { screen: first === 'view' ? 'view' : 'swipe', idx: 0, page: 0, my: {}, step: 0,
           t: null, busy: false, view: first === 'view' };
+    // 重ねている間は後ろのページを止める。閉じたときは、開く前に見ていた高さへ戻す
+    //   （2026-09-21：閉じるとページの先頭に戻るという指摘。overflow:hidden だけでは位置が
+    //    残らないので、本番の lockPageScroll と同じ「位置を覚えて戻す」に合わせた）
+    pageY = window.scrollY || window.pageYOffset || 0;
     root = document.createElement('div');
     root.className = 'yf';
     root.innerHTML = '<div class="yf-col" id="yf-col"></div>';
@@ -233,6 +238,7 @@
     root.remove(); root = null;
     document.body.style.overflow = '';
     document.body.classList.remove('yf-open');
+    window.scrollTo(0, pageY);   // 開く前に見ていた高さへ戻す（2026-09-21）
   }
 
   function go(name) {
