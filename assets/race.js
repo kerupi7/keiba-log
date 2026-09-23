@@ -1979,6 +1979,172 @@ function aptPass(h) {
   return (c[0] + c[1] + c[2]) >= 1 && (c[0] + c[1] + c[2] + c[3]) >= 2;
 }
 
+let AX_RACE = null;   // いま見ているレース（コース適性のカードが使う）。main で入れる
+
+// ===== コース適性（好走率の版・2026-09-24 決定）=====
+// 仕様: Kelpie.Inc 側 部署/競馬部/handoff_2026-09-24_apt-card.md（試作は mockup-173-apt-screen.html）
+//
+// **ここが正本。**予想の「1頭だけ見る画面」（yoso.js）もこの関数を呼ぶ。
+// 2つに書き分けると決まりの数字（下の AX_*）が知らないうちにズレるため、1か所にしてある。
+// 数字は publish 側（keiba_shutuba_columns.py の build_apt）が course_record.apt に載せる。
+// 無いレース（古い公開JSON）では、下の着別度数の表にそのまま落ちる。
+//
+// 好走＝1着、または勝ち馬とのタイム差が芝0.4秒・ダート0.6秒以内（race.js の CLOSE_MARGIN と同じ）。
+// 色の決まりは3つ。
+//   ・2走に満たない距離には色を付けない（1走は0%か100%にしかならないため）
+//   ・走数が少ない距離は、その馬の普段の方へ寄せてから差を取る（重し4走ぶん）
+//   ・赤は好走率が23%未満のときだけ（23%は全馬の平均。無作為3,000頭の中央31,300走で実測）
+const AX_MIN_N = 2;   // 色を付けるのに要る走数
+const AX_PT = 5;      // 普段との差。レースの型べつ成績の札と同じ線
+const AX_K = 4;       // 走数で色を弱める重し。2走の実績を普段の半分の重さで扱うための代理
+const AX_POP = 23;    // 赤の下限。これ以上走れている距離は赤にしない
+const AX_CAP = 25;    // ここまで離れたら一番濃い
+const AX_SIG = 70;    // 色を横に広げる幅（m）。180m離れるとほぼ効かない
+const AX_SCALE = { '芝': [1000, 3600], 'ダート': [1000, 2500] };
+const AX_USED = {
+  '芝': [1000, 1200, 1400, 1500, 1600, 1800, 2000, 2200, 2400, 2500, 2600, 3000, 3200, 3600],
+  'ダート': [1000, 1150, 1200, 1300, 1400, 1600, 1700, 1800, 1900, 2000, 2100, 2400, 2500],
+};
+const axPct = (o) => (o && o.n ? Math.round((o.good / o.n) * 100) : null);
+
+// その距離の「普段との差」。走数が足りなければ null、赤の下限に掛かれば 0
+function axDiff(c, basep) {
+  if (!c || !c.n || basep == null || c.n < AX_MIN_N) return null;
+  const raw = (c.good / c.n) * 100;
+  const d = ((c.good + (AX_K * basep) / 100) / (c.n + AX_K)) * 100 - basep;
+  if (d < 0 && raw >= AX_POP) return 0;
+  return d;
+}
+
+function aptCardHtml(h, race, bare) {
+  const a = (h.course_record || {}).apt;
+  if (!a || !a.base || !a.base.n) return '';
+  const R = race || {};
+  const basep = axPct(a.base);
+  if (basep == null) return '';
+  const ds = (a.dist || []).filter((c) => c.n);
+  const scale = AX_SCALE[R.surface] || AX_SCALE['芝'];
+  const used = AX_USED[R.surface] || AX_USED['芝'];
+  // 横軸は実在する距離を等間隔に並べる（実寸だと芝の3000m以上が右の23%を占めるため）
+  const at = (m) => {
+    if (m <= used[0]) return 0;
+    if (m >= used[used.length - 1]) return 100;
+    for (let i = 0; i < used.length - 1; i++) {
+      if (m <= used[i + 1]) {
+        return ((i + (m - used[i]) / (used[i + 1] - used[i])) / (used.length - 1)) * 100;
+      }
+    }
+    return 100;
+  };
+  const GREY = [199, 199, 204];
+  const col = (d, f) => {
+    if (d == null) return 'rgb(226,226,232)';
+    const t = Math.min(1, Math.abs(d) / AX_CAP) * (f == null ? 1 : f);
+    const tgt = d > 0 ? [31, 122, 69] : [200, 53, 44];
+    return `rgb(${GREY.map((g, i) => Math.round(g + (tgt[i] - g) * t)).join(',')})`;
+  };
+  // 山の形（高さ＝走った数）と色（＝普段との差）を作る。
+  //   色は一番近い距離だけで決めず、全部の距離を重ねて混ぜる。そうしないと距離の
+  //   真ん中で緑と赤が一瞬で入れ替わり、そこが境目に見える（2026-09-24 実機で確認）
+  const STEPS = 260, SIG = 150;
+  const lo = Math.min(...ds.map((c) => c.m), R.distance) - 250;
+  const hi = Math.max(...ds.map((c) => c.m), R.distance) + 250;
+  const pts = [];
+  let maxW = 0.001;
+  for (let i = 0; i <= STEPS; i++) {
+    const x = lo + ((hi - lo) * i) / STEPS;
+    let w = 0, cw = 0, cd = 0;
+    ds.forEach((c) => {
+      w += c.n * Math.exp(-((x - c.m) * (x - c.m)) / (2 * SIG * SIG));
+      const dd = axDiff(c, basep);
+      if (dd == null) return;
+      const k = Math.exp(-((x - c.m) * (x - c.m)) / (2 * AX_SIG * AX_SIG));
+      if (k < 0.002) return;
+      cw += k; cd += k * dd;
+    });
+    maxW = Math.max(maxW, w);
+    pts.push({ w, d: cw > 0.02 ? Math.max(-AX_CAP, Math.min(AX_CAP, cd / cw)) : null,
+               f: Math.min(1, cw), pos: at(x) });
+  }
+  const W = 300, Ht = 62;
+  const uid = `ax${Math.random().toString(36).slice(2, 8)}`;
+  const path = pts.map((q) => `${((q.pos / 100) * W).toFixed(2)},${(Ht - (q.w / maxW) * (Ht - 6)).toFixed(2)}`).join(' L');
+  const stops = pts.map((q) => `<stop offset="${q.pos.toFixed(2)}%" stop-color="${col(q.d, q.f)}"/>`).join('');
+  // 押す帯は隣との真ん中まで。印は帯の真ん中ではなく実際の距離の位置に置く
+  const hits = ds.map((c, i) => {
+    const prev = i ? at((c.m + ds[i - 1].m) / 2) : 0;
+    const next = i < ds.length - 1 ? at((c.m + ds[i + 1].m) / 2) : 100;
+    const off = ((at(c.m) - prev) / (next - prev)) * 100;
+    return `<b class="ax-hit" data-k="${i}" style="left:${prev}%;width:${next - prev}%;--mk:${off}%"></b>`;
+  }).join('');
+  const detail = (c) => {
+    const p = axPct(c), dr = axDiff(c, basep);
+    const k = dr == null ? '' : dr >= AX_PT ? 'k-up' : dr <= -AX_PT ? 'k-dn' : '';
+    const word = dr == null ? (c.n < AX_MIN_N ? '走数が足りないので色は付けていない' : '')
+      : dr >= AX_PT ? `この馬の普段（${basep}%）より <b>+${Math.round(dr)}</b>。走れている距離`
+      : dr <= -AX_PT ? `この馬の普段（${basep}%）より <b>${Math.round(dr)}</b>。振るわない距離`
+      : `この馬の普段（${basep}%）と同じくらい`;
+    return `<div class="ax-dt ${k}"><div class="ax-dt1"><b class="bt-num">${c.m}m</b>
+      <span>${c.n}走のうち <b class="bt-num">${c.good}</b>走が好走</span>
+      <span class="ax-pw">好走率 <b class="bt-num">${p}%</b></span></div>
+      <div class="ax-dt2">${word}</div></div>`;
+  };
+  const todayIdx = Math.max(0, ds.findIndex((c) => c.today));
+  const cellRow = (label, c, cls) => {
+    const p = axPct(c), dr = axDiff(c, basep);
+    const k = dr == null ? '' : dr >= AX_PT ? 'j-up' : dr <= -AX_PT ? 'j-dn' : '';
+    return `<div class="ax-r${c && c.n ? '' : ' zero'}${k ? ' ' + k : ''}${cls ? ' ' + cls : ''}">
+      <span class="ax-l">${escapeHtml(label)}</span>
+      ${c && c.n ? `<span class="ax-n bt-num">${c.n}走</span>
+        <span class="ax-p bt-num">${p}<small>%</small></span>
+        <span class="ax-d bt-num">${dr == null ? '' : (dr > 0 ? '+' : '') + Math.round(dr)}</span>`
+      : '<span class="ax-nz">走っていない</span>'}</div>`;
+  };
+  const turn = (a.turn || []).filter((c) => c.n);
+  const turnSum = turn.reduce((x, c) => x + c.n, 0);
+  const turnBar = !turnSum ? '' : `<div class="ax-g"><div class="ax-gt">回り（${escapeHtml(R.surface)}）　数字は好走率</div>
+    <div class="ax-sp">${turn.map((c) => {
+      const dr = axDiff(c, basep);
+      const k = dr == null ? 'sh0' : dr >= AX_PT ? 'sh1' : dr <= -AX_PT ? 'sh-1' : 'sh0';
+      return `<span class="ax-spc ${k}${c.today ? ' today' : ''}" style="width:${(c.n / turnSum) * 100}%">
+        <b>${escapeHtml(c.label)}</b><i class="bt-num">${axPct(c)}%</i><u class="bt-num">${c.n}走</u></span>`;
+    }).join('')}</div></div>`;
+  const head = bare
+    ? `<div class="ax-hd"><span class="ax-ht">コース適性</span>
+        <span class="ax-hr">好走率＝1着か僅差で走れた割合</span></div>`
+    : `<div class="h-top"><span class="h-t">コース適性</span>
+        <span class="h-r">好走率＝1着か僅差で走れた割合</span></div>`;
+  return `<div class="${bare ? 'ax ax-bare' : 'h-card b-crd ax'}">
+    ${head}
+    <div class="ax-base">普段の好走率 <b class="bt-num">${basep}%</b>（${a.base.n}走）
+      ／ 色は普段との差。離れるほど濃い・${AX_MIN_N}走から付ける</div>
+    ${cellRow(`${R.track || ''}${R.surface || ''}${R.distance || ''}m`, a.course, 'today')}
+    ${cellRow(`${R.track || ''}${R.surface || ''}`, a.track)}
+    ${!ds.length ? '<div class="ax-none">この面では走っていない</div>' : `
+    <div class="ax-g"><div class="ax-gt">距離（全場・${escapeHtml(R.surface)}）　目盛りは100m単位・▲＝今日</div>
+      <div class="ax-mt">
+        <svg viewBox="0 0 ${W} ${Ht}" preserveAspectRatio="none">
+          <defs><linearGradient id="${uid}" x1="0" y1="0" x2="1" y2="0">${stops}</linearGradient>
+            <linearGradient id="${uid}v" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#fff" stop-opacity=".55"/>
+              <stop offset="55%" stop-color="#fff" stop-opacity=".10"/>
+              <stop offset="100%" stop-color="#fff" stop-opacity="0"/></linearGradient>
+            <clipPath id="${uid}c"><path d="M0,${Ht} L${path} L${W},${Ht} Z"/></clipPath></defs>
+          <path d="M0,${Ht} L${path} L${W},${Ht} Z" fill="url(#${uid})"/>
+          <rect x="0" y="0" width="${W}" height="${Ht}" fill="url(#${uid}v)" clip-path="url(#${uid}c)"/>
+        </svg>
+        <span class="ax-now" style="left:${at(R.distance)}%"></span>
+        <span class="ax-hits">${hits}</span>
+        <div class="ax-scale">${used.map((m) =>
+          `<span class="bt-num" style="left:${at(m)}%">${(m / 100).toFixed(1).replace(/\.0$/, '')}</span>`).join('')}</div>
+        <div class="ax-open"><div class="ax-hint">山を押すと、その距離の中身が出ます</div>
+          <div class="ax-dts">${ds.map((c, i) =>
+            `<div class="ax-dw${i === todayIdx ? ' on' : ''}" data-k="${i}">${detail(c)}</div>`).join('')}</div>
+        </div>
+      </div></div>`}
+    ${turnBar}</div>`;
+}
+
 // bare=true のときは見出し（.crh）と注記（.crn）を出さず表だけ返す。
 // 札と新聞の面では見出しを呼び出し側が出すため（126-spec §5）。
 function courseRecordTable(h, bare) {
@@ -2151,6 +2317,9 @@ function raceTypeTable(h, pred) {
 
 // 126-spec §5: 札と新聞の面に出すコース適性。見出しは自分で出す（表は bare で取る）
 function courseBlock(h) {
+  // 好走率の版（2026-09-24 決定）。publish が apt を載せていないレースだけ、今までの表に落ちる
+  const card = aptCardHtml(h, AX_RACE, true);
+  if (card) return `<div class="acrow acrow-ax">${card}</div>`;
   const t = courseRecordTable(h, true);
   if (!t) return '';
   return `<div class="acrow"><div class="lb">コース適性（中央のみ・全走）</div>${t}</div>`;
@@ -2784,7 +2953,7 @@ function popupBody(h, site) {
       ${'' /* 入れ替わるのは3つの表だけ。印・通算・地雷の理由・レース戦績は
              どちらの面でも出したまま（2026-09-03 ユーザー指示） */}
       <div class="pmain">
-        ${courseRecordTable(h)}
+        ${aptCardHtml(h, (site || {}).race, true) || courseRecordTable(h)}
         ${raceTypeTable(h, (site || {}).prediction)}
         ${levelRecordTable(h)}
       </div>
@@ -3717,6 +3886,18 @@ function setupPopups20(root, site) {
         .find((x) => !x.hidden);
       const now = cur ? cur.dataset.panelBody : '';
       showPanel(openPopup, now === key ? '' : key);   // 同じボタンをもう一度押すと戻る
+      return;
+    }
+    const hit = e.target.closest('.ax .ax-hit');
+    if (hit) {
+      // コース適性の山を押したら、その距離の中身だけを出す（2026-09-24 決定）
+      const box = hit.closest('.ax-g');
+      if (box) {
+        box.querySelectorAll('.ax-hit').forEach((x) => x.classList.toggle('on', x === hit));
+        box.querySelectorAll('.ax-dw').forEach((x) => x.classList.toggle('on', x.dataset.k === hit.dataset.k));
+        const hint = box.querySelector('.ax-hint');
+        if (hint) hint.style.display = 'none';
+      }
       return;
     }
     const nb = e.target.closest('[data-pop]');
@@ -5432,6 +5613,7 @@ async function main() {
     renderError(`レースデータの読み込みに失敗しました: ${e.message}`);
     return;
   }
+  AX_RACE = site.race || null;
   BANDS = (bands && bands.schema_version === 'keiba-log-bands-1.0') ? bands : null;
 
   // F10: odds_all の schema_version が "odds_all-1." で前方一致しなければ、安全側で

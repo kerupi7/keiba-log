@@ -4126,3 +4126,74 @@ body.bs-locked{overflow:hidden}
   border-radius:8px;border:1px solid var(--navy);color:var(--navy);background:#fff;margin-right:6px;vertical-align:2px}
 .mdlchip.w4{border-color:#4A6278;color:#4A6278}
 .msec .msecnote{font-size:11px;font-weight:400;color:var(--cap);margin-left:8px}
+
+/* ここから下は race.js の aptCardHtml（コース適性のカード）が使う。
+   出馬表・新聞・馬名の札・WIN5・予想の『1頭だけ見る画面』で共通に使うので、
+   yoso.css ではなくここに置いてある（2026-09-24）。 */
+/* ===== コース適性（好走率の版・2026-09-24 決定）=====
+   仕様: 部署/競馬部/handoff_2026-09-24_apt-card.md（試作は mockup-173-apt-screen.html）
+   緑と赤は、すぐ下の「レースの型べつ成績」の札と同じ意味（普段より上／下）で使う */
+.ax .ax-base{font-size:11px;color:#8E8E93;margin:1px 0 7px;line-height:1.6}
+.ax .ax-base b{color:var(--text);font-size:12.5px}
+.ax .ax-r{display:grid;grid-template-columns:104px 34px 46px 34px;align-items:baseline;gap:8px;
+  padding:7px 0;border-top:1px solid #F2F2F7}
+.ax .ax-r:first-of-type{border-top:0}
+.ax .ax-l{font-size:12.5px;letter-spacing:-.02em;white-space:nowrap;overflow:hidden}
+.ax .ax-n{font-size:11px;color:#8E8E93;text-align:right}
+.ax .ax-p{font-size:16px;text-align:right;white-space:nowrap}
+.ax .ax-p small{font-size:10px;color:#AEAEB2;font-weight:400}
+.ax .ax-d{font-size:11px;color:#AEAEB2;text-align:right}
+.ax .ax-nz{grid-column:2 / -1;font-size:11px;color:#C7C7CC}
+.ax .ax-r.zero .ax-l{color:#AEAEB2}
+.ax .ax-r.today{margin:0 -12px;padding-left:12px;padding-right:12px;box-shadow:inset 4px 0 0 var(--navy)}
+.ax .ax-r.today .ax-l{font-weight:700}
+.ax .ax-r.j-up{background:#E7F3EA;margin:0 -12px;padding-left:12px;padding-right:12px;box-shadow:inset 4px 0 0 var(--hit)}
+.ax .ax-r.j-dn{background:#FAECEB;margin:0 -12px;padding-left:12px;padding-right:12px;box-shadow:inset 4px 0 0 #C8352C}
+.ax .ax-r.j-up .ax-p,.ax .ax-r.j-up .ax-d{color:var(--hit)}
+.ax .ax-r.j-dn .ax-p,.ax .ax-r.j-dn .ax-d{color:#C8352C}
+.ax .ax-g{margin-top:12px}
+.ax .ax-gt{font-size:10.5px;color:#8E8E93;margin-bottom:6px}
+.ax .ax-mt{position:relative}
+.ax .ax-mt svg{display:block;width:100%;height:62px}
+.ax .ax-now{position:absolute;top:0;height:62px;width:2px;background:var(--navy);opacity:.5;transform:translateX(-1px);z-index:2}
+.ax .ax-hits{position:absolute;left:0;right:0;top:0;height:62px;z-index:3}
+.ax .ax-hit{position:absolute;top:-6px;bottom:-14px;cursor:pointer}
+.ax .ax-hit.on::after{content:"";position:absolute;left:var(--mk,50%);bottom:-2px;width:18px;height:2px;
+  border-radius:2px;background:var(--navy);transform:translateX(-50%)}
+.ax .ax-scale{position:relative;height:14px;margin-top:5px}
+.ax .ax-scale span{position:absolute;transform:translateX(-50%);font-size:9px;color:#C7C7CC;white-space:nowrap}
+.ax .ax-hint{font-size:10px;color:#C7C7CC;margin-top:6px}
+.ax .ax-dts{margin-top:5px}
+.ax .ax-dw{display:none}
+.ax .ax-dw.on{display:block}
+.ax .ax-dt{border-radius:9px;background:#F7F7FA;padding:8px 10px}
+.ax .ax-dt1{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.ax .ax-dt1>b{font-size:16px;color:#48484A}
+.ax .ax-dt1 span{font-size:12px;color:#6D6D72}
+.ax .ax-dt1 span b{font-size:14px;color:#48484A}
+.ax .ax-dt1 .ax-pw{margin-left:auto;white-space:nowrap}
+.ax .ax-dt2{font-size:11.5px;color:#8E8E93;margin-top:3px}
+.ax .ax-dt2 b{color:#48484A}
+.ax .ax-dt.k-up{background:#E7F3EA}
+.ax .ax-dt.k-up .ax-dt1>b,.ax .ax-dt.k-up .ax-dt1 span b,.ax .ax-dt.k-up .ax-dt2 b{color:#1F7A45}
+.ax .ax-dt.k-dn{background:#FAECEB}
+.ax .ax-dt.k-dn .ax-dt1>b,.ax .ax-dt.k-dn .ax-dt1 span b,.ax .ax-dt.k-dn .ax-dt2 b{color:#C8352C}
+.ax .ax-sp{display:flex;gap:3px;height:44px}
+.ax .ax-spc{border-radius:7px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  min-width:58px;overflow:hidden}
+.ax .ax-spc b{font-size:10px;font-weight:600;opacity:.8;white-space:nowrap}
+.ax .ax-spc i{font-size:14px;font-style:normal;font-weight:700;line-height:1.2}
+.ax .ax-spc u{font-size:9px;text-decoration:none;opacity:.6}
+.ax .ax-spc.today{box-shadow:inset 0 0 0 1.5px var(--navy)}
+.ax .sh1{background:#A8D5B9}
+.ax .sh0{background:#D8D8DE}
+.ax .sh-1{background:#EFB3AE}
+.ax .ax-none{font-size:11px;color:#C7C7CC;padding:6px 0}
+/* 戦績の札（.acard）に入れるときは、外枠を持たない形で出す */
+.acrow-ax{margin-top:8px}
+.ax-bare .ax-hd{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:2px}
+.ax-bare .ax-ht{font-size:13.5px;font-weight:700;color:var(--text)}
+.ax-bare .ax-hr{font-size:10.5px;color:#8E8E93}
+.ax-bare .ax-r.today,.ax-bare .ax-r.j-up,.ax-bare .ax-r.j-dn{margin:0;padding-left:8px;padding-right:8px}
+.pmain>.ax-bare{margin-bottom:14px}
+.ax-bare{background:#fff}
