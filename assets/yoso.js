@@ -714,7 +714,7 @@
       e.classList.add('yf-me');
       const z = e.closest('.lz'); if (z) z.classList.add('yf-mez');
     });
-    return tkMap(h, tkParse(wrap));   // 2026-09-24 から上から見たレースの図（tkMap）。前の形（tkDesign）は呼んでいない
+    return tkMap(h, tkParse(wrap));   // 2026-09-24 から上から見たレースの図（tkMap）。前の形（tkDesign）は同日に消した
   }
 
   // ---------- 展開のページ：数字は本番の展開の面から読み取り、並べ方と見た目だけ変える ----------
@@ -755,23 +755,7 @@
     };
   }
   const tkG = (g, cls = '') => (g ? `<span class="tk-g ${cls}" style="background:${G_COLOR[g] || '#8E8E93'}">${esc(g)}</span>` : '');
-  const tkChip = (c) => `<span class="tk-chip${c.me ? ' me' : ''}${c.nige ? ' nige' : ''}">${c.hn}${c.mark ? `<i class="${esc(c.mcls)}">${esc(c.mark)}</i>` : ''}</span>`;
-  // 今週の馬場は、上の大きな札と同じ作りの色の札3枚（2026-09-17 決定・K2。上から見た図 K1・天秤の絵 K3 は選ばなかった）
-  //   偏りの向きで色が変わる（偏りなし＝灰、内・前＝赤／青、外・後ろ＝緑／灰、時計が遅い＝橙・速い＝緑）
-  function weekCards(D, ioP, fbP, clockCls) {
-    const inP = ioP[1] || '—', outP = ioP[2] || '—';   // 表示は元の文字のまま（20.0 を 20 にしない）
-    const fN = Number(fbP[1]) || 0, rN = Number(fbP[2]) || 0;
-    const tone = (cls) => (cls === 't1' ? 'a' : cls === 'u1' ? 'b' : 'n');
-    return `<div class="w2-week k2"><div class="w2-wh"><b>今週の馬場</b><span>${esc(D.wkScope)}</span></div><div class="k2-row">
-      ${D.io ? `<div class="k2-card io-${tone(D.io.cls)}"><i>内と外</i><div class="k2-two"><span><em>内</em><b class="bt-num">${inP}</b><small>%</small></span><span><em>外</em><b class="bt-num">${outP}</b><small>%</small></span></div><small>3着以内に入った率</small><strong>${esc(D.io.word)}</strong></div>` : ''}
-      ${D.fb ? `<div class="k2-card fb-${tone(D.fb.cls)}"><i>前と後ろ</i><div class="k2-two"><span><em>前</em><b class="bt-num">${fN}</b><small>頭</small></span><span><em>後ろ</em><b class="bt-num">${rN}</b><small>頭</small></span></div><small>3着内の馬の4角の位置</small><strong>${esc(D.fb.word)}</strong></div>` : ''}
-      ${D.clock ? `<div class="k2-card ck-${clockCls}"><i>時計</i><div class="k2-big"><b class="bt-num">${esc(D.clock.v)}</b><span>秒</span></div><small>基準との差・${esc(D.clock.n)}</small><strong>${esc(D.clock.word)}</strong></div>` : ''}
-    </div></div>`;
-  }
 
-  // 展開のページの形（2026-09-17 決定）：
-  //   上＝今日の馬場の大きな札（W2。馬場の状態で色が変わる）／真ん中＝芝の地図（T2。ペースの帯・脚質の4区画・枠順の8枠）／下＝今週の馬場の色の札3枚（K2）
-  //   選ばなかった案：並べ替えたカード T1・設定画面のような一覧 T3、上下の手直し V1〜V3、計器盤 W1・ものさし W3
   const LV5 = ['軟らかい', 'やや軟らかい', 'いつも通り', 'やや硬い', '硬い'];
   const LV5D = ['湿っている', 'やや湿っている', 'いつも通り', 'やや乾いている', '乾いている'];
   // 展開のページの形（2026-09-24 作り直し・試作 mockup-181〜188）：上から見たレースの図1枚にまとめる。
@@ -897,49 +881,6 @@
     </div>
     <div class="tk3-zl" style="margin-left:${P(x0, W)};margin-right:${P(W - x1, W)}">${Z.map((z) => `<span class="${z.me ? 'me' : ''}"><em>${esc(z.nm)}${esc(z.c)}</em>${gch(z.g)}<b class="bt-num">${esc(z.r)}</b></span>`).join('')}</div>`;
     return `<div class="race20 tk3 ${isDirt ? 'dirt' : 'turf'}">${sky}${board}${map}</div>`;
-  }
-
-  // 前の形（2026-09-17〜09-23）。2026-09-24 に tkMap へ置き換え、いまは呼んでいない
-  function tkDesign(h, D) {
-    const paceSum = D.pace.reduce((a, r) => a + r.pp, 0);
-    // 今回の馬の枠を目立たせる（2026-09-21 ユーザー指示・試作172 の案C）。脚質の4区画と同じ考え方で、
-    //   今回の枠だけ白くくっきり・少し大きく、ほかの7つは緑の地に沈める（成績 S〜D は読める濃さに残す）。
-    //   枠が分からない馬では has-me を付けず、全部が薄くならないようにする
-    const myGate = Number(h.gate) || 0;
-    const gateNo = (html) => Number(String(html).replace(/<[^>]+>/g, '').trim());
-    const gatesRow = `<div class="tk-gates${myGate ? ' has-me' : ''}">${D.gates.map((g) => `<div class="tk-gate${myGate && gateNo(g.hn) === myGate ? ' me' : ''}">${g.hn}${tkG(g.grade)}</div>`).join('')}</div>`;
-    const zones = D.zones.map((z) => `<div class="t2-zone${z.me ? ' me' : ''}">
-      <span class="t2-st" style="background:${G_COLOR[z.grade] || '#4E5862'}">${esc(z.style)} ${esc(z.count)}</span>
-      <div class="t2-gr">${tkG(z.grade)}<span class="bt-num">${esc(z.rate)}</span></div>
-      <div class="t2-chips">${z.chips.map(tkChip).join('')}</div></div>`).join('');
-    // ペースの帯。説明（上がり勝負・1000m 約62.1秒）は帯の中へ。3割未満の細い区切りは名前と割合だけ
-    const paceBar = `<div class="tk-pbar big">${D.pace.map((r, i) => `<i class="p${i}${r.pp < 30 ? ' narrow' : ''}" style="flex:${r.pp}"><b>${esc(r.nm)}<em class="bt-num">${r.pp}%</em></b><span>${esc(r.sb)}・${esc(r.pt.replace('通過', ''))}</span></i>`).join('')}${paceSum < 100 ? `<i class="px" style="flex:${100 - paceSum}"><span>他${100 - paceSum}%</span></i>` : ''}</div>`;
-    const clockCls = D.clock ? (D.clock.fast ? 'fast' : 'slow') : '';
-    const isDirt = D.baba && LV5D.includes(D.baba.label) && D.baba.label !== 'いつも通り' ? true : String((site.race || {}).surface || '').startsWith('ダ');
-    const lvIdx = D.baba ? Math.max(0, (isDirt ? LV5D : LV5).indexOf(D.baba.label)) : 2;
-    const lvEnds = isDirt ? ['湿', '乾'] : ['軟', '硬'];
-    const ioP = D.io ? (D.io.n.match(/内([\d.]+)% 外([\d.]+)%/) || []) : [];
-    const fbP = D.fb ? (D.fb.n.match(/前(\d+) 後ろ(\d+)/) || []) : [];
-    const sign = (v, cls) => `${cls === 'p1' ? '−' : '+'}${v}`;
-    const tone = isDirt ? (lvIdx < 2 ? 'wet' : lvIdx > 2 ? 'dry' : 'norm') : (lvIdx < 2 ? 'soft' : lvIdx > 2 ? 'firm' : 'norm');
-    const hero = `<div class="w2-hero ${tone}">
-      <div class="w2-top"><span>今日の馬場</span><span>${esc((D.baba && D.baba.rail) || '')}</span></div>
-      <div class="w2-big">${D.baba ? esc(D.baba.label) : '—'}</div>
-      <div class="w2-dots">${[0, 1, 2, 3, 4].map((k) => `<i class="${k === lvIdx ? 'on' : ''}"></i>`).join('')}<span>${lvEnds[0]}</span><span>${lvEnds[1]}</span></div>
-      <div class="w2-facts">
-        ${D.time ? `<div><b class="bt-num">${sign(esc(D.time.v), D.time.cls)}<small>秒</small></b><span>勝ちタイム・${esc(D.time.word)}</span></div>` : ''}
-        ${D.rise ? `<div><b class="bt-num">${esc(D.rise.v)}<small>m</small></b><span>高低差・${esc(D.rise.word)}</span></div>` : ''}
-      </div>
-      ${D.baba && D.baba.aim ? `<div class="w2-aim">${esc(D.baba.aim)}</div>` : ''}
-    </div>`;
-    const field = `<div class="t2-field">
-      <div class="t2-sky">${paceBar}</div>
-      <div class="t2-zones">${zones}</div>
-      <div class="t2-gatehd"><span>枠順${D.gateScope ? `（${esc(D.gateScope)}）` : ''}</span>${D.tilt ? `<b>${esc(D.tilt.word)}</b>` : ''}</div>
-      <div class="t2-gatebox">${gatesRow}</div>
-    </div>`;
-    const week = D.io || D.fb || D.clock ? weekCards(D, ioP, fbP, clockCls) : '';
-    return `<div class="race20 rvC tk2 t2 t2-w2">${hero}${field}${week}</div>`;
   }
 
   // 全戦績のページ（2026-09-17 ユーザー指示）。1走＝2行の細い行。
@@ -1588,10 +1529,11 @@
     if (kind === 'course') infoSheet(h, 'コース適性', pickCard(basicPage(h), '.b-crd'));
     else if (kind === 'flow') infoSheet(h, 'レースの型べつ成績', pickCard(basicPage(h), '.b-rtd'));
     else if (kind === 'fit') {
-      // 展開のページから、馬場の2枚を外して「ペース・脚質・枠」の札だけ残す
+      // 展開のページから「ペース・脚質・枠」だけ残す。今日の馬場の帯と、スコアボードの今週の2行を外す
+      //   （2026-09-24 に展開のページを tkMap へ作り直した時に、古い札の名前 .w2-hero/.w2-week のままで外れていなかったのを直した）
       const w = document.createElement('div');
       w.innerHTML = tenkaiPage(h);
-      w.querySelectorAll('.w2-hero, .w2-week').forEach((x) => x.remove());
+      w.querySelectorAll('.tk3-sky, .tk3-sep, .tk3-board .tk3-r:not(:first-child)').forEach((x) => x.remove());
       infoSheet(h, '脚質と枠', `<div class="yf-sheetpg">${w.innerHTML}</div>`);
     }
     else if (kind === 'hit') infoSheet(h, '同じ条件で好走', hitDetail(h));
