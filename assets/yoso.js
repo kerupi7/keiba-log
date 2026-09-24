@@ -490,7 +490,7 @@
   const top3Pct = (c) => { const n = c.reduce((a, b) => a + b, 0); return n ? Math.round(((c[0] + c[1] + c[2]) / n) * 100) : null; };
   // コース適性のカード（好走率の版）。**中身は race.js の aptCardHtml が正本。**
   //   2つに書き分けると決まりの数字がズレるので、ここでは呼ぶだけにする（2026-09-24）。
-  const aptCard = (h) => (typeof aptCardHtml === 'function' ? aptCardHtml(h, site.race) : '');
+  const aptCard = (h) => (window.AptCard ? window.AptCard(h, site.race) : '');
 
   function basicPage(h) {
     const P0 = P(h.number);

@@ -2138,11 +2138,26 @@ function aptCardHtml(h, race, bare) {
         <div class="ax-scale">${used.map((m) =>
           `<span class="bt-num" style="left:${at(m)}%">${(m / 100).toFixed(1).replace(/\.0$/, '')}</span>`).join('')}</div>
         <div class="ax-open"><div class="ax-hint">山を押すと、その距離の中身が出ます</div>
-          <div class="ax-dts">${ds.map((c, i) =>
+          <div class="ax-dts" data-today="${todayIdx}">${ds.map((c, i) =>
             `<div class="ax-dw${i === todayIdx ? ' on' : ''}" data-k="${i}">${detail(c)}</div>`).join('')}</div>
         </div>
       </div></div>`}
     ${turnBar}</div>`;
+}
+
+// 開き直したときに、押して出した距離を今日の距離へ戻す（2026-09-24 ユーザー指摘）。
+//   馬名の札（#pop-N）は最初に1回だけ組み立てて開け閉めするだけなので、
+//   何もしないと前に押した距離が残る。開くたびにここで戻す。
+function aptResetCards(root) {
+  (root || document).querySelectorAll('.ax .ax-g').forEach((box) => {
+    const dts = box.querySelector('.ax-dts');
+    if (!dts) return;
+    const def = dts.dataset.today || '0';
+    box.querySelectorAll('.ax-hit').forEach((x) => x.classList.remove('on'));
+    box.querySelectorAll('.ax-dw').forEach((x) => x.classList.toggle('on', x.dataset.k === def));
+    const hint = box.querySelector('.ax-hint');
+    if (hint) hint.style.display = '';
+  });
 }
 
 // bare=true のときは見出し（.crh）と注記（.crn）を出さず表だけ返す。
@@ -3860,6 +3875,7 @@ function setupPopups20(root, site) {
     bg.classList.add('on');
     openPopup = p;
     showPanel(p, '');                 // 開き直したら必ずふだんの面から
+    aptResetCards(p);                 // コース適性の山も、押した距離を今日へ戻す
     lockPageScroll();
     // コースは最初に開いた時だけ data/courses/*.json を読む（タブだった頃と同じ仕組み）
     if (id === 'course' && window.CourseTab) window.CourseTab.onShow(site);
@@ -5678,6 +5694,11 @@ window.RacePopup = {
 
 // 出馬表のページ（#race-content がある）でだけ組み立てる。WIN5の画面は札の入口だけ使う
 if (document.getElementById('race-content')) main();
+
+// yoso.js（予想の1頭だけ見る画面）からも呼ぶ。race.js は丸ごと1つの箱に入っているので、
+//   ここで外に出しておかないと見えない（2026-09-24 に見えず、古い表へ落ちた）
+window.AptCard = aptCardHtml;
+window.AptReset = aptResetCards;
 
 })();
 
