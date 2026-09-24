@@ -842,18 +842,18 @@
     const paceMini = top ? `<span class="tk3-mb">${PL.slice(0, 2).map((r, i) => `<i class="p${i}" style="flex:${Math.max(r.pp, 12)}">${r.pp >= 15 ? `${esc(r.nm)}${i ? ` ${r.pp}` : ''}` : ''}</i>`).join('')}${pRest > 2 ? `<i class="px" style="flex:${pRest}"></i>` : ''}</span>` : '';
     const legsMini = `<span class="tk3-mb"><i class="p0" style="flex:${fN || 0.001}">${fN ? `${fN}頭` : ''}</i><i class="p1" style="flex:${rN || 0.001}">${rN ? `${rN}頭` : ''}</i></span>`;
     const gateMini = `<span class="tk3-gm"><small>内</small><span class="in">${[1, 2, 3, 4].map((g) => `<i class="hn wk${g}">${g}</i>`).join('')}</span><span>${[5, 6, 7, 8].map((g) => `<i class="hn wk${g}">${g}</i>`).join('')}</span><small>外</small></span>`;
-    // ペースの行の「前が残る」確率（2026-09-24 決定・mockup-190 案2）。予想の見立て（前残り／差し）は言い切らず、
+    // ペースの行の「前が残る」確率（2026-09-24 決定・mockup-190 案2。同日に棒は外して数字だけに）。予想の見立て（前残り／差し）は言い切らず、
     //   答え合わせで直した値（display.scenario.calibrated_front）を、いつもの68.6%と並べて出す。
     //   言い切りの札（前残り／差し展開）をやめた理由：「差し」寄りと見立てたレースでも57%は前の馬が勝っている（scenario_calib.json）
     const dsc = ((site.prediction || {}).display || {}).scenario;
     const fcal = dsc && dsc.calibrated_front != null ? Math.round(dsc.calibrated_front * 100) : null;
-    const frontHtml = fcal != null ? `<span class="tk3-fr"><b>前が残る <em class="bt-num">${fcal}</em>%</b><span class="cmp"><i style="width:${fcal}%"></i><u style="left:${TK_FRONT_BASE}%"></u></span><i>いつも${Math.round(TK_FRONT_BASE)}%</i></span>` : '';
+    const frontHtml = fcal != null ? `<span class="tk3-fr"><b>前が残る <em class="bt-num">${fcal}</em>%</b><i>いつも${Math.round(TK_FRONT_BASE)}%</i></span>` : '';
     const board = `<div class="tk3-board">
       <div class="tk3-r"><span class="ic">${icPace}</span><div class="n"><b>${top ? esc(top.nm) : '—'}${top ? `<em class="bt-num">${top.pp}%</em>` : ''}</b>${paceMini}</div>
         <div class="x row">${frontHtml}<span class="tm"><b class="bt-num">${t1000(top) || '—'}<small>秒</small></b><i>${tPoint(top)}m通過</i></span></div></div>
       ${fTot || D.io ? `<div class="tk3-sep"><span>今週の結果${wkS ? `・${wkS}` : ''}</span></div>` : ''}
       ${fTot ? `<div class="tk3-r"><span class="ic">${icLegs}</span><div class="n"><b>逃げ・先行<em class="bt-num">${fPct}%</em></b>${legsMini}</div>
-        <div class="x row"><span class="cmpw"><span class="cmp"><i style="width:${fPct}%"></i><u style="left:${fBase}%"></u></span><i>いつも${Math.round(fBase)}%</i></span>${crown(D.fb && D.fb.word, 'fb')}</div></div>` : ''}
+        <div class="x row"><span class="cmpw"><i>いつも${Math.round(fBase)}%</i></span>${crown(D.fb && D.fb.word, 'fb')}</div></div>` : ''}
       ${D.io ? `<div class="tk3-r"><span class="ic">${icGate}</span><div class="n"><b>内<em class="bt-num">${ioP[1] || '—'}%</em><span class="vs">外</span><em class="bt-num dim">${ioP[2] || '—'}%</em></b>${gateMini}</div>
         <div class="x row"><span></span>${crown(D.io.word, 'io')}</div></div>` : ''}</div>`;
 
