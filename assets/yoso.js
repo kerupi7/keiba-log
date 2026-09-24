@@ -277,16 +277,35 @@
     if (!inner) return;
     inner.style.zoom = '';
     const cs = getComputedStyle(pe);
-    // 縮めると折り返しが変わって高さも変わるので、実際の下端を見ながら数回詰める（最小 0.6 倍）
+    // 縮めると折り返しが変わって高さも変わるので、実際の下端を見ながら数回詰める（最小 0.5 倍）。
+    //   下限は 0.6 倍だったが、1ページ目の中身は縮めない状態で約924px（390px幅・2026-09-24 実測）あり、
+    //   見える高さ620pxでは 0.6 倍でも13pxはみ出して縦に動いた。縦に動かないことを優先して 0.5 倍まで許す
     let z = 1;
     for (let k = 0; k < 5; k += 1) {
       const r = inner.getBoundingClientRect();
       const limit = pe.getBoundingClientRect().bottom - parseFloat(cs.paddingBottom);
       if (r.bottom <= limit + 0.5) break;
-      z = Math.max(0.6, z * ((limit - r.top) / r.height) * 0.995);
+      z = Math.max(0.5, z * ((limit - r.top) / r.height) * 0.995);
       inner.style.zoom = z.toFixed(3);
     }
   }
+
+  // 画面の高さが後から変わったら収め直す（2026-09-24 ユーザー指摘「スマホだと縦スクロールが発生する」）。
+  //   スマホの Safari は下のツールバーの出し入れで見える高さが変わるのに、fitPage は描いたときに1回しか
+  //   動いていなかった。高さが減ると中身がはみ出し、縦に指で動かせてしまう（390×844 で開いて 667 に
+  //   縮めると、中身 756px に対して枠 592px になることを確認）。回転・文字の読み込み後も同じ扱い
+  let refitTimer = null;
+  const refit = () => {
+    clearTimeout(refitTimer);
+    refitTimer = setTimeout(() => {
+      if (!S) return;                    // 1頭画面を開いていないときは何もしない
+      if (S.screen === 'swipe' || S.screen === 'view') fitPage();
+      if (S.screen === 'duel') fitDuel();
+    }, 80);
+  };
+  window.addEventListener('resize', refit);
+  if (window.visualViewport) window.visualViewport.addEventListener('resize', refit);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(refit);
 
   // 比べる画面も縦に動かさず、2頭ぶんを画面の高さに収める（最小 0.6 倍）
   function fitDuel() {

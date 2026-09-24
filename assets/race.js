@@ -2131,7 +2131,8 @@ function aptCardHtml(h, race, bare) {
         ${c.n ? '' : 'stroke-dasharray="3 4"'}/>
       <polygon points="${tip}" fill="${col}" stroke="#fff" stroke-width="1.5"/></svg>`;
   };
-  const turnBlock = !turns.some((c) => c.n) ? '' : `<div class="ax-g ax-turn"><div class="ax-gt">回り（${escapeHtml(R.surface)}）</div>
+  // 回りの見出し（回り（ダート））は出さない。楕円と矢印で回りだと分かる（2026-09-24 ユーザー指示）
+  const turnBlock = !turns.some((c) => c.n) ? '' : `<div class="ax-g ax-turn">
     <div class="ax-ov">${turns.map((c) => {
       const j = c.n ? judge(c) : 'na';
       return `<div class="ax-o ${j}${c.today ? ' today' : ''}">
