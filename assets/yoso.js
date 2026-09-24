@@ -269,8 +269,162 @@
 
   // 1ページを画面の高さに収める（2026-09-17 ユーザー「縦スクロールせずに1画面に収めたい」）。
   //   中身が札より長いときは、中身ごと縮めて収める（字の大きさの比は変えない）。全戦績だけは縦に動かして見る形のまま（同日決定・案B）
+  // ---------- 金の枠（2026-09-24・試作 mockup-217） ----------
+  //   ユーザー「自分がどこを見ていいと思ったのかを記録したい。タップすればその部分を金色の枠線で囲む」。
+  //   絞り込みの札の部品を押すと金の枠が付き、もう一度押すと外れる。記録は gold:{race_id} に端末の中だけで残す。
+  //   押せる単位（GOLD_UNIT）は輪1つ・マス1つ・過去走の1行などの小さいまとまり。コース適性の山（.ax-hit）は除く
+  const GOLD_KEY = `gold:${raceId}`;
+  const GOLD_UNIT = [
+    // 基本：オッズ・人気／通算成績／コース適性の輪／右回り・道悪／型べつ成績の上の2つと6マス
+    '.b-od', '.b-car', '.ax-u', '.ax-o', '.rt-ta', '.rt-m',
+    // コース：点数のまとめ／表彰台の1段／前走コース・騎手・種牡馬・調教師・母父の各行
+    '.e5s', '.e5-ps', '.e5-row',
+    // 展開：上の3つ（馬場・勝ちタイム・逃げ）／ペース・脚質・内外の各行／枠の行／脚質の列（下の札）
+    '.tk3-u', '.tk3-r', '.tk3-gt', '.tk3-zl > span',
+    // 直近5走：1走ぶんの札
+    '.s1-card',
+    // 前走〜5走前：レースの札／着順の札／コーナーごとの位置の図／上がり／800m通過・決着／条件の列（馬場・間隔・騎手…）
+    '.rp-race', '.rp-hero', '.pp-fig', '.pp-row', '.pp-flow > *', '.gd-col',
+    // 全戦績：1走ぶんの行
+    '.al-row',
+  ].join(',');
+  // 部品の外側を押したときに、どの部品として扱うか（押した場所 → 部品）
+  //   ・展開の地図：押した位置の脚質の列 → 下の脚質の札
+  //   ・過去走の条件の表：押したマスの列 → その列ぜんぶ（.gd-col）
+  function goldAlias(target, pe) {
+    const map = target.closest('.tk3-map');
+    if (map) {
+      const zb = [...map.querySelectorAll('.tk3-zb')];
+      const x = goldAlias.x;
+      const i = zb.findIndex((z) => { const r = z.getBoundingClientRect(); return x >= r.left && x < r.right; });
+      const zl = pe.querySelectorAll('.tk3-zl > span');
+      return i >= 0 ? zl[i] || null : null;
+    }
+    const grid = target.closest('.e-grid');
+    if (grid) {
+      const cell = target.closest('.e-grid > *');
+      const col = cell && cell.style.gridColumnStart;
+      return col ? grid.querySelector(`.gd-col[data-col="${col}"]`) : null;
+    }
+    return null;
+  }
+  // 過去走の条件の表は、列が1つの箱になっていない（マスが grid に直接並ぶ）ので、列ごとに透明な箱を敷く
+  function goldCols(pe) {
+    pe.querySelectorAll('.e-grid').forEach((grid) => {
+      if (grid.querySelector('.gd-col')) return;
+      const cells = [...grid.children];
+      const cols = [...new Set(cells.map((c) => Number(c.style.gridColumnStart)).filter((n) => n >= 2))];
+      // 下の端の線の番号（マスの行の終わりのうち一番下）。'auto' や空は数えない
+      const last = Math.max(2, ...cells.flatMap((c) => [Number(c.style.gridRowStart) + 1, Number(c.style.gridRowEnd)]).filter(Number.isFinite));
+      cols.forEach((n) => {
+        const box = document.createElement('i');
+        box.className = 'gd-col';
+        box.dataset.col = String(n);
+        box.style.cssText = `grid-row:1 / ${last};grid-column:${n}`;
+        box.dataset.txt = cells.filter((c) => Number(c.style.gridColumnStart) === n && !c.classList.contains('e-hitbg'))
+          .map((c) => (c.innerText || c.textContent || '').trim()).filter(Boolean).join(' ');
+        grid.insertBefore(box, grid.firstChild);
+      });
+    });
+  }
+  // 展開の地図の列：下の脚質の札に金が付いていたら、その列にも薄く付ける
+  function goldTwins(pe) {
+    const zb = [...pe.querySelectorAll('.tk3-map .tk3-zb')];
+    const zl = [...pe.querySelectorAll('.tk3-zl > span')];
+    //   列の地（.tk3-zb）は薄く透かしてあるので、そこに枠を描くと枠まで薄くなる。同じ位置に別の箱を重ねて描く
+    pe.querySelectorAll('.gd-zbox').forEach((x) => x.remove());
+    zb.forEach((z, i) => {
+      if (!(zl[i] && zl[i].classList.contains('gd-on'))) return;
+      const box = document.createElement('i');
+      box.className = 'gd-zbox';
+      box.style.cssText = `left:${z.offsetLeft}px;top:${z.offsetTop}px;width:${z.offsetWidth}px;height:${z.offsetHeight}px`;
+      z.parentElement.insertBefore(box, z.nextSibling);
+    });
+  }
+  // 端末に保存できない画面（保存を禁じた枠の中など）では、開いている間だけ覚えておく（GOLD_MEM）
+  let GOLD_MEM = null;
+  function goldLoad() {
+    if (GOLD_MEM) return JSON.parse(JSON.stringify(GOLD_MEM));
+    try { return JSON.parse(localStorage.getItem(GOLD_KEY)) || {}; } catch (e) { return {}; }
+  }
+  function goldSave(g) {
+    try { localStorage.setItem(GOLD_KEY, JSON.stringify(g)); GOLD_MEM = null; } catch (e) { GOLD_MEM = g; }
+  }
+  const pgKey = (pg) => (pg ? `${pg.k}${pg.i != null ? pg.i : ''}` : '');
+  // ページの中の押せる部品。入れ子になったときは外側だけを数える（内側は外側の一部として扱う）
+  function goldUnits(pe) {
+    const all = [...pe.querySelectorAll(GOLD_UNIT)];
+    return all.filter((el) => !all.some((o) => o !== el && o.contains(el)));
+  }
+  // 表示している文字（後で印の画面や振り返りに並べるため）。空白を詰めて、長すぎるものは切る
+  //   ・型べつ成績のマスは、行（スロー／平均／ハイ）と列（前残り／差し追込）の名前を前に付ける
+  //   ・コーナーごとの位置の図は、数字が全部読まれてしまうので、この馬の位置だけを「4→4→5→5→3着」の形にする
+  function goldText(el) {
+    let t = el.dataset.txt || el.innerText || el.textContent || '';
+    if (el.matches('.rt-m')) {
+      const g = el.parentElement;
+      const ch = [...g.querySelectorAll('.rt-ch')].map((x) => x.textContent.trim());
+      const rh = [...g.querySelectorAll('.rt-rh')].map((x) => x.textContent.trim());
+      const i = [...g.querySelectorAll('.rt-m')].indexOf(el);
+      if (ch.length && i >= 0) t = `${rh[Math.floor(i / ch.length)] || ''}×${ch[i % ch.length] || ''} ${t}`;
+    }
+    if (el.matches('.pp-fig')) {
+      const me = [...el.querySelectorAll('.pq-tm')].map((x) => x.textContent.trim()).filter(Boolean);
+      if (me.length) t = `${me.join('→')}着`;
+    }
+    t = t.replace(/\s+/g, ' ').trim();
+    return t.length > 80 ? `${t.slice(0, 80)}…` : t;
+  }
+  // そのページの見出し（例：コース適性・レースの型べつ成績）。見つからなければ空
+  function goldHead(el) {
+    const card = el.closest('.h-card, .card, section');
+    const h = card && card.querySelector('.h-t, h2, h3, h4');
+    return h && h !== el && !el.contains(h) ? goldText(h).slice(0, 20) : '';
+  }
+  // 描いたページに、その馬・そのページの金を付け直す（ページをめくる・後ろの札を作るたびに呼ばれる）
+  function goldPaint(pe, pg) {
+    const cardEl = pe.closest('.yf-card');
+    const num = cardEl && cardEl.dataset.n ? Number(cardEl.dataset.n) : (Q[S.idx] || {}).number;
+    if (S.view) return;
+    goldCols(pe);
+    const units = goldUnits(pe);
+    units.forEach((u) => u.classList.add('gd-u'));
+    const mine = (goldLoad()[num] || []).filter((x) => x.page === pgKey(pg));
+    mine.forEach((x) => { const u = units[x.idx]; if (u) u.classList.add('gd-on'); });
+    goldTwins(pe);
+  }
+  // 押された部品に金を付ける／外す。部品の外（余白）を押したときは何もしない
+  function goldTap(target, clientX) {
+    const pe = document.getElementById('yf-page');
+    if (!pe || !pe.contains(target)) return;
+    const units = goldUnits(pe);
+    goldAlias.x = clientX;
+    const u = goldAlias(target, pe) || units.find((x) => x.contains(target));
+    if (!u || !units.includes(u)) return;
+    const h = Q[S.idx];
+    const pg = pagesOf(h)[S.page];
+    const g = goldLoad();
+    const list = g[h.number] || [];
+    const idx = units.indexOf(u);
+    const at = list.findIndex((x) => x.page === pgKey(pg) && x.idx === idx);
+    if (at >= 0) {
+      list.splice(at, 1);
+      u.classList.remove('gd-on');
+    } else {
+      list.push({ page: pgKey(pg), label: pg.label, idx, head: goldHead(u), text: goldText(u), at: new Date().toISOString() });
+      u.classList.remove('gd-pop'); void u.offsetWidth;
+      u.classList.add('gd-on', 'gd-pop');
+      haptic();
+    }
+    if (list.length) g[h.number] = list; else delete g[h.number];
+    goldSave(g);
+    goldTwins(pe);
+    document.dispatchEvent(new CustomEvent('gold-change'));
+  }
+
   function fitPage(pe = document.getElementById('yf-page'), pg = pagesOf(Q[S.idx])[S.page]) {
     if (!pe) return;
+    goldPaint(pe, pg);
     if (pg && pg.k === 'all') { pe.classList.remove('fit'); return; }
     pe.classList.add('fit');
     const inner = pe.firstElementChild;
@@ -1987,6 +2141,8 @@
       const x = (e.clientX - rc.left) / rc.width;
       if (x < 0.15) { turn(-1); return; }
       if (x > 0.85) { turn(1); return; }
+      // 絞り込みでは、両端15%より内側を押すと金の枠を付ける／外す（ページはめくらない。2026-09-24 ユーザー決定）
+      if (!S.view) { goldTap(e.target, e.clientX); return; }
       // ページを送った直後の押し直しは、行（直近5走の札・全戦績の行）に当たっても左右の送りとして扱う。
       //   左を続けて押すと、2回目が入れ替わった直近5走の札に当たって4走前へ飛んでいた（2026-09-18 ユーザー指摘）
       const go2 = now - lastTurnAt < TURN_GUARD_MS ? null : e.target.closest('[data-goto]');

@@ -1093,3 +1093,20 @@ html.rc-frame .mx .mg-close .mg-tag{background:#5E7185}
    直近5走＝着順・タイム・上がり・着差、全戦績＝着順・着差 だけ Futura（ほかは本文の書体のまま） */
 .yf .sm-s1 .sv-tm b.bt-num,.yf .sm-s1 .sv-up b.bt-num,.yf .sm-s1 .sv-mg{font-family:Futura,Jost,sans-serif}
 .yf .al-page .alx .alx-fin,.yf .al-page .alx .alx-mg{font-family:Futura,Jost,var(--font)}
+
+/* ===== 金の枠（2026-09-24・試作 mockup-217） =====
+   絞り込みで、良いと思った部品を押すと付く。太い金の枠（3px）＋中をうっすら金色。
+   「最も好走」は 1.5px・中は白（.rt-m.is-best）なので太さと中の色で見分ける。
+   枠は box-shadow で描く＝部品の大きさ・並びを動かさない。塗りは内側の影で、部品の元の背景の上に重ねる。
+   どの部品の元の枠より優先する（!important）。直近5走の僅差の札（.sm-page.bc-b4 .s1-card.bd-close）は
+   元の灰色の枠の書き方のほうが強く、金の枠が出なかった（2026-09-24 ユーザー指摘） */
+.yf .gd-u{cursor:pointer;transition:box-shadow .18s ease}
+.yf .gd-u.gd-on{
+  box-shadow:0 0 0 3px #C9961A,inset 0 0 0 999px rgba(232,190,70,.16),0 3px 10px rgba(201,150,26,.28)!important;
+  border-radius:10px}
+.yf .gd-u.gd-pop{animation:gdPop .32s cubic-bezier(.32,.72,0,1)}
+@keyframes gdPop{0%{transform:scale(1)}40%{transform:scale(.96)}100%{transform:scale(1)}}
+/* 過去走の条件の表の列（マスが grid に直接並ぶので、列ごとに敷く透明な箱） */
+.yf .gd-col{display:block;border-radius:10px;margin:-2px -1px}
+/* 展開の地図の列：下の脚質の札に金が付いたら、列にも金の枠。列の地（.tk3-zb）は薄く透かしてあるので別の箱に描く */
+.yf .gd-zbox{position:absolute;display:block;pointer-events:none;border-radius:6px;box-shadow:inset 0 0 0 3px #C9961A,inset 0 0 0 999px rgba(232,190,70,.14)}
