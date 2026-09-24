@@ -799,7 +799,7 @@
     // 「4歳以上2勝クラス」はクラスの札と重なるので年齢だけ残す。長い名前は字を小さくして切れないようにする
     const rn = String(stripClass(r.race_name) || '').replace(/^(\d歳(?:以上)?)(?:未勝利|新馬|[123]勝クラス)$/, '$1').replace(/^JRA交流/, '').replace(/\(\d歳(?:以上)?\)$/, '');
     return {
-      i, label: RUN_LABEL[i], fin, finTxt: r.finish ?? '—', finMd: md(fin),
+      i, raw: r, label: RUN_LABEL[i], fin, finTxt: r.finish ?? '—', finMd: md(fin),
       date: String(r.date || '').slice(2).replace(/\//g, '.'), track: r.track || '',
       clsHtml: cls ? clsBadge(cls) : (JRA_TRACKS.includes(r.track) ? '' : '<span class="cb c-jusho">地方</span>'),
       rn, rnFs: rnFs(rn),
@@ -833,6 +833,38 @@
   //   地の色：1着＝金、僅差の負け＝銀の地＋銀の枠（sm-page の bc-b4。2026-09-17 決定）
   // 過去走ページ（3〜7ページ目）の僅差も銀の地＋銀の枠にそろえる（html の rc-frame。2026-09-17 決定）
   document.documentElement.classList.add('rc-frame');
+  // 1走＝1枚の札（2026-09-24 作り直し・試作 mockup-210〜214 の A）。過去走のページと同じ決まりにそろえた：
+  //   文字の見出しは紺一色の小さな絵、1〜3着・時計の優秀度・上がり1〜3位は金銀銅の杯、赤は使わない。
+  //   各段は決まった幅の列に置き、5枚の札で縦の位置がそろう（ユーザー「各段を上下と合うように整列させてほしい」）
+  //   ①日付｜場｜距離（芝・ダートの札）｜馬場｜馬番（枠の色の四角）｜頭数 ②クラス・レース名・Lv ③勝ち馬・最高成績・脚質の札
+  //   ④タイム｜上がり｜通過順 ⑤騎手｜斤量｜馬体重｜展開（灰の札のペース＋王冠つきの前・差）⑥メモの札と同条件で好走（同じ大きさで左から）
+  //   左の列：着順（杯）・着差の札・人気。上がりの順位の文字と前半の通過タイムは出さない（ユーザー指示）
+  const smIc = (k) => `<i class="sv-ic">${R_ICON[k]}</i>`;
+  const SM_CROWN = '<svg viewBox="0 0 20 16" class="sx-crown"><path d="M2 12 L3.5 4 L7.5 8 L10 2.5 L12.5 8 L16.5 4 L18 12 Z" fill="#E0A800"/><rect x="2" y="12.6" width="16" height="2.6" rx="1" fill="#E0A800"/></svg>';
+  function smCardA(d) {
+    const r = d.raw;
+    const bg = d.band ? `bd-${d.band}` : '';
+    const ub = Number(r.umaban), wk = Number(r.waku);
+    const fin = `<div class="s1-l sv-l"><i>${d.label}</i>${d.fin >= 1 && d.fin <= 3 ? e5Cup(d.fin, 20) : ''}<b class="bt-num ${d.finMd}">${esc(d.finTxt)}<small>着</small></b>
+      <span class="sv-mg bt-num ${d.band}">${d.mgPlain}<small>秒</small></span>
+      <span class="sv-pop">${smIc('pop')}<b class="bt-num">${esc(d.pop)}</b>人気</span></div>`;
+    const meta = `<div class="sva-meta"><span class="bt-num">${esc(d.date)}</span><span>${esc(d.track)}</span>
+      <b class="sva-sf ${d.sf}">${esc(d.sfTxt)}<b class="bt-num">${esc(d.dist)}</b></b><span>${esc(d.going)}</span>
+      ${ub ? `<span class="sw1">${umaBox(ub, wk, 'sm')}<small>番</small></span>` : '<span></span>'}
+      <span class="sv-fp">${smIc('field')}<b class="bt-num">${d.field}</b>頭</span></div>`;
+    const title = `<div class="s1-title">${d.clsHtml}<b style="font-size:${d.rnFs + 2}px">${esc(d.rn)}</b><span class="s1-sp"></span>${d.lv}</div>`;
+    const win = `<div class="s1-win sva-win"><i>${d.winLab}</i><span>${esc(d.winner)}</span>${d.bpHtml}<span class="s1-sp"></span>${smStyle(d)}</div>`;
+    const tm = `<span class="sv-tm">${d.tg ? e5Cup({ md1: 1, md2: 2, md3: 3 }[d.tg], 15) : smIc('time')}<b class="bt-num ${d.tg}">${esc(d.time)}</b></span>`;
+    const up = `<span class="sv-up">${smIc('up')}<b class="bt-num ${d.rkMd}">${esc(d.up)}</b>${d.rk != null && d.rk <= 3 ? e5Cup(d.rk, 13) : ''}</span>`;
+    const perf = `<div class="sva-perf">${tm}${up}<span class="sm-cn">${smCorners(d)}</span></div>`;
+    // 展開：ペースは灰の札、決着は王冠つきの「前」か「差」（過去走のページの決着と同じ印）。「後」＝差し・追込で決まったレース
+    const [scP, scS] = String(d.sc || '').split('・');
+    const sc = d.sc ? `<span class="sx"><b class="sx-p">${esc(scP)}</b>${SM_CROWN}<b class="sx-s">${scS === '前' ? '前' : '差'}</b></span>` : '<span></span>';
+    const cond = `<div class="sva-cond"><span>${smIc('jockey')}<b class="sv-jk">${esc(d.jockey)}</b></span><span>${smIc('kg')}<b class="bt-num">${esc(d.weight)}</b><small>kg</small></span>
+      <span>${smIc('bw')}<b class="bt-num">${esc(d.bw)}</b><small>kg</small></span>${sc}</div>`;
+    return `<div class="s1-card sv sva ${bg}">${fin}<div class="s1-m">${meta}${title}${win}${perf}${cond}${smFoot(d, 's1-foot')}</div></div>`;
+  }
+
   function smCard1(d) {
     const bg = d.band ? `bd-${d.band}` : '';
     const upTag = d.rk != null ? `<small>${d.rk}位</small>` : '';
@@ -867,7 +899,7 @@
     const nowGap = runs[0] ? days(toDate(race.date), toDate(runs[0].date)) : null;
     if (nowGap != null && nowGap >= 90) out.push(restRow(nowGap));
     runs.forEach((r, i) => {
-      out.push(smCard1(summaryRun(h, r, i)));
+      out.push(smCardA(summaryRun(h, r, i)));   // 2026-09-24 から smCardA（前の形 smCard1 は残してある）
       const g = gapOf[r.race_id];
       if (i < runs.length - 1 && g != null && g >= 90) out.push(restRow(g));
     });
