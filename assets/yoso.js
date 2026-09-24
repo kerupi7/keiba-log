@@ -442,7 +442,8 @@
     prev: `<svg viewBox="0 0 32 32"><ellipse cx="16" cy="18" rx="12" ry="8" fill="none" stroke="${IC}" stroke-width="3.2"/><path d="M19 6.5 L25 10 L19 13.5" fill="none" stroke="${IC}" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
     jockey: `<svg viewBox="0 0 32 32"><path d="M5 21 A11 11 0 0 1 27 21 Z" fill="${IC}"/><rect x="3" y="21" width="27" height="4.2" rx="2.1" fill="${IC}"/><path d="M16 10.5 V21" stroke="#fff" stroke-width="2.2"/></svg>`,
     sire: `<svg viewBox="0 0 32 32"><path d="M5 27 C5 19 8 13 14 10 L16 5 L19 9 C23 9 27 13 28 17 C28.5 19 27 20.5 25 20 L21 18.5 C19 20 18 23 18 27 Z" fill="${IC}"/><circle cx="21.5" cy="13" r="1.3" fill="#fff"/></svg>`,
-    trainer: `<svg viewBox="0 0 32 32"><circle cx="16" cy="18.5" r="10.5" fill="none" stroke="${IC}" stroke-width="3.2"/><rect x="12.5" y="3" width="7" height="4.2" rx="1.2" fill="${IC}"/><path d="M16 18.5 L20.5 13" stroke="${IC}" stroke-width="2.6" stroke-linecap="round"/><circle cx="16" cy="18.5" r="1.8" fill="${IC}"/></svg>`,
+    // 調教師＝帽子の人（2026-09-24 mockup-199 T3。前はストップウォッチ）。騎手のヘルメットと分けるため、つばを前に出す
+    trainer: `<svg viewBox="0 0 32 32"><circle cx="15" cy="13.5" r="5.2" fill="${IC}"/><path d="M9 11 A6 6 0 0 1 21 11 Z" fill="${IC}"/><path d="M8.5 11.6 H26" stroke="${IC}" stroke-width="2.4" stroke-linecap="round"/><path d="M9 11.2 H21" stroke="#fff" stroke-width="1.1"/><path d="M5 29 C5 22 9 19.5 15 19.5 C21 19.5 25 22 25 29 Z" fill="${IC}"/></svg>`,
     damsire: `<svg viewBox="0 0 32 32"><path d="M9 27 C9 19 12 13 18 10 L20 5 L23 9 C26 9.5 29 13 29.5 17 C30 19 28.5 20.5 26.5 20 L23 18.5 C21 20 20.5 23 20.5 27 Z" fill="${IC}"/><circle cx="25" cy="13" r="1.3" fill="#fff"/><circle cx="7.5" cy="9" r="6.5" fill="#D9557A"/><text x="7.5" y="12.2" text-anchor="middle" font-size="8.5" font-weight="900" fill="#fff">母</text></svg>`,
   };
   const e5Ic = (dim) => `<i class="e5-ic">${E5_ICON[dim]}</i>`;
