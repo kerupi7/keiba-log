@@ -767,6 +767,9 @@
   //   ／この馬場だと＝主語の札＋矢印（186）／スコアボードの絵＝メーター・馬の頭・内外の札（187）／判定＝王冠（188）
   //   ／今回の馬の枠＝黄色／図の上端の白い線と下の説明の帯は外した
   const TK_GREEN = '#0F7A3D', TK_RED = '#C8352C', TK_BLUE = '#2F7FC1';
+  // いつもの「前が残る」割合＝勝ち馬が4コーナーを前から1/3以内で回った割合。3,353レースの実測 68.6%
+  //   （部署/競馬部/scenario_calib.json の measured.actual_front_rate）。表を作り直したらここも直す
+  const TK_FRONT_BASE = 68.6;
   const TK_GC = { S: '#0B5E2E', A: '#1F6B3A', B: '#4E5862', C: '#8E4A36', D: '#A32B1F' };
   function tkMap(h, D) {
     const race = site.race || {};
@@ -834,13 +837,24 @@
     const icLegs = '<svg viewBox="0 0 32 32"><path d="M5 26 C5 18 8 12 14 9 L16 4 L19 8 C23 8 27 12 28 16 C28.5 18 27 19.5 25 19 L21 17.5 C19 19 18 22 18 26 Z" fill="var(--tk-ic)"/><circle cx="21.5" cy="12" r="1.3" fill="#fff"/></svg>';
     const icGate = '<svg viewBox="0 0 32 32"><rect x="1" y="7" width="14" height="18" rx="3" fill="var(--tk-ic)"/><text x="8" y="20" text-anchor="middle" font-size="11" font-weight="800" fill="#fff">内</text>'
       + '<rect x="17" y="7" width="14" height="18" rx="3" fill="var(--tk-icf)"/><text x="24" y="20" text-anchor="middle" font-size="11" font-weight="800" fill="var(--tk-ic)">外</text></svg>';
+    // 補足は文章をやめて小さな帯にする（2026-09-24 決定・mockup-189 案A）
+    const pRest = Math.max(0, 100 - PL.slice(0, 2).reduce((a, r) => a + r.pp, 0));
+    const paceMini = top ? `<span class="tk3-mb">${PL.slice(0, 2).map((r, i) => `<i class="p${i}" style="flex:${Math.max(r.pp, 12)}">${r.pp >= 15 ? `${esc(r.nm)}${i ? ` ${r.pp}` : ''}` : ''}</i>`).join('')}${pRest > 2 ? `<i class="px" style="flex:${pRest}"></i>` : ''}</span>` : '';
+    const legsMini = `<span class="tk3-mb"><i class="p0" style="flex:${fN || 0.001}">${fN ? `${fN}頭` : ''}</i><i class="p1" style="flex:${rN || 0.001}">${rN ? `${rN}頭` : ''}</i></span>`;
+    const gateMini = `<span class="tk3-gm"><small>内</small><span class="in">${[1, 2, 3, 4].map((g) => `<i class="hn wk${g}">${g}</i>`).join('')}</span><span>${[5, 6, 7, 8].map((g) => `<i class="hn wk${g}">${g}</i>`).join('')}</span><small>外</small></span>`;
+    // ペースの行の「前が残る」確率（2026-09-24 決定・mockup-190 案2）。予想の見立て（前残り／差し）は言い切らず、
+    //   答え合わせで直した値（display.scenario.calibrated_front）を、いつもの68.6%と並べて出す。
+    //   言い切りの札（前残り／差し展開）をやめた理由：「差し」寄りと見立てたレースでも57%は前の馬が勝っている（scenario_calib.json）
+    const dsc = ((site.prediction || {}).display || {}).scenario;
+    const fcal = dsc && dsc.calibrated_front != null ? Math.round(dsc.calibrated_front * 100) : null;
+    const frontHtml = fcal != null ? `<span class="tk3-fr"><b>前が残る <em class="bt-num">${fcal}</em>%</b><span class="cmp"><i style="width:${fcal}%"></i><u style="left:${TK_FRONT_BASE}%"></u></span><i>いつも${Math.round(TK_FRONT_BASE)}%</i></span>` : '';
     const board = `<div class="tk3-board">
-      <div class="tk3-r"><span class="ic">${icPace}</span><div class="n"><b>${top ? esc(top.nm) : '—'}${top ? `<em class="bt-num">${top.pp}%</em>` : ''}</b><i>ペース予想${PL[1] ? `・${esc(PL[1].nm)} ${PL[1].pp}%` : ''}</i></div>
-        <div class="x"><b class="bt-num">${t1000(top) || '—'}<small>秒</small></b><i>${tPoint(top)}m通過</i></div></div>
+      <div class="tk3-r"><span class="ic">${icPace}</span><div class="n"><b>${top ? esc(top.nm) : '—'}${top ? `<em class="bt-num">${top.pp}%</em>` : ''}</b>${paceMini}</div>
+        <div class="x row">${frontHtml}<span class="tm"><b class="bt-num">${t1000(top) || '—'}<small>秒</small></b><i>${tPoint(top)}m通過</i></span></div></div>
       ${fTot || D.io ? `<div class="tk3-sep"><span>今週の結果${wkS ? `・${wkS}` : ''}</span></div>` : ''}
-      ${fTot ? `<div class="tk3-r"><span class="ic">${icLegs}</span><div class="n"><b>逃げ・先行<em class="bt-num">${fPct}%</em></b><i>3着内${fTot}頭のうち${fN}頭</i></div>
+      ${fTot ? `<div class="tk3-r"><span class="ic">${icLegs}</span><div class="n"><b>逃げ・先行<em class="bt-num">${fPct}%</em></b>${legsMini}</div>
         <div class="x row"><span class="cmpw"><span class="cmp"><i style="width:${fPct}%"></i><u style="left:${fBase}%"></u></span><i>いつも${Math.round(fBase)}%</i></span>${crown(D.fb && D.fb.word, 'fb')}</div></div>` : ''}
-      ${D.io ? `<div class="tk3-r"><span class="ic">${icGate}</span><div class="n"><b>内<em class="bt-num">${ioP[1] || '—'}%</em><span class="vs">外</span><em class="bt-num dim">${ioP[2] || '—'}%</em></b><i>1〜4枠 と 5〜8枠 の3着内率</i></div>
+      ${D.io ? `<div class="tk3-r"><span class="ic">${icGate}</span><div class="n"><b>内<em class="bt-num">${ioP[1] || '—'}%</em><span class="vs">外</span><em class="bt-num dim">${ioP[2] || '—'}%</em></b>${gateMini}</div>
         <div class="x">${crown(D.io.word, 'io')}</div></div>` : ''}</div>`;
 
     // ---------- ③隊列の図 ----------
