@@ -341,7 +341,10 @@
     // 出馬表の「展開」の中身（馬場・枠順・脚質と展開）を1ページ置く（2026-09-17 ユーザー指示）。
     // 場所は直近5走のすぐ後ろ（同日ユーザー指示で、全戦績の前から移した）。並び：基本→直近5走→展開→前走…5走前→全戦績
     // 2026-09-24 ユーザー指示で並びを 基本→展開→直近5走 に変えた（それまでは 基本→直近5走→展開）
-    return [{ k: 'p1', label: '基本' }, { k: 'tenkai', label: '展開' }].concat(sum)
+    // 同日、基本と展開の間にコースのページ（前走コース・騎手・種牡馬・調教師・母父のこのコースでの成績）を足した（ユーザー指示）。
+    //   並び：基本→コース→展開→直近5走→前走…5走前→全戦績。コースタブの無いレース（course_entities なし）では出さない
+    const course = site.course_entities ? [{ k: 'course', label: 'コース' }] : [];
+    return [{ k: 'p1', label: '基本' }].concat(course, [{ k: 'tenkai', label: '展開' }], sum)
       .concat(runs.map((run, i) => ({ k: 'run', label: RUN_LABEL[i], i })))
       .concat(allPages);
   }
@@ -359,8 +362,152 @@
     });
   }
 
+  // ---------- コースのページ（2026-09-24・試作 mockup-192〜196） ----------
+  //   出馬表のコースタブの表（前走コース・騎手・種牡馬・調教師・母父の、このコースでの成績）を、この馬の行だけで見る。
+  //   数字は同じもの：前走コースは data/courses/{course_id}.json、ほかの4つは site.course_entities（どちらも全体・全期間）
+  //   主役は複勝率（コースタブの表の並べ替えの初期値と同じ）。比べる相手は ①コース全体の複勝率 ②今日の出走馬の中の順位
+  //   形：上に表彰台（1〜3位に入った項目の絵を台に乗せる）＋5行（項目の絵・名前・順位の杯／複勝率・走数／平均との差の棒）
+  const E5_DIMS = [['prev', '前走コース'], ['jockey', '騎手'], ['sire', '種牡馬'], ['trainer', '調教師'], ['damsire', '母父']];
+  const E5_SHORT = { prev: '前走', jockey: '騎手', sire: '種牡馬', trainer: '調教師', damsire: '母父' };
+  // 走数30未満は薄く出し、順位を付けない（コースタブの表と同じ線・60-spec D4）。
+  //   順位も走数30以上の馬どうしで付ける。1走で100%の馬が1位にならないように
+  const E5_THIN = 30;
+  let e5Course = null;   // null＝まだ／false＝読めなかった。コースのページを開いた時に1回だけ読む（110KBほど）
+  let e5Loading = false;
+  function e5Load() {
+    const cid = site.course_entities && site.course_entities.course_id;
+    if (!cid || e5Loading || e5Course != null) return;
+    e5Loading = true;
+    getData(`data/courses/${cid}.json`).then((d) => { e5Course = d; }).catch(() => { e5Course = false; })
+      .then(() => {   // 読み終えた時にコースのページを開いていたら描き直す（前走コースの行が「読み込み中」のまま残らないように）
+        const pe = document.getElementById('yf-page');
+        if (pe && pe.querySelector('.e5-page')) render();
+      });
+  }
+  const e5Strip = (s) => { if (!s) return s; const i = String(s).indexOf('・'); return i >= 0 ? String(s).slice(i + 1) : s; };
+  const e5PrevKey = (h) => {
+    const p = (h.past_runs || [])[0];
+    return p && p.track && p.surface && p.distance ? `${p.track}${p.surface}${p.distance}` : null;
+  };
+  function e5Val(dim, h) {
+    if (dim === 'prev') {
+      const f = e5Course && e5Course.filters && e5Course.filters.all;
+      const k = e5PrevKey(h);
+      return { key: k, v: f && k ? ((f.prev || {})[k] || (f.prev_more || {})[k] || null) : null };
+    }
+    const t = (((site.course_entities || {}).filters || {}).all || {})[dim] || {};
+    const name = h[dim];
+    if (!name) return { key: null, v: null };
+    // 調教師だけ所属を外して突合する（'栗東・友道' と '友道'。コースタブと同じ）
+    const k = dim === 'trainer' ? Object.keys(t).find((x) => e5Strip(x) === e5Strip(name)) : name;
+    return { key: name, v: (k && t[k]) || null };
+  }
+  // コース全体の複勝率。脚質別の行を走数で重み付けして出す（＝このコースに出た全馬の3着内率）
+  function e5Avg() {
+    const st = e5Course && e5Course.filters && e5Course.filters.all && e5Course.filters.all.style;
+    if (!st) return null;
+    let n = 0, s = 0;
+    Object.values(st).forEach((v) => { n += v[0]; s += v[0] * v[3]; });
+    return n ? s / n : null;
+  }
+  function e5Rows(h) {
+    const avg = e5Avg();
+    return E5_DIMS.map(([dim, label]) => {
+      const me = e5Val(dim, h);
+      const ok = H.map((x) => e5Val(dim, x).v).filter((v) => v && v[0] >= E5_THIN);
+      const thin = Boolean(me.v && me.v[0] < E5_THIN);
+      const rank = me.v && !thin ? 1 + ok.filter((v) => v[3] > me.v[3]).length : null;
+      const d = me.v && avg != null ? me.v[3] - avg : null;
+      // 色：コース全体より5ポイント以上高い＝緑・低い＝赤（コース適性の輪と同じ幅）
+      const j = !me.v || thin || d == null ? 'eq' : d >= 5 ? 'up' : d <= -5 ? 'dn' : 'eq';
+      return { dim, label, key: me.key, v: me.v, rank, of: ok.length, thin, d, j, wait: dim === 'prev' && e5Course == null };
+    });
+  }
+  const e5Name = (r) => {
+    if (r.dim === 'prev') {
+      if (!r.key) return '<span class="e5-nm e5-z">前走なし</span>';
+      const m = String(r.key).match(/^(.+?)(芝|ダート)(\d+)$/);
+      if (!m) return `<span class="e5-nm">${esc(r.key)}</span>`;
+      const race = site.race || {};
+      const same = m[1] === race.track && m[3] === String(race.distance) && String(race.surface || '').startsWith(m[2][0]);
+      return `<span class="e5-nm">${esc(m[1])}<i class="e5-sf ${m[2] === '芝' ? 'tf' : 'dt'}">${m[2] === '芝' ? '芝' : 'ダ'}</i>`
+        + `<b class="e5-dg">${m[3]}</b>${same ? '<i class="e5-same">同じコース</i>' : ''}</span>`;
+    }
+    return `<span class="e5-nm">${esc(r.dim === 'trainer' ? e5Strip(r.key) : r.key || '—')}</span>`;
+  };
+  const e5None = (r) => `<span class="e5-z">${r.wait ? '読み込み中' : r.dim === 'prev' && !r.key ? '' : 'このコースで0走'}</span>`;
+  // 5項目の絵。紺一色の平らな絵を角丸の四角に入れる
+  const IC = 'currentColor';
+  const E5_ICON = {
+    prev: `<svg viewBox="0 0 32 32"><ellipse cx="16" cy="18" rx="12" ry="8" fill="none" stroke="${IC}" stroke-width="3.2"/><path d="M19 6.5 L25 10 L19 13.5" fill="none" stroke="${IC}" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+    jockey: `<svg viewBox="0 0 32 32"><path d="M5 21 A11 11 0 0 1 27 21 Z" fill="${IC}"/><rect x="3" y="21" width="27" height="4.2" rx="2.1" fill="${IC}"/><path d="M16 10.5 V21" stroke="#fff" stroke-width="2.2"/></svg>`,
+    sire: `<svg viewBox="0 0 32 32"><path d="M5 27 C5 19 8 13 14 10 L16 5 L19 9 C23 9 27 13 28 17 C28.5 19 27 20.5 25 20 L21 18.5 C19 20 18 23 18 27 Z" fill="${IC}"/><circle cx="21.5" cy="13" r="1.3" fill="#fff"/></svg>`,
+    trainer: `<svg viewBox="0 0 32 32"><circle cx="16" cy="18.5" r="10.5" fill="none" stroke="${IC}" stroke-width="3.2"/><rect x="12.5" y="3" width="7" height="4.2" rx="1.2" fill="${IC}"/><path d="M16 18.5 L20.5 13" stroke="${IC}" stroke-width="2.6" stroke-linecap="round"/><circle cx="16" cy="18.5" r="1.8" fill="${IC}"/></svg>`,
+    damsire: `<svg viewBox="0 0 32 32"><path d="M9 27 C9 19 12 13 18 10 L20 5 L23 9 C26 9.5 29 13 29.5 17 C30 19 28.5 20.5 26.5 20 L23 18.5 C21 20 20.5 23 20.5 27 Z" fill="${IC}"/><circle cx="25" cy="13" r="1.3" fill="#fff"/><circle cx="7.5" cy="9" r="6.5" fill="#D9557A"/><text x="7.5" y="12.2" text-anchor="middle" font-size="8.5" font-weight="900" fill="#fff">母</text></svg>`,
+  };
+  const e5Ic = (dim) => `<i class="e5-ic">${E5_ICON[dim]}</i>`;
+  // 順位の杯：5項目の絵と同じ一色の平らな絵（光沢・影・リボンは付けない。2026-09-24 ユーザー「浮いてる」）。
+  //   金銀銅は色だけで分け、数字は杯の中に白で抜く。4位より下＝灰色、走数30未満＝点線で数字なし（mockup-196 F2 四角なし）
+  const E5_CUP_COL = { 1: '#B8860B', 2: '#7D8792', 3: '#A9642E', x: '#AEB4BC' };
+  const E5_CUP_PATH = 'M7.5 3 H24.5 V11 A8.5 8.5 0 0 1 18 19.3 V23 H21.5 A1.5 1.5 0 0 1 23 24.5 V28 H9 V24.5 A1.5 1.5 0 0 1 10.5 23 H14 V19.3 A8.5 8.5 0 0 1 7.5 11 Z';
+  function e5Cup(kind, size) {
+    const n = typeof kind === 'number' ? kind : null;
+    const col = E5_CUP_COL[n && n <= 3 ? n : 'x'];
+    const dash = kind === 'thin' ? ' stroke-dasharray="2 1.8"' : '';
+    const cup = kind === 'thin' ? `<path d="${E5_CUP_PATH}" fill="none" stroke="${col}" stroke-width="1.6"${dash}/>` : `<path d="${E5_CUP_PATH}" fill="${col}"/>`;
+    const num = n == null ? '' : `<text x="16" y="${n >= 10 ? 14 : 15.2}" text-anchor="middle" font-size="${n >= 10 ? 9 : 12.5}" font-weight="900" fill="#fff" font-family="Futura,Jost,system-ui">${n}</text>`;
+    return `<i class="e5-cup" style="width:${size}px;height:${size}px" aria-label="${n ? `${n}位` : '走数が少ない'}"><svg viewBox="0 0 32 32">`
+      + `<path d="M7.5 6 C2.5 6 2.5 13 8.6 14 M24.5 6 C29.5 6 29.5 13 23.4 14" fill="none" stroke="${col}" stroke-width="2.4"${dash}/>${cup}${num}</svg></i>`;
+  }
+  const e5Rank = (r) => {
+    if (!r.v) return '';
+    if (r.thin) return `<span class="e5-rkm">${e5Cup('thin', 30)}<small class="e5-of">走数少</small></span>`;
+    return `<span class="e5-rkm">${e5Cup(r.rank, 30)}<small class="e5-of">/${r.of}頭</small></span>`;
+  };
+  // 平均との差の棒：真ん中の線＝コース全体、右＝上回る（緑）・左＝下回る（赤）。端＝±20ポイント
+  function e5Bar(r) {
+    const R = 20;
+    const d = r.d == null ? 0 : Math.max(-R, Math.min(R, r.d));
+    const w = `${(Math.abs(d) / R) * 50}%`;
+    const bar = d >= 0 ? `left:50%;width:${w}` : `right:50%;width:${w}`;
+    const sg = r.d == null ? '' : `${r.d >= 0 ? '+' : '−'}${Math.abs(r.d).toFixed(1)}`;
+    // 棒が長いときは数字を棒の中（白字）に入れて、枠の外にはみ出さないようにする
+    const lab = r.d == null ? '' : Math.abs(d) > R * 0.6
+      ? `<b class="e5-dd e5-dg in" style="${d >= 0 ? `right:calc(50% - ${w} + 5px)` : `left:calc(50% - ${w} + 5px)`}">${sg}</b>`
+      : `<b class="e5-dd e5-dg" style="${d >= 0 ? `left:calc(50% + ${w} + 4px)` : `right:calc(50% + ${w} + 4px)`}">${sg}</b>`;
+    return `<div class="e5-dv"><i class="e5-mid"></i><i class="e5-bar" style="${bar}"></i>${lab}</div>`;
+  }
+  function e5Row(r) {
+    if (!r.v) {
+      return `<div class="e5-row none">${e5Ic(r.dim)}<div class="e5-body"><div class="e5-l1"><i class="e5-lb">${r.label}</i>${e5Name(r)}</div>${e5None(r)}</div></div>`;
+    }
+    return `<div class="e5-row ${r.j}${r.thin ? ' thin' : ''}">${e5Ic(r.dim)}
+      <div class="e5-body"><div class="e5-l1"><i class="e5-lb">${r.label}</i>${e5Name(r)}${e5Rank(r)}</div>
+      <div class="e5-l2"><div class="e5-big"><b class="e5-dg">${r.v[3].toFixed(1)}<small>%</small></b><span class="e5-n"><b class="e5-dg">${r.v[0]}</b>走</span></div>${e5Bar(r)}</div></div></div>`;
+  }
+  // 表彰台：1〜3位に入った項目の絵を台に乗せる。1つの台に3つ以上なら絵を小さくし、4つ以上は2段に折り返す
+  //   （直近200レースで、1つの台に3つ乗る馬は50頭・4つは6頭・5つは0頭。2026-09-24 数えた）
+  function e5Podium(rows) {
+    const step = (k, hgt) => {
+      const xs = rows.filter((r) => r.v && r.rank === k);
+      return `<div class="e5-ps s${k}"><div class="e5-pon${xs.length >= 3 ? ' s3' : ''}${xs.length >= 4 ? ' s4' : ''}">`
+        + `${xs.map((r) => `<i class="e5-pic">${E5_ICON[r.dim]}<small>${E5_SHORT[r.dim]}</small></i>`).join('') || '<span class="e5-pz">—</span>'}</div>`
+        + `<div class="e5-pst" style="height:${hgt}px">${e5Cup(k, 28)}</div></div>`;
+    };
+    return `<div class="e5-pod">${step(2, 34)}${step(1, 46)}${step(3, 26)}</div>`;
+  }
+  function coursePage(h) {
+    e5Load();
+    const rows = e5Rows(h);
+    const avg = e5Avg();
+    const key = avg == null ? '' : `<div class="e5-key"><i class="e5-kx"></i>真ん中の線＝このコース全体 <b class="e5-dg">${avg.toFixed(1)}</b>%</div>`;
+    return `<div class="race20 rvC c3 mx hd-r3 b-page e5-page">
+      <div class="h-card e5-card"><div class="h-top"><span class="h-t">このコースの複勝率</span></div>${key}${e5Podium(rows)}${rows.map(e5Row).join('')}</div></div>`;
+  }
+
   function pageHtml(h, pg) {
     if (pg.k === 'p1') return basicPage(h);
+    if (pg.k === 'course') return coursePage(h);
     if (pg.k === 'sum') return summaryPage(h);
     if (pg.k === 'all') return allPage(h, pg.from, pg.to);
     if (pg.k === 'tenkai') return tenkaiPage(h);
@@ -1092,10 +1239,10 @@
 
   // 説明文と下のボタン列（✕消・ひとつ戻る・✓残す）は外した（2026-09-17 ユーザー指示）。決めるのは払う動きだけ。
   // 払い間違えを戻す機能は置かない（同日ユーザー決定）
-  // 1〜3ページ目（基本・直近5走・展開）の見出しの横に、今回の芝・ダートと距離を出す（2026-09-17 ユーザー指示）。
+  // 基本・コース・展開・直近5走の見出しの横に、今回の芝・ダートと距離を出す（2026-09-17 ユーザー指示。コースは 2026-09-24 に足した）。
   //   過去走と見比べるときの基準なので、距離の色は過去走と同じ（芝＝緑・ダート＝橙）
   //   2026-09-21：距離の左にクラスの札も出す（ユーザー指示）。過去走の札と同じ分け方・同じ色
-  const TODAY_PAGES = ['p1', 'sum', 'tenkai'];
+  const TODAY_PAGES = ['p1', 'course', 'sum', 'tenkai'];
   const todayTag = (() => {
     const r = site.race || {};
     if (!r.surface || !r.distance) return '';

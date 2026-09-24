@@ -859,3 +859,62 @@ html.rc-frame .mx .mg-close .mg-tag{background:#5E7185}
 .tk3-r .tm i{font-style:normal;font-size:9px;color:var(--tk-sub);white-space:nowrap}
 /* 右側は通過タイムと王冠だけの1列（前が残る・いつもの%は 2026-09-24 に外した）。3行で同じ位置にそろえる */
 .tk3-r .x.one{width:70px;align-items:center}
+
+/* ===== コースのページ（2026-09-24・試作 mockup-192〜196）：前走コース・騎手・種牡馬・調教師・母父の、このコースでの複勝率 =====
+   上に表彰台、下に5行（項目の絵・名前・順位の杯／複勝率・走数／平均との差の棒）。名前はサイトの既存の名前とぶつからないよう e5- で始める */
+.e5-page .e5-dg{font-family:Futura,Jost,'Century Gothic',system-ui,sans-serif;font-weight:600;letter-spacing:.01em}
+.e5-card{padding-bottom:6px !important}
+.e5-key{display:flex;align-items:center;gap:5px;font-size:10.5px;color:#8E8E93;margin:2px 0 4px}
+.e5-key b{color:#3a3a3c;font-size:11px}
+.e5-kx{display:inline-block;flex:none;width:2px;height:12px;background:#3a3a3c}
+.e5-lb{font-style:normal;font-size:10px;font-weight:700;color:#8E8E93;background:#F2F2F7;border-radius:4px;padding:1px 5px;flex:none}
+.e5-nm{font-size:14px;font-weight:700;color:#1c1c1e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;display:inline-flex;align-items:center;gap:3px}
+.e5-sf{font-style:normal;font-size:10px;font-weight:700;color:#fff;border-radius:3px;padding:1px 3px;line-height:1.2}
+.e5-sf.tf{background:#3E8E5A} .e5-sf.dt{background:#C98A3C}
+.e5-same{font-style:normal;font-size:9.5px;font-weight:700;color:#003E70;border:1px solid #003E70;border-radius:3px;padding:0 3px}
+.e5-z{font-size:12px;color:#AEAEB2}
+.e5-ic{flex:none;display:inline-flex;width:30px;height:30px;border-radius:9px;background:#EAF0F6;color:#003E70;align-items:center;justify-content:center}
+.e5-ic svg{width:21px;height:21px;display:block}
+.e5-cup{flex:none;display:inline-flex;align-items:center;justify-content:center}
+.e5-cup svg{width:100%;height:100%;display:block}
+.e5-rkm{margin-left:auto;display:inline-flex;align-items:center;gap:2px;flex:none}
+.e5-of{font-size:10px;color:#AEAEB2;font-style:normal}
+/* 行 */
+.e5-row{display:flex;gap:9px;align-items:flex-start;padding:9px 0 8px;border-top:1px solid #F0F0F3}
+.e5-row>.e5-ic{margin-top:1px}
+.e5-row.thin>.e5-ic{opacity:.45}
+.e5-body{flex:1;min-width:0}
+.e5-l1{display:flex;align-items:center;gap:6px;min-width:0;min-height:30px}
+.e5-l2{display:flex;align-items:center;gap:10px;margin-top:1px}
+.e5-row.none .e5-body{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:30px}
+.e5-big{flex:none;width:74px;display:flex;flex-direction:column;line-height:1.05}
+.e5-big>b{font-size:23px;color:#1c1c1e}
+.e5-big>b small{font-size:12px;margin-left:1px}
+.e5-n{font-size:10px;color:#8E8E93}
+.e5-n b{font-size:11px;color:#636366;margin-right:1px}
+.e5-row.up .e5-big>b{color:#0F7A3D} .e5-row.dn .e5-big>b{color:#C8352C}
+.e5-row.thin .e5-big>b,.e5-row.thin .e5-nm{color:#AEAEB2}
+/* 平均との差の棒 */
+.e5-dv{position:relative;flex:1;height:28px;border-radius:7px;background:linear-gradient(90deg,#FBECEB,#F7F7F9 50%,#E9F4EC)}
+.e5-mid{position:absolute;left:50%;top:-2px;bottom:-2px;width:2px;margin-left:-1px;background:#3a3a3c;border-radius:1px}
+.e5-bar{position:absolute;top:6px;bottom:6px;border-radius:4px;background:#8E8E93}
+.e5-row.up .e5-bar{background:#0F7A3D} .e5-row.dn .e5-bar{background:#C8352C} .e5-row.thin .e5-bar{opacity:.4}
+.e5-dd{position:absolute;top:50%;transform:translateY(-50%);font-size:12.5px;color:#3a3a3c}
+.e5-row.up .e5-dd{color:#0F7A3D} .e5-row.dn .e5-dd{color:#C8352C}
+.e5-row .e5-dd.in{color:#fff;font-size:11px}
+/* 表彰台 */
+.e5-pod{display:grid;grid-template-columns:1fr 1.1fr 1fr;align-items:end;gap:5px;margin:4px 0 8px}
+.e5-ps{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0}
+.e5-pon{display:flex;gap:4px;justify-content:center;flex-wrap:wrap;min-height:40px;align-items:flex-end}
+.e5-pic{font-style:normal;display:flex;flex-direction:column;align-items:center;color:#003E70}
+.e5-pic svg{width:28px;height:28px;padding:4px;border-radius:9px;background:#EAF0F6;box-sizing:border-box}
+.e5-pic small{font-size:9px;color:#636366;font-weight:700;margin-top:1px;white-space:nowrap}
+.e5-pon.s3{gap:2px}
+.e5-pon.s3 .e5-pic svg{width:23px;height:23px;padding:3px;border-radius:7px}
+.e5-pon.s3 .e5-pic small{font-size:8.5px}
+.e5-pon.s4{max-width:84px}
+.e5-pz{font-size:13px;color:#C7C7CC;padding-bottom:6px}
+.e5-pst{width:100%;border-radius:8px 8px 3px 3px;display:flex;justify-content:center;align-items:center}
+.e5-ps.s1 .e5-pst{background:linear-gradient(#FBE7A1,#EFCB5A)}
+.e5-ps.s2 .e5-pst{background:linear-gradient(#EEF0F3,#CDD2D8)}
+.e5-ps.s3 .e5-pst{background:linear-gradient(#F6D3B3,#DDA170)}
