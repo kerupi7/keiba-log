@@ -340,8 +340,8 @@
     const allPages = all.length ? [{ k: 'all', from: 0, to: all.length, label: `全戦績 ${all.length}走` }] : [];
     // 出馬表の「展開」の中身（馬場・枠順・脚質と展開）を1ページ置く（2026-09-17 ユーザー指示）。
     // 場所は直近5走のすぐ後ろ（同日ユーザー指示で、全戦績の前から移した）。並び：基本→直近5走→展開→前走…5走前→全戦績
-    return [{ k: 'p1', label: '基本' }].concat(sum)
-      .concat([{ k: 'tenkai', label: '展開' }])
+    // 2026-09-24 ユーザー指示で並びを 基本→展開→直近5走 に変えた（それまでは 基本→直近5走→展開）
+    return [{ k: 'p1', label: '基本' }, { k: 'tenkai', label: '展開' }].concat(sum)
       .concat(runs.map((run, i) => ({ k: 'run', label: RUN_LABEL[i], i })))
       .concat(allPages);
   }
