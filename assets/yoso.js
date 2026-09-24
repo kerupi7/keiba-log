@@ -1148,129 +1148,160 @@
   //   中＝コーナーごとの位置の図（脚質の色）＋上がりの棒（F3）→ レースの流れ（ペース・決着の目盛り）
   //   下＝間隔・斤量・馬場・騎手・馬体重の一覧（B1）。今回と同じ条件で好走した行は緑
   //   選ばなかった案：スコアボード A・新聞 B・設定画面 C／C1〜C3、M1・M2、上の段 R1・R2、勝ち馬と上がり F1・F2、下の段 B2・B3
+  // ---------- 過去走のページ（2026-09-24 作り直し・試作 mockup-200〜209） ----------
+  //   上から ①レースの札 ②結果の札（着順・人気・タイム・着差・勝ち馬）③コーナーごとの位置（番号の丸を線でつなぐ）＋上がり・通過タイム・決着
+  //   ④条件の5つ（馬場・間隔・騎手・斤量・馬体重）を丸の絵＋「前走｜今回」の2段で。項目は前の形と同じで、メモの1行だけ外した（ユーザー「ここいらない」）
+  //   色は紺・灰・緑と金銀銅だけ。条件の今回の段は、変わっても色を付けない（ユーザー「色変えなくていい」）。変わった項目は上の丸を紺で塗る
+  const RI = 'currentColor';
+  const R_ICON = {
+    cal: `<svg viewBox="0 0 32 32"><rect x="4" y="7" width="24" height="21" rx="3.5" fill="${RI}"/><rect x="4" y="12" width="24" height="2" fill="#fff" opacity=".9"/><rect x="9" y="3.5" width="3" height="7" rx="1.5" fill="${RI}"/><rect x="20" y="3.5" width="3" height="7" rx="1.5" fill="${RI}"/><rect x="8" y="17" width="4" height="3.5" rx="1" fill="#fff"/><rect x="14" y="17" width="4" height="3.5" rx="1" fill="#fff"/><rect x="20" y="17" width="4" height="3.5" rx="1" fill="#fff"/></svg>`,
+    kg: `<svg viewBox="0 0 32 32"><circle cx="16" cy="7.5" r="3.6" fill="none" stroke="${RI}" stroke-width="2.6"/><path d="M9 11.5 H23 L27.5 28 H4.5 Z" fill="${RI}"/><text x="16" y="24.2" text-anchor="middle" font-size="8" font-weight="900" fill="#fff" font-family="Futura,Jost,system-ui">kg</text></svg>`,
+    sun: `<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="6.5" fill="${RI}"/>${[0, 45, 90, 135, 180, 225, 270, 315].map((a) => `<rect x="15" y="2.5" width="2.6" height="5" rx="1.3" fill="${RI}" transform="rotate(${a} 16 16)"/>`).join('')}</svg>`,
+    drop: `<svg viewBox="0 0 32 32"><path d="M16 3 C16 3 6.5 14 6.5 20 A9.5 9.5 0 0 0 25.5 20 C25.5 14 16 3 16 3 Z" fill="${RI}"/><path d="M11.5 20.5 A4.5 4.5 0 0 0 15 25" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg>`,
+    jockey: `<svg viewBox="0 0 32 32"><path d="M5 21 A11 11 0 0 1 27 21 Z" fill="${RI}"/><rect x="3" y="21" width="27" height="4.2" rx="2.1" fill="${RI}"/><path d="M16 10.5 V21" stroke="#fff" stroke-width="2.2"/></svg>`,
+    bw: `<svg viewBox="0 0 32 32"><rect x="4" y="5" width="24" height="23" rx="5" fill="${RI}"/><path d="M9.5 15 A6.5 6.5 0 0 1 22.5 15 Z" fill="#fff"/><path d="M16 15 L19 10.5" stroke="${RI}" stroke-width="1.8" stroke-linecap="round"/></svg>`,
+    time: `<svg viewBox="0 0 32 32"><circle cx="16" cy="18.5" r="10.5" fill="none" stroke="${RI}" stroke-width="3.2"/><rect x="12.5" y="3" width="7" height="4.2" rx="1.2" fill="${RI}"/><path d="M16 18.5 L20.5 13" stroke="${RI}" stroke-width="2.6" stroke-linecap="round"/><circle cx="16" cy="18.5" r="1.8" fill="${RI}"/></svg>`,
+    pop: `<svg viewBox="0 0 32 32"><circle cx="11" cy="11" r="4.5" fill="${RI}"/><circle cx="22" cy="11" r="4.5" fill="${RI}"/><path d="M2.5 27 C2.5 20 6 17.5 11 17.5 C16 17.5 19.5 20 19.5 27 Z" fill="${RI}"/><path d="M13.5 27 C13.5 20 17 17.5 22 17.5 C27 17.5 30.5 20 30.5 27 Z" fill="${RI}" stroke="#fff" stroke-width="1.4"/></svg>`,
+    field: `<svg viewBox="0 0 32 32"><path d="M5 27 C5 19 8 13 14 10 L16 5 L19 9 C23 9 27 13 28 17 C28.5 19 27 20.5 25 20 L21 18.5 C19 20 18 23 18 27 Z" fill="${RI}"/><circle cx="21.5" cy="13" r="1.3" fill="#fff"/></svg>`,
+    up: `<svg viewBox="0 0 32 32"><path d="M8 4 V29" stroke="${RI}" stroke-width="2.6" stroke-linecap="round"/><path d="M9 5 H26 V17 H9 Z" fill="${RI}"/><rect x="9" y="5" width="4.25" height="4" fill="#fff"/><rect x="17.5" y="5" width="4.25" height="4" fill="#fff"/><rect x="13.25" y="9" width="4.25" height="4" fill="#fff"/><rect x="21.75" y="9" width="4.25" height="4" fill="#fff"/><rect x="9" y="13" width="4.25" height="4" fill="#fff"/><rect x="17.5" y="13" width="4.25" height="4" fill="#fff"/></svg>`,
+  };
+  const rIc = (k, cls) => `<i class="rp-ic ${cls || ''}">${R_ICON[k]}</i>`;
+  const R_MEDAL = { 1: '#B8860B', 2: '#7D8792', 3: '#A9642E' };
+  const rMedal = (n, size) => (n >= 1 && n <= 3 ? e5Cup(n, size) : '');
+
+  // コーナーごとの位置：1段＝1コーナー。丸に1〜頭数の番号（左が先頭）。この馬の丸だけ脚質の色（ゴールの段は1〜3着なら金銀銅）、
+  //   ほかの丸は色なし。この馬の丸を段から段へ線でつなぐ（試作 mockup-202 Q2）
+  function runPosFig(r, field, fin, turf) {
+    const cs = String(r.corners || '').split('-').map(Number).filter((x) => x > 0);
+    const N = field || 0;
+    if (!cs.length || !N) return '<div class="yf-posnone">コーナーの記録なし</div>';
+    const pts = cs.map((v, i) => ({ v, lab: `${i + 1 + (4 - cs.length)}角` }));
+    if (fin > 0) pts.push({ v: fin, lab: 'ゴール', fin: true });
+    const W = 330, L = 44, R = 12, RH = 26, T = 16;
+    const X = (p) => L + ((Math.min(p, N) - 1) / Math.max(N - 1, 1)) * (W - L - R);
+    const step = (W - L - R) / Math.max(N - 1, 1);
+    const rad = Math.max(5.5, Math.min(9.5, step / 2 - 0.8));
+    const fs = rad >= 8 ? 10 : rad >= 7 ? 9 : 8;
+    const Y = (i) => T + i * RH + RH / 2;
+    const lanes = [];   // 帯 → この馬をつなぐ線 → 番号の丸 の順に描く（線が帯に隠れないように）
+    const rows = pts.map((q, i) => {
+      const y = Y(i);
+      const mc = q.fin ? (R_MEDAL[q.v] || 'var(--st)') : 'var(--st)';
+      const slots = Array.from({ length: N }, (_, k) => {
+        const p = k + 1, x = X(p).toFixed(1), me = p === Math.min(q.v, N);
+        return `<circle cx="${x}" cy="${y}" r="${me ? rad + 1.5 : rad}" class="${me ? 'pq-me' : 'pq-s'}"${me ? ` style="fill:${mc}"` : ''}/>`
+          + `<text x="${x}" y="${(y + fs * 0.36).toFixed(1)}" class="${me ? 'pq-tm' : 'pq-t'}" style="font-size:${me ? fs + 1 : fs}px">${p}</text>`;
+      }).join('');
+      lanes.push(`<rect x="${L - rad - 4}" y="${y - RH / 2 + 2}" width="${W - L - R + rad * 2 + 8}" height="${RH - 4}" rx="${(RH - 4) / 2}" class="pp-lane${q.fin ? ' g' : ''}"/>`);
+      return `<text x="${L - rad - 8}" y="${y + 4}" class="pp-rl">${q.lab}</text>${slots}`;
+    }).join('');
+    const path = `<polyline points="${pts.map((q, i) => `${X(q.v).toFixed(1)},${Y(i)}`).join(' ')}" fill="none" stroke="var(--st)" stroke-width="2.6" stroke-linejoin="round" opacity=".6"/>`;
+    const H = T + pts.length * RH + 4;
+    return `<svg class="pp-fig pp1 pq ${turf ? 'tf' : 'dt'}" viewBox="0 0 ${W} ${H}"><text x="${L - rad}" y="11" class="pp-ax">◀ 先頭</text>`
+      + `<text x="${W - R + rad}" y="11" class="pp-ax" text-anchor="end">最後方</text>${lanes.join('')}${path}${rows}</svg>`;
+  }
+
   function runPage(h, i) {
     const r = h.past_runs[i];
     const prev = h.past_runs[i + 1];
     const race = site.race || {};
     const field = Number(r.field_size || r.runners) || null;
     const fin = Number(r.finish);
+    const pop = Number(r.popularity);
     const mg = marginSec(r.margin);
-    // 1〜3着は金・銀・銅（2026-09-17 ユーザー指示）
-    const finCls = fin === 1 ? 'w1' : fin === 2 ? 'w2' : fin === 3 ? 'w3' : '';
-
-    // 間隔：前走は今回のレース日との差、それ以外は1つ前の走との差
-    const gapNow = i === 0 ? days(toDate(race.date), toDate(r.date)) : null;
-    // 5走前はひとつ前の走が past_runs に無いので、career_runs と合わせた一覧から間隔を取る
-    // （色の判定 condOf と同じ一覧。2026-09-17 に表示「—」なのに色が付く食い違いを直した）
-    const gapPrev = prev ? days(toDate(r.date), toDate(prev.date)) : (condOf(h).gapOf[r.race_id] ?? r.rest_days ?? null);
     const isFirst = i === 0;
-    const going = race.going || '';
-
-    // この走の脚質（位置の図・レースの流れの札の色に使う）。判定は本番と同じ
-    // （keiba_review.style_of / race.js reviewZoneOf：最初のコーナーで1番手＝逃げ、以降は通過順÷頭数を 0.33 / 0.66 で切る）
+    // 間隔：前走は今回のレース日との差、それ以外は1つ前の走との差（5走前は career_runs と合わせた一覧から）
+    const gapNow = isFirst ? days(toDate(race.date), toDate(r.date)) : null;
+    const gapPrev = prev ? days(toDate(r.date), toDate(prev.date)) : (condOf(h).gapOf[r.race_id] ?? r.rest_days ?? null);
+    const gapV = isFirst ? (gapNow != null ? wk(gapNow) : '—') : (gapPrev != null ? wk(gapPrev) : '—');
+    // この走の脚質（位置の図・札の色に使う）。判定は本番と同じ（keiba_review.style_of / race.js reviewZoneOf）
     const c1st = Number(String(r.corners || '').split('-')[0]) || null;
     const runStyle = !c1st || !field ? null : c1st === 1 ? '逃げ' : c1st / field <= 0.33 ? '先行' : c1st / field <= 0.66 ? '差し' : '追込';
     const stColCls = { '逃げ': 'st-nige', '先行': 'st-sen', '差し': 'st-sashi', '追込': 'st-oi' }[runStyle] || 'st-none';
-    const posBody = posFigure(r, field, stColCls);
+    const turf = String(r.surface || '').startsWith('芝');
+    const sfc = String(r.surface || '').startsWith('ダ') ? 'sf-dt' : turf ? 'sf-tf' : '';
 
-    const memo = r.note_text || (r.note_labels || []).join('・');
-    // 勝ち馬の最高成績（winner_best）とレースの強さ（level_grade）は本番の札と同じ見た目で出す
-    const lvB = r.level_grade
-      ? `<span class="lv lv-${esc(String(r.level_grade).toLowerCase())}" title="レースレベル（出走馬のその後180日・同じクラスの中での相対）"><i>Lv</i>${esc(r.level_grade)}</span>` : '';
-    const wLab = fin === 1 ? '2着馬' : '勝ち馬';
-    // 間隔は「N週」だけで出す（2026-09-17 ユーザー決定）
-    const gapV = isFirst ? (gapNow != null ? wk(gapNow) : '—') : (gapPrev != null ? wk(gapPrev) : '—');
-    const kg = r.weight ? `${esc(r.weight)}kg` : '—';
-    const dist = `${esc(r.surface || '')}${esc(r.distance || '')}m`;
-    const memoB = memo ? `<div class="yf-memo">${esc(memo)}</div>` : '';
-    const bw = r.body_weight ? `${r.body_weight}kg` : '';
-
-    // 見出しは付けても「●」は付けない（2026-09-17 ユーザー指示）
-    const hc = (col, title, right, body, cls) => `<div class="h-card ${cls || ''}"><div class="h-top"><span class="h-t" style="color:${col}">${title}</span><span class="h-r">${right || ''}</span></div>${body}</div>`;
-    // 横に並ぶ札は狭いので、今回との差を短く言う（同じ／今回 57kg・今回 稍重）
-    const kgNow = h.weight_carried != null ? String(h.weight_carried).replace(/\.0$/, '') : null;
-    const kgShort = isFirst && r.weight && kgNow
-      ? `<span class="cp-pill${Number(kgNow) !== Number(r.weight) ? ' on' : ''}">${Number(kgNow) === Number(r.weight) ? '今回も同じ' : `今回 ${esc(kgNow)}kg`}</span>` : '';
-    // 「稍重」と「稍」は同じもの。縮めてから比べる（2026-09-21。それまでは稍重・不良の日に
-    // 前走が同じ馬場でも「今回 稍重」と出て、違う日のように見えていた）
-    const goSame = ng(going) === ng(r.condition);
-    const goShort = isFirst && going
-      ? `<span class="cp-pill${goSame ? '' : ' on'}">${goSame ? '今回も同じ' : `今回 ${esc(going)}`}</span>` : '';
-
-    // ---- 上：レースの札 → 着順｜人気｜タイム → 勝ち馬との差と勝ち馬 ----
+    // ① レースの札（日付・場・クラス・レース名・距離・頭数・レベル）
     const ymd = String(r.date || '').split(/[/-]/);
-    // 名前の末尾の「(GIII)」「(3勝クラス)」は、クラスの札と同じなので落とす
     const rname = stripClass(r.race_name) || '—';
     const cls = raceClass(r.grade, r.race_name);
-    const raceCard = `<div class="h-card m-race">
+    const lvB = r.level_grade
+      ? `<span class="lv lv-${esc(String(r.level_grade).toLowerCase())}" title="レースレベル（出走馬のその後180日・同じクラスの中での相対）"><i>Lv</i>${esc(r.level_grade)}</span>` : '';
+    const raceCard = `<div class="h-card rp-race">
       <div class="m-date"><small>${esc(ymd[0] || '')}</small><b>${esc(ymd[1] || '')}/${esc(ymd[2] || '')}</b><span>${esc(r.track || '')}</span></div>
-      <div class="m-rmain">
-        <div class="m-rn">${cls ? clsBadge(cls) : (JRA_TRACKS.includes(r.track) ? '' : '<span class="cb c-jusho">地方</span>')}<span>${esc(rname)}</span></div>
-        <div class="m-cells">
-          <div><i>距離</i><b class="${String(r.surface || '').startsWith('ダ') ? 'sf-dt' : String(r.surface || '').startsWith('芝') ? 'sf-tf' : ''}">${dist}</b></div>
-          <div><i>頭数</i><b>${field ?? '—'}頭</b></div>
-          <div><i>レベル</i><b>${lvB || '—'}</b></div>
-        </div>
-      </div>
-    </div>`;
-    const num = (k, v, u, c) => `<div class="h-card m-num ${c || ''}"><div class="h-t">${k}</div><div class="m-nv">${v}<small>${u}</small></div></div>`;
-    // 勝ち馬：名前と最高成績（クラスの札＋着順）を左右に振る。馬名は折り返さず、長い名前ほど字を小さくする
-    const bp = bestParts(r.winner_best);
-    const bestHtml = bp
-      ? `<span class="ft3-bst">${clsBadge(bp.cls)}<b class="${bp.fin === 1 ? 'f1' : bp.fin === 2 ? 'f2' : bp.fin === 3 ? 'f3' : ''}">${bp.fin}着</b></span>`
-      : (r.winner_best ? `<b>${esc(r.winner_best)}</b>` : '');
-    const nlen = [...String(r.winner || '')].length;
-    const nfs = nlen <= 7 ? 15 : nlen <= 8 ? 14 : nlen <= 9 ? 12.5 : 11.5;
-    const winnerBody = `<div class="ft3-win"><div class="ft3-wc"><i>${wLab}</i><b style="font-size:${nfs}px">${esc(r.winner || '—')}</b></div>${bestHtml ? `<div class="ft3-wr"><i>最高成績</i>${bestHtml}</div>` : ''}</div>`;
-    // 着差の札の色は本番の戦績の札と同じ決まり（race.js runBandClass）：
-    //   1着＝金／着差が芝0.4・ダート0.6（ほか0.5）秒以内の負け＝僅差（銀の地＋銀の枠）／それ以外は色なし
+      <div class="rp-rm"><div class="m-rn">${cls ? clsBadge(cls) : (JRA_TRACKS.includes(r.track) ? '' : '<span class="cb c-jusho">地方</span>')}<span>${esc(rname)}</span></div>
+        <div class="rp-rc"><span class="rp-dist ${sfc}">${esc(r.surface || '')}<b class="e5-dg">${esc(r.distance || '')}</b>m</span>
+          <span class="rp-fld">${rIc('field', 'sm')}<b class="e5-dg">${field ?? '—'}</b>頭</span>${lvB ? `<span class="rp-lv">${lvB}</span>` : ''}</div></div></div>`;
+
+    // ② 結果の札：左に着順（1〜3着は金銀銅の杯）、右に 人気（人気より上の着順なら▲・下なら▼）・タイム・着差・勝ち馬
+    //   着差の札の色は本番の戦績の札と同じ決まり：1着＝金／芝0.4・ダート0.6（ほか0.5）秒以内の負け＝僅差（銀）
     const closeTh = { '芝': 0.4, 'ダート': 0.6 }[r.surface] ?? 0.5;
-    const mgBand = fin === 1 ? 'mg-win' : (mg != null && Math.abs(mg) <= closeTh ? 'mg-close' : '');
-    const mgTag = mgBand === 'mg-win' ? '<b class="mg-tag">勝ち</b>' : mgBand === 'mg-close' ? '<b class="mg-tag">僅差</b>' : '';
-    const winSet = hc('var(--text)', fin === 1 ? '2着馬との差' : '勝ち馬との差', mgTag, `
-      <div class="m-gap"><span class="m-nv">${mg == null ? '—' : Math.abs(mg).toFixed(1)}<small>秒</small></span></div>
-      ${winnerBody}`, `m-win wide ${mgBand}`);
-    // タイムは本番の time_grade（当日の馬場差を補正した基準との比べ）で金・銀・銅に塗る
-    const tg = { f1: 'w1', f2: 'w2', f3: 'w3' }[r.time_grade] || '';
+    const band = fin === 1 ? 'win' : (mg != null && Math.abs(mg) <= closeTh ? 'close' : '');
+    const tg = { f1: 1, f2: 2, f3: 3 }[r.time_grade] || null;
     const tgTitle = r.time_grade && r.time_resid != null ? ` title="基準比 ${r.time_resid > 0 ? '+' : ''}${esc(r.time_resid)}秒（当日の馬場差を補正後）"` : '';
-    const timeTile = `<div class="h-card m-num ${tg}"${tgTitle}><div class="h-t">タイム</div><div class="m-nv">${esc(r.time || '—')}<small></small></div></div>`;
-    const top = `${raceCard}<div class="m-row3">${num('着順', esc(r.finish ?? '—'), '着', finCls)}${num('人気', esc(r.popularity ?? '—'), '番')}${timeTile}</div>
-      ${winSet}`;
+    const popArrow = pop && fin ? (fin < pop ? '<b class="rp-pa up">▲</b>' : fin > pop ? '<b class="rp-pa dn">▼</b>' : '<b class="rp-pa eq">＝</b>') : '';
+    const bp = bestParts(r.winner_best);
+    const wLab = fin === 1 ? '2着馬' : '勝ち馬';
+    const winnerLine = `<div class="rp-wn"><i>${wLab}</i><b>${esc(r.winner || '—')}</b>${bp ? `<span class="ft3-bst">${clsBadge(bp.cls)}<b class="${bp.fin === 1 ? 'f1' : bp.fin === 2 ? 'f2' : bp.fin === 3 ? 'f3' : ''}">${bp.fin}着</b></span>` : (r.winner_best ? `<b>${esc(r.winner_best)}</b>` : '')}</div>`;
+    const hero = `<div class="h-card rp-hero ${band}">
+      <div class="rp-fin w${fin >= 1 && fin <= 3 ? fin : 0}">${rMedal(fin, 34)}<b class="e5-dg">${esc(r.finish ?? '—')}</b><small>着</small></div>
+      <div class="rp-hr">
+        <div class="rp-h1"><span class="rp-pp">${rIc('pop', 'xs')}<b class="e5-dg">${esc(r.popularity ?? '—')}</b>番人気</span>${popArrow}
+          <span class="rp-tt${tg ? ` w${tg}` : ''}"${tgTitle}>${tg ? rMedal(tg, 18) : rIc('time', 'xs')}<b class="e5-dg">${esc(r.time || '—')}</b></span></div>
+        <div class="rp-h2"><b class="e5-dg rp-gv">${mg == null ? '—' : Math.abs(mg).toFixed(1)}<small>秒</small></b>${band ? `<b class="rp-band ${band}">${band === 'win' ? '勝ち' : '僅差'}</b>` : ''}</div>
+        ${winnerLine}</div></div>`;
 
-    // ---- 中：コーナーごとの位置（脚質の色）＋上がり → レースの流れ ----
-    // scenario は「ペース・決着」。後ろの「前／後」はその馬の位置ではなく、レースの決着（前残り／差し・追込）
-    const [pace, settle] = String(r.scenario || '').split('・');
-    const settleTxt = settle === '前' ? '前残り' : settle === '後' ? '差し・追込' : '';
+    // ③ コーナーごとの位置 → 上がり → 前半の通過タイム｜決着（2枚は同じ並び：小さい見出し → 大きい中身 → 札）
     const rk = r.last3f_rank != null ? Number(r.last3f_rank) : null;
-    // 上がりの1〜3位も金・銀・銅
-    const rkCls = rk === 1 ? 'r1' : rk === 2 ? 'r2' : rk === 3 ? 'r3' : '';
-    const scale = (opts, v) => `<span class="ft-scale">${opts.map((o) => `<i class="${o === v ? 'on' : ''}">${o}</i>`).join('')}</span>`;
-    const upW = rk != null && field ? Math.max(4, 100 - ((rk - 1) / Math.max(field - 1, 1)) * 100) : 0;
-    const posSub = `<div class="ft3">
-      <div class="ft3-r"><span class="ft3-k">上がり</span><b class="ft3-up ${rkCls}">${esc(r.last_3f || '—')}秒</b>
-        <span class="ft3-bar"><i class="${rkCls}" style="width:${upW}%"></i></span><span class="ft3-n ${rkCls}">${rk != null ? `${rk}位` : '—'}<small>／${field ?? '—'}頭</small></span></div>
-    </div>`;
-    // レースの流れの札は、この走の脚質の色で塗る（逃げ＝赤・先行＝黄・差し＝水色・追込＝青。脚質が出ない走は灰）
-    const flowCard = hc('var(--st)', 'レースの流れ', '', `<div class="ft3-flow">
-      <div class="fl-col fl-pc"><i class="fl-k">ペース</i>${scale(['スロー', '平均', 'ハイ'], pace)}</div>
-      <div class="fl-col fl-se"><i class="fl-k">決着</i>${scale(['前残り', '差し追込'], settleTxt.replace('・', ''))}</div>
-    </div>`, `st-card ${stColCls}`);
-    const pos = hc('var(--st)', 'コーナーごとの位置', runStyle ? `<b class="ft3-style ${stColCls}">${runStyle}</b>` : '', `${posBody}${posSub}${memoB}`, `st-card ${stColCls}`) + flowCard;
+    const upB = `<span class="pp-up${rk && rk <= 3 ? ` r${rk}` : ''}">${rIc('up', 'xs')}上がり<b class="e5-dg">${esc(r.last_3f || '—')}</b>秒${rk != null ? `<em>${rk <= 3 ? e5Cup(rk, 16) : ''}<b class="e5-dg">${rk}</b>位</em>` : ''}</span>`;
+    const [pace, settle] = String(r.scenario || '').split('・');
+    const crown = '<svg viewBox="0 0 20 16" class="pp-crown"><path d="M2 12 L3.5 4 L7.5 8 L10 2.5 L12.5 8 L16.5 4 L18 12 Z" fill="#E0A800"/><rect x="2" y="12.6" width="16" height="2.6" rx="1" fill="#E0A800"/></svg>';
+    const side = (lab, on) => `<span class="pp-sd${on ? ' on' : ''}">${on ? crown : ''}${lab}</span>`;
+    const pt = r.pass_time;   // publish が DB のラップから出す（keiba_shutuba_columns.pass_time_for・2026-09-24〜）
+    const flow = `<div class="pp-flow"><span class="pp-fi"><i class="pp-fk">${pt ? `${pt.point_m}m通過` : '通過'}</i><b class="pp-fv">${pt ? `<span class="e5-dg">${Number(pt.sec).toFixed(1)}</span><small>秒</small>` : '—'}</b>${pace ? `<em class="pp-pl">${esc(pace)}</em>` : ''}</span>
+      <span class="pp-fi"><i class="pp-fk">決着</i><b class="pp-fv">${side('前', settle === '前')}${side('差', settle === '後')}</b></span></div>`;
+    const posCard = `<div class="h-card st-card ${stColCls} pp"><div class="h-top"><span class="h-t" style="color:var(--st)">コーナーごとの位置</span>
+      <span class="h-r">${runStyle ? `<b class="ft3-style ${stColCls}">${runStyle}</b>` : ''}</span></div>${runPosFig(r, field, fin, turf)}<div class="pp-row">${upB}</div>${flow}</div>`;
 
-    // ---- 下：間隔・斤量・馬場・騎手・馬体重の一覧。今回と同じ条件で好走した行は緑 ----
-    const jk = `<span class="bt-jk" style="font-size:${jkFs(r.jockey) + 1}px">${esc(r.jockey || '—')}</span>`;
-    const items = [
-      { k: 'gap', lab: '間隔', val: `<span class="bt-num">${gapV}</span>`, sub: '' },
-      { k: 'weight', lab: '斤量', val: `<span class="bt-num">${kg}</span>`, sub: kgShort },
-      { k: 'going', lab: '馬場', val: `<span class="bt-num">${esc(r.condition || '—')}</span>`, sub: goShort },
-      { k: 'jockey', lab: '騎手', val: jk, sub: '' },
-      { k: null, lab: '馬体重', val: `<span class="bt-num">${esc(bw || '—')}</span>`, sub: '' },
+    // ④ 条件の5つ。並びは 馬場 → 間隔 → 騎手 → 斤量 → 馬体重（ユーザー指定）。上に項目の丸、下に「前走｜今回」の2段（今回は前走のページだけ）
+    //   間隔の列は前走の段から今回の段へ縦の点線を引き、その上に「4週」。今回で変わった項目は丸を紺で塗る（値の色は変えない）
+    //   今回と同じ条件で好走していた項目は、列ごと薄い緑にして「好走」の札（今回と同じ条件の決まりは condOf/hitOf）
+    const wet = /稍|重|不/.test(String(r.condition || ''));
+    const kgNow = h.weight_carried != null ? String(h.weight_carried).replace(/\.0$/, '') : null;
+    const same = {
+      weight: kgNow && r.weight ? Number(kgNow) === Number(r.weight) : null,
+      going: race.going ? ng(race.going) === ng(r.condition) : null,
+      jockey: h.jockey ? nj(h.jockey) === nj(r.jockey) : null,
+    };
+    const jkS = (n) => `<span style="font-size:${Math.min(13, jkFs(n) - 1)}px">${esc(n || '—')}</span>`;
+    const conds = [
+      { k: 'going', ic: wet ? 'drop' : 'sun', lab: '馬場', pv: esc(r.condition || '—'), nv: esc(race.going || '—') },
+      { k: 'gap', ic: 'cal', lab: '間隔', pv: gapV },
+      { k: 'jockey', ic: 'jockey', lab: '騎手', pv: jkS(r.jockey), nv: jkS(h.jockey) },
+      { k: 'weight', ic: 'kg', lab: '斤量', pv: r.weight ? `${esc(r.weight)}<small>kg</small>` : '—', nv: kgNow ? `${esc(kgNow)}<small>kg</small>` : '—' },
+      { k: null, ic: 'bw', lab: '馬体重', pv: r.body_weight ? `${esc(r.body_weight)}<small>kg</small>` : '—', nv: null },
     ];
-    const isHit = (it) => it.k && hitOf(h, r, it.k);
-    const hitMark = (it) => (isHit(it) ? `<b class="bt-hit" title="${esc(condOf(h).stat[it.k])}">同条件で好走</b>` : '');
-    const bottom = `<div class="h-card bt1">${items.map((it) => `<div class="bt1-r${isHit(it) ? ' hit' : ''}">
-      <span class="bt-lab">${it.lab}</span><span class="bt1-v">${it.val}</span><span class="bt1-s">${it.sub}${hitMark(it)}</span></div>`).join('')}</div>`;
-    return `<div class="race20 rvC c3 mx hd-r3 bt-b1">${top}${pos}${bottom}</div>`;
+    const hitOn = (c) => Boolean(c.k && hitOf(h, r, c.k));
+    const at = (row, col, html, cl) => `<div class="e-c ${cl || ''}" style="grid-row:${row};grid-column:${col}">${html}</div>`;
+    let cells = '';
+    conds.forEach((c, n) => {
+      const col = n + 2;
+      const chg = isFirst && c.k && same[c.k] === false;
+      if (hitOn(c)) cells += `<i class="e-hitbg" style="grid-row:1 / 6;grid-column:${col}"></i>`;
+      cells += at(1, col, `<i class="d3o${chg ? ' on' : ''}${c.k === 'gap' ? ' gap' : ''}">${R_ICON[c.ic]}</i>`);
+      cells += at(2, col, `<i class="m-l">${c.lab}</i>`);
+      if (c.k === 'gap') {
+        cells += `<div class="e-gap" style="grid-row:3 / 5;grid-column:${col}">${isFirst ? '<i class="e-gl"></i>' : ''}<b class="e5-dg">${c.pv}</b></div>`;
+      } else {
+        cells += at(3, col, `<b class="e-v e5-dg">${c.pv}</b>`);
+        if (isFirst) cells += at(4, col, c.nv == null ? '<i class="e-dim">当日</i>' : `<b class="e-v e5-dg">${c.nv}</b>`);
+      }
+      if (hitOn(c)) cells += at(5, col, `<b class="rp-hit" title="${esc(condOf(h).stat[c.k] || '')}">好走</b>`);
+    });
+    const heads = at(3, 1, '<i class="e-rh">前走</i>') + (isFirst ? at(4, 1, '<i class="e-rh">今回</i>') : '');
+    const condCard = `<div class="h-card e-grid${isFirst ? '' : ' solo'}">${heads}${cells}</div>`;
+
+    return `<div class="race20 rvC c3 mx hd-r3 bt-b1 rp">${raceCard}${hero}${posCard}${condCard}</div>`;
   }
 
   // 説明文と下のボタン列（✕消・ひとつ戻る・✓残す）は外した（2026-09-17 ユーザー指示）。決めるのは払う動きだけ。
