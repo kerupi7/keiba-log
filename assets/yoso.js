@@ -500,8 +500,6 @@
   // ---------- 1ページ目（基本）を過去走ページと同じ札の形に（2026-09-17 ユーザー指示） ----------
   // 中身は本番の馬名ポップアップと同じ：見出し（AIの印・馬番・馬名・性齢・斤量・騎手・オッズ・人気）、通算成績、地雷／穴の理由、
   // コース適性（h.course_record）、レースの型べつ成績（h.race_type_record ＋ 今日の見立て site.prediction.scenario）。
-  const RT_PACE = [['S', 'スロー'], ['M', '平均'], ['H', 'ハイ']];
-  const RT_SIDE = [['前残り', '前残り'], ['差し・追込', '差し追込']];
   // 通算成績とコース適性の着別度数は、1着・2着・3着を金銀銅に塗らない（2026-09-21 ユーザー指示）。
   //   0 の所だけ薄くして、走っていない条件が一目で分かるようにする
   const recHtml = (c) => `<span class="rec">${(c || [0, 0, 0, 0]).map((v) => `<b class="${v ? '' : 'zr'}">${v}</b>`).join('<i>-</i>')}</span>`;
@@ -558,53 +556,8 @@
     // 好走率の版（2026-09-24 決定）。publish が apt を載せていないレースだけ、下の着別度数の表に落ちる
     const crCard = aptCard(h) || `<div class="h-card b-crd"><div class="h-top"><span class="h-t">コース適性</span><span class="h-r">中央のみ・全走　右は3着内率</span></div>${crRows ||
       '<div class="b-none">記録なし</div>'}</div>`;
-    const rt = h.race_type_record || {};
-    const byCode = {};
-    (rt.rows || []).forEach((r) => { byCode[r.code] = r; });
-    const sc = ((site.prediction || {}).scenario) || {};
-    // レースの型べつ成績（2026-09-24 作り替え・mockup-177 の案T＋表①カード）。
-    //   上に見る2つ：今日の本命の展開とその戦績／この馬が最も好走している展開。下にペース×決着の6マス。
-    //   最も好走＝2走以上ある型のうち3着内率が一番高い型（同じ率なら走数の多い方）。
-    //   1走の型は0%か100%にしかならないので、最も好走に選ばず、色も付けない。
-    //   得意・苦手の色の線は今までと同じ（平常比 ±5pt）。札の言葉は出さず、数字と地の色で見せる
-    const paceName = { S: 'スロー', M: '平均', H: 'ハイ' };
-    const sideName = { '前残り': '前残り', '差し・追込': '差し追込' };
-    const rtCell = (pc, sd) => {
-      const r = byCode[`${pc}_${sd}`] || { counts: [0, 0, 0, 0], n: 0, top3_pct: null, delta_pt: null };
-      const good = (r.counts || [0, 0, 0, 0]).slice(0, 3).reduce((a, b) => a + b, 0);
-      const d = r.delta_pt;
-      const j = !r.n ? 'none' : r.n < 2 ? 'na' : d >= 5 ? 'up' : d <= -5 ? 'dn' : 'eq';
-      return { code: `${pc}_${sd}`, n: r.n, good, p: r.n ? Math.round(r.top3_pct) : null, j,
-        name: `${paceName[pc]}・${sideName[sd]}` };
-    };
-    const rtAll = [];
-    RT_PACE.forEach(([pc]) => RT_SIDE.forEach(([sd]) => rtAll.push(rtCell(pc, sd))));
-    const mc = sc.main && sc.main.code && sc.main.side
-      ? `${sc.main.code}_${sc.main.side === '前' ? '前残り' : '差し・追込'}` : null;
-    const rtMain = mc ? rtAll.find((c) => c.code === mc) : null;
-    const rtBest = rtAll.filter((c) => c.n >= 2).sort((a, b) => (b.p - a.p) || (b.n - a.n))[0] || null;
-    const rtRuns = (c) => `<span class="rt-run"><b class="bt-num">${c.good}</b>/<span class="bt-num">${c.n}</span>走</span>`;
-    const rtBig = (c) => (c.n ? `<div class="rt-tv"><b class="bt-num">${c.p}<small>%</small></b>${rtRuns(c)}</div>`
-      : '<div class="rt-tv"><span class="rt-tz">走っていない</span></div>');
-    const bestTag = '<i class="rt-cue best">★ 最も好走</i>';
-    const ansA = rtMain
-      ? `<div class="rt-ta ${rtMain.j}"><i class="rt-cue main">本命<b class="bt-num">${Math.round((sc.main.prob || 0) * 100)}%</b></i>
-          <span class="rt-tn">${rtMain.name}</span>${rtBig(rtMain)}</div>`
-      : '<div class="rt-ta none"><i class="rt-cue main">本命</i><span class="rt-tz">見立てなし</span></div>';
-    const ansB = rtBest && rtMain && rtBest.code === rtMain.code
-      ? `<div class="rt-ta same">${bestTag}<span class="rt-tsame">本命と同じ展開</span></div>`
-      : rtBest ? `<div class="rt-ta ${rtBest.j}">${bestTag}<span class="rt-tn">${rtBest.name}</span>${rtBig(rtBest)}</div>`
-      : `<div class="rt-ta none">${bestTag}<span class="rt-tz">2走以上の展開がない</span></div>`;
-    const rtMini = (c) => {
-      const isM = rtMain && c.code === rtMain.code, isB = rtBest && c.code === rtBest.code;
-      return `<div class="rt-m ${c.j}${isM ? ' is-main' : ''}${isB ? ' is-best' : ''}">
-        ${isM ? '<i class="rt-mk main">本命</i>' : ''}${isB ? '<i class="rt-mk best">★</i>' : ''}
-        ${c.n ? `<b class="bt-num">${c.p}<small>%</small></b><span class="bt-num rt-mn">${c.good}/${c.n}</span>` : '<span class="rt-m0">—</span>'}</div>`;
-    };
-    const rtGrid = `<div class="rt-mg"><span></span>${RT_SIDE.map(([, lb]) => `<span class="rt-ch">${lb}</span>`).join('')}
-      ${RT_PACE.map(([pc, lb]) => `<span class="rt-rh">${lb}</span>${RT_SIDE.map(([sd]) => rtMini(rtAll.find((c) => c.code === `${pc}_${sd}`))).join('')}`).join('')}</div>`;
-    const rtCard = `<div class="h-card b-rtd rtT"><div class="h-top"><span class="h-t">レースの型べつ成績</span></div>
-      <div class="rt-tt">${ansA}${ansB}</div>${rtGrid}</div>`;
+    // レースの型べつ成績のカード。**中身は race.js の raceTypeCardHtml が正本**（馬名の札と同じ形・2026-09-24）
+    const rtCard = window.RtCard ? window.RtCard(h, site) : '';
     return `<div class="race20 rvC c3 mx hd-r3 b-page">${hdr}${crCard}${rtCard}</div>`;
   }
 

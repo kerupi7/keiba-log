@@ -2287,69 +2287,61 @@ function levelRecordTable(h) {
 // **確率は目安で「この展開になります」の断定ではない**（展開タブの注記と同じ扱い）。
 // scenario_grid ではなく scenario を見るのは、6マス表示より前に公開したページにも
 // main/sub/other は入っているため（公開済み285レースを見て grid が無いのは1レース）。
-const RT_CUE_LABEL = { main: '本命', sub: '対抗', other: '3番手' };
+// ===== レースの型べつ成績のカード（2026-09-24 作り替え・mockup-177 の案T＋表①カード）=====
+//   1頭だけ見る画面（yoso.js）と馬名の札（下の popupBody）の両方がここを呼ぶ。2つに書き分けると
+//   決まりがズレるので、正本はこの関数だけ（2026-09-24 ユーザー「小窓の方も同じ形にそろえて」）。
+//   上に見る2つ：今日の本命の展開とその戦績／この馬が最も好走している展開。下にペース×決着の6マス。
+//   最も好走＝2走以上ある型のうち3着内率が一番高い型（同じ率なら走数の多い方）。
+//   1走の型は0%か100%にしかならないので、最も好走に選ばず、色も付けない。
+//   得意・苦手の色の線は平常比 ±5pt（データ側の shade と同じ線）。札の言葉は出さず、数字と地の色で見せる
+const RT_PACE_NAME = [['S', 'スロー'], ['M', '平均'], ['H', 'ハイ']];
+const RT_SIDE_NAME = [['前残り', '前残り'], ['差し・追込', '差し追込']];
 
-function raceTypeCues(pred) {
-  const sc = (pred || {}).scenario;
-  if (!sc) return {};
-  const out = {};
-  for (const key of ['main', 'sub', 'other']) {
-    const c = sc[key];
-    if (!c || !c.code || !c.side) continue;
-    const code = `${c.code}_${c.side === '前' ? '前残り' : '差し・追込'}`;
-    if (out[code]) continue;   // 同じマスに2つ付かない（先に見た本命側を残す）
-    out[code] = { key, label: RT_CUE_LABEL[key], pct: Math.round((c.prob || 0) * 100) };
-  }
-  return out;
-}
-
-function raceTypeTable(h, pred) {
-  const rt = h.race_type_record;
-  if (!rt || !rt.rows || !rt.rows.length) return '';
-  const ov = rt.overall || {};
-  const cues = raceTypeCues(pred);
-  // 2026-09-01（mockup-163 案D-1・ユーザー決定）: すぐ上のコース適性と同じ表にする。
-  // 列も並びも同じ 1着 / 2着 / 3着 / 着外 で、`table.crt` のCSSをそのまま使う。
-  // 前の形（`4走 ／2勝 2着内`）は「着内」が略語で、勝ちが3着以内に含まれる入れ子なのも
-  // 伝わらなかった。表にすると読み方を覚え直さなくて済み、2着と3着も分かれる。
-  // 濃さ（その馬の平常との差）は**型の名前のセルだけ**に付ける。数字のセルは白のまま。
-  const rows = rt.rows.map((r) => {
-    const c = cues[r.code];
-    const cls = [];
-    if (!r.n) cls.push('zero');
-    if (c) cls.push('aptx');   // 今日の3マス。コース適性の「今日の条件」と同じ帯
-    const cue = c ? `<span class="tcue ${c.key}">${c.label}<b>${c.pct}%</b></span>` : '';
-    const tds = (r.counts || [0, 0, 0, 0])
-      .map((v) => `<td class="${v === 0 ? 'c0' : ''}">${v}</td>`).join('');
-    return `<tr${cls.length ? ` class="${cls.join(' ')}"` : ''}>`
-      + `<td class="l ${r.shade}">${escapeHtml(r.label)}${cue}</td>${tds}</tr>`;
-  }).join('');
-  // 見出しの下に1行。今日どの型を見ているかを言葉で出す（3番手は出さない。
-  // 本命と対抗で7割前後を占め、3つ目まで並べると行が長くなるため）
-  const byKey = {};
-  rt.rows.forEach((r) => { if (cues[r.code]) byKey[cues[r.code].key] = { r, c: cues[r.code] }; });
-  const todayLine = byKey.main
-    ? `<div class="rtnow">今日の見立ては <b>${escapeHtml(byKey.main.r.label)}</b> ${byKey.main.c.pct}%`
-      + (byKey.sub ? `／次点は ${escapeHtml(byKey.sub.r.label)} ${byKey.sub.c.pct}%` : '')
-      + '<span class="rtnowc">確率は目安</span></div>'
-    : '';
-  // 型が付かない走は黙って消さない（2021年より前の走にはペースが入っていない）
-  const rest = rt.unlabeled
-    ? `<div class="lvn">型が付かない ${rt.unlabeled}走（ペースが取れていない走。2021年より前はほぼ全部）は入っていない</div>`
-    : '';
-  const base = ov.n
-    ? `<div class="rtbase">この馬の平常 3着内 ${Math.round(ov.top3_pct)}%（${ov.n}走）</div>`
-    : `<div class="crn">型の付いた走なし（中央 ${rt.central_starts}走）</div>`;
-  return `
-    <div class="crh">レースの型べつ成績（中央のみ・全走）</div>
-    ${todayLine}
-    ${rest}
-    <table class="crt rtt">
-      <thead><tr><th class="l">レースの型</th><th>1着</th><th>2着</th><th>3着</th><th>着外</th></tr></thead>
-      <tbody>${rows}</tbody>
-    </table>
-    ${base}
-  `;
+function raceTypeCardHtml(h, site, bare) {
+  const rt = (h || {}).race_type_record || {};
+  const byCode = {};
+  (rt.rows || []).forEach((r) => { byCode[r.code] = r; });
+  const sc = (((site || {}).prediction) || {}).scenario || {};
+  const pn = Object.fromEntries(RT_PACE_NAME);
+  const sn = Object.fromEntries(RT_SIDE_NAME);
+  const cellOf = (pc, sd) => {
+    const r = byCode[`${pc}_${sd}`] || { counts: [0, 0, 0, 0], n: 0, top3_pct: null, delta_pt: null };
+    const good = (r.counts || [0, 0, 0, 0]).slice(0, 3).reduce((a, b) => a + b, 0);
+    const d = r.delta_pt;
+    const j = !r.n ? 'none' : r.n < 2 ? 'na' : d >= 5 ? 'up' : d <= -5 ? 'dn' : 'eq';
+    return { code: `${pc}_${sd}`, n: r.n, good, p: r.n ? Math.round(r.top3_pct) : null, j, name: `${pn[pc]}・${sn[sd]}` };
+  };
+  const all = [];
+  RT_PACE_NAME.forEach(([pc]) => RT_SIDE_NAME.forEach(([sd]) => all.push(cellOf(pc, sd))));
+  const mc = sc.main && sc.main.code && sc.main.side
+    ? `${sc.main.code}_${sc.main.side === '前' ? '前残り' : '差し・追込'}` : null;
+  const main = mc ? all.find((c) => c.code === mc) : null;
+  const best = all.filter((c) => c.n >= 2).sort((a, b) => (b.p - a.p) || (b.n - a.n))[0] || null;
+  const runs = (c) => `<span class="rt-run"><b class="rt-dg">${c.good}</b>/<span class="rt-dg">${c.n}</span>走</span>`;
+  const big = (c) => (c.n ? `<div class="rt-tv"><b class="rt-dg">${c.p}<small>%</small></b>${runs(c)}</div>`
+    : '<div class="rt-tv"><span class="rt-tz">走っていない</span></div>');
+  const bestTag = '<i class="rt-cue best">★ 最も好走</i>';
+  const ansA = main
+    ? `<div class="rt-ta ${main.j}"><i class="rt-cue main">本命<b class="rt-dg">${Math.round((sc.main.prob || 0) * 100)}%</b></i>
+        <span class="rt-tn">${main.name}</span>${big(main)}</div>`
+    : '<div class="rt-ta none"><i class="rt-cue main">本命</i><span class="rt-tz">見立てなし</span></div>';
+  const ansB = best && main && best.code === main.code
+    ? `<div class="rt-ta same">${bestTag}<span class="rt-tsame">本命と同じ展開</span></div>`
+    : best ? `<div class="rt-ta ${best.j}">${bestTag}<span class="rt-tn">${best.name}</span>${big(best)}</div>`
+    : `<div class="rt-ta none">${bestTag}<span class="rt-tz">2走以上の展開がない</span></div>`;
+  const mini = (c) => {
+    const isM = main && c.code === main.code, isB = best && c.code === best.code;
+    return `<div class="rt-m ${c.j}${isM ? ' is-main' : ''}${isB ? ' is-best' : ''}">
+      ${isM ? '<i class="rt-mk main">本命</i>' : ''}${isB ? '<i class="rt-mk best">★</i>' : ''}
+      ${c.n ? `<b class="rt-dg">${c.p}<small>%</small></b><span class="rt-dg rt-mn">${c.good}/${c.n}</span>` : '<span class="rt-m0">—</span>'}</div>`;
+  };
+  const grid = `<div class="rt-mg"><span></span>${RT_SIDE_NAME.map(([, lb]) => `<span class="rt-ch">${lb}</span>`).join('')}
+    ${RT_PACE_NAME.map(([pc, lb]) => `<span class="rt-rh">${lb}</span>${RT_SIDE_NAME.map(([sd]) => mini(all.find((c) => c.code === `${pc}_${sd}`))).join('')}`).join('')}</div>`;
+  const head = bare
+    ? '<div class="ax-hd"><span class="ax-ht">レースの型べつ成績</span></div>'
+    : '<div class="h-top"><span class="h-t">レースの型べつ成績</span></div>';
+  return `<div class="${bare ? 'rtT ax-bare' : 'h-card b-rtd rtT'}">${head}
+    <div class="rt-tt">${ansA}${ansB}</div>${grid}</div>`;
 }
 
 // 126-spec §5: 札と新聞の面に出すコース適性。見出しは自分で出す（表は bare で取る）
@@ -2991,7 +2983,7 @@ function popupBody(h, site) {
              どちらの面でも出したまま（2026-09-03 ユーザー指示） */}
       <div class="pmain">
         ${aptCardHtml(h, (site || {}).race, true) || courseRecordTable(h)}
-        ${raceTypeTable(h, (site || {}).prediction)}
+        ${raceTypeCardHtml(h, site, true)}
         ${levelRecordTable(h)}
       </div>
       ${panelBodies(h, site)}
@@ -5718,6 +5710,7 @@ if (document.getElementById('race-content')) main();
 // yoso.js（予想の1頭だけ見る画面）からも呼ぶ。race.js は丸ごと1つの箱に入っているので、
 //   ここで外に出しておかないと見えない（2026-09-24 に見えず、古い表へ落ちた）
 window.AptCard = aptCardHtml;
+window.RtCard = raceTypeCardHtml;
 window.AptReset = aptResetCards;
 
 })();

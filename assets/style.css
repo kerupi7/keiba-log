@@ -2113,49 +2113,46 @@ tr.rv-prev td{background:#F4F8FC;border-top:1px dashed var(--rule);
 .race20 table.lvt tr.zero td.l .lv{opacity:1}
 .race20 .lvn{font-size:10px;color:#8A8A80;margin:0 0 3px}
 
-/* レースの型べつ成績（2026-08-31_馬ごとのレースの型べつ成績.md・mockup-162 案A）。
-   濃淡5段＋走数0。**緑と赤は使わない**（緑＝的中・赤＝不的中/地雷で使用中・09-spec）。
-   藍の濃淡だけで作る。段の境目（平常±5pt / ±20pt）はデータ側の keiba_shutuba_columns.py
-   が決めて shade で渡してくる。ここは色だけ持つ。 */
-.race20{
-  --d-p2:#003E70;--d-p2t:#fff;
-  --d-p1:#6E8CA6;--d-p1t:#fff;
-  --d-e :#DCE4EC;--d-et :#35617F;
-  --d-m1:#EFF1F3;--d-m1t:#7A828A;
-  --d-m2:#F7F7F6;--d-m2t:#A2A8AD;
-  --d-z :#FCFCFB;--d-zt :#C3C6C9;
-}
-/* 2026-09-01（mockup-163 案D-1）: 行のカードをやめ、コース適性と同じ表にした。
-   表そのものの体裁は table.crt（126-spec）と tr.aptx の帯をそのまま使う。ここは
-   「型の名前のセルだけを平常との差で塗る」ぶんと、今日の印の札だけを足す。 */
-/* 帯の紺バー（inset 7px）がセルの左padding 4pxを食って1文字目に重なるので、
-   このテーブルだけ左を広げる（126-spec 側の tr.aptx は触らない） */
-.race20 table.crt.rtt td.l{padding-right:6px}
-.race20 table.crt.rtt tr.aptx td.l{padding-left:11px}
-.race20 table.crt.rtt td.l.p2{background:var(--d-p2);color:var(--d-p2t)}
-.race20 table.crt.rtt td.l.p1{background:var(--d-p1);color:var(--d-p1t)}
-.race20 table.crt.rtt td.l.e {background:var(--d-e); color:var(--d-et)}
-.race20 table.crt.rtt td.l.m1{background:var(--d-m1);color:var(--d-m1t)}
-.race20 table.crt.rtt td.l.m2{background:var(--d-m2);color:var(--d-m2t)}
-.race20 table.crt.rtt td.l.z {background:var(--d-z); color:var(--d-zt)}
-/* 濃い2段では帯の紺バーが背景に沈むので白に替える（薄い4段は紺のまま） */
-.race20 table.crt.rtt tr.aptx td.l.p2,.race20 table.crt.rtt tr.aptx td.l.p1{
-  box-shadow:inset 7px 0 0 #fff;color:#fff}
-.race20 table.crt.rtt tr.aptx td.l.p2 .tcue,.race20 table.crt.rtt tr.aptx td.l.p1 .tcue{
-  border-color:rgba(255,255,255,.4)}
-/* 走っていない行は tr.zero が数字のセルを薄くする。名前のセルは z の白を残す */
-.race20 table.crt.rtt tr.zero td.l{background:var(--d-z);color:var(--d-zt)}
-.race20 .tcue{margin-left:5px;display:inline-block;padding:0 4px;border-radius:3px;
-  background:#fff;border:1px solid rgba(0,0,0,.12);color:var(--navy);font-size:9.5px;
-  font-weight:700;white-space:nowrap;vertical-align:1px}
-.race20 .tcue.sub,.race20 .tcue.other{color:var(--sub);font-weight:400}
-.race20 .tcue b{font-variant-numeric:tabular-nums}
-.race20 .rtbase{font-size:11px;color:var(--cap);margin:5px 0 0}
-/* 今日の見立て。札の色（藍の濃淡6段）と競合しないよう、印は白地・紺文字で固定する。
-   一番濃いマス（p2＝紺地）に乗っても読めるのはこの組み合わせだけ。 */
-.race20 .rtnow{font-size:11px;color:var(--sub);margin:0 0 4px;line-height:1.6}
-.race20 .rtnow b{color:var(--navy)}
-.race20 .rtnow .rtnowc{color:var(--cap);margin-left:5px}
+/* ===== レースの型べつ成績（2026-09-24 作り替え・mockup-177 の案T＋表①カード）=====
+   上に見る2つ（本命の展開とその戦績／最も好走している展開）、下にペース×決着の6マス。
+   得意・苦手は札の言葉を出さず、数字の色と地の色（緑・赤）で見せる。
+   1頭だけ見る画面と馬名の札の両方で使うので style.css に置く（2026-09-24） */
+.rtT .rt-dg{font-family:Futura,Jost,'Century Gothic',system-ui,sans-serif;font-weight:600;letter-spacing:.01em}
+.pmain>.rtT.ax-bare{margin-bottom:14px}
+.rtT .rt-tt{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.rtT .rt-ta{border-radius:10px;background:#F7F7FA;padding:10px 11px 11px;display:flex;flex-direction:column;align-items:flex-start;gap:5px;min-width:0}
+.rtT .rt-ta.up{background:#EEF7F1} .rtT .rt-ta.dn{background:#FBEFEE}
+.rtT .rt-cue{font-style:normal;font-size:10px;font-weight:700;border-radius:4px;padding:1px 6px;white-space:nowrap;line-height:1.4;
+  border:1px solid var(--navy);display:inline-flex;gap:3px;align-items:baseline}
+.rtT .rt-cue.main{background:var(--navy);color:#fff}
+.rtT .rt-cue.best{border-color:#C9961A;color:#A87A0C;background:#fff}
+.rtT .rt-cue b{font-size:10.5px}
+.rtT .rt-tn{font-size:13px;font-weight:700;color:var(--text)}
+.rtT .rt-tv{display:flex;align-items:baseline;gap:8px}
+.rtT .rt-tv>b{font-size:26px;line-height:1.05;color:#48484A}
+.rtT .rt-tv small{font-size:.45em;color:#AEAEB2;font-weight:500}
+.rtT .up .rt-tv>b{color:var(--hit)} .rtT .dn .rt-tv>b{color:#C8352C}
+.rtT .rt-run{font-size:11px;color:#8E8E93}
+.rtT .rt-run b{color:#48484A}
+.rtT .rt-tz{font-size:12px;color:#AEAEB2;padding:4px 0}
+.rtT .rt-tsame{font-size:13px;font-weight:700;color:var(--navy);padding-top:2px}
+/* 6マス：灰色の台の上に白いカードを並べ、影で浮かせる。見出しは文字だけ */
+.rtT .rt-mg{display:grid;grid-template-columns:40px 1fr 1fr;gap:6px;margin-top:12px;background:#F4F4F7;border-radius:12px;padding:8px}
+.rtT .rt-ch{text-align:center;font-size:10.5px;font-weight:600;color:#8E8E93;letter-spacing:.06em;padding:2px 0}
+.rtT .rt-rh{display:flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:600;color:#8E8E93;letter-spacing:.06em}
+.rtT .rt-m{position:relative;display:flex;align-items:baseline;justify-content:center;gap:8px;min-height:40px;padding:10px 6px;
+  background:#fff;border-radius:9px;box-shadow:0 1px 2px rgba(0,0,0,.06),0 0 0 1px rgba(0,0,0,.03)}
+.rtT .rt-m>b{font-size:16px;line-height:1;color:#48484A}
+.rtT .rt-m.up>b{color:var(--hit)} .rtT .rt-m.dn>b{color:#C8352C}
+.rtT .rt-m small{font-size:.55em;color:#AEAEB2;font-weight:500}
+.rtT .rt-mn{font-size:11px;color:#8E8E93}
+.rtT .rt-m0{color:#D1D1D6;font-size:12px}
+.rtT .rt-m.is-main{box-shadow:0 0 0 1.5px var(--navy),0 2px 6px rgba(0,62,112,.15)}
+.rtT .rt-m.is-best{box-shadow:0 0 0 1.5px #C9961A,0 2px 6px rgba(201,150,26,.18)}
+.rtT .rt-mk{position:absolute;font-style:normal;font-weight:700;line-height:1.3}
+.rtT .rt-mk.main{left:-1px;top:-7px;background:var(--navy);color:#fff;font-size:9px;border-radius:4px;padding:0 5px}
+.rtT .rt-mk.best{right:6px;top:3px;color:#C9961A;font-size:11px}
+
 
 /* 前走メモ（91-spec T7・全頭評価の行から移設） */
 .race20 .pnote{margin:6px 0 2px;font-size:11.5px;line-height:1.7}

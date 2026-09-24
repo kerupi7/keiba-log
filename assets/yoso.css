@@ -382,7 +382,7 @@ html.rc-frame .mx .mg-close .mg-tag{background:#5E7185}
 .mx .bt1-s .cp-pill{margin:0}
 .mx .bt1-r.hit{background:#E7F3EA;margin:0 -12px;padding:2px 12px;box-shadow:inset 3px 0 0 var(--hit)}
 .mx .bt1-r.hit .bt-lab{color:var(--hit)}
-/* 1ページ目（基本）の札（2026-09-17）。レースの型の濃さは本番 style.css の --d-p2/p1/e/m1/m2/z と同じ（平常との差。境目はデータ側） */
+/* 1ページ目（基本）の札（2026-09-17）。コース適性とレースの型べつ成績のカードの中身は style.css（race.js が作る） */
 .b-page .h-card{padding:9px 12px}
 .b-page .h-t{color:var(--text) !important}
 .b-page .rec{display:inline-flex;align-items:baseline;gap:1px;font-family:Futura,Jost,-apple-system,sans-serif;font-weight:600;font-size:14px}
@@ -415,43 +415,6 @@ html.rc-frame .mx .mg-close .mg-tag{background:#5E7185}
 .b-cr.hit{background:#E7F3EA;margin:0 -12px;padding:3px 12px;box-shadow:inset 3px 0 0 var(--hit)}
 .b-cr.hit .b-bar i{background:var(--hit)}
 .b-none{font-size:12px;color:#8E8E93;padding:6px 0}
-
-/* ===== レースの型べつ成績（2026-09-24 作り替え・mockup-177 の案T＋表①カード）=====
-   上に見る2つ（本命の展開とその戦績／最も好走している展開）、下にペース×決着の6マス。
-   得意・苦手は札の言葉を出さず、数字の色と地の色（緑・赤）で見せる */
-.rtT .rt-tt{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
-.rtT .rt-ta{border-radius:10px;background:#F7F7FA;padding:10px 11px 11px;display:flex;flex-direction:column;align-items:flex-start;gap:5px;min-width:0}
-.rtT .rt-ta.up{background:#EEF7F1} .rtT .rt-ta.dn{background:#FBEFEE}
-.rtT .rt-cue{font-style:normal;font-size:10px;font-weight:700;border-radius:4px;padding:1px 6px;white-space:nowrap;line-height:1.4;
-  border:1px solid var(--navy);display:inline-flex;gap:3px;align-items:baseline}
-.rtT .rt-cue.main{background:var(--navy);color:#fff}
-.rtT .rt-cue.best{border-color:#C9961A;color:#A87A0C;background:#fff}
-.rtT .rt-cue b{font-size:10.5px}
-.rtT .rt-tn{font-size:13px;font-weight:700;color:var(--text)}
-.rtT .rt-tv{display:flex;align-items:baseline;gap:8px}
-.rtT .rt-tv>b{font-size:26px;line-height:1.05;color:#48484A}
-.rtT .rt-tv small{font-size:.45em;color:#AEAEB2;font-weight:500}
-.rtT .up .rt-tv>b{color:var(--hit)} .rtT .dn .rt-tv>b{color:#C8352C}
-.rtT .rt-run{font-size:11px;color:#8E8E93}
-.rtT .rt-run b{color:#48484A}
-.rtT .rt-tz{font-size:12px;color:#AEAEB2;padding:4px 0}
-.rtT .rt-tsame{font-size:13px;font-weight:700;color:var(--navy);padding-top:2px}
-/* 6マス：灰色の台の上に白いカードを並べ、影で浮かせる。見出しは文字だけ */
-.rtT .rt-mg{display:grid;grid-template-columns:40px 1fr 1fr;gap:6px;margin-top:12px;background:#F4F4F7;border-radius:12px;padding:8px}
-.rtT .rt-ch{text-align:center;font-size:10.5px;font-weight:600;color:#8E8E93;letter-spacing:.06em;padding:2px 0}
-.rtT .rt-rh{display:flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:600;color:#8E8E93;letter-spacing:.06em}
-.rtT .rt-m{position:relative;display:flex;align-items:baseline;justify-content:center;gap:8px;min-height:40px;padding:10px 6px;
-  background:#fff;border-radius:9px;box-shadow:0 1px 2px rgba(0,0,0,.06),0 0 0 1px rgba(0,0,0,.03)}
-.rtT .rt-m>b{font-size:16px;line-height:1;color:#48484A}
-.rtT .rt-m.up>b{color:var(--hit)} .rtT .rt-m.dn>b{color:#C8352C}
-.rtT .rt-m small{font-size:.55em;color:#AEAEB2;font-weight:500}
-.rtT .rt-mn{font-size:11px;color:#8E8E93}
-.rtT .rt-m0{color:#D1D1D6;font-size:12px}
-.rtT .rt-m.is-main{box-shadow:0 0 0 1.5px var(--navy),0 2px 6px rgba(0,62,112,.15)}
-.rtT .rt-m.is-best{box-shadow:0 0 0 1.5px #C9961A,0 2px 6px rgba(201,150,26,.18)}
-.rtT .rt-mk{position:absolute;font-style:normal;font-weight:700;line-height:1.3}
-.rtT .rt-mk.main{left:-1px;top:-7px;background:var(--navy);color:#fff;font-size:9px;border-radius:4px;padding:0 5px}
-.rtT .rt-mk.best{right:6px;top:3px;color:#C9961A;font-size:11px}
 
 /* コース適性の帯（新聞 126-spec §3.4 と同じ見た目・紺だけ）。今回と同じ条件の4行で、条件A（3着内1回以上・2走以上）を満たす行に付ける */
 .b-cr.band{background:#DDE8F2;margin:0 -12px;padding:3px 12px 3px 16px;box-shadow:inset 5px 0 0 #003E70;border-top:1px solid #003E70;border-bottom:1px solid #003E70}
