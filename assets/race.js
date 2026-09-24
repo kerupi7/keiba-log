@@ -2099,9 +2099,8 @@ function aptCardHtml(h, race, bare) {
   };
   // 名前の中の数字（1800m）だけ数字の書体にする
   const dg = (t) => escapeHtml(t).replace(/(\d+m?)/g, '<span class="ax-dg">$1</span>');
-  const pill = (j) => j === 'na' ? '<span class="ax-pill na">1走だけ</span>'
-    : j === 'eq' ? '<span class="ax-pill eq">ふつう</span>'
-    : `<span class="ax-pill ${j}">${j === 'up' ? '▲ 得意' : '▼ 苦手'}</span>`;
+  // 得意・苦手の札（▲得意／▼苦手／ふつう／1走だけ）は出さない。％の数字の色（緑・赤・灰）で分かる
+  //   （2026-09-24 ユーザー指示）
   const runs = (c) => `<span class="ax-un"><b class="ax-dg">${c.good}</b>/<span class="ax-dg">${c.n}</span>走</span>`;
   const unit = (label, c, cls, k) => {
     c = c || { n: 0, good: 0 };
@@ -2110,7 +2109,7 @@ function aptCardHtml(h, race, bare) {
       <div class="ax-rw">${ringSvg(c, 72, RCOL[j])}
         <div class="ax-rc">${c.n ? `<b class="ax-dg">${axPct(c)}<small>%</small></b>` : '<span class="ax-first">初</span>'}</div></div>
       <span class="ax-ul">${dg(label)}</span>
-      ${c.n ? `${runs(c)}${pill(j)}` : '<span class="ax-un">走っていない</span>'}</div>`;
+      ${c.n ? `${runs(c)}` : '<span class="ax-un">走っていない</span>'}</div>`;
   };
   // 3つ目の輪は、最初は今日の距離。今日の距離を走っていない馬は「全場○○m・初」を出す
   //   （走った距離の先頭に落ちて、芝2200mの日に1600mが出ていた・2026-09-24 ユーザー指摘）。
@@ -2143,7 +2142,7 @@ function aptCardHtml(h, race, bare) {
       <div class="ax-ow">${oval(c, j)}<div class="ax-rc">${c.n ? `<b class="ax-dg">${axPct(c)}<small>%</small></b>`
         : '<span class="ax-first">初</span>'}</div></div>
       <span class="ax-ul">${c.label}${tag && c.today ? '<i class="ax-tday">今日</i>' : ''}</span>
-      ${c.n ? `${runs(c)}${pill(j)}` : '<span class="ax-un">走っていない</span>'}</div>`;
+      ${c.n ? `${runs(c)}` : '<span class="ax-un">走っていない</span>'}</div>`;
   };
   // ===== 馬場：良（晴れのオレンジの太陽）／道悪（雨の水色のしずく）（2026-09-24 決定・mockup-178） =====
   //   形の色は天気で固定。得意・苦手は中の数字の色と下の札で見せる。
@@ -2169,7 +2168,7 @@ function aptCardHtml(h, race, bare) {
         <div class="ax-rc${c.label === '良' ? '' : ' ax-rc-drop'}">${c.n ? `<b class="ax-dg">${axPct(c)}<small>%</small></b>`
           : '<span class="ax-first">初</span>'}</div></div>
       <span class="ax-ul">${c.label}${tag && c.today ? '<i class="ax-tday">今日</i>' : ''}</span>
-      ${c.n ? `${runs(c)}${pill(j)}` : '<span class="ax-un">走っていない</span>'}</div>`;
+      ${c.n ? `${runs(c)}` : '<span class="ax-un">走っていない</span>'}</div>`;
   };
   // 回りと馬場は、今日の分だけを1段に並べる（左＝回り・右＝馬場。2026-09-24 ユーザー決定）。
   //   どちらも今日の分しか出さないので「今日」の札は付けない。
