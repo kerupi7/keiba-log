@@ -1646,6 +1646,9 @@
       }
       if (Math.abs(e.clientY - sy) > 10 || dt > 500) return;
       if (e.target.closest('button')) return;
+      // コース適性の山は押すと距離が替わる部品。ボタンと同じく、押してもページを送らない
+      //   （右半分の距離を押すと次のページへ進んでいた・2026-09-24 ユーザー指摘）
+      if (e.target.closest('.ax-hit')) return;
       const rc = card.getBoundingClientRect();
       const x = (e.clientX - rc.left) / rc.width;
       if (x < 0.15) { turn(-1); return; }
