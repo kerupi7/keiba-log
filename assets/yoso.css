@@ -887,3 +887,71 @@ html.rc-frame .mx .mg-close .mg-tag{background:#5E7185}
 .yf .dl-wrap .dl-side .dl-h3>b.bt-num,.yf .dl-wrap .dl-side .a1-fv>b.a1-big,
 .yf .dl-wrap .dl-side .dl-r1>b.dl-fin,.yf .dl-wrap .dl-side .dl-r1>span.dl-mg{font-family:Futura,Jost,var(--font)}
 
+
+/* ===== 展開のページ：上から見たレースの図（2026-09-24・試作 mockup-181〜188） =====
+   地の色＝芝は緑・ダートは明るい砂色。帯とスコアボードは地に白を重ねた明るい札で、字は地の色の濃い色。
+   明るさの差（読める目安3倍）：札の上の青いしずく 3.1〜3.6倍・緑 4.0〜4.5倍・赤 3.8〜4.4倍（色の値からの計算） */
+.tk3{border-radius:16px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.12);padding-bottom:2px}
+.tk3.turf{background:linear-gradient(#7FBF7F,#6DB06D);color:#fff;--tk-ink:#1F3A24;--tk-ink2:#2E5A37;--tk-sub:#4E6B52;--tk-line:rgba(24,60,32,.2);--tk-card:rgba(255,255,255,.65);--tk-ic:#2E5A37;--tk-icf:#BFD6BF}
+.tk3.dirt{background:linear-gradient(#E6D2B2,#D8BF98);color:#4A3218;--tk-ink:#4A3218;--tk-ink2:#6B4A26;--tk-sub:#7A5A38;--tk-line:rgba(74,50,24,.2);--tk-card:rgba(255,255,255,.55);--tk-ic:#6B4A26;--tk-icf:#D9C3A0}
+.tk3 .fast{color:#0F7A3D} .tk3 .slow{color:#C8352C}
+.tk3 .bt-num small{font-size:.55em;margin-left:1px;font-weight:700}
+/* ①今日の馬場の帯（3列。絵の下の1行目・2行目の高さを固定して3列をそろえる） */
+.tk3-sky{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin:6px 6px 0;border-radius:11px;padding:7px 6px 6px;background:var(--tk-card);color:var(--tk-ink)}
+.tk3-u{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:0;text-align:center}
+.tk3-u>svg{height:52px;width:auto;padding:2px 0;margin-bottom:3px;box-sizing:border-box;display:block}
+.tk3-u>b{height:24px;display:flex;align-items:center;justify-content:center;line-height:1;font-size:13px;font-weight:800;white-space:nowrap}
+.tk3-u>b.bt-num{font-size:17px}
+.tk3-u>b.aim{font-size:11px}
+.tk3-u>b.flat{opacity:.6}
+.tk3-u>i{height:14px;display:flex;align-items:center;justify-content:center;line-height:1;font-style:normal;font-size:9.5px;font-weight:700;color:var(--tk-sub);white-space:nowrap}
+/* ②スコアボード（1項目1行：絵・大きな数字・判定の王冠） */
+.tk3-board{margin:6px 6px 0;border-radius:11px;padding:6px 8px 7px;background:var(--tk-card);color:var(--tk-ink)}
+.tk3-r{display:grid;grid-template-columns:30px 1fr auto;gap:8px;align-items:center;padding:4px 0}
+.tk3-r .ic svg{width:28px;height:28px;display:block}
+.tk3-r .n{display:flex;flex-direction:column;min-width:0}
+.tk3-r .n>b{font-size:13px;display:flex;align-items:baseline;gap:5px;white-space:nowrap}
+.tk3-r .n>b em{font-style:normal;font-size:20px} .tk3-r .n>b em.dim{opacity:.7;font-size:17px}
+.tk3-r .n>b .vs{font-size:11px;opacity:.8;margin-left:4px}
+.tk3-r .n>i{font-style:normal;font-size:9.5px;color:var(--tk-sub)}
+.tk3-r .x{display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+.tk3-r .x.row{flex-direction:row;align-items:center;gap:6px}
+.tk3-r .x>b{font-size:20px} .tk3-r .x>b small{font-size:.55em}
+.tk3-r .x>i{font-style:normal;font-size:9px;color:var(--tk-sub)}
+.tk3-r .cmpw{display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+.tk3-r .cmpw>i{font-style:normal;font-size:9px;color:var(--tk-sub)}
+.tk3-r .cmp{position:relative;width:58px;height:8px;border-radius:4px;background:var(--tk-line)}
+.tk3-r .cmp i{position:absolute;left:0;top:0;bottom:0;border-radius:4px;background:var(--tk-ink2)}
+.tk3-r .cmp u{position:absolute;top:-3px;bottom:-3px;border-left:2px solid #fff;box-shadow:0 0 0 1px var(--tk-ink2)}   /* いつもの位置 */
+.tk3-sep{display:flex;align-items:center;gap:6px;font-size:9.5px;font-weight:700;margin:2px 0;color:var(--tk-sub)}
+.tk3-sep::before,.tk3-sep::after{content:"";flex:1;border-top:1px solid var(--tk-line)}
+.tk3-cr{display:flex;flex-direction:column;align-items:center;min-width:70px;color:var(--tk-ink)}
+.tk3-cr svg{width:58px;height:31px;display:block}
+.tk3-cr small{font-size:9px;font-weight:700;white-space:nowrap;opacity:.8}
+/* ③隊列の図（左が先頭・上が内。右端は枠ごとの成績で、今回の馬の枠だけ黄色） */
+.tk3-map{position:relative;margin-top:6px}
+.tk3-zb{position:absolute;top:0;bottom:0;opacity:.2;border-left:1px dashed #fff}
+.tk3.dirt .tk3-zb{border-left-color:rgba(74,50,24,.35)}
+.tk3-zb.me{opacity:1;background:rgba(255,255,255,.35) !important;box-shadow:inset 0 0 0 2px #fff}
+.tk3-ax{position:absolute;left:0;top:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:2px 0;font-size:9.5px;font-weight:800}
+.tk3-ax i{flex:1;width:0;border-left:1.5px dashed rgba(255,255,255,.6);margin:2px 0}
+.tk3.dirt .tk3-ax i{border-left-color:rgba(74,50,24,.4)}
+.tk3-gt{position:absolute;right:0;width:12%;height:20px;display:flex;align-items:center;justify-content:center;gap:2px;background:rgba(0,0,0,.18)}
+.tk3.dirt .tk3-gt{background:rgba(74,50,24,.1)}
+.tk3-gt:not(.me){opacity:.5}
+.tk3-gt.me,.tk3.dirt .tk3-gt.me{background:#FFD84D;opacity:1;border-radius:5px;box-shadow:0 0 0 2px #E0A800,0 2px 5px rgba(0,0,0,.25);z-index:3}
+.tk3-gt .hn{width:15px;height:15px;font-size:9.5px;border-radius:3px}
+.tk3-g{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:4px;font-style:normal;font-size:10px;font-weight:800;color:#fff}
+.tk3-tk{position:absolute;transform:translate(-50%,-50%);width:19px;height:19px;font-size:11px;border-radius:4px;filter:grayscale(.85);opacity:.55;z-index:1}
+.tk3.dirt .tk3-tk:not(.me){opacity:.6}
+.tk3-tk.me{filter:none;opacity:1;transform:translate(-50%,-50%) scale(1.3);box-shadow:0 0 0 2px #fff,0 2px 6px rgba(0,0,0,.35);z-index:4}
+.tk3-mk{position:absolute;transform:translate(-50%,-50%);font-size:9px;font-weight:800;color:#12361F;opacity:.7;z-index:2;line-height:1}
+.tk3.dirt .tk3-mk{color:var(--tk-ink)}
+.tk3-mk.me{opacity:1}
+/* ④脚質ごとの成績 */
+.tk3-zl{display:grid;grid-template-columns:repeat(4,1fr);padding:4px 0 8px}
+.tk3-zl>span{display:flex;flex-direction:column;align-items:center;gap:1px;font-size:10px}
+.tk3-zl em{font-style:normal;font-weight:700;white-space:nowrap}
+.tk3-zl b{font-size:12px}
+.tk3-zl span.me>em{background:#fff;color:#12361F;border-radius:999px;padding:0 6px}
+.tk3.dirt .tk3-zl span.me>em{background:var(--tk-ink2);color:#fff}

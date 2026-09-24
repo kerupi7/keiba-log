@@ -714,7 +714,7 @@
       e.classList.add('yf-me');
       const z = e.closest('.lz'); if (z) z.classList.add('yf-mez');
     });
-    return tkDesign(h, tkParse(wrap));
+    return tkMap(h, tkParse(wrap));   // 2026-09-24 から上から見たレースの図（tkMap）。前の形（tkDesign）は呼んでいない
   }
 
   // ---------- 展開のページ：数字は本番の展開の面から読み取り、並べ方と見た目だけ変える ----------
@@ -774,6 +774,132 @@
   //   選ばなかった案：並べ替えたカード T1・設定画面のような一覧 T3、上下の手直し V1〜V3、計器盤 W1・ものさし W3
   const LV5 = ['軟らかい', 'やや軟らかい', 'いつも通り', 'やや硬い', '硬い'];
   const LV5D = ['湿っている', 'やや湿っている', 'いつも通り', 'やや乾いている', '乾いている'];
+  // 展開のページの形（2026-09-24 作り直し・試作 mockup-181〜188）：上から見たレースの図1枚にまとめる。
+  //   地の色＝芝は緑・ダートは明るい砂色。上から ①今日の馬場の帯（しずく・勝ちタイムの時計・この馬場だと）
+  //   ②スコアボード（ペース予想／今週の脚質／今週の枠）③隊列の図（左が先頭・上が内・右端に枠ごとの成績）④脚質ごとの成績。
+  //   数字はこれまでと同じく本番の展開の面（tkParse）から読む。馬の位置は horses[].predicted_position（0＝先頭〜1＝最後方）と gate。
+  //   選ばなかった案：縦・ゲートから／コーナーの絵（183）、3つの丸・図に書き込む（184 pw1/3）、白い札（184 sb=w）など。
+  //   決めたこと：しずくは芝もダートも青／時計は速い＝左回りに緑・時計がかかる＝右回りに赤、0.3秒で1周の3分の1（185）
+  //   ／この馬場だと＝主語の札＋矢印（186）／スコアボードの絵＝メーター・馬の頭・内外の札（187）／判定＝王冠（188）
+  //   ／今回の馬の枠＝黄色／図の上端の白い線と下の説明の帯は外した
+  const TK_GREEN = '#0F7A3D', TK_RED = '#C8352C', TK_BLUE = '#2F7FC1';
+  const TK_GC = { S: '#0B5E2E', A: '#1F6B3A', B: '#4E5862', C: '#8E4A36', D: '#A32B1F' };
+  function tkMap(h, D) {
+    const race = site.race || {};
+    const isDirt = String(race.surface || '').startsWith('ダ');
+    const lvIdx = D.baba ? Math.max(0, (isDirt ? LV5D : LV5).indexOf(D.baba.label)) : 2;
+    // 勝ちタイム：p1＝速い／m1＝時計がかかる／それ以外（±0.05秒未満）＝いつも通り。値が無い日は灰色の「—」
+    const tFast = !!D.time && D.time.cls === 'p1';
+    const tSlow = !!D.time && D.time.cls === 'm1';
+    const tv = D.time ? Number(D.time.v) || 0 : 0;
+    const timeTxt = !D.time ? '—' : tFast || tSlow ? `${tFast ? '−' : '+'}${esc(D.time.v)}` : '±0.0';
+    const tCls = tFast ? 'fast' : tSlow ? 'slow' : '';
+    const aim = D.baba && D.baba.aim ? D.baba.aim : '';
+    const am = aim.match(/^(.*?)\s*([\d.]+)→([\d.]+)%/);
+    const aimLab = am ? am[1] : aim, aFrom = am ? Number(am[2]) : null, aTo = am ? Number(am[3]) : null;
+    const up = aTo != null && aTo > aFrom;
+    // 通過タイムは「600m通過 約34.5秒」のように区切りの距離がレースで違う（短い距離は600m）。距離も読む
+    const t1000 = (r) => { const m = String((r && r.pt) || '').match(/([\d.]+)秒/); return m ? m[1] : ''; };
+    const tPoint = (r) => { const m = String((r && r.pt) || '').match(/(\d+)m通過/); return m ? m[1] : '1000'; };
+    const PL = D.pace.filter((r) => r.pp > 0);
+    const top = PL[0] || null;
+    const ioP = D.io ? (D.io.n.match(/内([\d.]+)% 外([\d.]+)%/) || []) : [];
+    const fbP = D.fb ? (D.fb.n.match(/前(\d+) 後ろ(\d+)/) || []) : [];
+    const fN = Number(fbP[1] || 0), rN = Number(fbP[2] || 0), fTot = fN + rN;
+
+    // ---------- ①今日の馬場の帯 ----------
+    const DROP = 'M35 4 C35 4 10 34 10 48 A25 25 0 0 0 60 48 C60 34 35 4 35 4 Z';
+    const wy = (73 - 69 * (0.12 + 0.76 * (4 - lvIdx) / 4)).toFixed(1);   // 湿っている（軟らかい）ほど、しずくの中の水が多い
+    const drop = `<svg viewBox="0 0 70 76"><defs><clipPath id="tk-drop"><path d="${DROP}"/></clipPath></defs><path d="${DROP}" fill="#F2F2F6"/>
+      <rect x="0" y="${wy}" width="70" height="76" fill="${TK_BLUE}" clip-path="url(#tk-drop)"/><path d="${DROP}" fill="none" stroke="${TK_BLUE}" stroke-width="3"/></svg>`;
+    const wCol = tFast ? TK_GREEN : tSlow ? TK_RED : '#8E8E93';
+    const wA = tFast || tSlow ? Math.min(Math.abs(tv), 0.3) / 0.3 * (2 * Math.PI / 3) : 0;
+    const wx = (35 + 19 * Math.sin((tFast ? -1 : 1) * wA)).toFixed(1), wy2 = (39 - 19 * Math.cos(wA)).toFixed(1);
+    const watch = `<svg viewBox="0 0 70 70"><circle cx="35" cy="39" r="25" fill="#fff" stroke="${wCol}" stroke-width="5"/><rect x="29" y="6" width="12" height="7" rx="2" fill="${wCol}"/>
+      ${wA ? `<path d="M35 39 L35 20 A19 19 0 0 ${tFast ? 0 : 1} ${wx} ${wy2} Z" fill="${wCol}" opacity=".35"/>` : ''}
+      <line x1="35" y1="14" x2="35" y2="19" stroke="#C7C7CC" stroke-width="2"/>
+      <line x1="35" y1="39" x2="${wA ? wx : 35}" y2="${wA ? wy2 : 20}" stroke="#333" stroke-width="2.5" stroke-linecap="round"/><circle cx="35" cy="39" r="2.5" fill="#333"/></svg>`;
+    const aimCol = up ? TK_GREEN : TK_RED;
+    const aimSvg = am ? `<svg viewBox="0 0 70 56">${/^逃げ/.test(aimLab)
+        ? '<rect x="4" y="14" width="38" height="26" rx="13" fill="#003E70"/><text x="23" y="32" text-anchor="middle" font-size="13" font-weight="800" fill="#fff">逃げ</text>'
+        : '<rect x="8" y="10" width="30" height="30" rx="6" fill="#003E70"/><text x="23" y="31" text-anchor="middle" font-family="Jost,sans-serif" font-size="18" font-weight="600" fill="#fff">1</text><text x="23" y="52" text-anchor="middle" font-size="9" font-weight="700" fill="#6D6D72">人気</text>'}
+        ${up ? `<path d="M56 12 L67 28 H60 V42 H52 V28 H45 Z" fill="${aimCol}"/>` : `<path d="M56 42 L67 26 H60 V12 H52 V26 H45 Z" fill="${aimCol}"/>`}</svg>`
+      : '<svg viewBox="0 0 70 56"><rect x="15" y="12" width="40" height="30" rx="8" fill="#EDEDF1"/><text x="35" y="33" text-anchor="middle" font-size="16" font-weight="800" fill="#8E8E93">=</text></svg>';
+    const sky = `<div class="tk3-sky">
+      <div class="tk3-u">${drop}<b>${D.baba ? esc(D.baba.label) : '—'}</b><i>今日の馬場</i></div>
+      <div class="tk3-u">${watch}<b class="bt-num ${tCls}">${timeTxt}<small>秒</small></b><i>勝ちタイム</i></div>
+      <div class="tk3-u">${aimSvg}<b class="aim${am ? '' : ' flat'}">${esc(aimLab || aim || '—')}</b><i>${am ? `いつも ${aFrom}% → ${aTo}%` : 'この馬場だと'}</i></div></div>`;
+
+    // ---------- ②スコアボード ----------
+    const legs = ((site.prediction || {}).day_bias || {}).legs || {};
+    const fPct = fTot ? Math.round(fN / fTot * 100) : 0;
+    const fBase = legs.base_pct != null ? legs.base_pct : 62.2;   // いつもの逃げ・先行の割合（keiba_report.py LEG_FRONT_BASE_PCT）
+    const wkS = esc(String(D.wkScope || '').replace(/（.*/, ''));
+    // 判定＝王冠：「前・差」「内・外」の有利な側に金の王冠、偏りなしは「＝」。言葉は下に小さく
+    const crown = (w, k) => {
+      if (!w) return '';
+      const L = k === 'io' ? ['内', '外'] : ['前', '差'];
+      const win = { 前が残りやすい: 0, 内枠有利傾向: 0, 差しが決まりやすい: 1, 外枠有利傾向: 1 }[w];
+      const hit = win === 0 || win === 1;
+      const C = '<path d="M2 12 L3.5 4 L7.5 8 L10 2.5 L12.5 8 L16.5 4 L18 12 Z" fill="#E0A800"/><rect x="2" y="12.6" width="16" height="2.6" rx="1" fill="#E0A800"/>';
+      return `<span class="tk3-cr"><svg viewBox="0 0 60 32">${L.map((x, i) => `<g transform="translate(${i * 32} 0)">${win === i ? `<g transform="translate(4 0)">${C}</g>` : ''}
+        <text x="14" y="30" text-anchor="middle" font-size="12" font-weight="900" fill="currentColor" opacity="${win === i || !hit ? 1 : 0.4}">${x}</text></g>`).join('')}
+        ${hit ? '' : '<text x="30" y="14" text-anchor="middle" font-size="14" font-weight="900" fill="currentColor" opacity=".55">＝</text>'}</svg><small>${esc(w)}</small></span>`;
+    };
+    const icPace = '<svg viewBox="0 0 28 28"><path d="M4 20 A10 10 0 0 1 24 20" fill="none" stroke="var(--tk-ic)" stroke-width="3"/><line x1="14" y1="20" x2="20" y2="12" stroke="var(--tk-ic)" stroke-width="2.5" stroke-linecap="round"/><circle cx="14" cy="20" r="2.5" fill="var(--tk-ic)"/></svg>';
+    const icLegs = '<svg viewBox="0 0 32 32"><path d="M5 26 C5 18 8 12 14 9 L16 4 L19 8 C23 8 27 12 28 16 C28.5 18 27 19.5 25 19 L21 17.5 C19 19 18 22 18 26 Z" fill="var(--tk-ic)"/><circle cx="21.5" cy="12" r="1.3" fill="#fff"/></svg>';
+    const icGate = '<svg viewBox="0 0 32 32"><rect x="1" y="7" width="14" height="18" rx="3" fill="var(--tk-ic)"/><text x="8" y="20" text-anchor="middle" font-size="11" font-weight="800" fill="#fff">内</text>'
+      + '<rect x="17" y="7" width="14" height="18" rx="3" fill="var(--tk-icf)"/><text x="24" y="20" text-anchor="middle" font-size="11" font-weight="800" fill="var(--tk-ic)">外</text></svg>';
+    const board = `<div class="tk3-board">
+      <div class="tk3-r"><span class="ic">${icPace}</span><div class="n"><b>${top ? esc(top.nm) : '—'}${top ? `<em class="bt-num">${top.pp}%</em>` : ''}</b><i>ペース予想${PL[1] ? `・${esc(PL[1].nm)} ${PL[1].pp}%` : ''}</i></div>
+        <div class="x"><b class="bt-num">${t1000(top) || '—'}<small>秒</small></b><i>${tPoint(top)}m通過</i></div></div>
+      ${fTot || D.io ? `<div class="tk3-sep"><span>今週の結果${wkS ? `・${wkS}` : ''}</span></div>` : ''}
+      ${fTot ? `<div class="tk3-r"><span class="ic">${icLegs}</span><div class="n"><b>逃げ・先行<em class="bt-num">${fPct}%</em></b><i>3着内${fTot}頭のうち${fN}頭</i></div>
+        <div class="x row"><span class="cmpw"><span class="cmp"><i style="width:${fPct}%"></i><u style="left:${fBase}%"></u></span><i>いつも${Math.round(fBase)}%</i></span>${crown(D.fb && D.fb.word, 'fb')}</div></div>` : ''}
+      ${D.io ? `<div class="tk3-r"><span class="ic">${icGate}</span><div class="n"><b>内<em class="bt-num">${ioP[1] || '—'}%</em><span class="vs">外</span><em class="bt-num dim">${ioP[2] || '—'}%</em></b><i>1〜4枠 と 5〜8枠 の3着内率</i></div>
+        <div class="x">${crown(D.io.word, 'io')}</div></div>` : ''}</div>`;
+
+    // ---------- ③隊列の図 ----------
+    const P = (x, W) => `${(x / W * 100).toFixed(2)}%`;
+    const gch = (g) => (g ? `<i class="tk3-g" style="background:${TK_GC[g] || '#8E8E93'}">${esc(g)}</i>` : '');
+    const zoneOf = {};
+    D.zones.forEach((z, zi) => z.chips.forEach((c) => { const n = parseInt(String(c.hn).replace(/<[^>]+>/g, ''), 10); if (n) zoneOf[n] = zi; }));
+    const RS = { 逃: 0, 先: 1, 差: 2, 追: 3 };
+    const hs = (site.horses || []).filter((x) => !x.scratched && x.number != null).map((x) => ({
+      n: x.number, g: x.gate || 1, p: typeof x.predicted_position === 'number' ? x.predicted_position : 0.5,
+      z: zoneOf[x.number] != null ? zoneOf[x.number] : (RS[String(x.running_style || '').charAt(0)] ?? 2),
+      mk: x.ability_mark || '', me: x.number === h.number,
+    }));
+    // 脚質の区画は4等分に固定（本番の脚質の並びとそろえる）。区画の中は、前からどのあたりを走るかの順で左右に散らす
+    [0, 1, 2, 3].forEach((zi) => {
+      const m = hs.filter((x) => x.z === zi).sort((a, b) => a.p - b.p);
+      const lo = m.length ? m[0].p : 0, hi = m.length ? m[m.length - 1].p : 0;
+      m.forEach((x) => { const f = hi > lo ? (x.p - lo) / (hi - lo) : 0.5; x.q = (zi + 0.2 + 0.6 * f) / 4; });
+    });
+    const W = 340, x0 = 20, x1 = 298, LH = 23, MH = LH * 8 + 6;
+    const X = (q) => x0 + 12 + q * (x1 - x0 - 24), Y = (g) => 3 + (g - 1) * LH + LH / 2;
+    const pts = hs.map((x) => ({ h: x, x: X(x.q), y: Y(x.g) })).sort((a, b) => a.x - b.x || a.y - b.y);
+    const placed = [];
+    pts.forEach((pt) => {   // 同じ所に重なった馬は後ろへずらす
+      for (let k = 0; k < 12 && placed.some((o) => Math.abs(o.x - pt.x) < 19 && Math.abs(o.y - pt.y) < 19); k += 1) pt.x += 7;
+      placed.push(pt);
+    });
+    const meGate = Number(h.gate) || 0;
+    const zx = (zi) => x0 + zi * (x1 - x0) / 4;
+    const Z = D.zones.map((z) => ({ nm: z.style, c: z.count, g: z.grade, r: z.rate, me: z.me }));
+    const tok = (pt) => `${pt.h.mk ? `<span class="tk3-mk${pt.h.me ? ' me' : ''}" style="left:${P(pt.x, W)};top:${pt.y - 11}px">${esc(pt.h.mk)}</span>` : ''}`
+      + `<span class="hn wk${pt.h.g} tk3-tk${pt.h.me ? ' me' : ''}" style="left:${P(pt.x, W)};top:${pt.y}px">${pt.h.n}</span>`;
+    const map = `<div class="tk3-map" style="height:${MH}px">
+      ${[0, 1, 2, 3].map((zi) => `<div class="tk3-zb${Z[zi] && Z[zi].me ? ' me' : ''}" style="left:${P(zx(zi), W)};width:${P((x1 - x0) / 4, W)};background:${Z[zi] ? TK_GC[Z[zi].g] || 'transparent' : 'transparent'}"></div>`).join('')}
+      <div class="tk3-ax" style="width:${P(x0, W)}"><span>内</span><i></i><span>外</span></div>
+      ${(D.gates || []).slice(0, 8).map((gt, k) => `<div class="tk3-gt${k + 1 === meGate ? ' me' : ''}" style="top:${Y(k + 1) - 10}px">${gt.hn}${gch(gt.grade)}</div>`).join('')}
+      ${pts.map(tok).join('')}
+    </div>
+    <div class="tk3-zl" style="margin-left:${P(x0, W)};margin-right:${P(W - x1, W)}">${Z.map((z) => `<span class="${z.me ? 'me' : ''}"><em>${esc(z.nm)}${esc(z.c)}</em>${gch(z.g)}<b class="bt-num">${esc(z.r)}</b></span>`).join('')}</div>`;
+    return `<div class="race20 tk3 ${isDirt ? 'dirt' : 'turf'}">${sky}${board}${map}</div>`;
+  }
+
+  // 前の形（2026-09-17〜09-23）。2026-09-24 に tkMap へ置き換え、いまは呼んでいない
   function tkDesign(h, D) {
     const paceSum = D.pace.reduce((a, r) => a + r.pp, 0);
     // 今回の馬の枠を目立たせる（2026-09-21 ユーザー指示・試作172 の案C）。脚質の4区画と同じ考え方で、
