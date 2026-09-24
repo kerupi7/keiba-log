@@ -1542,7 +1542,7 @@
       const rc = card.getBoundingClientRect();
       g = (sy - rc.top) < rc.height / 2 ? 1 : -1;          // 上の方をつかんだら右に傾く、下の方なら逆（指で紙を払う感じ）
       card.classList.remove('spring', 'nudge-l', 'nudge-r');
-      card.classList.add('press');
+      if (!S.view) card.classList.add('press');     // 1頭だけ見るときは押しても縮めない（カードは動かさない）
     });
     card.addEventListener('pointermove', (e) => {
       if (!down) return;
@@ -1557,7 +1557,8 @@
       //   ・縦に動かし始めた後でも、横がはっきり勝ったら払うほうへ乗り換える
       if (!drag && !vdrag && !vscroll && Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy) * 0.8) drag = true;
       if (!drag && !vdrag && !vscroll && Math.abs(dy) > 8 && Math.abs(dy) > Math.abs(dx) * 1.25 && scrollable() && (dy < 0 || top0 > 0)) vscroll = true;
-      if (!drag && !vdrag && !vscroll && dy > 8 && dy > Math.abs(dx) * 1.25) vdrag = true;
+      // 1頭だけ見るときは下に払って閉じる操作をしない（2026-09-24 ユーザー決定。閉じるボタンで閉じる）
+      if (!drag && !vdrag && !vscroll && !S.view && dy > 8 && dy > Math.abs(dx) * 1.25) vdrag = true;
       // 乗り換え。指の今いる所を始点に取り直すので、カードは跳ねずに0から付いてくる。
       //   縦に動かしている最中の小さな横ぶれで払ってしまわないよう、横40px以上・縦との差24px以上にしてある
       if (vscroll && Math.abs(dx) > 40 && Math.abs(dx) - Math.abs(dy) > 24) {
@@ -1569,6 +1570,9 @@
       if ((drag || vdrag) && !card.hasPointerCapture?.(e.pointerId)) {
         try { card.setPointerCapture(e.pointerId); } catch (_) { /* 取れなくても動く */ }
       }
+      // 1頭だけ見るときはカードを指に付けて動かさない（2026-09-24 ユーザー指示「予想を始めるとき以外は、
+      //   カードをスワイプしてずらせないように」）。横に払った量だけ数えて、離したときにページを送る
+      if (S.view) return;
       if (vdrag) {
         const y = Math.max(0, dy);
         const r = y < 160 ? y : 160 + (y - 160) * 0.35;      // 下げすぎると重くなる（ゴムのような手ごたえ）
@@ -1619,8 +1623,8 @@
       if (drag) {
         const fling = Math.abs(dx) > 40 && Math.abs(vx) > 0.5 && Math.sign(vx) === Math.sign(dx);
         if (Math.abs(dx) > TH || fling) {
-          // 1頭だけ見るときは払わない。横に払ったらページを送る（右へ払う＝前のページ）
-          if (S.view) { springHome(); turn(dx > 0 ? -1 : 1); return; }
+          // 1頭だけ見るときは払わない。横に払ったらページを送る（右へ払う＝前のページ）。カードは動かしていない
+          if (S.view) { turn(dx > 0 ? -1 : 1); return; }
           decideApple(dx > 0 ? '✓' : '消', vx, vy, (dx / 18) * g, dy * 0.2); return;
         }
         springHome();
