@@ -1125,27 +1125,32 @@
   //   ／2行目＝タイム（金銀銅）・上がりと順位・通過順・人気／頭数・騎手と斤量。各項目は列の幅を決めて上下でそろえる
   //   地の色は直近5走と同じ（1着＝金・僅差＝銀）。行を押しても何も起きない（2026-09-21 ユーザー指示で飛び先を外した）
   //   sheet=true（比べる画面の戦績シート）は、行を押すとその走の中身が開く（2026-09-18 ユーザー指示）
+  // 全戦績の1行（2026-09-24 作り直し・試作 mockup-215〜216 の H1）。直近5走のまとめと同じ決まり：
+  //   1〜3着・時計の優秀度・上がり1〜3位は金銀銅の杯、上がりの順位の文字は出さない、距離は芝・ダートの色の札、赤は使わない。
+  //   左＝着順（杯）と着差の札／1段目＝距離（着順のすぐ右。ユーザー「距離は着順の近くに置きたい」）｜馬場｜日付｜場｜クラス・レース名
+  //   ／2段目＝タイム｜上がり｜通過順｜人気/頭数｜騎手と斤量。各段は決まった幅の列で上下をそろえる
+  //   名前は alx- で始める（サイト全体の .ag＝金銀銅の箱・白い字 とぶつかったため）
+  function allRowH1(d, sheet, i, r) {
+    const bg = d.band ? `bd-${d.band}` : '';
+    const go = sheet ? ` data-ex="${i}"` : '';
+    const lb = `<div class="alx-lb">${d.fin >= 1 && d.fin <= 3 ? e5Cup(d.fin, 14) : ''}<b class="bt-num alx-fin ${d.finMd}">${esc(d.finTxt)}</b><span class="alx-mg bt-num ${d.band}">${d.mgPlain}</span></div>`;
+    const r1 = `<div class="alx-r alx-r1"><b class="alx-sf ${d.sf}">${esc(d.sfTxt)}<b class="bt-num">${esc(d.dist)}</b></b><span class="alx-go">${esc(d.going)}</span>
+      <span class="bt-num alx-dt">${esc(d.date)}</span><span class="alx-tk">${esc(d.track)}</span><span class="alx-nm">${d.clsHtml}<span class="alx-rn">${esc(d.rn)}</span></span></div>`;
+    const tm = `<span class="alx-tm">${d.tg ? e5Cup({ md1: 1, md2: 2, md3: 3 }[d.tg], 12) : ''}<b class="bt-num ${d.tg}">${esc(d.time)}</b></span>`;
+    const up = `<span class="alx-up"><b class="bt-num ${d.rkMd}">${esc(d.up)}</b>${d.rk != null && d.rk <= 3 ? e5Cup(d.rk, 11) : ''}</span>`;
+    const r2 = `<div class="alx-r alx-r2">${tm}${up}<span class="bt-num alx-cn">${esc(d.corners.join('-'))}</span>
+      <span class="alx-pop"><b class="bt-num">${esc(d.pop)}</b><small>人/${d.field}</small></span>
+      <span class="alx-jk"><span class="alx-jn">${esc(d.jockey)}</span><small class="bt-num">${esc(d.weight)}</small></span></div>`;
+    return `<div class="al-row alx ${bg}${sheet ? ' al-go' : ''}"${go}>${lb}<div class="al-m alx-m">${r1}${r2}</div>${sheet ? allDetail(d, r) : ''}</div>`;
+  }
+
   function allPage(h, from, to, sheet) {
     const all = allRuns(h);
     const out = [];
     for (let i = from; i < to; i += 1) {
       const r = all[i];
       const d = summaryRun(h, r, Math.min(i, 4));
-      const go = sheet ? ` data-ex="${i}"` : '';
-      out.push(`<div class="al-row al-c ${d.band ? `bd-${d.band}` : ''}${sheet ? ' al-go' : ''}"${go}>
-        <div class="al-lb"><b class="al-fin bt-num ${d.finMd}">${esc(d.finTxt)}</b><span class="al-pill bt-num">${d.mgTxt}</span></div>
-        <div class="al-m">
-          <div class="al-r1"><b class="bt-num al-ds ${d.sf}">${esc(d.sfTxt)}${esc(d.dist)}<small>${esc(d.going)}</small></b>
-            <span class="bt-num al-dt">${esc(d.date)}</span><span class="al-tk">${esc(d.track)}</span>
-            <span class="al-nm">${d.clsHtml}<span class="al-rn">${esc(d.rn)}</span></span></div>
-          <div class="al-r2"><b class="bt-num ${d.tg}">${esc(d.time)}</b>
-            <span class="al-up"><b class="bt-num ${d.rkMd}">${esc(d.up)}</b><small>${d.rk != null ? `${d.rk}位` : ''}</small></span>
-            <span class="bt-num al-cn">${esc(d.corners.join('-'))}</span>
-            <span class="bt-num al-pop">${esc(d.pop)}<small>人/${d.field}</small></span>
-            <span class="al-jk" style="font-size:${[...d.jockey].length >= 5 ? 9 : 10.5}px">${esc(d.jockey)}<small class="bt-num">${esc(d.weight)}</small></span></div>
-        </div>
-        ${sheet ? allDetail(d, r) : ''}
-      </div>`);
+      out.push(allRowH1(d, sheet, i, r));   // 2026-09-24 から H1 の行（前の形の組み立ては消した）
       // 休養の帯は全戦績には出さない（2026-09-17 ユーザー「ここに休養は不要」）。直近5走のページには残す
     }
     return `<div class="race20 rvC c3 mx hd-r3 sm-page al-page al-s bc-b4">${out.join('')}</div>`;

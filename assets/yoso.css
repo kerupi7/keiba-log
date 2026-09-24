@@ -1059,3 +1059,32 @@ html.rc-frame .mx .mg-close .mg-tag{background:#5E7185}
 .sva .s1-foot{justify-content:flex-start}
 .sva .s1-foot .sm-hit{margin-left:0;font-size:10px;border-radius:4px;padding:0 5px;font-weight:700}
 .sva .s1-foot em,.sva .s1-foot .sm-hit{height:17px;display:inline-flex;align-items:center}
+
+/* ===== 全戦績の1行（2026-09-24 作り直し・試作 mockup-215〜216 H1）。名前は alx- で始める（.ag とぶつかったため） ===== */
+.al-row.alx{grid-template-columns:36px 1fr;gap:6px;padding:4px 8px 4px 2px}
+.alx .alx-lb{display:flex;flex-direction:column;align-items:center;gap:1px}
+.alx .alx-fin{font-size:19px;line-height:1}
+.alx .alx-mg{font-size:10px;font-weight:700;line-height:1;padding:2px 5px;border-radius:999px;background:#EFEFF4;color:#3a3a3c;min-width:26px;text-align:center}
+.alx .alx-mg.close{background:#7D8792;color:#fff} .alx .alx-mg.win{background:#B8860B;color:#fff}
+.alx-m .alx-r{display:grid;align-items:center;gap:4px;white-space:nowrap;min-width:0;line-height:1.5}
+.alx .alx-r1{grid-template-columns:58px 16px 48px 26px 1fr;font-size:11px}
+.alx .alx-r2{grid-template-columns:52px 46px 70px 42px 1fr;font-size:12px}
+.alx .alx-dt{color:#8E8E93}
+.alx .alx-tk,.alx .alx-go{color:#636366}
+.alx .alx-sf{display:inline-flex;align-items:baseline;gap:1px;justify-self:start;font-size:9.5px;font-weight:700;border-radius:4px;padding:0 4px;line-height:15px}
+.alx .alx-sf b{font-size:11.5px;color:inherit}
+.alx .alx-sf.sf-tf{background:#E3F1E7;color:#1F6B3A} .alx .alx-sf.sf-dt{background:#F6E9DA;color:#A05A12}
+.alx .alx-nm{display:inline-flex;align-items:center;gap:4px;min-width:0;overflow:hidden}
+.alx .alx-nm .cb{font-size:8.5px;padding:0 3px;border-radius:3px;flex:none}
+.alx .alx-rn{font-weight:700;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.alx .alx-tm,.alx .alx-up,.alx .alx-pop,.alx .alx-jk{display:inline-flex;align-items:center;gap:1px;min-width:0}
+.alx .alx-tm b,.alx .alx-up b{font-weight:600}
+.alx .alx-cn{font-size:10px;color:#3a3a3c;letter-spacing:-.03em}
+.alx .alx-pop small{font-size:9px;color:#8E8E93;margin-left:1px}
+.alx .alx-jk{justify-self:end;font-size:10.5px;color:#6D6D72;overflow:hidden}
+.alx .alx-jn{overflow:hidden;text-overflow:ellipsis;min-width:0}
+.alx .alx-jk small{font-size:9px;color:#8E8E93;margin-left:2px}
+/* 戦績シート（比べる画面で馬名を押したとき）では行を押すと中身が開く。前の行（.al-c）と同じ動きを新しい行にも */
+.alx .al-det{display:none;grid-column:1/-1;padding:2px 2px 8px}
+.alx.open .al-det{display:block}
+.alx.open{background:#F7F9FC}.alx.open.bd-win{background:#FFF9E8}.alx.open.bd-close{background:#EEF1F5}
