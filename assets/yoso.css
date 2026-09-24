@@ -864,9 +864,11 @@ html.rc-frame .mx .mg-close .mg-tag{background:#5E7185}
    上に表彰台、下に5行（項目の絵・名前・順位の杯／複勝率・走数／平均との差の棒）。名前はサイトの既存の名前とぶつからないよう e5- で始める */
 .e5-page .e5-dg{font-family:Futura,Jost,'Century Gothic',system-ui,sans-serif;font-weight:600;letter-spacing:.01em}
 .e5-card{padding-bottom:6px !important}
-.e5-key{display:flex;align-items:center;gap:5px;font-size:10.5px;color:#8E8E93;margin:2px 0 4px}
-.e5-key b{color:#3a3a3c;font-size:11px}
-.e5-kx{display:inline-block;flex:none;width:2px;height:12px;background:#3a3a3c}
+/* 注釈（カードの一番下）。印は差の棒の真ん中の点線と同じ形 */
+.e5-note{display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin-top:4px;padding-top:7px;border-top:1px solid #F0F0F3;font-size:10px;color:#AEAEB2}
+.e5-note>span{white-space:nowrap;display:inline-flex;align-items:center;gap:3px}
+.e5-note b{font-size:10.5px;color:#8E8E93}
+.e5-kx{display:inline-block;flex:none;width:0;height:10px;border-left:2px dotted #8E8E93;margin-left:4px}
 .e5-lb{font-style:normal;font-size:10px;font-weight:700;color:#8E8E93;background:#F2F2F7;border-radius:4px;padding:1px 5px;flex:none}
 .e5-nm{font-size:14px;font-weight:700;color:#1c1c1e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;display:inline-flex;align-items:center;gap:3px}
 .e5-sf{font-style:normal;font-size:10px;font-weight:700;color:#fff;border-radius:3px;padding:1px 3px;line-height:1.2}
@@ -879,6 +881,8 @@ html.rc-frame .mx .mg-close .mg-tag{background:#5E7185}
 .e5-cup svg{width:100%;height:100%;display:block}
 .e5-rkm{margin-left:auto;display:inline-flex;align-items:center;gap:2px;flex:none}
 .e5-of{font-size:10px;color:#AEAEB2;font-style:normal}
+.e5-rkn{color:#8E8E93;font-weight:700;white-space:nowrap;line-height:1}
+.e5-rkn b{font-size:1.45em;color:#636366;margin-right:1px}
 /* 行 */
 .e5-row{display:flex;gap:9px;align-items:flex-start;padding:9px 0 8px;border-top:1px solid #F0F0F3}
 .e5-row>.e5-ic{margin-top:1px}
@@ -896,7 +900,8 @@ html.rc-frame .mx .mg-close .mg-tag{background:#5E7185}
 .e5-row.thin .e5-big>b,.e5-row.thin .e5-nm{color:#AEAEB2}
 /* 平均との差の棒 */
 .e5-dv{position:relative;flex:1;height:28px;border-radius:7px;background:linear-gradient(90deg,#FBECEB,#F7F7F9 50%,#E9F4EC)}
-.e5-mid{position:absolute;left:50%;top:-2px;bottom:-2px;width:2px;margin-left:-1px;background:#3a3a3c;border-radius:1px}
+/* 真ん中の線＝コース全体。棒の中だけに細い点線（2026-09-24 mockup-198 L1。前は棒の上下にはみ出す黒い線） */
+.e5-mid{position:absolute;left:50%;top:3px;bottom:3px;width:0;margin-left:-1px;border-left:2px dotted #3a3a3c}
 .e5-bar{position:absolute;top:6px;bottom:6px;border-radius:4px;background:#8E8E93}
 .e5-row.up .e5-bar{background:#0F7A3D} .e5-row.dn .e5-bar{background:#C8352C} .e5-row.thin .e5-bar{opacity:.4}
 .e5-dd{position:absolute;top:50%;transform:translateY(-50%);font-size:12.5px;color:#3a3a3c}
@@ -918,3 +923,23 @@ html.rc-frame .mx .mg-close .mg-tag{background:#5E7185}
 .e5-ps.s1 .e5-pst{background:linear-gradient(#FBE7A1,#EFCB5A)}
 .e5-ps.s2 .e5-pst{background:linear-gradient(#EEF0F3,#CDD2D8)}
 .e5-ps.s3 .e5-pst{background:linear-gradient(#F6D3B3,#DDA170)}
+/* 点数と総合順位（カードの一番上・mockup-197 S3）：5本の柱＋合計点＋総合順位 */
+.e5s{display:flex;align-items:center;gap:12px;margin:0 0 10px;padding:10px 12px;border-radius:12px;background:#F4F7FA}
+.e5s-cols{flex:1;display:flex;gap:6px;align-items:flex-end}
+.e5s-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;color:#003E70}
+.e5s-cb{display:flex;align-items:flex-end;width:100%;max-width:26px;height:44px;border-radius:5px;background:#E3E8EE;overflow:hidden}
+.e5s-cb>i{display:block;width:100%;background:#003E70;border-radius:5px 5px 0 0}
+.e5s-col.miss .e5s-cb{background:repeating-linear-gradient(135deg,#E3E8EE 0 3px,#F4F7FA 3px 6px)}
+.e5s-col.miss .e5s-cb>i{background:#9FB3C8}
+.e5s-col>b{font-size:11px;color:#3a3a3c}
+.e5s-ci svg{width:16px;height:16px;display:block}
+.e5s-r{display:flex;flex-direction:column;align-items:center;gap:4px;flex:none}
+.e5s-big{display:flex;align-items:baseline;gap:2px;line-height:1}
+.e5s-big b{font-size:30px;color:#003E70}
+.e5s-big small{font-size:14px;font-weight:700;color:#003E70}
+.e5s-rk{display:flex;flex-direction:column;align-items:center;gap:1px;flex:none}
+.e5s-rk small{font-size:11px;color:#636366;white-space:nowrap}
+.e5s-rk small em{font-style:normal;font-size:10px;color:#8E8E93;margin-right:2px}
+.e5s-rk small b{font-size:16px;color:#1c1c1e;margin-right:1px}
+.e5s-rk small i{font-style:normal;font-size:10px;color:#AEAEB2}
+.e5s-rk.low small b{font-size:26px;color:#636366}

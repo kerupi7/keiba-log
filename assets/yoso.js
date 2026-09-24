@@ -366,7 +366,7 @@
   //   出馬表のコースタブの表（前走コース・騎手・種牡馬・調教師・母父の、このコースでの成績）を、この馬の行だけで見る。
   //   数字は同じもの：前走コースは data/courses/{course_id}.json、ほかの4つは site.course_entities（どちらも全体・全期間）
   //   主役は複勝率（コースタブの表の並べ替えの初期値と同じ）。比べる相手は ①コース全体の複勝率 ②今日の出走馬の中の順位
-  //   形：上に表彰台（1〜3位に入った項目の絵を台に乗せる）＋5行（項目の絵・名前・順位の杯／複勝率・走数／平均との差の棒）
+  //   形：上から 点数と総合順位 → 表彰台（1〜3位に入った項目の絵を台に乗せる）→ 5行（項目の絵・名前・順位の杯／複勝率・走数／平均との差の棒）→ 注釈
   const E5_DIMS = [['prev', '前走コース'], ['jockey', '騎手'], ['sire', '種牡馬'], ['trainer', '調教師'], ['damsire', '母父']];
   const E5_SHORT = { prev: '前走', jockey: '騎手', sire: '種牡馬', trainer: '調教師', damsire: '母父' };
   // 走数30未満は薄く出し、順位を付けない（コースタブの表と同じ線・60-spec D4）。
@@ -447,7 +447,7 @@
   };
   const e5Ic = (dim) => `<i class="e5-ic">${E5_ICON[dim]}</i>`;
   // 順位の杯：5項目の絵と同じ一色の平らな絵（光沢・影・リボンは付けない。2026-09-24 ユーザー「浮いてる」）。
-  //   金銀銅は色だけで分け、数字は杯の中に白で抜く。4位より下＝灰色、走数30未満＝点線で数字なし（mockup-196 F2 四角なし）
+  //   金銀銅は色だけで分け、数字は杯の中に白で抜く（mockup-196 F2 四角なし）。使うのは1〜3位だけ（e5RankMark）
   const E5_CUP_COL = { 1: '#B8860B', 2: '#7D8792', 3: '#A9642E', x: '#AEB4BC' };
   const E5_CUP_PATH = 'M7.5 3 H24.5 V11 A8.5 8.5 0 0 1 18 19.3 V23 H21.5 A1.5 1.5 0 0 1 23 24.5 V28 H9 V24.5 A1.5 1.5 0 0 1 10.5 23 H14 V19.3 A8.5 8.5 0 0 1 7.5 11 Z';
   function e5Cup(kind, size) {
@@ -459,10 +459,14 @@
     return `<i class="e5-cup" style="width:${size}px;height:${size}px" aria-label="${n ? `${n}位` : '走数が少ない'}"><svg viewBox="0 0 32 32">`
       + `<path d="M7.5 6 C2.5 6 2.5 13 8.6 14 M24.5 6 C29.5 6 29.5 13 23.4 14" fill="none" stroke="${col}" stroke-width="2.4"${dash}/>${cup}${num}</svg></i>`;
   }
+  // 順位の印：トロフィーは1〜3位だけ。4位より下は数字だけ、走数30未満は「走数少」の文字だけ
+  //   （2026-09-24 ユーザー「トロフィーは1〜3位まででいい」。灰色・点線の杯は同日やめた）
+  const e5RankMark = (rank, size) => (rank <= 3 ? e5Cup(rank, size)
+    : `<span class="e5-rkn" style="font-size:${Math.round(size * 0.5)}px"><b class="e5-dg">${rank}</b>位</span>`);
   const e5Rank = (r) => {
     if (!r.v) return '';
-    if (r.thin) return `<span class="e5-rkm">${e5Cup('thin', 30)}<small class="e5-of">走数少</small></span>`;
-    return `<span class="e5-rkm">${e5Cup(r.rank, 30)}<small class="e5-of">/${r.of}頭</small></span>`;
+    if (r.thin) return '<span class="e5-rkm"><small class="e5-of">走数少</small></span>';
+    return `<span class="e5-rkm">${e5RankMark(r.rank, 30)}<small class="e5-of">/${r.of}頭</small></span>`;
   };
   // 平均との差の棒：真ん中の線＝コース全体、右＝上回る（緑）・左＝下回る（赤）。端＝±20ポイント
   function e5Bar(r) {
@@ -496,13 +500,43 @@
     };
     return `<div class="e5-pod">${step(2, 34)}${step(1, 46)}${step(3, 26)}</div>`;
   }
+  // 点数と総合順位（2026-09-24・試作 mockup-197 S3）。見やすさのための点数で、予想が当たるかは測っていない
+  //   ユーザー「全部1位だったら100点を基準に」「順位が付かない項目は真ん中の10点で」。
+  //   1項目20点×5項目＝100点。その項目の1位＝20点・最下位＝0点、あいだは順位に比例（順位は走数30以上の馬どうし）。
+  //   順位が付かない項目（走数30未満・このコースで0走・前走なし）は10点。総合順位は今日の出走馬を点数で並べたもの
+  const E5_PT_MISS = 10;
+  function e5Points(h) {
+    return E5_DIMS.map(([dim]) => {
+      const me = e5Val(dim, h).v;
+      if (!me || me[0] < E5_THIN) return { dim, p: E5_PT_MISS, miss: true };
+      const ok = H.map((x) => e5Val(dim, x).v).filter((v) => v && v[0] >= E5_THIN);
+      const N = ok.length, r = 1 + ok.filter((v) => v[3] > me[3]).length;
+      return { dim, p: N <= 1 ? 20 : (20 * (N - r)) / (N - 1), miss: false };
+    });
+  }
+  const e5Total = (h) => e5Points(h).reduce((a, x) => a + x.p, 0);
+  // 5本の柱（項目ごとの点 0〜20・下に項目の絵）＋右に合計点と総合順位。順位が付かない項目の柱は斜線
+  function e5Score(h) {
+    const pts = e5Points(h);
+    const tot = pts.reduce((a, x) => a + x.p, 0);
+    const rank = 1 + H.filter((x) => x.number !== h.number && e5Total(x) > tot + 1e-9).length;
+    const cols = pts.map((x) => `<div class="e5s-col${x.miss ? ' miss' : ''}"><i class="e5s-cb"><i style="height:${(x.p / 20) * 100}%"></i></i>`
+      + `<b class="e5-dg">${Math.round(x.p)}</b><i class="e5s-ci">${E5_ICON[x.dim]}</i></div>`).join('');
+    // トロフィーは1〜3位だけ。4位より下は「総合 N位」の数字だけ
+    const rk = `<span class="e5s-rk${rank > 3 ? ' low' : ''}">${rank <= 3 ? e5Cup(rank, 40) : ''}`
+      + `<small><em>総合</em><b class="e5-dg">${rank}</b>位<i>/${H.length}頭</i></small></span>`;
+    return `<div class="e5s"><div class="e5s-cols">${cols}</div>`
+      + `<div class="e5s-r"><div class="e5s-big"><b class="e5-dg">${Math.round(tot)}</b><small>点</small></div>${rk}</div></div>`;
+  }
   function coursePage(h) {
     e5Load();
     const rows = e5Rows(h);
     const avg = e5Avg();
-    const key = avg == null ? '' : `<div class="e5-key"><i class="e5-kx"></i>真ん中の線＝このコース全体 <b class="e5-dg">${avg.toFixed(1)}</b>%</div>`;
+    // 見出しと凡例はカードの一番下の注釈（2026-09-24 ユーザー「一番下が良い。注釈みたいな感じで」）
+    const note = avg == null ? '' : '<div class="e5-note"><span>数字はこのコースの複勝率</span>'
+      + `<span><i class="e5-kx"></i>真ん中の線＝コース全体 <b class="e5-dg">${avg.toFixed(1)}</b>%</span></div>`;
     return `<div class="race20 rvC c3 mx hd-r3 b-page e5-page">
-      <div class="h-card e5-card"><div class="h-top"><span class="h-t">このコースの複勝率</span></div>${key}${e5Podium(rows)}${rows.map(e5Row).join('')}</div></div>`;
+      <div class="h-card e5-card">${e5Score(h)}${e5Podium(rows)}${rows.map(e5Row).join('')}${note}</div></div>`;
   }
 
   function pageHtml(h, pg) {
