@@ -479,112 +479,9 @@ html.rc-frame .mx .mg-close .mg-tag{background:#5E7185}
 .s1-sub{font-size:10.5px;color:#8E8E93;gap:7px !important}
 .s1-sub .s1-jk{color:#3C3C43;font-weight:600}
 .s1-sc{margin-left:auto;overflow:hidden;text-overflow:ellipsis;min-width:0}
-/* 展開のページ（T2 を土台にした形に決定。2026-09-17） */
+/* 前の展開のページ（2026-09-17〜09-23）の指定は 2026-09-24 に消した。この1行だけ残す：
+   同じ名前の競馬場のコース図（race.js の svg.tk2・出馬表の上）にも効いていて、消すとコース図の余白が変わるため */
 .tk2{padding:4px 10px 24px;font-size:12px;color:#1C1C1E}
-.tk2 h4{display:flex;align-items:baseline;gap:6px;margin:12px 4px 5px;font-size:12px;font-weight:700;color:#3C3C43}
-.tk2 h4 small{font-size:10px;font-weight:400;color:#8E8E93}
-.tk2 .tk-g{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;border-radius:5px;color:#fff;font-weight:800;font-size:12px;font-family:Futura,Jost,sans-serif;flex:none}
-.tk2 .tk-chip{position:relative;display:inline-flex;flex-direction:column;align-items:center;gap:0;line-height:1}
-.tk2 .tk-chip i{font-style:normal;font-size:9px;line-height:10px;color:#3C3C43}
-.tk2 .tk-chip.nige .hn{box-shadow:0 0 0 2px #F08A00}
-.tk2 .tk-chip.me .hn{transform:scale(1.2)}
-.tk2 .tk-pbar{display:flex;height:34px;border-radius:9px;overflow:hidden;background:#E5E5EA}
-.tk2 .tk-pbar i{display:flex;flex-direction:column;justify-content:center;padding:0 8px;font-style:normal;color:#fff;min-width:0;white-space:nowrap;overflow:hidden}
-.tk2 .tk-pbar i b{font-size:12px;line-height:1.1}.tk2 .tk-pbar i span{font-size:10px;line-height:1.1;opacity:.9}
-.tk2 .tk-pbar i.p0{background:#2E6DA4}.tk2 .tk-pbar i.p1{background:#7FA7CC}.tk2 .tk-pbar i.px{background:#C7C7CC;color:#3C3C43;align-items:center;min-width:38px;padding:0 3px}  /* 5%でも「他5%」が切れない幅 */
-
-.tk2 .tk-gates{display:grid;grid-template-columns:repeat(8,1fr);gap:4px}
-.tk2 .tk-gate{display:flex;flex-direction:column;align-items:center;gap:4px;padding:5px 0;border-radius:8px;background:#F2F2F7}
-
-.tk2 .t1 b.t1,.tk2 b.t1{color:#B05656}.tk2 b.u1{color:#1F6B3A}
-.tk2 .fast{color:#1F6B3A}.tk2 .slow{color:#A8632B}
-/* T2 */
-
-.t2 .t2-field{border-radius:16px;overflow:hidden;background:linear-gradient(#7FBF7F,#6DB06D);box-shadow:0 1px 3px rgba(0,0,0,.12)}
-.t2 .t2-sky{padding:8px 8px 6px;background:rgba(255,255,255,.55)}
-.t2 .t2-zones{display:grid;grid-template-columns:repeat(4,1fr);border-top:3px dashed rgba(255,255,255,.7)}
-.t2 .t2-zone{display:flex;flex-direction:column;align-items:center;gap:5px;padding:8px 2px 10px;border-left:1px dashed rgba(255,255,255,.6);transition:opacity .2s}
-.t2 .t2-zone:first-child{border-left:0}
-/* 2026-09-17 ユーザー指示：区画ごと薄くすると等級の色が本番の展開と違って見えるので、区画は薄くしない。
-   その馬の区画だけ明るく囲み、その馬以外の馬番は灰色にして目立たなくする */
-.tk2 .tk-g{color:#fff !important}   /* 等級の文字は白（本番と同じ。2026-09-17 ユーザー指示） */
-/* 脚質の見出しの札は、本番と同じく等級の色で塗る（2026-09-17 ユーザー指示） */
-.t2 .t2-chips .tk-chip:not(.me) .hn{filter:grayscale(1);opacity:.35}
-.t2 .t2-chips .tk-chip:not(.me) i{opacity:.35}
-.t2 .t2-zone.me{background:rgba(255,255,255,.42);box-shadow:inset 0 0 0 2px rgba(255,255,255,.9)}
-.t2 .t2-st{font-size:11px;font-weight:700;color:#fff;border-radius:999px;padding:2px 8px}
-.t2 .t2-gr{display:flex;align-items:center;gap:4px}.t2 .t2-gr span{font-size:12px;font-weight:700;color:#12361F}
-.t2 .t2-chips{display:flex;flex-wrap:wrap;justify-content:center;gap:3px 1px}
-.t2 .t2-chips .tk-chip i{color:#12361F}
-.t2 .t2-gatehd{display:flex;justify-content:space-between;padding:6px 10px 3px;font-size:11px;color:#fff;font-weight:700;background:rgba(0,0,0,.18)}
-.t2 .t2-gatebox{padding:4px 6px 8px;background:rgba(0,0,0,.18)}
-.t2 .t2-gatebox .tk-gate{background:rgba(255,255,255,.88)}
-/* 今回の馬の枠（2026-09-21・試作172 の案C）。今回の枠だけ白くくっきり・少し大きく、ほかは緑の地に沈める。
-   脚質の4区画（自分の馬以外は灰色）と同じ考え方。薄いほうも成績 S〜D は読める濃さに留める */
-.t2 .t2-gatebox .tk-gates.has-me .tk-gate{background:rgba(255,255,255,.45);opacity:.72}
-.t2 .t2-gatebox .tk-gates.has-me .tk-gate:not(.me) .hn{filter:saturate(.35)}
-.t2 .t2-gatebox .tk-gates.has-me .tk-gate.me{background:#fff;opacity:1;transform:scale(1.08);box-shadow:0 2px 6px rgba(0,0,0,.28)}
-
-/* T3 */
-.t3 h4{margin:12px 12px 4px;font-size:11px;font-weight:600;color:#6D6D72}
-.t3 h4:first-child{margin-top:4px}
-
-/* ペースの帯（説明を帯の中に入れる。2026-09-17） */
-.tk2 .tk-pbar.big{height:46px}
-.tk2 .tk-pbar.big i{gap:1px}
-.tk2 .tk-pbar.big i b{display:flex;align-items:baseline;gap:5px;font-size:13px}
-.tk2 .tk-pbar.big i b em{font-style:normal;font-size:15px}
-.tk2 .tk-pbar.big i span{font-size:9.5px;overflow:hidden;text-overflow:ellipsis}
-/* 3割未満の細い区切りは、説明を消して名前と割合を2行にする（阪神3R「ハイ22%」で文字が切れたため） */
-.tk2 .tk-pbar.big i.narrow{padding:0 5px}
-.tk2 .tk-pbar.big i.narrow span{display:none}
-.tk2 .tk-pbar.big i.narrow b{flex-direction:column;align-items:flex-start;gap:0;font-size:11px;line-height:1.15}
-.tk2 .tk-pbar.big i.narrow b em{font-size:12px}
-
-.t2 h4{margin:0 2px 6px}
-/* 今日の馬場の大きな札（W2 に決定。2026-09-17） */
-
-.t2-w2 .w2-wh{display:flex;align-items:baseline;justify-content:space-between;margin:0 2px 4px}
-.t2-w2 .w2-wh b{font-size:13px}
-.t2-w2 .w2-wh span{font-size:10px;color:#8E8E93}
-
-/* W2 */
-.t2-w2 .w2-hero{border-radius:18px;padding:12px 14px 12px;margin:2px 0 10px;color:#fff;background:linear-gradient(135deg,#3D8B5A,#2B6A43)}
-.t2-w2 .w2-hero.soft,.t2-w2 .w2-hero.wet{background:linear-gradient(135deg,#3F7FC0,#2A5A91)}
-.t2-w2 .w2-hero.firm,.t2-w2 .w2-hero.dry{background:linear-gradient(135deg,#D59A3A,#A8682B)}
-.t2-w2 .w2-top{display:flex;justify-content:space-between;font-size:10.5px;opacity:.85}
-.t2-w2 .w2-big{font-size:30px;font-weight:800;letter-spacing:.02em;margin:2px 0 4px}
-.t2-w2 .w2-dots{position:relative;display:flex;gap:6px;align-items:center;padding-bottom:12px}
-.t2-w2 .w2-dots i{width:34px;height:6px;border-radius:3px;background:rgba(255,255,255,.3)}
-.t2-w2 .w2-dots i.on{background:#fff}
-.t2-w2 .w2-dots span{position:absolute;bottom:0;font-size:9px;opacity:.8}
-.t2-w2 .w2-dots span:nth-of-type(1){left:0}.t2-w2 .w2-dots span:nth-of-type(2){left:176px}
-.t2-w2 .w2-facts{display:flex;gap:18px;margin-top:6px;padding-top:8px;border-top:1px solid rgba(255,255,255,.25)}
-.t2-w2 .w2-facts div{display:flex;flex-direction:column}
-.t2-w2 .w2-facts b{font-size:22px;line-height:1.1}.t2-w2 .w2-facts b small{font-size:11px;margin-left:1px}
-.t2-w2 .w2-facts span{font-size:10px;opacity:.85}
-.t2-w2 .w2-aim{margin-top:8px;display:inline-block;font-size:10.5px;font-weight:700;background:rgba(255,255,255,.2);border-radius:999px;padding:2px 10px}
-.t2-w2 .w2-week{margin-top:12px;background:#fff;border-radius:16px;padding:10px 12px}
-
-/* 今週の馬場の色の札3枚（K2 に決定。2026-09-17） */
-
-.t2-w2 .k2-row{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:6px}
-.t2-w2 .k2-card{display:flex;flex-direction:column;gap:2px;padding:9px 8px;border-radius:14px;color:#fff;min-width:0;background:linear-gradient(135deg,#7C8794,#5B6570)}
-.t2-w2 .k2-card.io-a{background:linear-gradient(135deg,#C46A6A,#9A4545)}.t2-w2 .k2-card.io-b{background:linear-gradient(135deg,#3D8B5A,#2B6A43)}
-.t2-w2 .k2-card.fb-a{background:linear-gradient(135deg,#3F7FC0,#2A5A91)}.t2-w2 .k2-card.fb-b{background:linear-gradient(135deg,#9AA2AA,#6D757D)}
-.t2-w2 .k2-card.ck-slow{background:linear-gradient(135deg,#D59A3A,#A8682B)}.t2-w2 .k2-card.ck-fast{background:linear-gradient(135deg,#3D8B5A,#2B6A43)}
-.t2-w2 .k2-card i{font-style:normal;font-size:10px;opacity:.85}
-.t2-w2 .k2-big{display:flex;align-items:baseline;gap:2px;margin:2px 0}
-.t2-w2 .k2-big b{font-size:22px;line-height:1}
-.t2-w2 .k2-big em{font-style:normal;font-size:14px;opacity:.7;margin:0 1px}
-.t2-w2 .k2-big span{font-size:9.5px;opacity:.85}
-.t2-w2 .k2-two{display:flex;flex-direction:column;gap:0;margin:3px 0 2px}
-.t2-w2 .k2-two span{display:flex;align-items:baseline;gap:3px}
-.t2-w2 .k2-two em{font-style:normal;font-size:10px;opacity:.85;width:22px}
-.t2-w2 .k2-two b{font-size:20px;line-height:1.1}
-.t2-w2 .k2-two small{font-size:9px;opacity:.85}
-.t2-w2 .k2-card small{font-size:8.5px;line-height:1.3;opacity:.8}
-.t2-w2 .k2-card strong{margin-top:4px;font-size:11px;background:rgba(255,255,255,.22);border-radius:999px;padding:1px 6px;align-self:flex-start;white-space:nowrap}
 
 /* Apple らしい動き（2026-09-17） */
 .yf-haptic{position:fixed;left:-9999px;top:0;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none}
@@ -870,10 +767,6 @@ html.rc-frame .mx .mg-close .mg-tag{background:#5E7185}
    日付・距離・頭数・人気・斤量・馬体重・枠・通過順は本文の書体 */
 .yf .sm-s1 .bt-num{font-family:var(--font)}
 .yf .sm-s1 .s1-l>b.bt-num,.yf .sm-s1 .s1-tm,.yf .sm-s1 .s1-up b.bt-num,.yf .sm-s1 .s1-mg{font-family:Futura,Jost,sans-serif}
-/* 画面4（カードの3ページ目「展開」）の数字の書体（2026-09-18 ユーザー決定・R3）
-   Futura：馬場の札（+0.21秒・1.9m）・今週の馬場の3枚（29.6%・8頭・+0.43秒）・ペース（48%）。
-   脚質ごとの勝率・馬番・枠は本文の書体のまま */
-.yf .t2 .w2-facts b.bt-num,.yf .t2 .k2-two b.bt-num,.yf .t2 .k2-big b.bt-num,.yf .t2 .tk-pbar em.bt-num{font-family:Futura,Jost,var(--font)}
 /* 画面6（カードの最後のページ「全戦績」）の数字の書体（2026-09-18 ユーザー決定・T1）
    Futura は左の着順だけ。日付・距離・着差・タイム・上がり・通過順・人気・斤量は本文の書体 */
 .yf .al-page.hd-r3 *{font-family:var(--font)}
