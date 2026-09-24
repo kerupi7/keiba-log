@@ -515,7 +515,6 @@
     const nfs = nlen <= 6 ? 22 : nlen <= 8 ? 19 : 17;
     const careerTxt = (P0.career.replace(/<[^>]+>/g, '').match(/(\d+)戦\s*(\d+)-(\d+)-(\d+)-(\d+)/) || []);
     const car = careerTxt.length ? careerTxt.slice(2, 6).map(Number) : null;
-    const carN = careerTxt.length ? Number(careerTxt[1]) : null;
     const kg = h.weight_carried != null ? String(h.weight_carried).replace(/\.0$/, '') : '—';
     const hdr = `<div class="h-card b-hd">
       <div class="b-hd1">${umaBox(h.number, h.gate)}<b class="b-nm" style="font-size:${nfs}px">${esc(h.name)}</b>${P0.badge}</div>
@@ -523,7 +522,8 @@
       <div class="b-hd3">
         <div class="b-od"><i>オッズ</i><b class="bt-num">${h.odds != null ? h.odds.toFixed(1) : '—'}<small>倍</small></b></div>
         <div class="b-od"><i>人気</i><b class="bt-num">${esc(h.popularity ?? '—')}<small>番</small></b></div>
-        <div class="b-car"><i>通算 ${carN ?? '—'}戦</i>${car ? recHtml(car) : '—'}${car ? `<span class="b-pct">3着内 <b class="bt-num">${top3Pct(car)}%</b></span>` : ''}</div>
+        ${'' /* 「通算N戦」と「3着内N%」は出さない。着順の数字（1-1-1-7）だけ残す（2026-09-24 ユーザー指示） */}
+        <div class="b-car">${car ? recHtml(car) : '—'}</div>
       </div>
       ${P0.why ? `<div class="b-why">${P0.why}</div>` : ''}
     </div>`;
