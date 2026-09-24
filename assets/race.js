@@ -2908,13 +2908,14 @@ function careerLine(h) {
   const runs = (h.past_runs || []).concat(h.career_runs || []);
   const cr = h.course_record || {};
   const loc = cr.local_starts ? `<span class="cl-loc">地方${cr.local_starts}走</span>` : '';
-  if (!runs.length) return `<span class="cl">通算 —</span>${loc}`;
+  // 「通算N戦」は出さず、着順の数字（1-1-1-7）だけにする。1頭だけ見る画面とそろえる（2026-09-24 ユーザー指示）
+  if (!runs.length) return `<span class="cl">—</span>${loc}`;
   const c = [0, 0, 0, 0];
   runs.forEach((r) => {
     const f = parseInt(r.finish, 10);
     c[(f >= 1 && f <= 3) ? f - 1 : 3] += 1;
   });
-  return `<span class="cl">通算 ${runs.length}戦 <b>${c[0]}</b>-${c[1]}-${c[2]}-${c[3]}</span>${loc}`;
+  return `<span class="cl"><b>${c[0]}</b>-${c[1]}-${c[2]}-${c[3]}</span>${loc}`;
 }
 
 function popupRunsTable(h) {
