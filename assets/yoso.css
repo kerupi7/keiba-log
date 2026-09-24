@@ -867,3 +867,8 @@ html.rc-frame .mx .mg-close .mg-tag{background:#5E7185}
 .tk3-fr .cmp{position:relative;width:60px;height:7px;border-radius:4px;background:var(--tk-line)}
 .tk3-fr .cmp i{position:absolute;left:0;top:0;bottom:0;border-radius:4px;background:var(--tk-ink2)}
 .tk3-fr .cmp u{position:absolute;top:-3px;bottom:-3px;border-left:2px solid #fff;box-shadow:0 0 0 1px var(--tk-ink2)}
+/* 右側を「棒の列」と「数字・王冠の列」の2列にそろえる（2026-09-24 ユーザー「前が残ると下のゲージが合ってない」）。
+   前が残るの棒・いつも62%の棒は同じ幅で縦に並び、通過タイムと王冠も同じ列に並ぶ */
+.tk3-r .x.row{display:grid;grid-template-columns:72px 70px;gap:6px;align-items:center;justify-items:end}
+.tk3-r .x.row>.tk3-cr,.tk3-r .x.row>.tm{justify-self:center}
+.tk3-fr .cmp,.tk3-r .cmp{width:64px}

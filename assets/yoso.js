@@ -855,7 +855,7 @@
       ${fTot ? `<div class="tk3-r"><span class="ic">${icLegs}</span><div class="n"><b>逃げ・先行<em class="bt-num">${fPct}%</em></b>${legsMini}</div>
         <div class="x row"><span class="cmpw"><span class="cmp"><i style="width:${fPct}%"></i><u style="left:${fBase}%"></u></span><i>いつも${Math.round(fBase)}%</i></span>${crown(D.fb && D.fb.word, 'fb')}</div></div>` : ''}
       ${D.io ? `<div class="tk3-r"><span class="ic">${icGate}</span><div class="n"><b>内<em class="bt-num">${ioP[1] || '—'}%</em><span class="vs">外</span><em class="bt-num dim">${ioP[2] || '—'}%</em></b>${gateMini}</div>
-        <div class="x">${crown(D.io.word, 'io')}</div></div>` : ''}</div>`;
+        <div class="x row"><span></span>${crown(D.io.word, 'io')}</div></div>` : ''}</div>`;
 
     // ---------- ③隊列の図 ----------
     const P = (x, W) => `${(x / W * 100).toFixed(2)}%`;
