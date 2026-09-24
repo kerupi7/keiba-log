@@ -767,9 +767,6 @@
   //   ／この馬場だと＝主語の札＋矢印（186）／スコアボードの絵＝メーター・馬の頭・内外の札（187）／判定＝王冠（188）
   //   ／今回の馬の枠＝黄色／図の上端の白い線と下の説明の帯は外した
   const TK_GREEN = '#0F7A3D', TK_RED = '#C8352C', TK_BLUE = '#2F7FC1';
-  // いつもの「前が残る」割合＝勝ち馬が4コーナーを前から1/3以内で回った割合。3,353レースの実測 68.6%
-  //   （部署/競馬部/scenario_calib.json の measured.actual_front_rate）。表を作り直したらここも直す
-  const TK_FRONT_BASE = 68.6;
   const TK_GC = { S: '#0B5E2E', A: '#1F6B3A', B: '#4E5862', C: '#8E4A36', D: '#A32B1F' };
   function tkMap(h, D) {
     const race = site.race || {};
@@ -818,9 +815,7 @@
       <div class="tk3-u">${aimSvg}<b class="aim${am ? '' : ' flat'}">${esc(aimLab || aim || '—')}</b><i>${am ? `いつも ${aFrom}% → ${aTo}%` : 'この馬場だと'}</i></div></div>`;
 
     // ---------- ②スコアボード ----------
-    const legs = ((site.prediction || {}).day_bias || {}).legs || {};
     const fPct = fTot ? Math.round(fN / fTot * 100) : 0;
-    const fBase = legs.base_pct != null ? legs.base_pct : 62.2;   // いつもの逃げ・先行の割合（keiba_report.py LEG_FRONT_BASE_PCT）
     const wkS = esc(String(D.wkScope || '').replace(/（.*/, ''));
     // 判定＝王冠：「前・差」「内・外」の有利な側に金の王冠、偏りなしは「＝」。言葉は下に小さく
     const crown = (w, k) => {
@@ -842,20 +837,16 @@
     const paceMini = top ? `<span class="tk3-mb">${PL.slice(0, 2).map((r, i) => `<i class="p${i}" style="flex:${Math.max(r.pp, 12)}">${r.pp >= 15 ? `${esc(r.nm)}${i ? ` ${r.pp}` : ''}` : ''}</i>`).join('')}${pRest > 2 ? `<i class="px" style="flex:${pRest}"></i>` : ''}</span>` : '';
     const legsMini = `<span class="tk3-mb"><i class="p0" style="flex:${fN || 0.001}">${fN ? `${fN}頭` : ''}</i><i class="p1" style="flex:${rN || 0.001}">${rN ? `${rN}頭` : ''}</i></span>`;
     const gateMini = `<span class="tk3-gm"><small>内</small><span class="in">${[1, 2, 3, 4].map((g) => `<i class="hn wk${g}">${g}</i>`).join('')}</span><span>${[5, 6, 7, 8].map((g) => `<i class="hn wk${g}">${g}</i>`).join('')}</span><small>外</small></span>`;
-    // ペースの行の「前が残る」確率（2026-09-24 決定・mockup-190 案2。同日に棒は外して数字だけに）。予想の見立て（前残り／差し）は言い切らず、
-    //   答え合わせで直した値（display.scenario.calibrated_front）を、いつもの68.6%と並べて出す。
-    //   言い切りの札（前残り／差し展開）をやめた理由：「差し」寄りと見立てたレースでも57%は前の馬が勝っている（scenario_calib.json）
-    const dsc = ((site.prediction || {}).display || {}).scenario;
-    const fcal = dsc && dsc.calibrated_front != null ? Math.round(dsc.calibrated_front * 100) : null;
-    const frontHtml = fcal != null ? `<span class="tk3-fr"><b>前が残る <em class="bt-num">${fcal}</em>%</b><i>いつも${Math.round(TK_FRONT_BASE)}%</i></span>` : '';
+    // ペースの行の「前が残る○%」（答え合わせで直した値）と、脚質の行の「いつも62%」は、同日に試してから外した（ユーザー指示）。
+    //   前残り／差し展開の言い切りは、差し寄りと見立てたレースでも57%で前の馬が勝つので出さない（scenario_calib.json）
     const board = `<div class="tk3-board">
       <div class="tk3-r"><span class="ic">${icPace}</span><div class="n"><b>${top ? esc(top.nm) : '—'}${top ? `<em class="bt-num">${top.pp}%</em>` : ''}</b>${paceMini}</div>
-        <div class="x row">${frontHtml}<span class="tm"><b class="bt-num">${t1000(top) || '—'}<small>秒</small></b><i>${tPoint(top)}m通過</i></span></div></div>
+        <div class="x one"><span class="tm"><b class="bt-num">${t1000(top) || '—'}<small>秒</small></b><i>${tPoint(top)}m通過</i></span></div></div>
       ${fTot || D.io ? `<div class="tk3-sep"><span>今週の結果${wkS ? `・${wkS}` : ''}</span></div>` : ''}
       ${fTot ? `<div class="tk3-r"><span class="ic">${icLegs}</span><div class="n"><b>逃げ・先行<em class="bt-num">${fPct}%</em></b>${legsMini}</div>
-        <div class="x row"><span class="cmpw"><i>いつも${Math.round(fBase)}%</i></span>${crown(D.fb && D.fb.word, 'fb')}</div></div>` : ''}
+        <div class="x one">${crown(D.fb && D.fb.word, 'fb')}</div></div>` : ''}
       ${D.io ? `<div class="tk3-r"><span class="ic">${icGate}</span><div class="n"><b>内<em class="bt-num">${ioP[1] || '—'}%</em><span class="vs">外</span><em class="bt-num dim">${ioP[2] || '—'}%</em></b>${gateMini}</div>
-        <div class="x row"><span></span>${crown(D.io.word, 'io')}</div></div>` : ''}</div>`;
+        <div class="x one">${crown(D.io.word, 'io')}</div></div>` : ''}</div>`;
 
     // ---------- ③隊列の図 ----------
     const P = (x, W) => `${(x / W * 100).toFixed(2)}%`;
