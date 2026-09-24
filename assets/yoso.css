@@ -819,7 +819,8 @@ html.rc-frame .mx .mg-close .mg-tag{background:#5E7185}
 .tk3-map{position:relative;margin-top:6px}
 .tk3-zb{position:absolute;top:0;bottom:0;opacity:.2;border-left:1px dashed #fff}
 .tk3.dirt .tk3-zb{border-left-color:rgba(74,50,24,.35)}
-.tk3-zb.me{opacity:1;background:rgba(255,255,255,.35) !important;box-shadow:inset 0 0 0 2px #fff}
+/* 今回の馬の区画は塗らずに白い枠線だけ（2026-09-24 ユーザー「先行の他の馬番が見づらい」。明るく塗ると灰色の馬番と地の差が小さくなる） */
+.tk3-zme{position:absolute;top:0;bottom:0;box-shadow:inset 0 0 0 2px #fff;pointer-events:none}
 .tk3-ax{position:absolute;left:0;top:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:2px 0;font-size:9.5px;font-weight:800}
 .tk3-ax i{flex:1;width:0;border-left:1.5px dashed rgba(255,255,255,.6);margin:2px 0}
 .tk3.dirt .tk3-ax i{border-left-color:rgba(74,50,24,.4)}
@@ -832,9 +833,10 @@ html.rc-frame .mx .mg-close .mg-tag{background:#5E7185}
 .tk3-tk{position:absolute;transform:translate(-50%,-50%);width:19px;height:19px;font-size:11px;border-radius:4px;filter:grayscale(.85);opacity:.55;z-index:1}
 .tk3.dirt .tk3-tk:not(.me){opacity:.6}
 .tk3-tk.me{filter:none;opacity:1;transform:translate(-50%,-50%) scale(1.3);box-shadow:0 0 0 2px #fff,0 2px 6px rgba(0,0,0,.35);z-index:4}
-.tk3-mk{position:absolute;transform:translate(-50%,-50%);font-size:9px;font-weight:800;color:#12361F;opacity:.7;z-index:2;line-height:1}
-.tk3.dirt .tk3-mk{color:var(--tk-ink)}
-.tk3-mk.me{opacity:1}
+/* 印＝札の右上の丸（2026-09-24・mockup-191 案A）。色はサイトの印の決まり（style.css --mkb-*） */
+.tk3-mka{position:absolute;transform:translate(-50%,-50%);z-index:5;width:14px;height:14px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:8.5px;font-weight:900;color:#fff;box-shadow:0 0 0 1.5px #fff;line-height:1}
+.tk3-mka.k-hon{background:#003E70} .tk3-mka.k-tai{background:#5C7A99} .tk3-mka.k-tan{background:#8a97a3} .tk3-mka.k-oku{background:#aab2b8}
 /* ④脚質ごとの成績 */
 .tk3-zl{display:grid;grid-template-columns:repeat(4,1fr);padding:4px 0 8px}
 .tk3-zl>span{display:flex;flex-direction:column;align-items:center;gap:1px;font-size:10px}

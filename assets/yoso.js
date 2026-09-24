@@ -865,21 +865,37 @@
       const lo = m.length ? m[0].p : 0, hi = m.length ? m[m.length - 1].p : 0;
       m.forEach((x) => { const f = hi > lo ? (x.p - lo) / (hi - lo) : 0.5; x.q = (zi + 0.2 + 0.6 * f) / 4; });
     });
-    const W = 340, x0 = 20, x1 = 298, LH = 23, MH = LH * 8 + 6;
-    const X = (q) => x0 + 12 + q * (x1 - x0 - 24), Y = (g) => 3 + (g - 1) * LH + LH / 2;
+    const TOP = 18;   // 上端の馬の印（右上の丸）が図の外に切れないための余白。印の場所を全馬そろえるため（2026-09-24）
+    const W = 340, x0 = 20, x1 = 298, LH = 23, MH = LH * 8 + 6 + TOP;
+    const X = (q) => x0 + 12 + q * (x1 - x0 - 24), Y = (g) => 3 + TOP + (g - 1) * LH + LH / 2;
     const pts = hs.map((x) => ({ h: x, x: X(x.q), y: Y(x.g) })).sort((a, b) => a.x - b.x || a.y - b.y);
+    // 印（◎○▲△）は札の右上の丸（2026-09-24 決定・mockup-191 案A）。印も札の一部として場所を取り、
+    //   札や印どうしが重なる馬は後ろへずらす（番号や他の馬と被らないように）。印の場所は全馬同じ右上
+    const markOff = (x) => (x.mk ? (x.me ? 16 : 13) : 0);
+    const boxes = (pt) => {
+      const t = pt.h.me ? 13 : 10, b = [[pt.x - t, pt.y - t, pt.x + t, pt.y + t]], o = markOff(pt.h);
+      if (o) b.push([pt.x + o - 7, pt.y - o - 7, pt.x + o + 7, pt.y - o + 7]);
+      return b;
+    };
+    const hit = (A, B) => A.some((a) => B.some((b) => a[0] < b[2] && b[0] < a[2] && a[1] < b[3] && b[1] < a[3]));
     const placed = [];
-    pts.forEach((pt) => {   // 同じ所に重なった馬は後ろへずらす
-      for (let k = 0; k < 12 && placed.some((o) => Math.abs(o.x - pt.x) < 19 && Math.abs(o.y - pt.y) < 19); k += 1) pt.x += 7;
+    pts.forEach((pt) => {
+      for (let k = 0; k < 16 && placed.some((o) => hit(boxes(o), boxes(pt))); k += 1) pt.x += 7;
       placed.push(pt);
     });
     const meGate = Number(h.gate) || 0;
     const zx = (zi) => x0 + zi * (x1 - x0) / 4;
     const Z = D.zones.map((z) => ({ nm: z.style, c: z.count, g: z.grade, r: z.rate, me: z.me }));
-    const tok = (pt) => `${pt.h.mk ? `<span class="tk3-mk${pt.h.me ? ' me' : ''}" style="left:${P(pt.x, W)};top:${pt.y - 11}px">${esc(pt.h.mk)}</span>` : ''}`
-      + `<span class="hn wk${pt.h.g} tk3-tk${pt.h.me ? ' me' : ''}" style="left:${P(pt.x, W)};top:${pt.y}px">${pt.h.n}</span>`;
+    // 印の丸は札の外（兄弟）に置く。札の灰色のフィルターが印にかからないように。色はサイトの印の決まり（◎ 紺 → △ 薄い灰青）
+    const MKC = { '◎': 'hon', '○': 'tai', '▲': 'tan', '△': 'oku' };
+    const tok = (pt) => {
+      const x = pt.h, o = markOff(x);
+      return `<span class="hn wk${x.g} tk3-tk${x.me ? ' me' : ''}" style="left:${P(pt.x, W)};top:${pt.y}px">${x.n}</span>`
+        + (x.mk ? `<b class="tk3-mka k-${MKC[x.mk] || 'oku'}" style="left:calc(${P(pt.x, W)} + ${o}px);top:${pt.y - o}px">${esc(x.mk)}</b>` : '');
+    };
     const map = `<div class="tk3-map" style="height:${MH}px">
-      ${[0, 1, 2, 3].map((zi) => `<div class="tk3-zb${Z[zi] && Z[zi].me ? ' me' : ''}" style="left:${P(zx(zi), W)};width:${P((x1 - x0) / 4, W)};background:${Z[zi] ? TK_GC[Z[zi].g] || 'transparent' : 'transparent'}"></div>`).join('')}
+      ${[0, 1, 2, 3].map((zi) => `<div class="tk3-zb" style="left:${P(zx(zi), W)};width:${P((x1 - x0) / 4, W)};background:${Z[zi] ? TK_GC[Z[zi].g] || 'transparent' : 'transparent'}"></div>`).join('')}
+      ${[0, 1, 2, 3].map((zi) => (Z[zi] && Z[zi].me ? `<div class="tk3-zme" style="left:${P(zx(zi), W)};width:${P((x1 - x0) / 4, W)}"></div>` : '')).join('')}
       <div class="tk3-ax" style="width:${P(x0, W)}"><span>内</span><i></i><span>外</span></div>
       ${(D.gates || []).slice(0, 8).map((gt, k) => `<div class="tk3-gt${k + 1 === meGate ? ' me' : ''}" style="top:${Y(k + 1) - 10}px">${gt.hn}${gch(gt.grade)}</div>`).join('')}
       ${pts.map(tok).join('')}
