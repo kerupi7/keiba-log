@@ -2077,51 +2077,78 @@ function aptCardHtml(h, race, bare) {
     const off = ((at(c.m) - prev) / (next - prev)) * 100;
     return `<b class="ax-hit" data-k="${i}" style="left:${prev}%;width:${next - prev}%;--mk:${off}%"></b>`;
   }).join('');
-  const detail = (c) => {
-    const p = axPct(c), dr = axDiff(c, basep);
-    const k = dr == null ? '' : dr >= AX_PT ? 'k-up' : dr <= -AX_PT ? 'k-dn' : '';
-    const word = dr == null ? (c.n < AX_MIN_N ? '走数が足りないので色は付けていない' : '')
-      : dr >= AX_PT ? `この馬の普段（${basep}%）より <b>+${Math.round(dr)}</b>。走れている距離`
-      : dr <= -AX_PT ? `この馬の普段（${basep}%）より <b>${Math.round(dr)}</b>。振るわない距離`
-      : `この馬の普段（${basep}%）と同じくらい`;
-    return `<div class="ax-dt ${k}"><div class="ax-dt1"><b class="bt-num">${c.m}m</b>
-      <span>${c.n}走のうち <b class="bt-num">${c.good}</b>走が好走</span>
-      <span class="ax-pw">好走率 <b class="bt-num">${p}%</b></span></div>
-      <div class="ax-dt2">${word}</div></div>`;
+  // ===== 上段：今日のコース・競馬場・山で押した距離を、同じ大きさの輪で並べる（2026-09-24 決定・mockup-176） =====
+  //   輪の1切れ＝1走、塗った切れ＝好走。3つ目の輪は山を押すと切り替わる（押す処理は .ax-dw の on を付け替える）。
+  //   札は数字でなく言葉で出す。「▼9」のような割り引いた差は読めなかった（2026-09-24 ユーザー指摘）
+  const judge = (c) => {
+    const d = axDiff(c, basep);
+    return d == null ? 'na' : d >= AX_PT ? 'up' : d <= -AX_PT ? 'dn' : 'eq';
+  };
+  const RCOL = { up: '#0F7A3D', dn: '#C8352C', eq: '#8E8E93', na: '#8E8E93' };
+  const ringSvg = (c, size, color) => {
+    const sw = size * 0.13, r = (size - sw) / 2, cx = size / 2, C = 2 * Math.PI * r;
+    if (!c.n) return `<svg width="${size}" height="${size}"><circle cx="${cx}" cy="${cx}" r="${r}" fill="none"
+      stroke="#E5E5EA" stroke-width="${sw}" stroke-dasharray="3 4"/></svg>`;
+    const gap = c.n > 1 ? Math.min(4, (C / c.n) * 0.18) : 0, seg = C / c.n - gap;
+    let s = '';
+    for (let i = 0; i < c.n; i++) {
+      s += `<circle cx="${cx}" cy="${cx}" r="${r}" fill="none" stroke="${i < c.good ? color : '#E8E8ED'}"
+        stroke-width="${sw}" stroke-dasharray="${seg} ${C - seg}" stroke-dashoffset="${-(i * (C / c.n)) + C / 4 - gap / 2}"/>`;
+    }
+    return `<svg width="${size}" height="${size}">${s}</svg>`;
+  };
+  // 名前の中の数字（1800m）だけ数字の書体にする
+  const dg = (t) => escapeHtml(t).replace(/(\d+m?)/g, '<span class="ax-dg">$1</span>');
+  const pill = (j) => j === 'na' ? '<span class="ax-pill na">1走だけ</span>'
+    : j === 'eq' ? '<span class="ax-pill eq">ふつう</span>'
+    : `<span class="ax-pill ${j}">${j === 'up' ? '▲ 得意' : '▼ 苦手'}</span>`;
+  const runs = (c) => `<span class="ax-un"><b class="ax-dg">${c.good}</b>/<span class="ax-dg">${c.n}</span>走</span>`;
+  const unit = (label, c, cls, k) => {
+    c = c || { n: 0, good: 0 };
+    const j = c.n ? judge(c) : 'na';
+    return `<div class="ax-u ${j}${cls ? ' ' + cls : ''}"${k != null ? ` data-k="${k}"` : ''}>
+      <div class="ax-rw">${ringSvg(c, 72, RCOL[j])}
+        <div class="ax-rc">${c.n ? `<b class="ax-dg">${axPct(c)}<small>%</small></b>` : '<span class="ax-first">初</span>'}</div></div>
+      <span class="ax-ul">${dg(label)}</span>
+      ${c.n ? `${runs(c)}${pill(j)}` : '<span class="ax-un">走っていない</span>'}</div>`;
   };
   const todayIdx = Math.max(0, ds.findIndex((c) => c.today));
-  const cellRow = (label, c, cls) => {
-    const p = axPct(c), dr = axDiff(c, basep);
-    const k = dr == null ? '' : dr >= AX_PT ? 'j-up' : dr <= -AX_PT ? 'j-dn' : '';
-    return `<div class="ax-r${c && c.n ? '' : ' zero'}${k ? ' ' + k : ''}${cls ? ' ' + cls : ''}">
-      <span class="ax-l">${escapeHtml(label)}</span>
-      ${c && c.n ? `<span class="ax-n bt-num">${c.n}走</span>
-        <span class="ax-p bt-num">${p}<small>%</small></span>
-        <span class="ax-d bt-num">${dr == null ? '' : (dr > 0 ? '+' : '') + Math.round(dr)}</span>`
-      : '<span class="ax-nz">走っていない</span>'}</div>`;
+  const top = `<div class="ax-top${ds.length ? ' n3' : ''}" data-today="${todayIdx}">
+    ${unit(`${R.track || ''}${R.surface || ''}${R.distance || ''}m`, a.course, 'today')}
+    ${unit(`${R.track || ''}${R.surface || ''}`, a.track)}
+    ${ds.length ? `<div class="ax-pick">${ds.map((c, i) =>
+      unit(`全場${c.m}m`, c, 'ax-dw' + (i === todayIdx ? ' on' : ''), i)).join('')}</div>` : ''}</div>`;
+  // ===== 回り：競馬場の形（楕円）に回る向きの矢印。色＝得意・苦手、中に好走率（2026-09-24 決定） =====
+  const tby = {};
+  (a.turn || []).forEach((c) => { tby[c.label] = c; });
+  const turns = ['左回り', '右回り'].map((lb) => tby[lb] || { n: 0, good: 0, label: lb });
+  const oval = (c, j) => {
+    const col = c.n ? RCOL[j] : '#D1D1D6';
+    // 上の辺に矢印。右回り＝上を右へ進む（時計回り）、左回り＝上を左へ進む
+    const tip = c.label === '右回り' ? '59,6 45,-2 45,14' : '41,6 55,-2 55,14';
+    return `<svg width="100" height="62" viewBox="0 -2 100 62">
+      <rect x="6" y="6" width="88" height="48" rx="24" fill="none" stroke="${col}" stroke-width="5"
+        ${c.n ? '' : 'stroke-dasharray="3 4"'}/>
+      <polygon points="${tip}" fill="${col}" stroke="#fff" stroke-width="1.5"/></svg>`;
   };
-  const turn = (a.turn || []).filter((c) => c.n);
-  const turnSum = turn.reduce((x, c) => x + c.n, 0);
-  const turnBar = !turnSum ? '' : `<div class="ax-g"><div class="ax-gt">回り（${escapeHtml(R.surface)}）　数字は好走率</div>
-    <div class="ax-sp">${turn.map((c) => {
-      const dr = axDiff(c, basep);
-      const k = dr == null ? 'sh0' : dr >= AX_PT ? 'sh1' : dr <= -AX_PT ? 'sh-1' : 'sh0';
-      return `<span class="ax-spc ${k}${c.today ? ' today' : ''}" style="width:${(c.n / turnSum) * 100}%">
-        <b>${escapeHtml(c.label)}</b><i class="bt-num">${axPct(c)}%</i><u class="bt-num">${c.n}走</u></span>`;
+  const turnBlock = !turns.some((c) => c.n) ? '' : `<div class="ax-g ax-turn"><div class="ax-gt">回り（${escapeHtml(R.surface)}）</div>
+    <div class="ax-ov">${turns.map((c) => {
+      const j = c.n ? judge(c) : 'na';
+      return `<div class="ax-o ${j}${c.today ? ' today' : ''}">
+        <div class="ax-ow">${oval(c, j)}<div class="ax-rc">${c.n ? `<b class="ax-dg">${axPct(c)}<small>%</small></b>`
+          : '<span class="ax-first">初</span>'}</div></div>
+        <span class="ax-ul">${c.label}${c.today ? '<i class="ax-tday">今日</i>' : ''}</span>
+        ${c.n ? `${runs(c)}${pill(j)}` : '<span class="ax-un">走っていない</span>'}</div>`;
     }).join('')}</div></div>`;
+  // 見出しの右の説明は出さない（2026-09-24 ユーザー指示）
   const head = bare
-    ? `<div class="ax-hd"><span class="ax-ht">コース適性</span>
-        <span class="ax-hr">好走率＝1着か僅差で走れた割合</span></div>`
-    : `<div class="h-top"><span class="h-t">コース適性</span>
-        <span class="h-r">好走率＝1着か僅差で走れた割合</span></div>`;
+    ? `<div class="ax-hd"><span class="ax-ht">コース適性</span></div>`
+    : `<div class="h-top"><span class="h-t">コース適性</span></div>`;
   return `<div class="${bare ? 'ax ax-bare' : 'h-card b-crd ax'}">
     ${head}
-    <div class="ax-base">普段の好走率 <b class="bt-num">${basep}%</b>（${a.base.n}走）
-      ／ 色は普段との差。離れるほど濃い・${AX_MIN_N}走から付ける</div>
-    ${cellRow(`${R.track || ''}${R.surface || ''}${R.distance || ''}m`, a.course, 'today')}
-    ${cellRow(`${R.track || ''}${R.surface || ''}`, a.track)}
+    ${top}
     ${!ds.length ? '<div class="ax-none">この面では走っていない</div>' : `
-    <div class="ax-g"><div class="ax-gt">距離（全場・${escapeHtml(R.surface)}）　目盛りは100m単位・▲＝今日</div>
+    <div class="ax-g">
       <div class="ax-mt">
         <svg viewBox="0 0 ${W} ${Ht}" preserveAspectRatio="none">
           <defs><linearGradient id="${uid}" x1="0" y1="0" x2="1" y2="0">${stops}</linearGradient>
@@ -2133,30 +2160,24 @@ function aptCardHtml(h, race, bare) {
           <path d="M0,${Ht} L${path} L${W},${Ht} Z" fill="url(#${uid})"/>
           <rect x="0" y="0" width="${W}" height="${Ht}" fill="url(#${uid}v)" clip-path="url(#${uid}c)"/>
         </svg>
-        <span class="ax-now" style="left:${at(R.distance)}%"></span>
+        <span class="ax-now" style="left:${at(R.distance)}%"><i>今日</i></span>
         <span class="ax-hits">${hits}</span>
         <div class="ax-scale">${used.map((m) =>
-          `<span class="bt-num" style="left:${at(m)}%">${(m / 100).toFixed(1).replace(/\.0$/, '')}</span>`).join('')}</div>
-        <div class="ax-open"><div class="ax-hint">山を押すと、その距離の中身が出ます</div>
-          <div class="ax-dts" data-today="${todayIdx}">${ds.map((c, i) =>
-            `<div class="ax-dw${i === todayIdx ? ' on' : ''}" data-k="${i}">${detail(c)}</div>`).join('')}</div>
-        </div>
+          `<span class="bt-num${m === R.distance ? ' now' : ''}" style="left:${at(m)}%">${(m / 100).toFixed(1).replace(/\.0$/, '')}</span>`).join('')}</div>
       </div></div>`}
-    ${turnBar}</div>`;
+    ${turnBlock}</div>`;
 }
 
 // 開き直したときに、押して出した距離を今日の距離へ戻す（2026-09-24 ユーザー指摘）。
 //   馬名の札（#pop-N）は最初に1回だけ組み立てて開け閉めするだけなので、
 //   何もしないと前に押した距離が残る。開くたびにここで戻す。
 function aptResetCards(root) {
-  (root || document).querySelectorAll('.ax .ax-g').forEach((box) => {
-    const dts = box.querySelector('.ax-dts');
-    if (!dts) return;
-    const def = dts.dataset.today || '0';
-    box.querySelectorAll('.ax-hit').forEach((x) => x.classList.remove('on'));
-    box.querySelectorAll('.ax-dw').forEach((x) => x.classList.toggle('on', x.dataset.k === def));
-    const hint = box.querySelector('.ax-hint');
-    if (hint) hint.style.display = '';
+  (root || document).querySelectorAll('.ax').forEach((card) => {
+    const top = card.querySelector('.ax-top[data-today]');
+    if (!top) return;
+    const def = top.dataset.today;
+    card.querySelectorAll('.ax-hit').forEach((x) => x.classList.remove('on'));
+    card.querySelectorAll('.ax-dw').forEach((x) => x.classList.toggle('on', x.dataset.k === def));
   });
 }
 
@@ -3906,13 +3927,11 @@ function setupPopups20(root, site) {
     }
     const hit = e.target.closest('.ax .ax-hit');
     if (hit) {
-      // コース適性の山を押したら、その距離の中身だけを出す（2026-09-24 決定）
-      const box = hit.closest('.ax-g');
+      // コース適性の山を押したら、上段の3つ目の輪をその距離に替える（2026-09-24 決定・mockup-176）
+      const box = hit.closest('.ax');
       if (box) {
         box.querySelectorAll('.ax-hit').forEach((x) => x.classList.toggle('on', x === hit));
         box.querySelectorAll('.ax-dw').forEach((x) => x.classList.toggle('on', x.dataset.k === hit.dataset.k));
-        const hint = box.querySelector('.ax-hint');
-        if (hint) hint.style.display = 'none';
       }
       return;
     }

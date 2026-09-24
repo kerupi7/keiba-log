@@ -1777,16 +1777,14 @@
       default: break;
     }
   }
-  // コース適性の山を押したら、その距離の中身だけを出す（2026-09-24 決定）
+  // コース適性の山を押したら、上段の3つ目の輪をその距離に替える（2026-09-24 決定・mockup-176）
   document.addEventListener('click', (e) => {
     const hit = e.target.closest && e.target.closest('.ax .ax-hit');
     if (!hit) return;
-    const box = hit.closest('.ax-g');
+    const box = hit.closest('.ax');
     if (!box) return;
     box.querySelectorAll('.ax-hit').forEach((x) => x.classList.toggle('on', x === hit));
     box.querySelectorAll('.ax-dw').forEach((x) => x.classList.toggle('on', x.dataset.k === hit.dataset.k));
-    const hint = box.querySelector('.ax-hint');
-    if (hint) hint.style.display = 'none';
   });
 
   document.addEventListener('keydown', (e) => {
