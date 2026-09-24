@@ -2112,12 +2112,17 @@ function aptCardHtml(h, race, bare) {
       <span class="ax-ul">${dg(label)}</span>
       ${c.n ? `${runs(c)}${pill(j)}` : '<span class="ax-un">走っていない</span>'}</div>`;
   };
-  const todayIdx = Math.max(0, ds.findIndex((c) => c.today));
-  const top = `<div class="ax-top${ds.length ? ' n3' : ''}" data-today="${todayIdx}">
+  // 3つ目の輪は、最初は今日の距離。今日の距離を走っていない馬は「全場○○m・初」を出す
+  //   （走った距離の先頭に落ちて、芝2200mの日に1600mが出ていた・2026-09-24 ユーザー指摘）。
+  //   その輪は山に押す場所が無いので data-k="t"。開き直しの戻し（aptResetCards）も data-today で同じ輪へ戻る
+  const ti = ds.findIndex((c) => c.today);
+  const todayKey = ti >= 0 ? String(ti) : 't';
+  const todayUnit = ti >= 0 ? '' : unit(`全場${R.distance || ''}m`, { n: 0, good: 0 }, 'ax-dw on', 't');
+  const top = `<div class="ax-top${ds.length ? ' n3' : ''}" data-today="${todayKey}">
     ${unit(`${R.track || ''}${R.surface || ''}${R.distance || ''}m`, a.course, 'today')}
     ${unit(`${R.track || ''}${R.surface || ''}`, a.track)}
-    ${ds.length ? `<div class="ax-pick">${ds.map((c, i) =>
-      unit(`全場${c.m}m`, c, 'ax-dw' + (i === todayIdx ? ' on' : ''), i)).join('')}</div>` : ''}</div>`;
+    ${ds.length ? `<div class="ax-pick">${todayUnit}${ds.map((c, i) =>
+      unit(`全場${c.m}m`, c, 'ax-dw' + (String(i) === todayKey ? ' on' : ''), i)).join('')}</div>` : ''}</div>`;
   // ===== 回り：競馬場の形（楕円）に回る向きの矢印。色＝得意・苦手、中に好走率（2026-09-24 決定） =====
   const tby = {};
   (a.turn || []).forEach((c) => { tby[c.label] = c; });
