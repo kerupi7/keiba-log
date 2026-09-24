@@ -513,8 +513,15 @@
     const race = site.race || {};
     const nlen = [...String(h.name || '')].length;
     const nfs = nlen <= 6 ? 22 : nlen <= 8 ? 19 : 17;
-    const careerTxt = (P0.career.replace(/<[^>]+>/g, '').match(/(\d+)戦\s*(\d+)-(\d+)-(\d+)-(\d+)/) || []);
-    const car = careerTxt.length ? careerTxt.slice(2, 6).map(Number) : null;
+    // 通算の着順（1着-2着-3着-着外）は戦績のデータから直接数える（race.js の careerLine と同じ数え方）。
+    //   前は馬名の札の「通算N戦 1-1-1-7」の文字から取り出していたが、その行から「通算N戦」を外した
+    //   （2026-09-24）ら読めなくなり、全頭「—」になった。文字を読む作りはやめる
+    const allRuns = (h.past_runs || []).concat(h.career_runs || []);
+    const car = allRuns.length ? allRuns.reduce((c, r) => {
+      const f = parseInt(r.finish, 10);
+      c[(f >= 1 && f <= 3) ? f - 1 : 3] += 1;
+      return c;
+    }, [0, 0, 0, 0]) : null;
     const kg = h.weight_carried != null ? String(h.weight_carried).replace(/\.0$/, '') : '—';
     const hdr = `<div class="h-card b-hd">
       <div class="b-hd1">${umaBox(h.number, h.gate)}<b class="b-nm" style="font-size:${nfs}px">${esc(h.name)}</b>${P0.badge}</div>
