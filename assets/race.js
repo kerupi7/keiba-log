@@ -2137,17 +2137,55 @@ function aptCardHtml(h, race, bare) {
       <polygon points="${tip}" fill="${col}" stroke="#fff" stroke-width="1.5"/></svg>`;
   };
   // 回りの見出し（回り（ダート））は出さない。楕円と矢印で回りだと分かる（2026-09-24 ユーザー指示）
-  //   今日ではない回りは薄い灰色にして、今日の回りを一目で分かるようにする（2026-09-24 ユーザー指示）。
-  //   今日の回りが分からないレース（直線など）はどちらも薄くしない
-  const turnBlock = !turns.some((c) => c.n) ? '' : `<div class="ax-g ax-turn">
-    <div class="ax-ov${turns.some((c) => c.today) ? ' has-today' : ''}">${turns.map((c) => {
-      const j = c.n ? judge(c) : 'na';
-      return `<div class="ax-o ${j}${c.today ? ' today' : ''}">
-        <div class="ax-ow">${oval(c, j)}<div class="ax-rc">${c.n ? `<b class="ax-dg">${axPct(c)}<small>%</small></b>`
+  const turnUnit = (c, tag) => {
+    const j = c.n ? judge(c) : 'na';
+    return `<div class="ax-o ${j}${c.today ? ' today' : ''}">
+      <div class="ax-ow">${oval(c, j)}<div class="ax-rc">${c.n ? `<b class="ax-dg">${axPct(c)}<small>%</small></b>`
+        : '<span class="ax-first">初</span>'}</div></div>
+      <span class="ax-ul">${c.label}${tag && c.today ? '<i class="ax-tday">今日</i>' : ''}</span>
+      ${c.n ? `${runs(c)}${pill(j)}` : '<span class="ax-un">走っていない</span>'}</div>`;
+  };
+  // ===== 馬場：良（晴れのオレンジの太陽）／道悪（雨の水色のしずく）（2026-09-24 決定・mockup-178） =====
+  //   形の色は天気で固定。得意・苦手は中の数字の色と下の札で見せる。
+  //   今日がどちらかは公開データに入れず、ここで race.going から決める（馬場は当日に発表が変わるため）
+  const GOOD_SUN = '#F58700', WET_RAIN = '#3AA3DC';
+  const gRaw = String(R.going || '');
+  const todayGoing = !gRaw ? null : gRaw.startsWith('良') ? '良' : /^(稍|重|不)/.test(gRaw) ? '道悪' : null;
+  const goings = (Array.isArray(a.going) ? a.going : []).map((c) => ({ ...c, today: c.label === todayGoing }));
+  const sunSvg = (dash) => `<svg width="100" height="62" viewBox="0 0 100 62" overflow="visible">
+      <circle cx="50" cy="31" r="23" fill="none" stroke="${GOOD_SUN}" stroke-width="4.5" ${dash}/>
+      ${[0, 45, 90, 135, 180, 225, 270, 315].map((deg) => { const t = (deg * Math.PI) / 180;
+        return `<line x1="${(50 + Math.cos(t) * 28).toFixed(1)}" y1="${(31 + Math.sin(t) * 28).toFixed(1)}"
+          x2="${(50 + Math.cos(t) * 32).toFixed(1)}" y2="${(31 + Math.sin(t) * 32).toFixed(1)}"
+          stroke="${GOOD_SUN}" stroke-width="3.5" stroke-linecap="round"/>`; }).join('')}</svg>`;
+  const dropSvg = (dash) => `<svg width="100" height="62" viewBox="0 0 100 62">
+      <path d="M50 2 C50 2 25 27 25 38 A25 25 0 0 0 75 38 C75 27 50 2 50 2 Z" fill="none" stroke="${WET_RAIN}"
+        stroke-width="5" stroke-linejoin="round" ${dash}/></svg>`;
+  const goingUnit = (c, tag) => {
+    const j = c.n ? judge(c) : 'na';
+    const dash = c.n ? '' : 'stroke-dasharray="3 4"';
+    return `<div class="ax-o ${j}${c.today ? ' today' : ''}">
+      <div class="ax-ow">${c.label === '良' ? sunSvg(dash) : dropSvg(dash)}
+        <div class="ax-rc${c.label === '良' ? '' : ' ax-rc-drop'}">${c.n ? `<b class="ax-dg">${axPct(c)}<small>%</small></b>`
           : '<span class="ax-first">初</span>'}</div></div>
-        <span class="ax-ul">${c.label}${c.today ? '<i class="ax-tday">今日</i>' : ''}</span>
-        ${c.n ? `${runs(c)}${pill(j)}` : '<span class="ax-un">走っていない</span>'}</div>`;
-    }).join('')}</div></div>`;
+      <span class="ax-ul">${c.label}${tag && c.today ? '<i class="ax-tday">今日</i>' : ''}</span>
+      ${c.n ? `${runs(c)}${pill(j)}` : '<span class="ax-un">走っていない</span>'}</div>`;
+  };
+  // 回りと馬場は、今日の分だけを1段に並べる（左＝回り・右＝馬場。2026-09-24 ユーザー決定）。
+  //   どちらも今日の分しか出さないので「今日」の札は付けない。
+  //   今日の回りか馬場が分からないレース（直線・馬場の発表前）は、2つずつの段に戻し、
+  //   今日ではない方を薄い灰色にする（今日が分からない段はどちらも薄くしない）
+  const tTurn = turns.find((c) => c.today);
+  const tGoing = goings.find((c) => c.today);
+  const pair = (units, cls, dim) => `<div class="ax-g ax-turn${cls}">
+    <div class="ax-ov${dim ? ' has-today' : ''}">${units}</div></div>`;
+  let turnBlock = '';
+  if (tTurn && tGoing && (tTurn.n || tGoing.n)) {
+    turnBlock = pair(turnUnit(tTurn, false) + goingUnit(tGoing, false), ' ax-today1', false);
+  } else {
+    if (turns.some((c) => c.n)) turnBlock += pair(turns.map((c) => turnUnit(c, true)).join(''), '', turns.some((c) => c.today));
+    if (goings.some((c) => c.n)) turnBlock += pair(goings.map((c) => goingUnit(c, true)).join(''), ' ax-going', goings.some((c) => c.today));
+  }
   // 見出しの右の説明は出さない（2026-09-24 ユーザー指示）
   const head = bare
     ? `<div class="ax-hd"><span class="ax-ht">コース適性</span></div>`
