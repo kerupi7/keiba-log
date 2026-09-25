@@ -385,7 +385,8 @@
   function goldPaint(pe, pg) {
     const cardEl = pe.closest('.yf-card');
     const num = cardEl && cardEl.dataset.n ? Number(cardEl.dataset.n) : (Q[S.idx] || {}).number;
-    if (S.view) return;
+    // 「1頭だけ見る」画面でも金の枠は出す（見るだけ。押しても付け外ししない＝goldTap は絞り込みのときだけ呼ばれる）。
+    //   2026-09-25 ユーザー「金の枠もこの画面で出るようにして」（比べる画面の馬名・直近5走の札から開いたとき）
     goldCols(pe);
     const units = goldUnits(pe);
     units.forEach((u) => u.classList.add('gd-u'));
