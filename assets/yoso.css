@@ -944,7 +944,12 @@ html.rc-frame .mx .mg-close .mg-tag{background:#5E7185}
 .alx .alx-mg.close{background:#7D8792;color:#fff} .alx .alx-mg.win{background:#B8860B;color:#fff}
 .alx-m .alx-r{display:grid;align-items:center;gap:4px;white-space:nowrap;min-width:0;line-height:1.5}
 .alx .alx-r1{grid-template-columns:58px 16px 48px 26px 1fr;font-size:11px}
-.alx .alx-r2{grid-template-columns:52px 46px 70px 42px 1fr;font-size:12px}
+/* 2段目：タイム｜上がり｜通過順｜枠・馬番｜人気/頭数｜騎手（2026-09-25 枠・馬番を足した・mockup-219 W1）。
+   375px幅で測った中身の最大はタイム51・上がり39・通過59・人気31・騎手55px。行は279px。間を3pxにして騎手に63px残す */
+.alx .alx-r2{grid-template-columns:51px 40px 62px 16px 32px 1fr;column-gap:3px;font-size:12px}
+.alx .alx-wk{display:inline-flex;align-items:center;justify-self:start}
+.alx .alx-wk .hn.sm{width:16px;height:16px;font-size:10px;border-radius:3px}
+.alx .alx-wk i{font-style:normal;font-size:10px;color:#AEAEB2}
 .alx .alx-dt{color:#8E8E93}
 .alx .alx-tk,.alx .alx-go{color:#636366}
 .alx .alx-sf{display:inline-flex;align-items:baseline;gap:1px;justify-self:start;font-size:9.5px;font-weight:700;border-radius:4px;padding:0 4px;line-height:15px}
@@ -957,7 +962,8 @@ html.rc-frame .mx .mg-close .mg-tag{background:#5E7185}
 .alx .alx-tm b,.alx .alx-up b{font-weight:600}
 .alx .alx-cn{font-size:10px;color:#3a3a3c;letter-spacing:-.03em}
 .alx .alx-pop small{font-size:9px;color:#8E8E93;margin-left:1px}
-.alx .alx-jk{justify-self:end;font-size:10.5px;color:#6D6D72;overflow:hidden}
+/* 騎手の欄は列いっぱいに広げて右に寄せる。入らない名前は左の人気に重ねず「…」で切る（前は右寄せだけで、はみ出すと重なった） */
+.alx .alx-jk{justify-self:stretch;justify-content:flex-end;font-size:10.5px;color:#6D6D72;overflow:hidden}
 .alx .alx-jn{overflow:hidden;text-overflow:ellipsis;min-width:0}
 .alx .alx-jk small{font-size:9px;color:#8E8E93;margin-left:2px}
 /* 戦績シート（比べる画面で馬名を押したとき）では行を押すと中身が開く。前の行（.al-c）と同じ動きを新しい行にも */

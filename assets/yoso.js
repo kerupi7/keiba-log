@@ -268,7 +268,7 @@
   }
 
   // 1ページを画面の高さに収める（2026-09-17 ユーザー「縦スクロールせずに1画面に収めたい」）。
-  //   中身が札より長いときは、中身ごと縮めて収める（字の大きさの比は変えない）。全戦績だけは縦に動かして見る形のまま（同日決定・案B）
+  //   中身が札より長いときは、中身ごと縮めて収める（字の大きさの比は変えない）。全戦績は縮めずに、入るだけの行でページを分ける（2026-09-25 から。前は全戦績だけ縦に動かして見ていた＝同日決定・案B）
   // ---------- 金の枠（2026-09-24・試作 mockup-217） ----------
   //   ユーザー「自分がどこを見ていいと思ったのかを記録したい。タップすればその部分を金色の枠線で囲む」。
   //   絞り込みの札の部品を押すと金の枠が付き、もう一度押すと外れる。記録は gold:{race_id} に端末の中だけで残す。
@@ -351,6 +351,10 @@
     try { localStorage.setItem(GOLD_KEY, JSON.stringify(g)); GOLD_MEM = null; } catch (e) { GOLD_MEM = g; }
   }
   const pgKey = (pg) => (pg ? `${pg.k}${pg.i != null ? pg.i : ''}` : '');
+  // 全戦績は何ページかに分かれる（2026-09-25）。金は「何ページ目の何行目」ではなく「何走目か」で覚える
+  //   （切れ目は画面の高さで変わるため。分ける前に付けた金も、1ページ目から数えた位置なのでそのまま合う）
+  const goldOff = (pg) => (pg && pg.k === 'all' ? pg.from : 0);
+  const goldLabel = (pg) => (pg.k === 'all' ? pg.label.replace(/（\d+\/\d+）$/, '') : pg.label);
   // ページの中の押せる部品。入れ子になったときは外側だけを数える（内側は外側の一部として扱う）
   function goldUnits(pe) {
     const all = [...pe.querySelectorAll(GOLD_UNIT)];
@@ -391,7 +395,7 @@
     const units = goldUnits(pe);
     units.forEach((u) => u.classList.add('gd-u'));
     const mine = (goldLoad()[num] || []).filter((x) => x.page === pgKey(pg));
-    mine.forEach((x) => { const u = units[x.idx]; if (u) u.classList.add('gd-on'); });
+    mine.forEach((x) => { const u = units[x.idx - goldOff(pg)]; if (u) u.classList.add('gd-on'); });
     goldTwins(pe);
   }
   // 押された部品に金を付ける／外す。部品の外（余白）を押したときは何もしない
@@ -406,13 +410,13 @@
     const pg = pagesOf(h)[S.page];
     const g = goldLoad();
     const list = g[h.number] || [];
-    const idx = units.indexOf(u);
+    const idx = units.indexOf(u) + goldOff(pg);
     const at = list.findIndex((x) => x.page === pgKey(pg) && x.idx === idx);
     if (at >= 0) {
       list.splice(at, 1);
       u.classList.remove('gd-on');
     } else {
-      list.push({ page: pgKey(pg), label: pg.label, idx, head: goldHead(u), text: goldText(u), at: new Date().toISOString() });
+      list.push({ page: pgKey(pg), label: goldLabel(pg), idx, head: goldHead(u), text: goldText(u), at: new Date().toISOString() });
       u.classList.remove('gd-pop'); void u.offsetWidth;
       u.classList.add('gd-on', 'gd-pop');
       haptic();
@@ -423,10 +427,67 @@
     document.dispatchEvent(new CustomEvent('gold-change'));
   }
 
+  // 全戦績を何走目で次のページへ送るか（2026-09-25）。馬番 → { key: 札の幅x高さ, n: 走数, cuts: [0, 切れ目…, n] }。
+  //   その札に全部の行を見えない形で並べて各行の高さを測り、上から入るだけ詰める（1〜3着の行は杯のぶん背が高いので、1行ずつ測る）。
+  //   札の大きさが変わったら（Safari の下のバーの出し入れ・回転）測り直す
+  const ALL_CUTS = new Map();
+  function allCutsOf(h, n) {
+    const c = ALL_CUTS.get(h.number);
+    return c && c.n === n ? c.cuts : [0, n];
+  }
+  // 測り直して切れ目が変わったら true
+  function allMeasure(h, pe) {
+    const n = allRuns(h).length;
+    if (!n || !pe || !pe.parentNode || !pe.clientHeight) return false;
+    const key = `${pe.clientWidth}x${pe.clientHeight}`;
+    const old = ALL_CUTS.get(h.number);
+    if (old && old.key === key && old.n === n) return false;
+    const pb = pe.cloneNode(false);
+    pb.removeAttribute('id');
+    pb.classList.remove('pop', 'in-r', 'in-l');
+    pb.classList.add('fit');
+    pb.setAttribute('aria-hidden', 'true');
+    Object.assign(pb.style, { position: 'absolute', left: '0', top: '0', width: `${pe.offsetWidth}px`, height: `${pe.offsetHeight}px`,
+      visibility: 'hidden', pointerEvents: 'none', animation: 'none', transform: 'none', zoom: '' });
+    pb.innerHTML = allPage(h, 0, n);
+    pe.parentNode.appendChild(pb);
+    const wrap = pb.firstElementChild;
+    const R = [...wrap.children].map((x) => x.getBoundingClientRect());
+    const ps = getComputedStyle(pb), ws = getComputedStyle(wrap);
+    const limit = pb.getBoundingClientRect().bottom - parseFloat(ps.paddingBottom)
+      - parseFloat(ws.paddingBottom) - parseFloat(ws.borderBottomWidth);
+    pb.remove();
+    const cap = limit - R[0].top;
+    const fits = (s, e) => R[e - 1].bottom - R[s].top <= cap + 0.5;   // s〜e-1 走目が1ページに入るか
+    // 上から入るだけ詰めて、要るページ数を出す
+    let cuts = [0];
+    for (let e = 1, s = 0; e < R.length; e += 1) {
+      if (!fits(s, e + 1)) { cuts.push(e); s = e; }
+    }
+    cuts.push(n);
+    // 同じページ数で、行の数をなるべく同じに割り直す（詰めるだけだと 390×844 で26走が 13・12・1 になり、最後のページが1行だけになった）。
+    //   背の高い行が固まって入らないページが出るときは、詰めた割り方のまま
+    const k = cuts.length - 1;
+    if (k > 1) {
+      const even = [0];
+      for (let p = 0; p < k; p += 1) even.push(even[p] + Math.floor(n / k) + (p < n % k ? 1 : 0));
+      if (even.every((c, p) => p === 0 || fits(even[p - 1], c))) cuts = even;
+    }
+    ALL_CUTS.set(h.number, { key, n, cuts });
+    return !old || old.n !== n || old.cuts.join() !== cuts.join();
+  }
+
   function fitPage(pe = document.getElementById('yf-page'), pg = pagesOf(Q[S.idx])[S.page]) {
     if (!pe) return;
+    // 全戦績の切れ目を、この札の大きさで測っておく（どのページを描いたときでも。上の点々の数を最初から合わせるため）。
+    //   いま前に出ている札で切れ目が変わったら、ページを描き直す（後ろの札は前に出たときに描き直される）
+    const cardEl = pe.closest('.yf-card');
+    const hh = cardEl && cardEl.dataset.n ? byNum(Number(cardEl.dataset.n)) : Q[S.idx];
+    if (hh && allMeasure(hh, pe) && pe.id === 'yf-page' && hh === Q[S.idx]) {
+      S.page = Math.min(S.page, pagesOf(hh).length - 1);
+      requestAnimationFrame(() => { if (S && (S.screen === 'swipe' || S.screen === 'view') && Q[S.idx] === hh) render(); });
+    }
     goldPaint(pe, pg);
-    if (pg && pg.k === 'all') { pe.classList.remove('fit'); return; }
     pe.classList.add('fit');
     const inner = pe.firstElementChild;
     if (!inner) return;
@@ -476,9 +537,16 @@
     // 2ページ目に直近5走のまとめを置く（2026-09-17 ユーザー指示）。過去走の各ページはその後ろ
     const sum = runs.length ? [{ k: 'sum', label: `直近${runs.length}走` }] : [];
     // 5走ページの後ろに全戦績（2026-09-17 ユーザー指示）。5走以下の馬にも出す（2026-09-18 ユーザー指示。前日は出さない決めだった）
-    // 見せ方は1ページにまとめて縦に動かす（2026-09-17 決定。14走ずつページを分ける案は選ばなかった）
+    // 見せ方は、画面に入るだけの行を1ページにして、残りは次のページへ送る（2026-09-25 ユーザー「全戦績も縦スクロールできないようにして、
+    //   画面に入らない場合は次のページになるようにしてほしい」）。前は1ページにまとめて縦に動かしていた（2026-09-17 決定）。
+    //   何走で切るかは画面の高さで変わるので、描いた札で測って allCutsOf に覚える（まだ測っていない馬は1ページのまま）
     const all = allRuns(h);
-    const allPages = all.length ? [{ k: 'all', from: 0, to: all.length, label: `全戦績 ${all.length}走` }] : [];
+    const cuts = allCutsOf(h, all.length);
+    const nAll = cuts.length - 1;
+    const allPages = [];
+    for (let p = 0; p < nAll; p += 1) {
+      allPages.push({ k: 'all', from: cuts[p], to: cuts[p + 1], label: `全戦績 ${all.length}走${nAll > 1 ? `（${p + 1}/${nAll}）` : ''}` });
+    }
     // 出馬表の「展開」の中身（馬場・枠順・脚質と展開）を1ページ置く（2026-09-17 ユーザー指示）。
     // 場所は直近5走のすぐ後ろ（同日ユーザー指示で、全戦績の前から移した）。並び：基本→直近5走→展開→前走…5走前→全戦績
     // 2026-09-24 ユーザー指示で並びを 基本→展開→直近5走 に変えた（それまでは 基本→直近5走→展開）
@@ -1049,7 +1117,7 @@
   // 展開のページ（2026-09-17 ユーザー指示）。本番の出馬表「展開」（race.js renderOverview20 の出力）をそのまま使い、
   //   （出馬表の裏に描かれた .tenkaiview の中身を写す）。上の「コースの形」（コース図・距離の帯）だけ外す。残るのは 馬場の1本バー／今週の馬場／このコースの枠順成績／脚質と展開（ペース2行つき）。
   //   中身はレースで共通なので、どの馬でも同じ。その馬の馬番だけ脚質の区画で目立たせる。
-  //   長いので、全戦績と同じく札の中を縦に動かして見る。枠や馬番を押して開く本番の札は、この画面では開かない
+  //   長いので、札の中を縦に動かして見る（全戦績のページは 2026-09-25 からページ分けにしたが、こちらは縦のまま）。枠や馬番を押して開く本番の札は、この画面では開かない
   // その馬の目立たせ方は、脚質の区画ごと明るくし、ほかの馬番を灰色にする（2026-09-17 決定・H3。黒い輪 H0・薄くする H1・一文 H2 は選ばなかった）
   let tenkaiCache = null;
   function tenkaiPage(h) {
@@ -1271,17 +1339,23 @@
   //   左＝着順（杯）と着差の札／1段目＝距離（着順のすぐ右。ユーザー「距離は着順の近くに置きたい」）｜馬場｜日付｜場｜クラス・レース名
   //   ／2段目＝タイム｜上がり｜通過順｜人気/頭数｜騎手と斤量。各段は決まった幅の列で上下をそろえる
   //   名前は alx- で始める（サイト全体の .ag＝金銀銅の箱・白い字 とぶつかったため）
+  // 2026-09-25：2段目の通過順と人気/頭数の間に枠・馬番（枠の色の四角＋中に馬番。直近5走の札と同じ umaBox）を足した
+  //   （ユーザー「ここに枠と馬番表示させたい」→ 試作 mockup-219 の W1）。枠・馬番の無い走は「—」
+  //   騎手名が5文字以上（吉村誠之助など）は 9px にする。375px幅で「人/16」と重なっていた（足す前の行でも9/21阪神12Rで5行）
   function allRowH1(d, sheet, i, r) {
     const bg = d.band ? `bd-${d.band}` : '';
     const go = sheet ? ` data-ex="${i}"` : '';
+    const ub = Number(r.umaban ?? r.gate), wk = Number(r.waku);
+    const box = `<span class="alx-wk">${ub ? umaBox(ub, wk, 'sm') : '<i>—</i>'}</span>`;
+    const jkFs = [...String(d.jockey)].length >= 5 ? ' style="font-size:9px"' : '';
     const lb = `<div class="alx-lb">${d.fin >= 1 && d.fin <= 3 ? e5Cup(d.fin, 14) : ''}<b class="bt-num alx-fin ${d.finMd}">${esc(d.finTxt)}</b><span class="alx-mg bt-num ${d.band}">${d.mgPlain}</span></div>`;
     const r1 = `<div class="alx-r alx-r1"><b class="alx-sf ${d.sf}">${esc(d.sfTxt)}<b class="bt-num">${esc(d.dist)}</b></b><span class="alx-go">${esc(d.going)}</span>
       <span class="bt-num alx-dt">${esc(d.date)}</span><span class="alx-tk">${esc(d.track)}</span><span class="alx-nm">${d.clsHtml}<span class="alx-rn">${esc(d.rn)}</span></span></div>`;
     const tm = `<span class="alx-tm">${d.tg ? e5Cup({ md1: 1, md2: 2, md3: 3 }[d.tg], 12) : ''}<b class="bt-num ${d.tg}">${esc(d.time)}</b></span>`;
     const up = `<span class="alx-up"><b class="bt-num ${d.rkMd}">${esc(d.up)}</b>${d.rk != null && d.rk <= 3 ? e5Cup(d.rk, 11) : ''}</span>`;
-    const r2 = `<div class="alx-r alx-r2">${tm}${up}<span class="bt-num alx-cn">${esc(d.corners.join('-'))}</span>
+    const r2 = `<div class="alx-r alx-r2">${tm}${up}<span class="bt-num alx-cn">${esc(d.corners.join('-'))}</span>${box}
       <span class="alx-pop"><b class="bt-num">${esc(d.pop)}</b><small>人/${d.field}</small></span>
-      <span class="alx-jk"><span class="alx-jn">${esc(d.jockey)}</span><small class="bt-num">${esc(d.weight)}</small></span></div>`;
+      <span class="alx-jk"${jkFs}><span class="alx-jn">${esc(d.jockey)}</span><small class="bt-num">${esc(d.weight)}</small></span></div>`;
     return `<div class="al-row alx ${bg}${sheet ? ' al-go' : ''}"${go}>${lb}<div class="al-m alx-m">${r1}${r2}</div>${sheet ? allDetail(d, r) : ''}</div>`;
   }
 
