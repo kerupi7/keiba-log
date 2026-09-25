@@ -254,7 +254,7 @@
     const oldBack = document.getElementById('yf-back');
     const keepBack = S.screen === 'swipe' && oldBack && Number(oldBack.dataset.n) === (Q[S.idx + 1] || {}).number ? oldBack : null;
     const keepLater = S.screen === 'swipe' ? [...document.querySelectorAll('.yf-card.later')] : [];
-    col.innerHTML = { swipe: vSwipe, view: vSwipe, ask: vAsk, duel: vDuel, marked: vMarked }[S.screen]();
+    col.innerHTML = { swipe: vSwipe, view: vSwipe, ask: vAsk, duel: vCompare, marked: vMarked }[S.screen]();
     if (S.screen === 'swipe' || S.screen === 'view') {
       fitPage();
       const deck = document.getElementById('yf-deck');
@@ -1633,8 +1633,9 @@
       </div>`;
   }
 
-  // ---------- 印を決める：2頭を左右に並べて選ぶ（2026-09-17 作り直し。Facemash のような勝ち残り型） ----------
-  //   1頭ぶんは上から ①馬の情報 ②直近5走（1走2行）③今回の適性4行 ④選ぶボタン。仕様書「印を決める画面の作り直し」
+  // ---------- 印を決める：2頭を比べて選ぶ（勝ち残り型） ----------
+  //   2026-09-25 から Apple の「モデルを比較する」の形（下の「印を決める画面を Apple の…」の節・試作 mockup-218）。
+  //   前の形（2頭を左右の札に並べ、1頭ぶんを 馬の情報／直近5走1走2行／適性の札4枚 で見せる。2026-09-17）は外した
   const SURF_LAB = (s0) => (String(s0 || '').startsWith('ダ') ? 'ダート' : '芝');
   let TK_DATA = null;
   function tenkaiData() {
@@ -1651,19 +1652,6 @@
     return (TK_DATA = { styleOf, gateOf });
   }
   const rec = (c) => (c || [0, 0, 0, 0]).map((v, i) => `<b class="${i < 3 && v ? `r${i + 1}` : ''}">${v}</b>`).join('<i>-</i>');
-  function duelRuns(h) {
-    const runs = (h.past_runs || []).slice(0, 5);
-    if (!runs.length) return '<div class="dl-none">出走記録なし</div>';
-    return runs.map((r, i) => {
-      const d = summaryRun(h, r, i);
-      return `<div class="dl-run ${d.band ? `bd-${d.band}` : ''}">
-        <div class="dl-r1"><b class="bt-num dl-fin ${d.finMd}">${esc(d.finTxt)}</b><small>着</small>${d.clsHtml}
-          <span class="bt-num ${d.sf}">${esc(d.sfTxt)}${esc(d.dist)}</span><span class="bt-num dl-mg">${d.mgTxt}</span></div>
-        <div class="dl-r2"><span class="bt-num dl-cn ${d.stc}">${esc(d.corners.join('-') || '—')}</span><span class="bt-num dl-kg">${esc(d.weight)}<small>kg</small></span></div>
-      </div>`;
-    }).join('');
-  }
-  // 今回の適性（4つ）の中身を集める
   function aptData(h) {
     const race = site.race || {};
     const surf = SURF_LAB(race.surface);
@@ -1687,52 +1675,339 @@
       hitLab, lit: c.lit, stat: c.stat,
     };
   }
-  // 今回の適性：2×2の札（コース／今日の流れ／脚質と枠／同じ条件で好走）。押すと詳しい版が出る（aptSheet）
-  function duelApt(h) {
-    const A = aptData(h);
-    const recLine = (lab, cc) => `<div class="a1-l"><span>${esc(lab)}</span><b class="bt-num">${rec(cc)}</b></div>`;
-    const flowN = A.rt && A.rt.n;
-    return `<div class="a1">
-        <div class="a1-t" data-apt="course"><i>コース</i>${recLine(A.here.replace(/(芝|ダート)\d+m$/, ''), A.hereC)}${recLine('全場', A.allC)}<small>${esc(A.all.replace(/m$/, '').replace('全場', ''))}</small></div>
-        <div class="a1-t a1-fl" data-apt="flow"><i>今日の流れ</i><small class="a1-fq">${esc(A.flowLab)}で</small><div class="a1-fv"><em>3着内</em>${flowN ? `<b class="bt-num a1-big">${Math.round(A.rt.top3_pct)}<small>%</small></b>` : '<b class="a1-big z">—</b>'}</div><small>${flowN ? `過去${A.rt.n}走 ${A.rt.counts.join('-')}` : 'この流れの走なし'}</small></div>
-        <div class="a1-t" data-apt="fit"><i>脚質と枠</i><div class="a1-g"><span>${esc(A.style)}</span>${tkG(A.styleG)}</div><div class="a1-g"><span>${A.gate}枠</span>${tkG(A.gateG)}</div></div>
-        <div class="a1-t" data-apt="hit"><i>同じ条件で好走</i><div class="a1-chips">${Object.keys(A.hitLab).map((k) => `<b class="${A.lit[k] ? 'on' : ''}" title="${esc(A.stat[k])}">${A.hitLab[k]}</b>`).join('')}</div></div>
+  // ---------- 印を決める画面を Apple の「モデルを比較する」の形に（mockup-218・2026-09-25） ----------
+  //   ユーザー「こんな感じでAppleみたいに比較できるようにしたい」（apple.com/jp/iphone/compare の PDF）。
+  //   Apple の決まり：2列を左右にそろえ、項目ごとに横で見比べる。節の見出しは大きく、下に細い線。
+  //   各行は「絵 → 大きな数字 → 下に小さな説明」。無いものは「—」。行の名前は出さない（A 案・2026-09-25 ユーザー決定）。
+  //   同日の直し（ユーザー）：大きい数字は Futura／絵を使う／直近5走は情報を増やす／「この馬を選ぶ」は常に下に出す。
+  //   絞り込みで付けた金（gold:{race_id}）は「あなたが良いと思った所」の節に出す
+  const cmpPct = (c) => {
+    const n = (c || []).reduce((s, v) => s + v, 0);
+    return n ? { p: Math.round(((c[0] + c[1] + c[2]) / n) * 100), top: c[0] + c[1] + c[2], n } : null;
+  };
+  // Apple の比較ページの絵（線の絵）。本番の絵（R_ICON・E5_ICON）で足りないものだけここで描く
+  const AI = 'currentColor';
+  const AP_ICON = {
+    odds: `<svg viewBox="0 0 32 32"><rect x="4" y="8" width="24" height="16" rx="3" fill="none" stroke="${AI}" stroke-width="2.2"/><path d="M11 8 V24" stroke="${AI}" stroke-width="2" stroke-dasharray="2 2.4"/><path d="M16.5 13 L19 16.5 L21.5 13 M19 16.5 V21 M16.8 18 H21.2" fill="none" stroke="${AI}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+    rec: `<svg viewBox="0 0 32 32"><path d="M10 5 H22 V12 A6 6 0 0 1 10 12 Z" fill="none" stroke="${AI}" stroke-width="2.2" stroke-linejoin="round"/><path d="M10 7.5 H6.5 A3.5 3.5 0 0 0 10 13 M22 7.5 H25.5 A3.5 3.5 0 0 1 22 13" fill="none" stroke="${AI}" stroke-width="2"/><path d="M16 18 V23 M11 27 H21 M12.5 27 L13.5 23 H18.5 L19.5 27" fill="none" stroke="${AI}" stroke-width="2.2" stroke-linejoin="round"/></svg>`,
+    pct: `<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="11" fill="none" stroke="${AI}" stroke-width="2.2" opacity=".25"/><path d="M16 5 A11 11 0 0 1 26.5 19.5" fill="none" stroke="${AI}" stroke-width="3" stroke-linecap="round"/></svg>`,
+    course: `<svg viewBox="0 0 32 32"><ellipse cx="16" cy="17" rx="12.5" ry="8.5" fill="none" stroke="${AI}" stroke-width="2.2"/><ellipse cx="16" cy="17" rx="7" ry="3.8" fill="none" stroke="${AI}" stroke-width="1.6" opacity=".45"/><path d="M19 6 L24.5 8.6 L19 11.2" fill="none" stroke="${AI}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+    flow: `<svg viewBox="0 0 32 32"><path d="M5 22 A11 11 0 0 1 27 22" fill="none" stroke="${AI}" stroke-width="2.2" stroke-linecap="round"/><path d="M16 22 L21.5 13.5" stroke="${AI}" stroke-width="2.4" stroke-linecap="round"/><circle cx="16" cy="22" r="2.2" fill="${AI}"/></svg>`,
+    gate: `<svg viewBox="0 0 32 32"><rect x="4" y="8" width="24" height="17" rx="2" fill="none" stroke="${AI}" stroke-width="2.2"/><path d="M10 8 V25 M16 8 V25 M22 8 V25" stroke="${AI}" stroke-width="1.8"/><path d="M4 12 H28" stroke="${AI}" stroke-width="1.8"/></svg>`,
+    style_old: `<svg viewBox="0 0 32 32"><path d="M4 22 H28" stroke="${AI}" stroke-width="2" stroke-linecap="round" opacity=".35"/><circle cx="23" cy="16" r="3.2" fill="${AI}"/><circle cx="14" cy="16" r="2.4" fill="none" stroke="${AI}" stroke-width="1.6"/><circle cx="7" cy="16" r="2.4" fill="none" stroke="${AI}" stroke-width="1.6"/><path d="M26.5 12.5 L29 16 L26.5 19.5" fill="none" stroke="${AI}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+    hit: `<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="11" fill="none" stroke="${AI}" stroke-width="2.2"/><path d="M11 16.5 L14.5 20 L21.5 12.5" fill="none" stroke="${AI}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+    gold: `<svg viewBox="0 0 32 32"><rect x="5" y="5" width="22" height="22" rx="6" fill="rgba(232,190,70,.18)" stroke="#C9961A" stroke-width="2.6"/><path d="M16 10.5 L17.6 14.2 L21.6 14.6 L18.6 17.3 L19.5 21.2 L16 19.2 L12.5 21.2 L13.4 17.3 L10.4 14.6 L14.4 14.2 Z" fill="#C9961A"/></svg>`,
+  };
+  // 脚質・通過順の絵の3案（2026-09-25 ユーザー「ここのイラストも別案にしたい」。前は ○○●＞ の並び＝style_old）
+  //   i1 位置の移り変わり（コーナーごとの位置の図を小さくした折れ線）／i2 走る馬の横顔＋風の線／i3 コーナーのカーブ上の馬群
+  AP_ICON.style_i1 = `<svg viewBox="0 0 32 32"><path d="M4 26 H28" stroke="${AI}" stroke-width="1.6" opacity=".3"/><path d="M5 8 L12 11 L19 17 L27 22" fill="none" stroke="${AI}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/><circle cx="5" cy="8" r="2.2" fill="#fff" stroke="${AI}" stroke-width="1.8"/><circle cx="12" cy="11" r="2.2" fill="#fff" stroke="${AI}" stroke-width="1.8"/><circle cx="19" cy="17" r="2.2" fill="#fff" stroke="${AI}" stroke-width="1.8"/><circle cx="27" cy="22" r="3.4" fill="${AI}"/></svg>`;
+  AP_ICON.style_i2 = `<svg viewBox="0 0 32 32"><g transform="translate(5 2) scale(.85)"><path d="M5 27 C5 19 8 13 14 10 L16 5 L19 9 C23 9 27 13 28 17 C28.5 19 27 20.5 25 20 L21 18.5 C19 20 18 23 18 27 Z" fill="${AI}"/><circle cx="21.5" cy="13" r="1.3" fill="#fff"/></g><path d="M1.5 12 H7 M0.5 17 H6 M2 22 H7" stroke="${AI}" stroke-width="2" stroke-linecap="round"/></svg>`;
+  AP_ICON.style_i3 = `<svg viewBox="0 0 32 32"><path d="M3 28 A24 24 0 0 1 28 4" fill="none" stroke="${AI}" stroke-width="1.8" opacity=".35"/><path d="M8 28 A19 19 0 0 1 28 9" fill="none" stroke="${AI}" stroke-width="1.2" opacity=".2"/><circle cx="8.5" cy="21" r="2.4" fill="none" stroke="${AI}" stroke-width="1.7"/><circle cx="13" cy="15.5" r="2.4" fill="none" stroke="${AI}" stroke-width="1.7"/><circle cx="18.5" cy="11" r="2.4" fill="none" stroke="${AI}" stroke-width="1.7"/><circle cx="25" cy="7.5" r="3.4" fill="${AI}"/></svg>`;
+  const HEAD = 'M5 27 C5 19 8 13 14 10 L16 5 L19 9 C23 9 27 13 28 17 C28.5 19 27 20.5 25 20 L21 18.5 C19 20 18 23 18 27 Z';
+  AP_ICON.turn = `<svg viewBox="0 0 32 32"><ellipse cx="16" cy="16" rx="12.5" ry="9" fill="none" stroke="${AI}" stroke-width="2.2" stroke-dasharray="46 8"/><path d="M22.5 5.2 L27.5 7.4 L23.5 11" fill="none" stroke="${AI}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  AP_ICON.style_j1 = `<svg viewBox="0 0 32 32"><path d="M1 27 H31" stroke="${AI}" stroke-width="1.4" opacity=".3"/><g transform="translate(-1.5 14) scale(.4)"><path d="${HEAD}" fill="none" stroke="${AI}" stroke-width="4.4" stroke-linejoin="round"/></g><g transform="translate(8 14) scale(.4)"><path d="${HEAD}" fill="none" stroke="${AI}" stroke-width="4.4" stroke-linejoin="round"/></g><g transform="translate(17 10.5) scale(.5)"><path d="${HEAD}" fill="${AI}"/></g></svg>`;
+  AP_ICON.style_j2 = `<svg viewBox="0 0 32 32"><rect x="2.5" y="14" width="7" height="8" rx="1.8" fill="none" stroke="${AI}" stroke-width="1.8"/><rect x="11.5" y="14" width="7" height="8" rx="1.8" fill="none" stroke="${AI}" stroke-width="1.8"/><rect x="20.5" y="12.5" width="9" height="11" rx="2.2" fill="${AI}"/><path d="M5 9 H25 M21.5 5.8 L25 9 L21.5 12.2" fill="none" stroke="${AI}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity=".55"/></svg>`;
+  AP_ICON.style_j3 = `<svg viewBox="0 0 32 32"><path d="M3 27 C3 15 11 7 25 7" fill="none" stroke="${AI}" stroke-width="2.2" stroke-linecap="round"/><path d="M8 28 C8 19 14 13 26 13" fill="none" stroke="${AI}" stroke-width="1.4" stroke-linecap="round" opacity=".35"/><path d="M27 3 V15" stroke="${AI}" stroke-width="1.8"/><path d="M27 3.5 L31 5.5 L27 7.5 Z" fill="${AI}"/><circle cx="15.5" cy="12" r="3.2" fill="${AI}"/><circle cx="9" cy="18.5" r="2.2" fill="none" stroke="${AI}" stroke-width="1.6"/></svg>`;
+  // 脚質の絵は A＝馬の隊列（style_j1）に決定（2026-09-25 ユーザー。折れ線・番号札・コーナーの旗・走る馬は選ばなかった）
+  // 回りの絵は R1＝上から見たコースを走る馬（馬の向きで回る向き。左回りは左右反転）に決定（2026-09-25 ユーザー。
+  //   時計・文字の札と、前の円の矢印・楕円の矢印・曲がる標識は選ばなかった）。
+  //   同日、今日のコース・競馬場・距離の3行の絵は、案を出す前（course・pct）に戻した（ユーザー「変更前に戻して」）
+  const TURN = {
+    R1: (left) => `<g transform="${left ? 'translate(32 0) scale(-1 1)' : ''}"><ellipse cx="16" cy="18" rx="13" ry="9" fill="none" stroke="${AI}" stroke-width="1.8" opacity=".4"/><g transform="translate(9.5 1) scale(.5)"><path d="${HEAD}" fill="${AI}"/></g><path d="M5.5 11.5 L3 14.5" stroke="${AI}" stroke-width="1.6" stroke-linecap="round" opacity=".5"/></g>`,
+    R2: (left) => `<circle cx="16" cy="16" r="10" fill="none" stroke="${AI}" stroke-width="2"/><path d="M16 10 V16 L${left ? 12 : 20} 19" fill="none" stroke="${AI}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><g transform="${left ? 'translate(32 0) scale(-1 1)' : ''}"><path d="M9 3.5 A13.5 13.5 0 0 1 27.5 8" fill="none" stroke="${AI}" stroke-width="2.2" stroke-linecap="round"/><path d="M24 4.2 L28 8.4 L22.6 9.6" fill="none" stroke="${AI}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></g>`,
+    R3: (left) => `<rect x="4" y="4" width="24" height="24" rx="7" fill="${AI}"/><text x="16" y="21.6" text-anchor="middle" font-size="15" font-weight="800" fill="#fff" font-family="-apple-system,'Hiragino Sans',sans-serif">${left ? '左' : '右'}</text>`,
+  };
+  // 3行を別々の絵で描いた組（S1〜S3）は、どれも分かりづらいとのことで外した（2026-09-25）
+  const cIcon = (k) => TURN.R1(k === 'c_turnL');
+  const apIc = (k) => (k.startsWith('c_') ? `<i class="ap-ic"><svg viewBox="0 0 32 32">${cIcon(k)}</svg></i>` : apIc0(k));
+  const apIc0 = (k) => `<i class="ap-ic">${(k === 'style' ? AP_ICON.style_j1 : AP_ICON[k]) || R_ICON[k] || E5_ICON[k] || ''}</i>`;
+  // 1行ぶん。v は [左の中身, 右の中身]。ic は絵、cap は下の小さな説明（左右で違えば配列）
+  // opt.k は行の名前（金の枠を付ける目印。例 odds・here・run0・e5-jockey）
+  let CUR = { hs: [], fr: {} };   // いま比べている2頭と、馬ごとの金の枠の付いた行（vCompare が毎回作る）
+  function cmpRow(v, opt = {}) {
+    const cap = (i) => (Array.isArray(opt.cap) ? opt.cap[i] : opt.cap);
+    const cell = (html, i) => {
+      const h = CUR.hs[i];
+      const on = opt.k && h && CUR.fr[h.number] && CUR.fr[h.number].has(opt.k);
+      const k = opt.k && h ? ` data-k="${opt.k}" data-n="${h.number}"` : '';
+      return `<div class="ap-c${on ? ' gd-on' : ''}"${k}>${opt.ic ? apIc(opt.ic) : ''}${html == null || html === '' ? '<span class="ap-dash">—</span>' : html}${cap(i) ? `<small class="ap-cap">${cap(i)}</small>` : ''}</div>`;
+    };
+    return `<div class="ap-row${opt.hero ? ' hero' : ''}">${v.map(cell).join('')}</div>`;
+  }
+  // 絞り込みで付けた金（gold の1件）が、この画面のどの行にあたるか。当たる行が無ければ null
+  //   ページの中の部品の順番（idx）は、絞り込みの GOLD_UNIT の並び（本番 yoso.js）に合わせてある
+  function goldKey(g, flowLab, here, all) {
+    const head = g.head || '';
+    const text = g.text || '';
+    if (g.page === 'sum') return `run${g.idx}`;                               // 直近5走の札 → その走
+    if (/^run\d$/.test(g.page)) return `run${g.page.slice(3)}`;              // 前走〜5走前のページ → その走
+    if (g.page === 'course') return g.idx >= 4 ? `e5-${['prev', 'jockey', 'sire', 'trainer', 'damsire'][g.idx - 4]}` : null;
+    if (g.page === 'tenkai') return g.idx >= 14 ? 'style' : g.idx >= 6 ? 'gate' : null;
+    if (g.page === 'p1') {
+      if (head === 'コース適性') {
+        if (text.includes(here)) return 'here';
+        if (text.includes(all)) return 'all';
+        if (/[左右]回り/.test(text)) return 'turn';
+        if (text.includes(here.replace(/\d+m$/, ''))) return 'track';
+        return null;
+      }
+      if (head === 'レースの型べつ成績') return text.replace(/\s.*$/, '').replace('×', '・') === flowLab ? 'flow' : null;
+      return ['odds', 'pop', 'car'][g.idx] || null;
+    }
+    return null;
+  }
+  function cmpSec(title, rows, note) {
+    return `<section class="ap-sec"><h3>${esc(title)}</h3>${note ? `<p class="ap-note">${note}</p>` : ''}${rows.join('')}</section>`;
+  }
+  const bigNum = (n, u) => `<span class="ap-bn"><b class="ap-big">${n}</b>${u ? `<small class="ap-u">${u}</small>` : ''}</span>`;
+  const midNum = (n, u, sub) => `<span class="ap-bn"><b class="ap-mid">${n}</b>${u ? `<small class="ap-u2">${u}</small>` : ''}${sub ? `<small class="ap-sub2">${sub}</small>` : ''}</span>`;
+  // 直近5走の1走ぶん。本番の過去走のページの項目をまとめて出す（2026-09-25 ユーザー「もっと情報を入れたい」）
+  function cmpRun(h, r, i) {
+    const d = summaryRun(h, r, i);
+    const cup = d.fin >= 1 && d.fin <= 3 ? e5Cup(d.fin, 18) : '';
+    const up = `${esc(d.up)}${d.rk != null ? `<small>${d.rk}位</small>` : ''}`;
+    // 勝ち馬の行は1行に収める（2026-09-25 ユーザー「ここ2段は嫌だ」）。名前と最高成績の長さで字を小さくする
+    const wLen = [...String(d.winner || '')].length + (d.bpHtml ? 5 : 0) + 3;
+    const wFs = wLen <= 13 ? 11.5 : wLen <= 16 ? 10.5 : 9.5;
+    const li = (ic, html, cls = '') => `<span class="ap-ri ${cls}">${apIc(ic)}<span>${html}</span></span>`;
+    return `<div class="ap-run ${d.band ? `bd-${d.band}` : ''}" data-run="${h.number}:${i}" role="button" tabindex="0" aria-label="${esc(h.name)} ${RUN_LABEL[i]}の詳しいページ">
+        <div class="ap-r1">${cup}<b class="ap-fin ${d.finMd}">${esc(d.finTxt)}</b><small class="ap-u2">着</small>
+          ${d.sc ? `<span class="ap-sc sc-a">${esc(d.sc)}</span>` : ''}<span class="ap-mg ${d.band}">${esc(d.mgTxt)}<small>秒</small></span></div>
+        <div class="ap-r2"><span class="bt-num">${esc(d.date)}</span><span>${esc(d.track)}</span>
+          <span class="ap-sf ${d.sf}">${esc(d.sfTxt)}<b>${esc(d.dist)}</b></span><span>${esc(d.going)}</span></div>
+        <div class="ap-r3">${d.clsHtml}<span class="ap-rn">${esc(d.rn)}</span>${d.lv ? `<span class="race20 ap-lv">${d.lv}</span>` : ''}</div>
+        <div class="ap-r4">
+          ${li('pop', `<b>${esc(d.pop)}</b>人気<small>／${esc(d.field)}頭</small>`)}
+          ${li('time', `<b class="${d.tg}">${esc(d.time)}</b>`)}
+          ${li('up', `<b class="${d.rkMd}">${up}</b>`)}
+          ${li('style', `<span class="ap-cn">${d.corners.map((c) => `<i>${esc(c)}</i>`).join('')}</span>${d.sc ? `<span class="ap-sc sc-b">${esc(d.sc)}</span>` : ''}${d.st ? `<small class="ap-st">${d.st}</small>` : ''}`)}
+          ${li('jockey', `${esc(d.jockey)}<small>${esc(d.weight)}kg</small>`)}
+          ${li('bw', `<b>${esc(d.bw)}</b><small>kg</small>`)}
+        </div>
+        <div class="ap-r5" style="font-size:${wFs}px"><small>${d.winLab}</small><span class="ap-wn">${esc(d.winner)}</span>${d.bpHtml ? `<span class="race20 mx">${d.bpHtml}</span>` : ''}</div>
       </div>`;
   }
-  function duelSide(h, side) {
-    const t = S.t;
-    const champ = t.champ === h.number && t.streak > 0;
-    const nlen = [...String(h.name || '')].length;
-    const nfs = nlen <= 7 ? 16 : nlen <= 8 ? 14.5 : nlen <= 9 ? 13 : 12;
-    const pop = h.popularity != null ? `${h.popularity}人気` : '';
-    const moved = side === 'l' && t.shift;
-    return `<div class="dl-side ${side}${t.fresh === side ? ' fresh' : ''}${moved ? ' shift' : ''}${champ ? ' champ' : ''}" data-side="${h.number}">
-      ${champ ? `<span class="dl-streak${t.bump ? ' bump' : ''}">${t.streak}連勝中</span>` : '<span class="dl-streak z"></span>'}
-      <div class="dl-head">
-        <div class="dl-h1">${umaBox(h.number, h.gate)}<b class="dl-nm" data-hist="${h.number}" style="font-size:${nfs}px">${esc(h.name)}<i>›</i></b></div>
-        <div class="dl-h2">${esc(h.sex_age || '')} ${esc(h.weight_carried ?? '')}kg ${esc(h.jockey || '')}</div>
-        <div class="dl-h3"><b class="bt-num">${h.odds != null ? h.odds.toFixed(1) : '—'}</b><small>倍</small><span>${esc(pop)}</span><span class="race20">${P(h.number).badge}</span></div>
-      </div>
-      <div class="dl-sec dl-runsec"><i class="dl-cap">直近5走</i>${duelRuns(h)}</div>
-      <div class="dl-sec">${duelApt(h)}</div>
-      <button type="button" class="dl-go" data-pick="${h.number}">この馬を選ぶ</button>
-    </div>`;
-  }
-
-  function vDuel() {
+  let cmpWait = null;
+  function vCompare() {
     const t = S.t;
     const mk = MARKS3[S.step];
-    // 入ってくる馬・連勝の札・VS の動きは、選んだ直後の1回だけ（描き直しで繰り返さない）
-    const fresh = t.fresh;
-    const html = `${head('2 / 2　印を決める', `${mk} を決めよう`, Math.round((t.done / t.total) * 100))}
-      <div class="yf-lead">どっちがいい？（${mk} まで あと${t.total - t.done}回）</div>
-      <div class="dl-wrap mx" id="dl-wrap"><div class="dl-grid">${duelSide(byNum(t.left), 'l')}${duelSide(byNum(t.right), 'r')}<span class="dl-vs${fresh ? ' pop' : ''}">VS</span></div></div>
-      <label class="yf-haptic" aria-hidden="true"><input type="checkbox" switch id="yf-hap" tabindex="-1"></label>`;
-    t.fresh = null;
-    t.bump = false;
-    t.shift = false;
-    return html;
+    const L = byNum(t.left), R = byNum(t.right);
+    const HS = [L, R];
+    const gold = goldLoad();
+    const A0 = aptData(L);
+    // 金の見せ方は G1：絞り込みで付けた金を、表の同じ項目に金の枠で出す（2026-09-25 ユーザー決定。
+    //   この画面で押して付ける G2・両方の G3 は選ばなかった）
+    const pick = (g) => g.page !== 'cmp';
+    CUR = { hs: HS, fr: {} };
+    const rest = {};
+    HS.forEach((h) => {
+      CUR.fr[h.number] = new Set();
+      rest[h.number] = [];
+      (gold[h.number] || []).filter(pick).forEach((g) => {
+        const k = goldKey(g, A0.flowLab, A0.here, A0.all);
+        if (k) CUR.fr[h.number].add(k); else rest[h.number].push(g);
+      });
+    });
+    const car = (h) => {
+      const all = (h.past_runs || []).concat(h.career_runs || []);
+      return all.length ? all.reduce((c, r) => { const f = parseInt(r.finish, 10); c[(f >= 1 && f <= 3) ? f - 1 : 3] += 1; return c; }, [0, 0, 0, 0]) : null;
+    };
+    // ---- 上の2列（Apple の機種の欄） ----
+    const top = HS.map((h, i) => `<div class="ap-top dl-side ${i ? 'r' : 'l'}" data-side="${h.number}">
+        <div class="ap-tn" data-hist="${h.number}">${umaBox(h.number, h.gate)}<b>${esc(h.name)}</b><i class="ap-chev">›</i></div>
+        <div class="ap-ts">${esc(h.sex_age || '')}・${esc(String(h.weight_carried ?? '').replace(/\.0$/, ''))}kg・${esc(h.jockey || '')}</div>
+      </div>`).join('');
+    // ---- あなたが良いと思った所（絞り込みの金） ----
+    const cnt = HS.map((h) => CUR.fr[h.number].size + rest[h.number].length);
+    const gCap = '絞り込みで金の枠を付けた所。下の表の中にも金の枠で出す';
+    const gRows = [cmpRow(cnt.map((c) => bigNum(c, 'つ')), { hero: true, ic: 'gold', cap: gCap })];
+    const gl = HS.map((h) => rest[h.number]);
+    if (gl[0].length || gl[1].length) gRows.push('<div class="ap-rh">この画面に出ていない所</div>');
+    for (let i = 0; i < Math.max(gl[0].length, gl[1].length); i += 1) {
+      gRows.push(cmpRow(gl.map((g) => (g[i] ? `<span class="ap-gd"><i>${esc(g[i].label)}</i>${g[i].head ? `<small>${esc(g[i].head)}</small>` : ''}<span>${esc(g[i].text)}</span></span>` : null))));
+    }
+    const gSec = cmpSec('あなたが良いと思った所', gRows).replace('<section class="ap-sec">', '<section class="ap-sec ap-gsec">');
+    // ---- 概要 ----
+    const cars = HS.map(car);
+    // 2026-09-25 ユーザー指示で「単勝オッズ」「通算（1着-2着-3着-着外）」の説明と、通算の3着内の割合の行を外した
+    const over = cmpSec('概要', [
+      cmpRow(HS.map((h) => (h.odds != null ? bigNum(h.odds.toFixed(1), '倍') : null)), { hero: true, ic: 'odds', k: 'odds' }),
+      cmpRow(HS.map((h) => (h.popularity != null ? midNum(h.popularity, '番人気') : null)), { ic: 'pop', k: 'pop' }),
+      cmpRow(cars.map((c) => (c ? `<span class="ap-rec">${rec(c)}</span>` : null)), { ic: 'rec', k: 'car' }),
+    ]);
+    // ---- コース適性 ----
+    const A = HS.map(aptData);
+    // コース適性は、基本のページの輪と同じ「好走」で数える（course_record.apt。2026-09-25：3着内で数えていたら、
+    //   同じ馬で輪は「0%・0/1走」、この画面は「100%・1/1走」と食い違った＝サムシングニューの中山ダ1800m 2着）
+    const AP = HS.map((h) => (h.course_record || {}).apt || {});
+    const gp = (o) => (o && o.n ? { p: Math.round((o.good / o.n) * 100), top: o.good, n: o.n } : null);
+    const tdy = (arr) => (arr || []).find((x) => x.today) || null;
+    const here = AP.map((a) => gp(a.course));
+    const trk = AP.map((a) => gp(a.track));
+    const dst = AP.map((a) => gp(tdy(a.dist)));
+    const trn = AP.map((a) => tdy(a.turn));
+    const race0 = site.race || {};
+    const trkLab = `${race0.track || ''}${SURF_LAB(race0.surface)}`;
+    // 3行の絵は先頭の行だけ（下の2行は絵なし・Apple と同じ）に決定（2026-09-25 ユーザー。3行とも同じ絵・3行を別々の絵は選ばなかった）
+    const sameIc = null;
+    const gCnt = (x, lab) => `${lab}の好走${x ? `・${x.top}/${x.n}走` : '・走っていない'}`;
+    const course = cmpSec('コース適性', [
+      cmpRow(here.map((x) => (x ? bigNum(x.p, '%') : null)), { hero: true, ic: 'course', k: 'here', cap: here.map((x) => gCnt(x, esc(A[0].here))) }),
+      cmpRow(trk.map((x) => (x ? midNum(x.p, '%', `${x.top}/${x.n}走`) : null)), { ic: sameIc, cap: `${esc(trkLab)}の好走`, k: 'track' }),
+      cmpRow(dst.map((x) => (x ? midNum(x.p, '%', `${x.top}/${x.n}走`) : null)), { ic: sameIc, cap: `${esc(A[0].all)}の好走`, k: 'all' }),
+      cmpRow(trn.map((t) => (t && t.n ? midNum(Math.round((t.good / t.n) * 100), '%', `${t.good}/${t.n}走`) : null)), { ic: String((trn[0] || {}).label || '').startsWith('左') ? 'c_turnL' : 'c_turn', cap: trn.map((t) => `${esc((t && t.label) || '今日の回り')}の好走`), k: 'turn' }),
+    ], `好走＝1着か、勝ち馬と${SURF_LAB(race0.surface) === '芝' ? '0.4' : '0.6'}秒差以内`);   // 2026-09-25 ユーザー「もっと短く」
+    // ---- 今日の流れ ----
+    const rts = A.map((a) => a.rt);
+    const flow = cmpSec('今日の流れ', [
+      cmpRow(rts.map((r) => (r && r.n ? bigNum(Math.round(r.top3_pct), '%') : null)), { hero: true, ic: 'flow', k: 'flow', cap: rts.map((r) => `${esc(A[0].flowLab)}での3着内${r && r.n ? `・${r.top3}/${r.n}走` : '・走っていない'}`) }),
+      cmpRow(A.map((a) => `<span class="ap-bn"><b class="ap-mid ap-jp">${esc(a.style)}</b>${tkG(a.styleG)}</span>`), { ic: 'style', cap: '脚質と今日の評価', k: 'style' }),
+      cmpRow(A.map((a) => `<span class="ap-bn"><b class="ap-mid">${a.gate}</b><small class="ap-u2">枠</small>${tkG(a.gateG)}</span>`), { ic: 'gate', cap: '枠と今日の評価', k: 'gate' }),
+      cmpRow(A.map((a) => {
+        const on = Object.keys(a.hitLab).filter((k) => a.lit[k]).map((k) => `<b>${a.hitLab[k]}</b>`);
+        return on.length ? `<span class="ap-chips">${on.join('')}</span>` : null;
+      }), { ic: 'hit', cap: '今回と同じ条件で好走したもの', k: 'hit' }),
+    ]);
+    // ---- 騎手・血統（このコースでの3着内の割合） ----
+    let blood = '';
+    if (site.course_entities) {
+      // 前走コースの行は data/courses/{course_id}.json を読んでから出す。本番はコースのページを開いた時だけ読むので、
+      //   ここでも読み、読み終えたら描き直す（2026-09-25：読まないまま「このコースで0走」と出ていた）
+      if (e5Course == null) {
+        e5Load();
+        clearInterval(cmpWait);
+        cmpWait = setInterval(() => {
+          if (e5Course == null) return;
+          clearInterval(cmpWait);
+          if (!S || S.screen !== 'duel') return;
+          const b0 = document.getElementById('ap-body');
+          const y = b0 ? b0.scrollTop : 0;
+          render();
+          const b1 = document.getElementById('ap-body');
+          if (b1) b1.scrollTop = y;
+        }, 150);
+      }
+      const E = HS.map(e5Rows);
+      blood = cmpSec('騎手・血統', E[0].map((r0, k) => {
+        const rr = [r0, E[1][k]];
+        // 2026-09-25 ユーザー「騎手・血統部分も上位の数字は金銀銅にして」。順位はこのレースの出走馬の中で（本番のコースのページと同じ）
+        const md = (r) => (r.rank >= 1 && r.rank <= 3 ? ` md${r.rank}` : '');
+        return cmpRow(rr.map((r) => `<span class="ap-e5">${e5Name(r)}${r.v
+          ? `<span class="ap-bn${md(r)}">${r.rank && r.rank <= 3 ? `<span class="ap-cup">${e5Cup(r.rank, 20)}</span>` : ''}<b class="ap-mid">${r.v[3].toFixed(1)}</b><small class="ap-u2">%</small><small class="ap-sub2">${r.v[0]}走${r.rank ? `・${r.rank}位/${r.of}頭` : r.thin ? '・走数少' : ''}</small></span>`
+          : `<span class="ap-dash">${r.wait ? '読み込み中' : r.dim === 'prev' && !r.key ? '前走なし' : 'このコースで0走'}</span>`}</span>`), { ic: r0.dim, cap: `${E5_SHORT[r0.dim]}・このコースの3着内`, k: `e5-${r0.dim}` });
+      }));
+    }
+    // ---- 直近5走 ----
+    const runs = HS.map((h) => (h.past_runs || []).slice(0, 5));
+    const rRows = [];
+    for (let i = 0; i < 5; i += 1) {
+      if (!runs[0][i] && !runs[1][i]) break;
+      rRows.push(`<div class="ap-rh">${RUN_LABEL[i]}</div>`);
+      rRows.push(cmpRow(HS.map((h, s) => (runs[s][i] ? cmpRun(h, runs[s][i], i) : null)), { k: `run${i}` }));
+    }
+    const recent = cmpSec('直近5走', rRows);
+    return `<div class="ap">
+        <div class="ap-bar"><div><small>2 / 2　印を決める</small><b>${mk} を決めよう</b></div><span class="ap-left">あと${t.total - t.done}回</span>
+          <button type="button" class="ap-quit" data-act="quit">やめる</button></div>
+        <div class="ap-body" id="ap-body">
+          <div class="ap-tops">${top}</div>
+          <div class="ap-stk">${HS.map((h) => `<div data-hist="${h.number}">${umaBox(h.number, h.gate, 'sm')}<b>${esc(h.name)}</b><i class="ap-chev">›</i></div>`).join('')}</div>
+          ${gSec}${over}${course}${flow}${blood}${recent}
+        </div>
+        <div class="ap-pick">${HS.map((h) => `<button type="button" class="ap-go" data-pick="${h.number}"><span>${esc(h.name)}</span>この馬を選ぶ</button>`).join('')}</div>
+      </div>`;
   }
+  // 勝ち馬の行：名前が「…」で切れなくなるまで、その行の字を0.5pxずつ小さくする（下限8.5px）。
+  //   字数だけで決めると、iPhone の幅で4頭が切れた（2026-09-25・390px で確認）
+  function fitWin() {
+    document.querySelectorAll('.ap-r5').forEach((r) => {
+      const wn = r.querySelector('.ap-wn');
+      if (!wn) return;
+      r.classList.remove('nolab');   // 「勝ち」を出した状態で測り直す（外したまま測ると、入ったと見なして戻してしまう）
+      let f = parseFloat(r.style.fontSize) || 11.5;
+      while (wn.scrollWidth > wn.clientWidth && f > 8.5) { f -= 0.5; r.style.fontSize = `${f}px`; }
+      // それでも切れるときは「勝ち」「2着」の文字を外して、名前を優先する（例：ビービークローサー＋最高成績）
+      if (wn.scrollWidth > wn.clientWidth) r.classList.add('nolab');
+    });
+  }
+  //   描画の合図（requestAnimationFrame）は画面が裏にあると止まるので、短い待ち時間でまとめて動かす
+  let fitT = null;
+  const fitSoon = () => { clearTimeout(fitT); fitT = setTimeout(fitWin, 60); };
+  new MutationObserver(() => { if (document.querySelector('.ap-r5')) fitSoon(); })
+    .observe(document.documentElement, { childList: true, subtree: true });
+  window.addEventListener('resize', fitSoon);
+  // 上の2列が画面から出たら、2頭の名前の帯を上に出す（Apple の比較ページと同じ）
+  document.addEventListener('scroll', (e) => {
+    const b = e.target;
+    if (!b || b.id !== 'ap-body') return;
+    const tops = b.querySelector('.ap-tops');
+    b.classList.toggle('stuck', Boolean(tops) && b.scrollTop > tops.offsetTop + tops.offsetHeight - 8);
+  }, true);
+
+  // ---------- 馬名を押したら、その馬の詳しいページを上に重ねて開く（2026-09-25 ユーザー「馬名を押したら詳細が確認できるように」） ----------
+  //   中身は絞り込みのカードと同じページ（基本・コース・展開・直近5走・前走〜5走前・全戦績）。上の札で切り替える。
+  //   絞り込みで付けた金は、ここでも同じ部品に金の枠で出す（見るだけ。ここでは付け外ししない）。
+  //   前は名前を押すと「全戦績」だけが下から出ていた（histSheet。2026-09-25 に外した）
+  let DT = null;
+  function detailPaint(pe, h, pg) {
+    goldCols(pe);
+    const units = goldUnits(pe);
+    (goldLoad()[h.number] || []).filter((x) => x.page === pgKey(pg)).forEach((x) => { const u = units[x.idx]; if (u) u.classList.add('gd-u', 'gd-on'); });
+    goldTwins(pe);
+  }
+  function detailRender() {
+    const { h, i } = DT;
+    const pages = pagesOf(h);
+    const pg = pages[i];
+    DT.el.innerHTML = `<div class="ap-dt-bar"><div class="ap-dt-nm">${umaBox(h.number, h.gate)}<b>${esc(h.name)}</b></div>
+        <button type="button" class="ap-quit" data-dt="close">閉じる</button></div>
+      <div class="ap-dt-tabs" role="tablist">${pages.map((p, k) => `<button type="button" role="tab" class="${k === i ? 'on' : ''}" data-dt="${k}">${esc(p.label)}</button>`).join('')}</div>
+      <div class="ap-dt-body" id="ap-dt-body"><div class="ap-dt-page">${pageHtml(h, pg)}</div></div>
+      <div class="ap-dt-nav"><button type="button" data-dt="prev"${i === 0 ? ' disabled' : ''}>‹ 前のページ</button><button type="button" data-dt="next"${i === pages.length - 1 ? ' disabled' : ''}>次のページ ›</button></div>`;
+    detailPaint(DT.el.querySelector('.ap-dt-page'), h, pg);
+    const on = DT.el.querySelector('.ap-dt-tabs .on');
+    if (on) on.scrollIntoView({ block: 'nearest', inline: 'center' });
+  }
+  function openDetail(h, first = 0) {
+    if (!root || !h) return;
+    DT = { h, i: first, el: document.createElement('div') };
+    DT.el.className = 'ap-dt';
+    root.appendChild(DT.el);
+    detailRender();
+  }
+  document.addEventListener('click', (e) => {
+    // 比べる画面の馬名 → 詳細を開く（本番の「全戦績だけのシート」より先に受ける）
+    const nm = e.target.closest && e.target.closest('.ap [data-hist]');
+    if (nm && !DT) { e.stopPropagation(); e.preventDefault(); openDetail(byNum(Number(nm.dataset.hist))); return; }
+    // 直近5走の札 → その馬の、その走のページ（前走〜5走前）を開く（2026-09-25 ユーザー「ここタップしたら詳細ページが開くように」）
+    const rn = e.target.closest && e.target.closest('.ap .ap-run[data-run]');
+    if (rn && !DT) {
+      e.stopPropagation(); e.preventDefault();
+      const [n, i] = rn.dataset.run.split(':').map(Number);
+      const h = byNum(n);
+      const at = pagesOf(h).findIndex((pg) => pg.k === 'run' && pg.i === i);
+      openDetail(h, at >= 0 ? at : 0);
+      return;
+    }
+    const b = DT && e.target.closest && e.target.closest('[data-dt]');
+    if (!b) return;
+    e.stopPropagation();
+    const a = b.dataset.dt;
+    if (a === 'close') { DT.el.remove(); DT = null; return; }
+    const n = pagesOf(DT.h).length;
+    const to = a === 'prev' ? DT.i - 1 : a === 'next' ? DT.i + 1 : Number(a);
+    if (to < 0 || to >= n) return;
+    DT.i = to;
+    detailRender();
+    const body = document.getElementById('ap-dt-body');
+    if (body) body.scrollTop = 0;
+  }, true);
+  // 札はキーボードの Enter でも開く
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter' || DT) return;
+    const rn = e.target.closest && e.target.closest('.ap .ap-run[data-run]');
+    if (rn) rn.click();
+  });
 
   function vMarked() {
     const mk = MARKS3[S.step];
@@ -1882,87 +2157,6 @@
     bindCard();
     S.promote = true;
     fillBack();
-  }
-  // 戦績のシート（比べる画面で馬名を押したとき）。全戦績と同じ2行の一覧を、下から出る札の中で縦に動かして見る
-  // 下から出るシート（比べる画面の上に重ねる。閉じるボタンか外側を押すと閉じる）
-  function infoSheet(h, sub, body) {
-    const rootEl = document.querySelector('.yf');
-    if (!h || !rootEl || rootEl.querySelector('.yf-hist-bg:not(.out)')) return;
-    rootEl.querySelectorAll('.yf-hist-bg.out').forEach((x) => x.remove());   // 閉じかけのシートは待たずに外す
-    const bg = document.createElement('div');
-    bg.className = 'yf-hist-bg';
-    bg.innerHTML = `<div class="yf-hist">
-      <div class="yf-hist-hd">${umaBox(h.number, h.gate)}<b>${esc(h.name)}</b><span>${esc(sub)}</span><button type="button" class="yf-hist-x" data-hx="1">閉じる</button></div>
-      <div class="yf-hist-body">${body}</div>
-    </div>`;
-    rootEl.appendChild(bg);
-    const shut = () => { bg.classList.add('out'); setTimeout(() => bg.remove(), 260); };
-    bg.addEventListener('click', (e) => {
-      if (e.target === bg || e.target.closest('[data-hx]')) { shut(); return; }
-      // 戦績の行を押すと、その走の中身を開く。開くのは1走だけ（ほかの開いている行は閉じる）
-      const row = e.target.closest('[data-ex]');
-      if (!row) return;
-      e.stopPropagation();
-      const was = row.classList.contains('open');
-      bg.querySelectorAll('[data-ex].open').forEach((x) => x.classList.remove('open'));
-      if (!was) { row.classList.add('open'); haptic(); }
-    });
-  }
-  function histSheet(h) {
-    const n = allRuns(h).length;
-    infoSheet(h, `戦績 ${n}走`, n ? allPage(h, 0, n, true) : '<p class="dl-none">出走記録なし</p>');
-  }
-  // 適性の札の詳しい版。コースと今日の流れは1ページ目（基本）の札を、脚質と枠は展開のページをそのまま使う
-  const GAP_LAB = ['中2週まで', '中3〜5週', '中6〜9週', '中10週以上'];
-  function pickCard(html, sel) {
-    const w = document.createElement('div');
-    w.innerHTML = html;
-    const el = w.querySelector(sel);
-    return el ? `<div class="race20 rvC c3 mx hd-r3 b-page yf-sheetpg">${el.outerHTML}</div>` : '';
-  }
-  function hitDetail(h) {
-    const c = condOf(h);
-    const A = aptData(h);
-    const td = c.today;
-    const nowTxt = {
-      gap: td.gap == null ? '初出走' : GAP_LAB[td.gap],
-      weight: td.weight == null ? '—' : `${String(td.weight).replace(/\.0$/, '')}kg`,
-      // 比べるときは「稍」に縮めるが、画面には発表どおり「稍重」と出す（2026-09-21）
-      going: (site.race || {}).going || td.going || '—',
-      jockey: h.jockey || '—',
-    };
-    const tot = c.runs.length;
-    const top = c.runs.filter((x) => finN(x.finish) <= 3).length;
-    const rows = Object.keys(A.hitLab).map((k) => {
-      const xs = c.runs.filter(c.same[k]);
-      const t3 = xs.filter((x) => finN(x.finish) <= 3).length;
-      const list = xs.slice(0, 6).map((x) => {
-        const f = finN(x.finish);
-        return `<div class="ht-run"><span class="bt-num">${esc(String(x.date).slice(2))}</span><span>${esc(x.track || '')}</span>
-          <span class="ht-rn">${esc(stripClass(x.race_name))}</span><b class="bt-num ${f != null && f <= 3 ? `r${f}` : ''}">${esc(x.finish)}着</b></div>`;
-      }).join('');
-      return `<div class="ht-sec${c.lit[k] ? ' on' : ''}">
-        <div class="ht-h"><b class="ht-k">${A.hitLab[k]}</b><span>今回 <b>${esc(nowTxt[k])}</b></span><em>${c.lit[k] ? '好走あり' : '当てはまらない'}</em></div>
-        <div class="ht-s">同じ条件で <b class="bt-num">${xs.length}</b>走・3着内 <b class="bt-num">${t3}</b>回
-          <small>（${xs.length ? Math.round((t3 / xs.length) * 100) : 0}%／全戦績 ${tot ? Math.round((top / tot) * 100) : 0}%）</small></div>
-        ${list ? `<div class="ht-list">${list}${xs.length > 6 ? `<div class="ht-more">ほか${xs.length - 6}走</div>` : ''}</div>` : ''}
-      </div>`;
-    }).join('');
-    return `<div class="ht-page"><p class="ht-note">同じ条件の走で、3着内に入った割合が全戦績と同じか上なら緑（2走以上・3着内1回以上）</p>${rows}</div>`;
-  }
-  function aptSheet(h, kind) {
-    if (!h) return;
-    if (kind === 'course') infoSheet(h, 'コース適性', pickCard(basicPage(h), '.b-crd'));
-    else if (kind === 'flow') infoSheet(h, 'レースの型べつ成績', pickCard(basicPage(h), '.b-rtd'));
-    else if (kind === 'fit') {
-      // 展開のページから「ペース・脚質・枠」だけ残す。今日の馬場の帯と、スコアボードの今週の2行を外す
-      //   （2026-09-24 に展開のページを tkMap へ作り直した時に、古い札の名前 .w2-hero/.w2-week のままで外れていなかったのを直した）
-      const w = document.createElement('div');
-      w.innerHTML = tenkaiPage(h);
-      w.querySelectorAll('.tk3-sky, .tk3-sep, .tk3-board .tk3-r:not(:first-child)').forEach((x) => x.remove());
-      infoSheet(h, '脚質と枠', `<div class="yf-sheetpg">${w.innerHTML}</div>`);
-    }
-    else if (kind === 'hit') infoSheet(h, '同じ条件で好走', hitDetail(h));
   }
   function quitSheet(onCancel) {
     const root = document.querySelector('.yf');
@@ -2237,16 +2431,7 @@
       if (btn) btn.click();
       return;
     }
-    // 比べる画面で馬名を押したら、その馬の戦績を下から出す（選ぶ動作にはしない）
-    const hist = e.target.closest('[data-hist]');
-    if (hist) { e.stopPropagation(); histSheet(byNum(Number(hist.dataset.hist))); return; }
-    // 比べる画面で適性の札を押したら、その中身の詳しい版を下から出す（選ぶ動作にはしない）
-    const apt = e.target.closest('[data-apt]');
-    if (apt && S.screen === 'duel') {
-      const side = apt.closest('[data-side]');
-      if (side) { e.stopPropagation(); aptSheet(byNum(Number(side.dataset.side)), apt.dataset.apt); }
-      return;
-    }
+    // 馬名・直近5走の札を押したときは、比べる画面の側（openDetail）が先に受ける
     const pk = e.target.closest('[data-pick]');
     if (pk && S.screen === 'duel' && !S.busy) {
       S.busy = true;

@@ -1110,3 +1110,169 @@ html.rc-frame .mx .mg-close .mg-tag{background:#5E7185}
 .yf .gd-col{display:block;border-radius:10px;margin:-2px -1px}
 /* 展開の地図の列：下の脚質の札に金が付いたら、列にも金の枠。列の地（.tk3-zb）は薄く透かしてあるので別の箱に描く */
 .yf .gd-zbox{position:absolute;display:block;pointer-events:none;border-radius:6px;box-shadow:inset 0 0 0 3px #C9961A,inset 0 0 0 999px rgba(232,190,70,.14)}
+
+/* ===== 印を決める画面：Apple の「モデルを比較する」の形（2026-09-25・試作 mockup-218） =====
+   白地・2列を左右にそろえる・節の見出しは大きく下に細い線・各行は「絵 → 大きな数字 → 小さな説明」・無いものは「—」。
+   同日の直し：大きい数字は Futura（サイトの数字と同じ）／絵を使う／直近5走を詳しく／「この馬を選ぶ」は画面の下に固定 */
+.ap{position:fixed;inset:0;z-index:60;background:#fff;color:#1d1d1f;display:flex;flex-direction:column;
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Hiragino Sans","Hiragino Kaku Gothic ProN",sans-serif;
+  -webkit-font-smoothing:antialiased}
+.ap-bar{flex:none;display:flex;align-items:center;gap:10px;padding:calc(10px + env(safe-area-inset-top, 0px)) 16px 9px;border-bottom:1px solid #d2d2d7;background:rgba(255,255,255,.92)}
+.ap-bar>div{display:flex;flex-direction:column;line-height:1.25}
+.ap-bar small{font-size:11px;color:#6e6e73}
+.ap-bar b{font-size:17px;font-weight:700}
+.ap-left{margin-left:auto;font-size:13px;color:#6e6e73}
+.ap-quit{appearance:none;border:0;background:none;color:#0066cc;font:inherit;font-size:14px;padding:4px 0 4px 6px;cursor:pointer}
+.ap-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 16px 40px}
+/* 上の2列（機種の欄にあたる） */
+.ap-tops{display:grid;grid-template-columns:1fr 1fr;gap:18px;padding:22px 0 10px}
+.ap .ap-top.dl-side{background:none;box-shadow:none;border:0;padding:0;border-radius:0;min-height:0;display:flex;flex-direction:column;gap:6px;min-width:0}
+.ap-tn{display:flex;align-items:center;gap:6px;min-width:0;max-width:100%}
+.ap-tn b{font-size:19px;font-weight:700;letter-spacing:-.01em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
+.ap-ts{font-size:12px;color:#6e6e73}
+.ap-top.lose{opacity:.35}
+/* スクロールしても2頭の名前を上に残す（上の2列が隠れてから出す） */
+.ap-stk{position:sticky;top:0;z-index:2;display:grid;grid-template-columns:1fr 1fr;gap:18px;margin:0 -16px;padding:8px 16px;
+  background:rgba(255,255,255,.94);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);border-bottom:1px solid #e8e8ed;
+  opacity:0;pointer-events:none;transition:opacity .2s}
+.ap-body.stuck .ap-stk{opacity:1}
+.ap-stk>div{display:flex;align-items:center;gap:5px;min-width:0}
+.ap-stk b{font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* 「この馬を選ぶ」は画面の下に固定（2026-09-25 ユーザー「常に下に表示しておきたい」） */
+.ap-pick{flex:none;display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:10px 16px calc(10px + env(safe-area-inset-bottom));
+  border-top:1px solid #d2d2d7;background:rgba(255,255,255,.94);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px)}
+.ap-go{appearance:none;border:0;border-radius:14px;background:#0071e3;color:#fff;font:inherit;font-size:15px;font-weight:600;
+  padding:8px 10px 9px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:1px;min-width:0}
+.ap-go span{font-size:11px;font-weight:500;opacity:.85;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ap-go:active{background:#0062c4}
+.ap-go.done{background:#34c759}
+/* 節 */
+.ap-sec{padding-top:36px}
+.ap-sec h3{font-size:24px;font-weight:700;letter-spacing:-.01em;margin:0;padding-bottom:14px;border-bottom:1px solid #d2d2d7}
+.ap-note{font-size:12px;color:#6e6e73;margin:10px 0 0}
+.ap-row{display:grid;grid-template-columns:1fr 1fr;column-gap:10px;padding-top:12px;margin:0 -8px}
+/* 行の中身は内側に8px。金の枠をこの余白の上に描くので、枠が付いても字の位置は動かない */
+.ap-c{min-width:0;font-size:15px;line-height:1.35;display:flex;flex-direction:column;align-items:flex-start;padding:8px;border-radius:14px;
+  transition:box-shadow .18s ease,background-color .18s ease}
+/* 良いと思った所の金の枠（絞り込みの金の枠と同じ太さ・色） */
+.ap-c.gd-on{background:rgba(232,190,70,.13);box-shadow:inset 0 0 0 3px #C9961A,0 3px 10px rgba(201,150,26,.22)}
+.ap-c.gd-pop{animation:apPop .32s cubic-bezier(.32,.72,0,1)}
+@keyframes apPop{0%{transform:scale(1)}40%{transform:scale(.97)}100%{transform:scale(1)}}
+/* 騎手・血統の1〜3位は金銀銅（2026-09-25 ユーザー指示。色はサイトの金銀銅と同じ） */
+.ap .md1 .ap-mid,.ap .md1 .ap-u2{color:#C49A1C} .ap .md2 .ap-mid,.ap .md2 .ap-u2{color:#5E7185} .ap .md3 .ap-mid,.ap .md3 .ap-u2{color:#B06A34}
+.ap-cup{display:inline-flex;align-self:center;margin-right:4px}
+/* 絵（Apple の比較ページの線の絵の大きさ） */
+.ap-ic{display:block;width:34px;height:34px;color:#1d1d1f;margin-bottom:8px;flex:none}
+.ap-ic svg{width:100%;height:100%;display:block}
+.ap-cap{display:block;font-size:12px;color:#6e6e73;margin-top:6px;line-height:1.4}
+/* 大きい数字は Futura（サイトの .bt-num と同じ書体。2026-09-25 ユーザー指示） */
+.ap-big,.ap-mid,.ap-fin,.ap-rec b,.ap-ri b,.ap-mg,.ap-sf b,.ap-cn i{font-family:Futura,Jost,"Futura PT",sans-serif}
+.ap-bn{display:inline-flex;align-items:baseline;gap:2px;flex-wrap:wrap}
+.ap-big{font-size:44px;font-weight:600;letter-spacing:-.01em;line-height:1}
+.ap-u{font-size:17px;font-weight:600;margin-left:2px}
+.ap-mid{font-size:24px;font-weight:600;line-height:1.05}
+.ap-mid.ap-jp{font-family:inherit;font-size:20px;font-weight:700}
+.ap-u2{font-size:13px;font-weight:600;margin-left:1px}
+.ap-sub2{font-size:12px;color:#6e6e73;margin-left:6px}
+.ap-bn .tk-g{align-self:center;margin-left:8px}
+.ap .tk-g{min-width:18px;height:18px;border-radius:5px;color:#fff;font-weight:800;font-size:11px;display:inline-flex;align-items:center;justify-content:center;padding:0 4px;font-family:Futura,Jost,sans-serif}
+.ap-dash{color:#86868b;font-size:15px}
+.ap-rec{font-size:24px;font-weight:600;line-height:1.1}
+.ap-rec b{font-weight:600}
+.ap-rec i{font-style:normal;color:#86868b;margin:0 1px;font-size:18px}
+.ap-chips{display:flex;flex-wrap:wrap;gap:4px}
+.ap-chips b{font-size:12px;font-weight:600;color:#1d1d1f;background:#f5f5f7;border-radius:980px;padding:3px 9px}
+.ap-e5{display:flex;flex-direction:column;gap:3px}
+.ap-e5 .e5-nm{font-size:13px;color:#1d1d1f;font-weight:600}
+/* 金（あなたが良いと思った所） */
+.ap-gd{display:flex;flex-direction:column;gap:2px;width:100%;padding:8px 10px;border-radius:12px;background:rgba(232,190,70,.14);box-shadow:inset 0 0 0 1.5px #C9961A}
+.ap-gd i{font-style:normal;align-self:flex-start;font-size:10.5px;font-weight:700;color:#fff;background:#C9961A;border-radius:4px;padding:0 5px;line-height:16px}
+.ap-gd small{font-size:11px;color:#8a6d1c}
+.ap-gd span{font-size:13px;font-weight:600;color:#1d1d1f}
+.ap-gsec .ap-big{color:#A87A0C}
+/* 直近5走（1走ぶんを詳しく） */
+.ap-rh{padding-top:26px;font-size:13px;font-weight:700;color:#6e6e73}
+.ap-rh+.ap-row{padding-top:2px}
+.ap-run{width:100%;display:flex;flex-direction:column;gap:5px;padding:10px 10px 11px;border-radius:14px;background:#f5f5f7}
+.ap-run.bd-win{background:#FFF6DA}
+.ap-run.bd-close{background:#E9EDF2}
+/* 押すとその走の詳しいページが開く（2026-09-25）。押している間だけ少し沈める */
+.ap-run[data-run]{cursor:pointer;transition:transform .12s ease,filter .12s ease}
+.ap-run[data-run]:active{transform:scale(.98);filter:brightness(.97)}
+.ap-run[data-run]:focus-visible{outline:2px solid #0071e3;outline-offset:2px}
+.ap-r1{display:flex;align-items:center;gap:3px}
+.ap-r1 .e5-cup{margin-right:2px}
+.ap-fin{font-size:32px;font-weight:600;line-height:1}
+.ap-mg{margin-left:auto;font-size:13px;font-weight:600;background:#fff;border-radius:980px;padding:1px 8px;color:#3a3a3c}
+.ap-mg small{font-size:9px;margin-left:1px;font-family:-apple-system,sans-serif}
+.ap-mg.win{background:#B8860B;color:#fff} .ap-mg.close{background:#7D8792;color:#fff}
+.ap-r2{display:flex;align-items:center;flex-wrap:wrap;gap:5px;font-size:11.5px;color:#6e6e73}
+.ap-sf{display:inline-flex;align-items:baseline;gap:1px;font-size:10px;font-weight:700;border-radius:4px;padding:0 4px;line-height:16px}
+.ap-sf b{font-size:12px}
+.ap-sf.sf-tf{background:#E3F1E7;color:#1F6B3A} .ap-sf.sf-dt{background:#F6E9DA;color:#A05A12}
+.ap-r3{display:flex;align-items:center;gap:4px;min-width:0;font-size:12.5px;font-weight:700}
+.ap-r3 .cb{font-size:9px;padding:0 3px;border-radius:3px;flex:none}
+.ap-rn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.ap-lv{margin-left:auto;flex:none;display:inline-flex}
+.ap-lv .lv{margin-left:0}
+.ap-r4{display:grid;grid-template-columns:1fr 1fr;gap:5px 6px;margin-top:2px}
+.ap-ri{display:flex;align-items:center;gap:4px;min-width:0;font-size:11.5px;color:#3a3a3c;white-space:nowrap}
+.ap-ri .ap-ic{width:15px;height:15px;margin:0;color:#8E9AA8}
+.ap-ri>span{display:inline-flex;align-items:baseline;gap:2px;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.ap-ri b{font-size:13.5px;font-weight:600;color:#1d1d1f}
+.ap-ri small{font-size:9.5px;color:#8E8E93}
+.ap-cn{display:inline-flex;gap:1px}
+.ap-cn i{font-style:normal;font-size:11px;min-width:13px;text-align:center;border:1px solid #D1D5DB;border-radius:3px;background:#fff;line-height:13px}
+.ap-r5{display:flex;align-items:center;gap:4px;font-size:11.5px;min-width:0;white-space:nowrap;overflow:hidden}
+/* 勝ち馬の行は1行（2026-09-25 ユーザー「ここ2段は嫌だ」）。流れの札は通過順の行へ移し、長い名前は字を小さくする */
+.ap-wn{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.ap-r5 small{font-size:.87em}
+.ap-r5.nolab>small{display:none}
+.ap-r1 .ap-sc{margin-left:6px;flex:none;background:#fff}
+.ap-r1 .ap-mg{flex:none}
+/* 札の幅で並べ方を切り替える（画面の幅ではなく札の幅。2026-09-25 幅440で「先行」、幅390で着差の「秒」が切れた）。
+   広い札：6項目を2列・流れの札は着順の行。狭い札：6項目を1列・流れの札は通過順の行・脚質の文字は外す */
+.ap-run{container-type:inline-size}
+.ap-ri .sc-b{display:none;margin-left:4px;flex:none;background:#fff}
+@container (max-width: 250px){
+  .ap-r4{grid-template-columns:1fr}
+  .ap-r1 .sc-a{display:none}
+  .ap-ri .sc-b{display:inline-block}
+  .ap-ri .ap-st{display:none}
+  .ap-fin{font-size:28px}
+}
+.ap-r5 .race20{flex:none;display:inline-flex}
+.ap-r5 small{font-size:10px;color:#8E8E93}
+.ap-sc{margin-left:auto;font-size:10px;font-weight:700;background:#fff;border-radius:980px;padding:0 7px;line-height:16px;color:#3a3a3c}
+
+/* iPhone の幅（2列で1列あたり約170px）：直近5走の札の中の6項目を1列に並べ直す。
+   2列のままだと「5人気／15頭」・通過順・騎手の斤量が右で切れた（390px で確認） */
+.ap-run{min-width:0;overflow:hidden}
+@media (max-width:480px){
+  .ap-tops,.ap-stk,.ap-pick{column-gap:12px}
+  .ap-row{column-gap:6px}
+  .ap-tn b{font-size:17px}
+  .ap-run{padding:9px 9px 10px}
+  .ap-big{font-size:40px}
+}
+
+/* 馬名を押して開く詳細（絞り込みのカードと同じページを上に重ねる） */
+.ap-tn,.ap-stk>div{cursor:pointer}
+.ap-chev{font-style:normal;color:#86868b;font-size:18px;margin-left:2px;flex:none}
+.ap-dt{position:fixed;inset:0;z-index:75;background:#f2f2f7;display:flex;flex-direction:column;animation:apDtIn .32s cubic-bezier(.32,.72,0,1)}
+@keyframes apDtIn{from{transform:translateY(24px);opacity:0}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion: reduce){.ap-dt{animation:none}}
+.ap-dt-bar{flex:none;display:flex;align-items:center;gap:10px;padding:calc(10px + env(safe-area-inset-top, 0px)) 16px 9px;background:#fff;border-bottom:1px solid #d2d2d7}
+.ap-dt-nm{display:flex;align-items:center;gap:6px;min-width:0}
+.ap-dt-nm b{font-size:18px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ap-dt-bar .ap-quit{margin-left:auto}
+.ap-dt-tabs{flex:none;display:flex;gap:6px;overflow-x:auto;padding:8px 16px;background:#fff;border-bottom:1px solid #e8e8ed;scrollbar-width:none}
+.ap-dt-tabs::-webkit-scrollbar{display:none}
+.ap-dt-tabs button{appearance:none;flex:none;border:0;border-radius:980px;background:#f2f2f7;color:#1d1d1f;font:inherit;font-size:13px;padding:5px 12px;cursor:pointer}
+.ap-dt-tabs button.on{background:#1d1d1f;color:#fff;font-weight:600}
+.ap-dt-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px 12px 24px}
+.ap-dt-page{max-width:520px;margin:0 auto}
+.ap-dt-nav{flex:none;display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:10px 16px calc(10px + env(safe-area-inset-bottom, 0px));background:#fff;border-top:1px solid #d2d2d7}
+.ap-dt-nav button{appearance:none;border:0;border-radius:12px;background:#f2f2f7;color:#0066cc;font:inherit;font-size:14px;font-weight:600;padding:10px;cursor:pointer}
+.ap-dt-nav button:disabled{color:#c7c7cc;cursor:default}
+.ap-tn:focus-visible,.ap-dt-tabs button:focus-visible,.ap-dt-nav button:focus-visible{outline:2px solid #0071e3;outline-offset:2px}
