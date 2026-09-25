@@ -1342,7 +1342,9 @@
     const ub = Number(r.umaban ?? r.gate), wk = Number(r.waku);
     const box = `<span class="alx-wk">${ub ? umaBox(ub, wk, 'sm') : '<i>—</i>'}</span>`;
     const jkFs = [...String(d.jockey)].length >= 5 ? ' style="font-size:9px"' : '';
-    const lb = `<div class="alx-lb">${d.fin >= 1 && d.fin <= 3 ? e5Cup(d.fin, 14) : ''}<b class="bt-num alx-fin ${d.finMd}">${esc(d.finTxt)}</b><span class="alx-mg bt-num ${d.band}">${d.mgPlain}</span></div>`;
+    // 杯の無い行にも杯と同じ大きさの空きを置き、全部の行を同じ高さにする（2026-09-25 ユーザー「走数が同じなら、全部同じ高さに」・mockup-219 の A）。
+    //   前は1〜3着の行だけ杯のぶん背が高く（44px と 58px）、ページごとに下の端がずれた
+    const lb = `<div class="alx-lb">${d.fin >= 1 && d.fin <= 3 ? e5Cup(d.fin, 14) : '<i class="alx-cup0"></i>'}<b class="bt-num alx-fin ${d.finMd}">${esc(d.finTxt)}</b><span class="alx-mg bt-num ${d.band}">${d.mgPlain}</span></div>`;
     const r1 = `<div class="alx-r alx-r1"><b class="alx-sf ${d.sf}">${esc(d.sfTxt)}<b class="bt-num">${esc(d.dist)}</b></b><span class="alx-go">${esc(d.going)}</span>
       <span class="bt-num alx-dt">${esc(d.date)}</span><span class="alx-tk">${esc(d.track)}</span><span class="alx-nm">${d.clsHtml}<span class="alx-rn">${esc(d.rn)}</span></span></div>`;
     const tm = `<span class="alx-tm">${d.tg ? e5Cup({ md1: 1, md2: 2, md3: 3 }[d.tg], 12) : ''}<b class="bt-num ${d.tg}">${esc(d.time)}</b></span>`;
