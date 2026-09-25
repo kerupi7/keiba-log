@@ -2018,7 +2018,8 @@
     DT.el.innerHTML = `<div class="ap-dt-bar"><div class="ap-dt-nm">${umaBox(h.number, h.gate)}<b>${esc(h.name)}</b></div>
         <button type="button" class="ap-quit" data-dt="close">閉じる</button></div>
       <div class="ap-dt-tabs" role="tablist">${pages.map((p, k) => `<button type="button" role="tab" class="${k === i ? 'on' : ''}" data-dt="${k}">${esc(p.label)}</button>`).join('')}</div>
-      <div class="ap-dt-body" id="ap-dt-body"><div class="ap-dt-page">${pageHtml(h, pg)}</div></div>
+      <div class="ap-dt-main"><div class="ap-dt-body" id="ap-dt-body"><div class="ap-dt-page">${pageHtml(h, pg)}</div></div>
+        ${i > 0 ? '<span class="yf-edge l">‹</span>' : ''}${i < pages.length - 1 ? '<span class="yf-edge r">›</span>' : ''}</div>
       <div class="ap-dt-nav"><button type="button" data-dt="prev"${i === 0 ? ' disabled' : ''}>‹ 前のページ</button><button type="button" data-dt="next"${i === pages.length - 1 ? ' disabled' : ''}>次のページ ›</button></div>`;
     detailPaint(DT.el.querySelector('.ap-dt-page'), h, pg);
     const on = DT.el.querySelector('.ap-dt-tabs .on');
@@ -2045,19 +2046,41 @@
       openDetail(h, at >= 0 ? at : 0);
       return;
     }
+    // 詳細の本文の左右の端（15%）を押すとページをめくる（2026-09-25 ユーザー「他と同じように端をタップして画面を切り替えられるように」。
+    //   絞り込みのカードと同じ幅）。ボタン・押すと距離が替わるコース適性の山の上では、めくらない
+    const body0 = DT && e.target.closest && e.target.closest('#ap-dt-body');
+    if (body0 && !e.target.closest('button, a, .ax-hit, [data-dt]')) {
+      const r = body0.getBoundingClientRect();
+      const x = (e.clientX - r.left) / r.width;
+      if (x < 0.15 || x > 0.85) { e.stopPropagation(); dtGo(DT.i + (x < 0.15 ? -1 : 1)); }
+      return;
+    }
     const b = DT && e.target.closest && e.target.closest('[data-dt]');
     if (!b) return;
     e.stopPropagation();
     const a = b.dataset.dt;
     if (a === 'close') { DT.el.remove(); DT = null; return; }
+    dtGo(a === 'prev' ? DT.i - 1 : a === 'next' ? DT.i + 1 : Number(a));
+  }, true);
+  // 詳細のページを替える。新しいページは、めくった向きから少しだけ滑り込む（端より先は小さく揺らして止める）
+  function dtGo(to) {
     const n = pagesOf(DT.h).length;
-    const to = a === 'prev' ? DT.i - 1 : a === 'next' ? DT.i + 1 : Number(a);
-    if (to < 0 || to >= n) return;
+    const dir = to > DT.i ? 1 : -1;
+    if (to < 0 || to >= n) {
+      const pe = document.querySelector('.ap-dt-page');
+      if (pe && pe.animate && !apReduce()) pe.animate([{ transform: 'none' }, { transform: `translateX(${dir * 8}px)` }, { transform: 'none' }], { duration: 260, easing: 'cubic-bezier(.32,.72,0,1)' });
+      return;
+    }
+    if (to === DT.i) return;
     DT.i = to;
     detailRender();
     const body = document.getElementById('ap-dt-body');
     if (body) body.scrollTop = 0;
-  }, true);
+    const pe = document.querySelector('.ap-dt-page');
+    if (pe && pe.animate && !apReduce()) {
+      pe.animate([{ opacity: 0, transform: `translateX(${dir * 28}px)` }, { opacity: 1, transform: 'none' }], { duration: 340, easing: 'cubic-bezier(.32,.72,0,1)' });
+    }
+  }
   // 札はキーボードの Enter でも開く
   document.addEventListener('keydown', (e) => {
     if (e.key !== 'Enter' || DT) return;
