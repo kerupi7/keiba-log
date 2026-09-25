@@ -264,7 +264,6 @@
       // 次の後ろの札は、切り替えが済んでから描く（1頭だけ見るときは後ろが無い）
       if (S.screen === 'swipe') fillBack();
     }
-    if (S.screen === 'duel') fitDuel();
   }
 
   // 1ページを画面の高さに収める（2026-09-17 ユーザー「縦スクロールせずに1画面に収めたい」）。
@@ -454,7 +453,6 @@
     refitTimer = setTimeout(() => {
       if (!S) return;                    // 1頭画面を開いていないときは何もしない
       if (S.screen === 'swipe' || S.screen === 'view') fitPage();
-      if (S.screen === 'duel') fitDuel();
     }, 80);
   };
   window.addEventListener('resize', refit);
@@ -462,20 +460,7 @@
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(refit);
 
   // 比べる画面も縦に動かさず、2頭ぶんを画面の高さに収める（最小 0.6 倍）
-  function fitDuel() {
-    const w = document.getElementById('dl-wrap');
-    const g = w && w.firstElementChild;
-    if (!g) return;
-    g.style.zoom = '';
-    let z = 1;
-    for (let k = 0; k < 5; k += 1) {
-      const r = g.getBoundingClientRect();
-      const limit = w.getBoundingClientRect().bottom - 8;
-      if (r.bottom <= limit + 0.5) break;
-      z = Math.max(0.6, z * ((limit - r.top) / r.height) * 0.995);
-      g.style.zoom = z.toFixed(3);
-    }
-  }
+
 
   function head(step, title, pct) {
     return `<div class="yf-head"><div><div class="st">${step}</div><div class="tt">${title}</div></div>
@@ -1787,6 +1772,56 @@
         <div class="ap-r5" style="font-size:${wFs}px"><small>${d.winLab}</small><span class="ap-wn">${esc(d.winner)}</span>${d.bpHtml ? `<span class="race20 mx">${d.bpHtml}</span>` : ''}</div>
       </div>`;
   }
+  // ---------- 選んだ時の動き（2026-09-25 ユーザー「下にスクロールした後にこの馬を選ぶを押した時のアニメーションがひどい。
+  //   Appleっぽいセクシーさを感じない」） ----------
+  //   前：上の名前の欄を横へ飛ばしてから画面を描き直し、いちばん上へ跳んでいた（下へ送っていると動きが見えず、跳ぶだけ）。
+  //   今：画面の位置はそのまま。押したボタンが ✓ に変わり、負けた側の列だけがぼけながら消え、
+  //   次の馬の列が上から順に浮かび上がる。選んだ側の列はほんの少し持ち上がって戻る
+  const apReduce = () => Boolean(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  // 見えている範囲の、その列（0＝左・1＝右）の部品
+  function cmpCol(side) {
+    const box = document.querySelector('.ap');
+    if (!box) return [];
+    const vh = window.innerHeight;
+    return [...box.querySelectorAll('.ap-tops, .ap-stk, .ap-row')].map((r) => r.children[side]).filter((el) => {
+      if (!el) return false;
+      const r = el.getBoundingClientRect();
+      return r.bottom > 0 && r.top < vh;
+    });
+  }
+  function cmpPick(n, btn) {
+    const t = S.t;
+    const side = t.left === n ? 0 : 1;
+    const lose = 1 - side;
+    const body = document.getElementById('ap-body');
+    const y = body ? body.scrollTop : 0;
+    const reduce = apReduce();
+    btn.classList.add('done');
+    btn.innerHTML = `<span>${esc(byNum(n).name)}</span>✓ 選びました`;
+    const other = document.querySelectorAll('.ap-pick .ap-go')[lose];
+    if (other) other.classList.add('dim');
+    haptic();
+    if (!reduce) {
+      cmpCol(lose).forEach((el) => el.animate(
+        [{ opacity: 1, filter: 'blur(0px)', transform: 'none' }, { opacity: 0, filter: 'blur(6px)', transform: 'scale(.97)' }],
+        { duration: 240, easing: 'cubic-bezier(.4,0,1,1)', fill: 'forwards' }));
+      cmpCol(side).forEach((el) => el.animate(
+        [{ transform: 'none' }, { transform: 'translateY(-3px)', offset: 0.4 }, { transform: 'none' }],
+        { duration: 380, easing: 'cubic-bezier(.32,.72,0,1)' }));
+    }
+    setTimeout(() => {
+      pickWinner(n);                       // 描き直す（最後の1組なら、印が決まった画面へ）
+      if (S.screen !== 'duel') { S.busy = false; return; }
+      const b = document.getElementById('ap-body');
+      if (b) { b.scrollTop = y; b.dispatchEvent(new Event('scroll')); }   // 今いた位置のまま
+      if (!reduce) {
+        cmpCol(lose).forEach((el, k) => el.animate(
+          [{ opacity: 0, filter: 'blur(8px)', transform: 'translateY(12px) scale(.98)' }, { opacity: 1, filter: 'blur(0px)', transform: 'none' }],
+          { duration: 560, delay: Math.min(k * 35, 280), easing: 'cubic-bezier(.32,.72,0,1)', fill: 'backwards' }));
+      }
+      S.busy = false;
+    }, reduce ? 0 : 260);
+  }
   let cmpWait = null;
   function vCompare() {
     const t = S.t;
@@ -1813,7 +1848,7 @@
       return all.length ? all.reduce((c, r) => { const f = parseInt(r.finish, 10); c[(f >= 1 && f <= 3) ? f - 1 : 3] += 1; return c; }, [0, 0, 0, 0]) : null;
     };
     // ---- 上の2列（Apple の機種の欄） ----
-    const top = HS.map((h, i) => `<div class="ap-top dl-side ${i ? 'r' : 'l'}" data-side="${h.number}">
+    const top = HS.map((h, i) => `<div class="ap-top" data-side="${h.number}">
         <div class="ap-tn" data-hist="${h.number}">${umaBox(h.number, h.gate)}<b>${esc(h.name)}</b><i class="ap-chev">›</i></div>
         <div class="ap-ts">${esc(h.sex_age || '')}・${esc(String(h.weight_carried ?? '').replace(/\.0$/, ''))}kg・${esc(h.jockey || '')}</div>
       </div>`).join('');
@@ -2375,44 +2410,12 @@
     t.bump = true;
     if (!t.queue.length) { setWinner(n); return; }
     const next = t.queue.shift();
-    // 選んだ馬はいつも左へ。右で選ばれたときは、右から左へ移る動きを付ける。次の馬はいつも右から入る
-    t.shift = t.right === n;
-    t.left = n;
-    t.right = next;
-    t.fresh = 'r';
+    // 選んだ馬はその場に残し、負けた側だけ次の馬に入れ替える（2026-09-25。前は選んだ馬をいつも左へ寄せていたので、
+    //   右で選ぶと両方の列が入れ替わり、比べる表の上では何が変わったか追えなかった）
+    if (t.left === n) t.right = next; else t.left = next;
+    t.shift = false;
+    t.fresh = t.left === next ? 'l' : 'r';
     render();
-  }
-
-  // 選んだ瞬間の動き（Apple の写真アプリの「選ぶ」に近い手ざわり）
-  //   押したボタン：✓ に変わる／選んだ馬：ふわっと持ち上がって戻る／もう一方：外側へ傾きながら抜けていく
-  function duelPickMotion(n, btn) {
-    const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    btn.classList.add('done');
-    btn.innerHTML = '<span class="dl-ck">✓</span>選びました';
-    root.querySelectorAll('.dl-side').forEach((c) => {
-      const win = Number(c.dataset.side) === n;
-      c.classList.add(win ? 'win' : 'lose');
-      if (reduce || !c.animate) return;
-      if (win) {
-        c.animate([
-          { transform: 'scale(1)' },
-          { transform: 'scale(1.045) translateY(-4px)', offset: 0.35 },
-          { transform: 'scale(1)' },
-        ], { duration: 440, easing: 'cubic-bezier(.32,.72,0,1)' });
-      } else {
-        const dir = c.classList.contains('l') ? -1 : 1;
-        c.animate([
-          { transform: 'none', opacity: 1, filter: 'saturate(1)' },
-          { transform: 'scale(.94)', opacity: 0.85, filter: 'saturate(.3)', offset: 0.3 },
-          { transform: `translateX(${dir * 115}%) rotate(${dir * 8}deg) scale(.88)`, opacity: 0, filter: 'saturate(0)' },
-        ], { duration: 420, delay: 60, easing: 'cubic-bezier(.55,0,.75,.2)', fill: 'forwards' });
-      }
-    });
-    const vs = root.querySelector('.dl-vs');
-    if (vs && vs.animate && !reduce) {
-      vs.animate([{ transform: 'translate(-50%,-50%) scale(1)' }, { transform: 'translate(-50%,-50%) scale(.6)', opacity: 0 }],
-        { duration: 220, easing: 'ease-in', fill: 'forwards' });
-    }
   }
 
   function setWinner(n) {
@@ -2435,10 +2438,7 @@
     const pk = e.target.closest('[data-pick]');
     if (pk && S.screen === 'duel' && !S.busy) {
       S.busy = true;
-      const n = Number(pk.dataset.pick);
-      duelPickMotion(n, pk);
-      haptic();
-      setTimeout(() => { S.busy = false; pickWinner(n); }, 460);
+      cmpPick(Number(pk.dataset.pick), pk);
       return;
     }
     const a = e.target.closest('[data-act]');
