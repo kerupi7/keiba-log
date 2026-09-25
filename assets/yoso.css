@@ -1133,25 +1133,7 @@ html.rc-frame .mx .mg-close .mg-tag{background:#5E7185}
   .ap-big{font-size:40px}
 }
 
-/* 馬名を押して開く詳細（絞り込みのカードと同じページを上に重ねる） */
+/* 馬名を押すと「1頭だけ見る」画面が開く（押せると分かるように › を付ける） */
 .ap-tn,.ap-stk>div{cursor:pointer}
 .ap-chev{font-style:normal;color:#86868b;font-size:18px;margin-left:2px;flex:none}
-.ap-dt{position:fixed;inset:0;z-index:75;background:#f2f2f7;display:flex;flex-direction:column;animation:apDtIn .32s cubic-bezier(.32,.72,0,1)}
-@keyframes apDtIn{from{transform:translateY(24px);opacity:0}to{transform:none;opacity:1}}
-@media (prefers-reduced-motion: reduce){.ap-dt{animation:none}}
-.ap-dt-bar{flex:none;display:flex;align-items:center;gap:10px;padding:calc(10px + env(safe-area-inset-top, 0px)) 16px 9px;background:#fff;border-bottom:1px solid #d2d2d7}
-.ap-dt-nm{display:flex;align-items:center;gap:6px;min-width:0}
-.ap-dt-nm b{font-size:18px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.ap-dt-bar .ap-quit{margin-left:auto}
-.ap-dt-tabs{flex:none;display:flex;gap:6px;overflow-x:auto;padding:8px 16px;background:#fff;border-bottom:1px solid #e8e8ed;scrollbar-width:none}
-.ap-dt-tabs::-webkit-scrollbar{display:none}
-.ap-dt-tabs button{appearance:none;flex:none;border:0;border-radius:980px;background:#f2f2f7;color:#1d1d1f;font:inherit;font-size:13px;padding:5px 12px;cursor:pointer}
-.ap-dt-tabs button.on{background:#1d1d1f;color:#fff;font-weight:600}
-/* 本文と左右の端の印（‹ ›）。印は本文をスクロールしても動かさない */
-.ap-dt-main{flex:1;min-height:0;position:relative;display:flex}
-.ap-dt-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px 12px 24px}
-.ap-dt-page{max-width:520px;margin:0 auto}
-.ap-dt-nav{flex:none;display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:10px 16px calc(10px + env(safe-area-inset-bottom, 0px));background:#fff;border-top:1px solid #d2d2d7}
-.ap-dt-nav button{appearance:none;border:0;border-radius:12px;background:#f2f2f7;color:#0066cc;font:inherit;font-size:14px;font-weight:600;padding:10px;cursor:pointer}
-.ap-dt-nav button:disabled{color:#c7c7cc;cursor:default}
-.ap-tn:focus-visible,.ap-dt-tabs button:focus-visible,.ap-dt-nav button:focus-visible{outline:2px solid #0071e3;outline-offset:2px}
+.ap-tn:focus-visible{outline:2px solid #0071e3;outline-offset:2px}

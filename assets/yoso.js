@@ -223,6 +223,7 @@
   }
 
   function close(apply) {
+    if (DV && !apply) { closeDetail(); return; }   // 比べる画面から開いた「1頭だけ見る」は、比べる画面へ戻す
     if (apply) {
       const m = loadMarks();
       // 流れで決めたものだけ上書きする（消・✓・◎○▲）。◎○▲は1頭までなので他の馬からは外す
@@ -2000,90 +2001,51 @@
     b.classList.toggle('stuck', Boolean(tops) && b.scrollTop > tops.offsetTop + tops.offsetHeight - 8);
   }, true);
 
-  // ---------- 馬名を押したら、その馬の詳しいページを上に重ねて開く（2026-09-25 ユーザー「馬名を押したら詳細が確認できるように」） ----------
-  //   中身は絞り込みのカードと同じページ（基本・コース・展開・直近5走・前走〜5走前・全戦績）。上の札で切り替える。
-  //   絞り込みで付けた金は、ここでも同じ部品に金の枠で出す（見るだけ。ここでは付け外ししない）。
-  //   前は名前を押すと「全戦績」だけが下から出ていた（histSheet。2026-09-25 に外した）
-  let DT = null;
-  function detailPaint(pe, h, pg) {
-    goldCols(pe);
-    const units = goldUnits(pe);
-    (goldLoad()[h.number] || []).filter((x) => x.page === pgKey(pg)).forEach((x) => { const u = units[x.idx]; if (u) u.classList.add('gd-u', 'gd-on'); });
-    goldTwins(pe);
-  }
-  function detailRender() {
-    const { h, i } = DT;
-    const pages = pagesOf(h);
-    const pg = pages[i];
-    DT.el.innerHTML = `<div class="ap-dt-bar"><div class="ap-dt-nm">${umaBox(h.number, h.gate)}<b>${esc(h.name)}</b></div>
-        <button type="button" class="ap-quit" data-dt="close">閉じる</button></div>
-      <div class="ap-dt-tabs" role="tablist">${pages.map((p, k) => `<button type="button" role="tab" class="${k === i ? 'on' : ''}" data-dt="${k}">${esc(p.label)}</button>`).join('')}</div>
-      <div class="ap-dt-main"><div class="ap-dt-body" id="ap-dt-body"><div class="ap-dt-page">${pageHtml(h, pg)}</div></div>
-        ${i > 0 ? '<span class="yf-edge l">‹</span>' : ''}${i < pages.length - 1 ? '<span class="yf-edge r">›</span>' : ''}</div>
-      <div class="ap-dt-nav"><button type="button" data-dt="prev"${i === 0 ? ' disabled' : ''}>‹ 前のページ</button><button type="button" data-dt="next"${i === pages.length - 1 ? ' disabled' : ''}>次のページ ›</button></div>`;
-    detailPaint(DT.el.querySelector('.ap-dt-page'), h, pg);
-    const on = DT.el.querySelector('.ap-dt-tabs .on');
-    if (on) on.scrollIntoView({ block: 'nearest', inline: 'center' });
-  }
+  // ---------- 馬名・直近5走の札を押したら、その馬の「1頭だけ見る」画面を開く ----------
+  //   2026-09-25 ユーザー「馬名を押したら詳細が確認できるように」→ 同日「ここら辺の仕様も全て他と同じにして」。
+  //   前は上に札（基本・コース…）とボタン（前のページ／次のページ）を並べた専用の詳細画面を重ねていた。
+  //   今は出馬表で馬名を押したときと同じ「1頭だけ見る」画面（上の点々・見出しの横の閉じる・端を押す／横に払うとめくる）を、
+  //   同じ処理（S.view）で出す。比べる画面は外して取っておき、閉じたら元の位置のまま戻す
+  let DV = null;   // 開いている間だけ：比べる画面の状態（S・Q）・画面の部品・スクロールの位置
   function openDetail(h, first = 0) {
-    if (!root || !h) return;
-    DT = { h, i: first, el: document.createElement('div') };
-    DT.el.className = 'ap-dt';
-    root.appendChild(DT.el);
-    detailRender();
+    const col = document.getElementById('yf-col');
+    const apEl = col && col.querySelector('.ap');
+    if (!apEl || !h || DV) return;
+    const body = document.getElementById('ap-body');
+    DV = { S, Q, node: apEl, y: body ? body.scrollTop : 0 };
+    apEl.remove();
+    Q = [h];
+    S = { screen: 'view', idx: 0, page: first, my: {}, step: 0, t: null, busy: false, view: true };
+    go('view');
+  }
+  function closeDetail() {
+    const col = document.getElementById('yf-col');
+    S = DV.S;
+    Q = DV.Q;
+    col.innerHTML = '';
+    col.appendChild(DV.node);
+    const b = document.getElementById('ap-body');
+    if (b) { b.scrollTop = DV.y; b.dispatchEvent(new Event('scroll')); }
+    DV = null;
   }
   document.addEventListener('click', (e) => {
-    // 比べる画面の馬名 → 詳細を開く（本番の「全戦績だけのシート」より先に受ける）
+    if (DV || !S || S.screen !== 'duel') return;
+    // 比べる画面の馬名 → その馬の基本のページから
     const nm = e.target.closest && e.target.closest('.ap [data-hist]');
-    if (nm && !DT) { e.stopPropagation(); e.preventDefault(); openDetail(byNum(Number(nm.dataset.hist))); return; }
-    // 直近5走の札 → その馬の、その走のページ（前走〜5走前）を開く（2026-09-25 ユーザー「ここタップしたら詳細ページが開くように」）
+    if (nm) { e.stopPropagation(); e.preventDefault(); openDetail(byNum(Number(nm.dataset.hist))); return; }
+    // 直近5走の札 → その馬の、その走のページ（前走〜5走前）から
     const rn = e.target.closest && e.target.closest('.ap .ap-run[data-run]');
-    if (rn && !DT) {
+    if (rn) {
       e.stopPropagation(); e.preventDefault();
       const [n, i] = rn.dataset.run.split(':').map(Number);
       const h = byNum(n);
       const at = pagesOf(h).findIndex((pg) => pg.k === 'run' && pg.i === i);
       openDetail(h, at >= 0 ? at : 0);
-      return;
     }
-    // 詳細の本文の左右の端（15%）を押すとページをめくる（2026-09-25 ユーザー「他と同じように端をタップして画面を切り替えられるように」。
-    //   絞り込みのカードと同じ幅）。ボタン・押すと距離が替わるコース適性の山の上では、めくらない
-    const body0 = DT && e.target.closest && e.target.closest('#ap-dt-body');
-    if (body0 && !e.target.closest('button, a, .ax-hit, [data-dt]')) {
-      const r = body0.getBoundingClientRect();
-      const x = (e.clientX - r.left) / r.width;
-      if (x < 0.15 || x > 0.85) { e.stopPropagation(); dtGo(DT.i + (x < 0.15 ? -1 : 1)); }
-      return;
-    }
-    const b = DT && e.target.closest && e.target.closest('[data-dt]');
-    if (!b) return;
-    e.stopPropagation();
-    const a = b.dataset.dt;
-    if (a === 'close') { DT.el.remove(); DT = null; return; }
-    dtGo(a === 'prev' ? DT.i - 1 : a === 'next' ? DT.i + 1 : Number(a));
   }, true);
-  // 詳細のページを替える。新しいページは、めくった向きから少しだけ滑り込む（端より先は小さく揺らして止める）
-  function dtGo(to) {
-    const n = pagesOf(DT.h).length;
-    const dir = to > DT.i ? 1 : -1;
-    if (to < 0 || to >= n) {
-      const pe = document.querySelector('.ap-dt-page');
-      if (pe && pe.animate && !apReduce()) pe.animate([{ transform: 'none' }, { transform: `translateX(${dir * 8}px)` }, { transform: 'none' }], { duration: 260, easing: 'cubic-bezier(.32,.72,0,1)' });
-      return;
-    }
-    if (to === DT.i) return;
-    DT.i = to;
-    detailRender();
-    const body = document.getElementById('ap-dt-body');
-    if (body) body.scrollTop = 0;
-    const pe = document.querySelector('.ap-dt-page');
-    if (pe && pe.animate && !apReduce()) {
-      pe.animate([{ opacity: 0, transform: `translateX(${dir * 28}px)` }, { opacity: 1, transform: 'none' }], { duration: 340, easing: 'cubic-bezier(.32,.72,0,1)' });
-    }
-  }
   // 札はキーボードの Enter でも開く
   document.addEventListener('keydown', (e) => {
-    if (e.key !== 'Enter' || DT) return;
+    if (e.key !== 'Enter' || DV) return;
     const rn = e.target.closest && e.target.closest('.ap .ap-run[data-run]');
     if (rn) rn.click();
   });
