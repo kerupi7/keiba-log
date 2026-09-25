@@ -1819,7 +1819,29 @@
           { duration: 520, delay: Math.min(k * 30, 240), easing: 'cubic-bezier(.32,.72,0,1)', fill: 'backwards' }));
       }
       S.busy = false;
+      // 入れ替わりが見えてから、いちばん上へなめらかに戻る（2026-09-25 ユーザー「切り替わった後一番上に上がるモーションを追加して」）
+      if (b && y > 0) setTimeout(() => apScrollTop(b), reduce ? 0 : 420);
     }, reduce ? 0 : 260);
+  }
+  // いちばん上へ戻る動き。iPhone の画面のように、速く動き出して最後はゆっくり止まる（4乗で減速）。
+  //   長さは戻る距離で 0.48〜0.9 秒。途中で指やホイールで動かしたら、そこで止める
+  function apScrollTop(b) {
+    const from = b.scrollTop;
+    if (from <= 0) return;
+    if (apReduce()) { b.scrollTop = 0; return; }
+    const dur = Math.max(480, Math.min(900, 380 + from * 0.18));
+    const t0 = performance.now();
+    let stop = false;
+    const cancel = () => { stop = true; };
+    ['wheel', 'touchstart', 'pointerdown', 'keydown'].forEach((ev) => b.addEventListener(ev, cancel, { once: true, passive: true }));
+    const step = (now) => {
+      if (stop || !b.isConnected) return;
+      const k = Math.min(1, (now - t0) / dur);
+      b.scrollTop = from * Math.pow(1 - k, 4);
+      if (k < 1) requestAnimationFrame(step);
+      else b.dispatchEvent(new Event('scroll'));   // 戻り終えたら、上に残る名前の帯の出し入れを判定し直す
+    };
+    requestAnimationFrame(step);
   }
   let cmpWait = null;
   function vCompare() {
