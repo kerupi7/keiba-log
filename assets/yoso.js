@@ -459,20 +459,14 @@
     pb.remove();
     const cap = limit - R[0].top;
     const fits = (s, e) => R[e - 1].bottom - R[s].top <= cap + 0.5;   // s〜e-1 走目が1ページに入るか
-    // 上から入るだけ詰めて、要るページ数を出す
-    let cuts = [0];
+    // 上から入るだけ詰める。残りは最後のページに回すので、最後のページだけ短くなることがある（1行だけのことも）。
+    //   前は同じページ数で行の数をそろえていたが、どのページも下が大きく空いた（44走が 9・9・9・9・8 行。
+    //   2026-09-25 ユーザー「スマホで見てもだいぶ空欄がある」）ので、詰める方に戻した
+    const cuts = [0];
     for (let e = 1, s = 0; e < R.length; e += 1) {
       if (!fits(s, e + 1)) { cuts.push(e); s = e; }
     }
     cuts.push(n);
-    // 同じページ数で、行の数をなるべく同じに割り直す（詰めるだけだと 390×844 で26走が 13・12・1 になり、最後のページが1行だけになった）。
-    //   背の高い行が固まって入らないページが出るときは、詰めた割り方のまま
-    const k = cuts.length - 1;
-    if (k > 1) {
-      const even = [0];
-      for (let p = 0; p < k; p += 1) even.push(even[p] + Math.floor(n / k) + (p < n % k ? 1 : 0));
-      if (even.every((c, p) => p === 0 || fits(even[p - 1], c))) cuts = even;
-    }
     ALL_CUTS.set(h.number, { key, n, cuts });
     return !old || old.n !== n || old.cuts.join() !== cuts.join();
   }
