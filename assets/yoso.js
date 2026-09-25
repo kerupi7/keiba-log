@@ -1703,7 +1703,10 @@
     const D = tkParse(wrap);
     const numOf = (html) => Number(String(html).replace(/<[^>]+>/g, '').trim());
     const styleOf = {};
-    D.zones.forEach((z) => z.chips.forEach((c) => { styleOf[numOf(c.hn)] = { style: z.style, grade: z.grade }; }));
+    // rate＝展開のページの「複勝 9.0%」（このコースでその脚質の馬が3着以内に来た割合）。評価（S〜D）は、この割合が
+    //   全コースの同じ脚質の平均の何倍かで付いている（追込は平均が低いので、9%でもAになる）
+    const pct = (t) => { const v = parseFloat(String(t).replace('%', '')); return Number.isFinite(v) ? v : null; };
+    D.zones.forEach((z) => z.chips.forEach((c) => { styleOf[numOf(c.hn)] = { style: z.style, grade: z.grade, rate: pct(z.rate) }; }));
     const gateOf = {};
     D.gates.forEach((g) => { gateOf[numOf(g.hn)] = g.grade; });
     return (TK_DATA = { styleOf, gateOf });
@@ -1728,7 +1731,7 @@
     return {
       here, all, hereC: find(here), allC: find(all),
       flowLab: `${paceName}・${main.side === '前' ? '前残り' : '差し追込'}`, rt,
-      style: st.style || '—', styleG: st.grade || '', gate: h.gate, gateG: tk.gateOf[h.gate] || '',
+      style: st.style || '—', styleG: st.grade || '', styleP: st.rate ?? null, gate: h.gate, gateG: tk.gateOf[h.gate] || '',
       hitLab, lit: c.lit, stat: c.stat,
     };
   }
@@ -1989,7 +1992,10 @@
     const rts = A.map((a) => a.rt);
     const flow = cmpSec('今日の流れ', [
       cmpRow(rts.map((r) => (r && r.n ? bigNum(Math.round(r.top3_pct), '%') : null)), { hero: true, ic: 'flow', k: 'flow', cap: rts.map((r) => `${esc(A[0].flowLab)}での3着内${r && r.n ? `・${r.top3}/${r.n}走` : '・走っていない'}`) }),
-      cmpRow(A.map((a) => `<span class="ap-bn"><b class="ap-mid ap-jp">${esc(a.style)}</b>${tkG(a.styleG)}</span>`), { ic: 'style', cap: '脚質と今日の評価', k: 'style' }),
+      // 評価の横にその脚質の3着内率も出す（2026-09-25 ユーザー「ここランクだけじゃなくて、％も出したい」）
+      cmpRow(A.map((a) => `<span class="ap-bn"><b class="ap-mid ap-jp">${esc(a.style)}</b>${tkG(a.styleG)}`
+        + `${a.styleP != null ? `<b class="ap-mid ap-pc">${Math.round(a.styleP)}</b><small class="ap-u2">%</small>` : ''}</span>`),
+        { ic: 'style', cap: '脚質と今日の評価・このコースでその脚質の3着内率', k: 'style' }),
       cmpRow(A.map((a) => `<span class="ap-bn"><b class="ap-mid">${a.gate}</b><small class="ap-u2">枠</small>${tkG(a.gateG)}</span>`), { ic: 'gate', cap: '枠と今日の評価', k: 'gate' }),
       cmpRow(A.map((a) => {
         const on = Object.keys(a.hitLab).filter((k) => a.lit[k]).map((k) => `<b>${a.hitLab[k]}</b>`);
