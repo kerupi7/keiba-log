@@ -1776,7 +1776,9 @@
   //   Appleっぽいセクシーさを感じない」） ----------
   //   前：上の名前の欄を横へ飛ばしてから画面を描き直し、いちばん上へ跳んでいた（下へ送っていると動きが見えず、跳ぶだけ）。
   //   今：画面の位置はそのまま。押したボタンが ✓ に変わり、負けた側の列だけがぼけながら消え、
-  //   次の馬の列が上から順に浮かび上がる。選んだ側の列はほんの少し持ち上がって戻る
+  //   次の馬の列が上の行から順に、ぼけた状態からはっきりしていく。
+  //   縦には動かさない（同日ユーザー「押した時に上に上がるモーションが美しくない」。前は選んだ側の列を3px持ち上げ、
+  //   次の馬の列を12px下から浮かせていた。部品ごとに別々に動くので、列が揃わずに揺れて見えた）
   const apReduce = () => Boolean(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   // 見えている範囲の、その列（0＝左・1＝右）の部品
   function cmpCol(side) {
@@ -1803,11 +1805,8 @@
     haptic();
     if (!reduce) {
       cmpCol(lose).forEach((el) => el.animate(
-        [{ opacity: 1, filter: 'blur(0px)', transform: 'none' }, { opacity: 0, filter: 'blur(6px)', transform: 'scale(.97)' }],
+        [{ opacity: 1, filter: 'blur(0px)' }, { opacity: 0, filter: 'blur(6px)' }],
         { duration: 240, easing: 'cubic-bezier(.4,0,1,1)', fill: 'forwards' }));
-      cmpCol(side).forEach((el) => el.animate(
-        [{ transform: 'none' }, { transform: 'translateY(-3px)', offset: 0.4 }, { transform: 'none' }],
-        { duration: 380, easing: 'cubic-bezier(.32,.72,0,1)' }));
     }
     setTimeout(() => {
       pickWinner(n);                       // 描き直す（最後の1組なら、印が決まった画面へ）
@@ -1816,8 +1815,8 @@
       if (b) { b.scrollTop = y; b.dispatchEvent(new Event('scroll')); }   // 今いた位置のまま
       if (!reduce) {
         cmpCol(lose).forEach((el, k) => el.animate(
-          [{ opacity: 0, filter: 'blur(8px)', transform: 'translateY(12px) scale(.98)' }, { opacity: 1, filter: 'blur(0px)', transform: 'none' }],
-          { duration: 560, delay: Math.min(k * 35, 280), easing: 'cubic-bezier(.32,.72,0,1)', fill: 'backwards' }));
+          [{ opacity: 0, filter: 'blur(8px)' }, { opacity: 1, filter: 'blur(0px)' }],
+          { duration: 520, delay: Math.min(k * 30, 240), easing: 'cubic-bezier(.32,.72,0,1)', fill: 'backwards' }));
       }
       S.busy = false;
     }, reduce ? 0 : 260);
