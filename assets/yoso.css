@@ -1024,7 +1024,9 @@ html.rc-frame .mx .mg-close .mg-tag{background:#5E7185}
 .ap-stk{position:sticky;top:0;z-index:2;display:grid;grid-template-columns:1fr 1fr;gap:18px;margin:0 -16px;padding:8px 16px;
   background:rgba(255,255,255,.94);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);border-bottom:1px solid #e8e8ed;
   opacity:0;pointer-events:none;transition:opacity .2s}
-.ap-body.stuck .ap-stk{opacity:1}
+/* 出ている間は押せるようにする（2026-09-27 ユーザー「ここを押しても詳細が見れるようにしてほしい」。pointer-events:none が残っていて押しても反応しなかった） */
+.ap-body.stuck .ap-stk{opacity:1;pointer-events:auto}
+.ap-stk>div{cursor:pointer}
 .ap-stk>div{display:flex;align-items:center;gap:5px;min-width:0}
 .ap-stk b{font-size:13px;font-weight:600;line-height:1.25;min-width:0;overflow-wrap:anywhere}
 /* 「この馬を選ぶ」は画面の下に固定（2026-09-25 ユーザー「常に下に表示しておきたい」） */
