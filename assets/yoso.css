@@ -1017,7 +1017,8 @@ html.rc-frame .mx .mg-close .mg-tag{background:#5E7185}
 .ap-tops{display:grid;grid-template-columns:1fr 1fr;gap:18px;padding:22px 0 10px}
 .ap-top{display:flex;flex-direction:column;gap:6px;min-width:0}
 .ap-tn{display:flex;align-items:center;gap:6px;min-width:0;max-width:100%}
-.ap-tn b{font-size:19px;font-weight:700;letter-spacing:-.01em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
+/* 馬名は切らずに折り返す（2026-09-27 ユーザー「馬名きれないようにしてほしい」。9文字のミスターキャンベラが375px幅で「ミスターキャン…」になっていた） */
+.ap-tn b{font-size:19px;font-weight:700;letter-spacing:-.01em;line-height:1.25;min-width:0;overflow-wrap:anywhere;cursor:pointer}
 .ap-ts{font-size:12px;color:#6e6e73}
 /* スクロールしても2頭の名前を上に残す（上の2列が隠れてから出す） */
 .ap-stk{position:sticky;top:0;z-index:2;display:grid;grid-template-columns:1fr 1fr;gap:18px;margin:0 -16px;padding:8px 16px;
@@ -1025,13 +1026,13 @@ html.rc-frame .mx .mg-close .mg-tag{background:#5E7185}
   opacity:0;pointer-events:none;transition:opacity .2s}
 .ap-body.stuck .ap-stk{opacity:1}
 .ap-stk>div{display:flex;align-items:center;gap:5px;min-width:0}
-.ap-stk b{font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ap-stk b{font-size:13px;font-weight:600;line-height:1.25;min-width:0;overflow-wrap:anywhere}
 /* 「この馬を選ぶ」は画面の下に固定（2026-09-25 ユーザー「常に下に表示しておきたい」） */
 .ap-pick{flex:none;display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:10px 16px calc(10px + env(safe-area-inset-bottom));
   border-top:1px solid #d2d2d7;background:rgba(255,255,255,.94);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px)}
 .ap-go{appearance:none;border:0;border-radius:14px;background:#0071e3;color:#fff;font:inherit;font-size:15px;font-weight:600;
   padding:8px 10px 9px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:1px;min-width:0}
-.ap-go span{font-size:11px;font-weight:500;opacity:.85;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ap-go span{font-size:11px;font-weight:500;opacity:.85;max-width:100%;overflow-wrap:anywhere}
 .ap-go{transition:background-color .28s ease,opacity .28s ease,transform .15s ease}
 .ap-go:active{background:#0062c4;transform:scale(.97)}
 .ap-go.done{background:#34c759}
