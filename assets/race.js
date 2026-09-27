@@ -2016,7 +2016,9 @@ function axDiff(c, basep) {
   return d;
 }
 
-function aptCardHtml(h, race, bare) {
+// opts.zones=true のときだけ、内・中・外の輪の段を足す（1頭だけ見る画面の基本ページ用・handoff_2026-09-28_waku-chokyo.md）。
+//   opts.field＝今回の出走頭数（取消を除く）。今日がどこかを馬番÷頭数で決めるのに使う
+function aptCardHtml(h, race, bare, opts) {
   const a = (h.course_record || {}).apt;
   if (!a || !a.base || !a.base.n) return '';
   const R = race || {};
@@ -2210,7 +2212,34 @@ function aptCardHtml(h, race, bare) {
         <div class="ax-scale">${used.map((m) =>
           `<span class="bt-num${m === R.distance ? ' now' : ''}" style="left:${at(m)}%">${(m / 100).toFixed(1).replace(/\.0$/, '')}</span>`).join('')}</div>
       </div></div>`}
-    ${turnBlock}</div>`;
+    ${turnBlock}${opts && opts.zones ? zoneBlock(opts.field) : ''}</div>`;
+
+  // ===== 内・中・外：過去走の馬番÷頭数で3等分した位置ごとの好走率（2026-09-28 決定・mockup-222 案C） =====
+  //   数えるのは publish（keiba_shutuba_columns.build_apt の zone）。好走の数え方・中央の全走・色の決まり（judge）は
+  //   すぐ上のコース適性の輪と同じ。ここでは今日の位置（馬番÷今回の頭数）に「今日」の札を付けるだけ
+  function zoneBlock(field) {
+    const zoneOf = (n, f) => {
+      n = Number(n); f = Number(f);
+      if (!n || !f || f < 2) return null;
+      const p = (n - 1) / (f - 1);
+      return p <= 1 / 3 ? '内' : p <= 2 / 3 ? '中' : '外';
+    };
+    const z = {};
+    (Array.isArray(a.zone) ? a.zone : []).forEach((c) => { z[c.label] = c; });
+    ['内', '中', '外'].forEach((k) => { z[k] = z[k] || { n: 0, good: 0 }; });
+    if (!z.内.n && !z.中.n && !z.外.n) return '';
+    const tz = zoneOf(h.number, field);
+    const zu = (k) => {
+      const c = z[k];
+      const j = c.n ? judge(c) : 'na';
+      return `<div class="ax-u ax-zu ${j}">
+      <div class="ax-rw">${ringSvg(c, 72, RCOL[j])}
+        <div class="ax-rc">${c.n ? `<b class="ax-dg">${axPct(c)}<small>%</small></b>` : '<span class="ax-first">初</span>'}</div></div>
+      <span class="ax-ul">${k}${k === tz ? '<i class="ax-tday">今日</i>' : ''}</span>
+      ${c.n ? `${runs(c)}` : '<span class="ax-un">走っていない</span>'}</div>`;
+    };
+    return `<div class="ax-g ax-zone"><div class="ax-top n3">${['内', '中', '外'].map(zu).join('')}</div></div>`;
+  }
 }
 
 // 開き直したときに、押して出した距離を今日の距離へ戻す（2026-09-24 ユーザー指摘）。

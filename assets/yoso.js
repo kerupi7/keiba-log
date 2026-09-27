@@ -892,7 +892,17 @@
   const top3Pct = (c) => { const n = c.reduce((a, b) => a + b, 0); return n ? Math.round(((c[0] + c[1] + c[2]) / n) * 100) : null; };
   // コース適性のカード（好走率の版）。**中身は race.js の aptCardHtml が正本。**
   //   2つに書き分けると決まりの数字がズレるので、ここでは呼ぶだけにする（2026-09-24）。
-  const aptCard = (h) => (window.AptCard ? window.AptCard(h, site.race) : '');
+  //   基本ページだけ、内・中・外の輪の段を足す（zones・handoff_2026-09-28_waku-chokyo.md）。今日の位置は取消を除いた頭数で決める
+  const aptCard = (h) => (window.AptCard ? window.AptCard(h, site.race, false,
+    { zones: true, field: (site.horses || []).filter((x) => !x.scratched).length }) : '');
+  // 今回の調教のランク（S〜D）。見出しの「オッズ・人気」の右に文字1つだけ出す（2026-09-28 ユーザー「調教はランクだけでいいな」）。
+  //   色は展開タブの脚質のランク（TK_GC）と同じ。publish の training_rank が無いレース・馬は「—」
+  const TR_GC = { S: '#0B5E2E', A: '#1F6B3A', B: '#4E5862', C: '#8E4A36', D: '#A32B1F' };
+  const trCell = (h) => {
+    const g = (h.training_rank || {}).grade;
+    return `<div class="b-od b-tr"><i>調教</i>${g && TR_GC[g]
+      ? `<b class="b-trg" style="background:${TR_GC[g]}">${esc(g)}</b>` : '<b class="b-trg none">—</b>'}</div>`;
+  };
 
   function basicPage(h) {
     const P0 = P(h.number);
@@ -915,6 +925,7 @@
       <div class="b-hd3">
         <div class="b-od"><i>オッズ</i><b class="bt-num">${h.odds != null ? h.odds.toFixed(1) : '—'}<small>倍</small></b></div>
         <div class="b-od"><i>人気</i><b class="bt-num">${esc(h.popularity ?? '—')}<small>番</small></b></div>
+        ${trCell(h)}
         ${'' /* 「通算N戦」と「3着内N%」は出さない。着順の数字（1-1-1-7）だけ残す（2026-09-24 ユーザー指示） */}
         <div class="b-car">${car ? recHtml(car) : '—'}</div>
       </div>
