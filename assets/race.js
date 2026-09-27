@@ -5363,7 +5363,13 @@ function renderPaceRows20(site) {
   if (!grid || !grid.cells || !grid.cells.length) return '';
   const paceProb = {};
   grid.cells.forEach((c) => { paceProb[c.code] = c.pace_prob; });
-  const keep = Object.keys(paceProb).sort((a, b) => paceProb[b] - paceProb[a]).slice(0, TOP_PACE_108);
+  // 先頭（.on）は本命のマス（scenario.main）のペース。残りは確率の高い順（2026-09-27 ユーザー決定・mockup-220 案A）。
+  // それまでは確率の高い順だけで並べていたため、ハイ49%・平均48%のように割れると先頭がハイになり、
+  // 馬名ポップアップの「本命 平均・前残り」と食い違った（公開済み506レース中20レース）。
+  const mainCode = ((p.scenario || {}).main || {}).code;
+  const keep = Object.keys(paceProb)
+    .sort((a, b) => (b === mainCode) - (a === mainCode) || paceProb[b] - paceProb[a])
+    .slice(0, TOP_PACE_108);
   if (!keep.length) return '';
   // 通過タイムはペースごとに違う。main/sub/other が持っているものを符号で引く
   const pts = {};
