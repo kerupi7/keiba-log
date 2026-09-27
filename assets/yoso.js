@@ -222,17 +222,28 @@
     if (first === 'swipe' || first === 'view') go(S.screen);
   }
 
+  // 流れで決めたものを、その場で保存する（2026-09-28 ユーザー「スワイプ時点でチェックや消しを保存してほしい」）。
+  //   前は最後まで終えたとき（close(true)）にだけ保存していたので、印の途中でやめると絞り込みから全部やり直しになった。
+  //   呼ぶのは ①1頭払うごと ②◎○▲が1つ決まるごと ③最後まで終えたとき。
+  //   上書きするのは S.my に入っているものだけ（消・✓・◎○▲）。◎○▲は1頭までなので他の馬からは外す
+  let SAVED = false;   // この回で1つでも保存したか。やめたときに一覧を描き直すかどうかに使う
+  function persist() {
+    if (!S || S.view) return;
+    const m = loadMarks();
+    for (const [n, mk] of Object.entries(S.my)) {
+      if (MARKS3.includes(mk)) for (const k of Object.keys(m)) if (m[k] === mk) delete m[k];
+      m[n] = mk;
+    }
+    saveMarks(m);
+    SAVED = true;
+  }
+
   function close(apply) {
     if (DV && !apply) { closeDetail(); return; }   // 比べる画面から開いた「1頭だけ見る」は、比べる画面へ戻す
-    if (apply) {
-      const m = loadMarks();
-      // 流れで決めたものだけ上書きする（消・✓・◎○▲）。◎○▲は1頭までなので他の馬からは外す
-      for (const [n, mk] of Object.entries(S.my)) {
-        if (MARKS3.includes(mk)) for (const k of Object.keys(m)) if (m[k] === mk) delete m[k];
-        m[n] = mk;
-      }
-      saveMarks(m);
-      try { sessionStorage.setItem('yf-back', '1'); } catch (e) { /* なくても動く */ }
+    if (apply || SAVED) {
+      persist();
+      // 途中でやめたときも、ここまでの答えは残っているので一覧を描き直す（出馬表の「自分」の列に出すため）
+      try { sessionStorage.setItem('yf-back', apply ? '1' : 'kept'); } catch (e) { /* なくても動く */ }
       location.reload();   // 本番の一覧を印つきで描き直させる
       return;
     }
@@ -2258,6 +2269,7 @@
     setTimeout(() => card.remove(), t * 1000 + 30);
     haptic();
     S.my[Q[S.idx].number] = mark;
+    persist();   // 1頭払うごとに保存（途中でやめても次はこの馬の続きから）
     S.idx += 1; S.page = 0;
     if (S.idx >= Q.length || !back) { setTimeout(() => go('ask'), t * 1000); return; }
     // 後ろの札は、払った札が抜けるのと同時に、ばねの動きで前へせり上がる。
@@ -2303,7 +2315,7 @@
     if (!root || root.querySelector('.yf-sheet-bg')) return;
     const bg = document.createElement('div');
     bg.className = 'yf-sheet-bg';
-    bg.innerHTML = `<div class="yf-sheet"><div class="grp"><div class="t">予想をやめますか？</div><div class="s">ここまでの「残す」「消す」は消えます</div>
+    bg.innerHTML = `<div class="yf-sheet"><div class="grp"><div class="t">予想をやめますか？</div><div class="s">ここまでの「残す」「消す」は残ります。次は続きから</div>
       <button type="button" class="danger" data-q="quit">やめる</button></div>
       <button type="button" class="cancel" data-q="keep">続ける</button></div>`;
     root.appendChild(bg);
@@ -2525,6 +2537,7 @@
 
   function setWinner(n) {
     S.my[n] = MARKS3[S.step];
+    persist();   // ◎○▲が1つ決まるごとに保存（途中でやめても次はまだの印から）
     S.lastWinner = n;
     go('marked');
   }
@@ -2555,7 +2568,7 @@
       case 'done': close(true); break;
       case 'close': close(false); break;   // 1頭だけ見るときの「閉じる」（2026-09-21）
       case 'quit':
-        if (window.confirm('予想をやめますか？ ここまでの答えは消えます')) close(false);
+        if (window.confirm('予想をやめますか？ 決まった印は残ります（比べている途中の分は消えます）')) close(false);
         break;
       default: break;
     }
@@ -2596,11 +2609,11 @@
     // 本番は印の一覧を描き直すことがあるので、消えたら付け直す
     new MutationObserver(mountEntry).observe(document.getElementById('race-content'), { childList: true, subtree: true });
     let back = false;
-    try { back = sessionStorage.getItem('yf-back') === '1'; sessionStorage.removeItem('yf-back'); } catch (e) { /* なくても動く */ }
-    if (back) {
+    try { back = sessionStorage.getItem('yf-back'); sessionStorage.removeItem('yf-back'); } catch (e) { /* なくても動く */ }
+    if (back === '1' || back === 'kept') {
       const bar = document.querySelector('.race20 .mm-bar');
       if (bar) bar.scrollIntoView({ block: 'start' });
-      toast('印を付けました');
+      toast(back === '1' ? '印を付けました' : 'ここまでの答えを残しました');
     }
   })();
 })();
