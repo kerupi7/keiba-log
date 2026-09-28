@@ -4240,7 +4240,28 @@ function brWhyPct(v) {
   return `${(v * 100).toFixed(1)}%`;
 }
 
+// 2026-09-28: win-6 の16券種（handoff_2026-09-28_win6-betrule-ans.md）。
+// 「使う馬」は bets_rules_w6.roles（札＝穴の一番・穴・勝率◯位、勝率、穴の3着以内率）から作る。
+function w6WhyCards(pl, br, byNum) {
+  const roles = br.roles || {};
+  const nums = (br.horses || []).filter((n) => roles[String(n)]);
+  if (!nums.length) return '';
+  const cards = nums.map((n) => {
+    const r = roles[String(n)];
+    const h = byNum[n] || {};
+    const odds = r.odds != null ? `単勝 ${Number(r.odds).toFixed(1)}倍` : '';
+    const tags = (r.tags || []).map((t) => `<span class="why ${t.startsWith('穴') ? 'ana' : 'top'}">${escapeHtml(t)}</span>`).join(' ');
+    const anaP = r.ana_p != null ? `　穴の3着以内率 <b>${brWhyPct(r.ana_p)}</b>` : '';
+    return '<div class="hcard"><div class="hh">'
+      + `<button type="button" class="hnb" data-pop="${n}">${umaBox(n, h.gate)}</button>`
+      + `<span class="nm">${escapeHtml(h.name || '')}</span><span class="od">${odds}</span></div>`
+      + `<div class="hr">${tags} モデルの勝率 <b>${brWhyPct(r.p)}</b>${anaP}</div></div>`;
+  }).join('');
+  return `<div class="brwhy"><div class="bwh">このレースで使う馬（${nums.length}頭）</div>${cards}</div>`;
+}
+
 function brWhyCards(pl, br, byNum) {
+  if (br.engine === 'w6ideas') return w6WhyCards(pl, br, byNum);
   const why = br.why;
   if (!why || !Array.isArray(why.horses)) return '';
   const rowOf = {};
@@ -4282,7 +4303,22 @@ function brWhyCards(pl, br, byNum) {
   return `<div class="brwhy"><div class="bwh">この案で使う馬（${nums.length}頭）</div>${cards}</div>`;
 }
 
+// 2026-09-28 ユーザー決定（mockup-227・案A）: win-6 の買い目を一番上に足し、その下は今までどおり
+// （win-5 の6案・win-4 の五街道5案）。bets_rules_w6 が無いレース（開始日より前など）は今までと同じ表示。
 function renderBetRules(site) {
+  const w6 = site.bets_rules_w6;
+  if (!w6 || (!w6.plans && !w6.skip)) return renderBetRulesW45(site);
+  let html = '<div class="grphead">win-6 の買い目<span class="sub">荒れ度ごとに買い方が変わる・答え合わせ中</span></div>';
+  if (w6.skip) {
+    html += `<div class="conf">${escapeHtml(w6.skip)}</div>`;
+  } else {
+    // 案はそのレースの荒れ度の1つだけ。しっかり見られるよう、最初から開いておく
+    html += renderBetRuleGroup(site, w6, Object.keys(w6.plans), '', true).secs;
+  }
+  return html + renderBetRulesW45(site);
+}
+
+function renderBetRulesW45(site) {
   // 2026-09-15 ユーザー決定（mockup-166 案①）: win-5 の6案（bets_rules_w5）があれば上下2段にする。
   // 上＝win-5 の6案、下＝win-4 の五街道5案（bets_rules）。bets_rules_w5 が無いレース
   // （2026-09-18以前の公開分など）は、今までと1pxも変わらない表示に落とす。
@@ -4329,14 +4365,15 @@ function betRuleSumHtml(site, label, points, ret) {
 }
 
 // 1つのまとまり（案の並び order）の帯と表を作る。戻り値 {secs, points, ret}
-function renderBetRuleGroup(site, br, order, headCls) {
+function renderBetRuleGroup(site, br, order, headCls, openAll) {
   const byNum = {};
   for (const h of site.horses) byNum[h.number] = h;
   const showResult = site.status === 'final';
   // result.payouts は「券種名をキーにした辞書」。複勝とワイドだけ配列で、他は単体。
   // 2026-09-09: 配列だと思い込んで for..of を回し、例外でページ全体が白くなった。
   // 2026-09-15: win-5 の6案に単勝が入ったので tansho を足した（同着は配列で来ることがある）
-  const BR_BT = { 単勝: 'tansho', ワイド: 'wide', 馬連: 'umaren', 馬単: 'umatan',
+  // 2026-09-28: win-6 の16券種に複勝が入ったので fukusho を足した（複勝は配列で来る）
+  const BR_BT = { 単勝: 'tansho', 複勝: 'fukusho', ワイド: 'wide', 馬連: 'umaren', 馬単: 'umatan',
                   三連複: 'sanrenpuku', 三連単: 'sanrentan' };
   const payMap = {};
   const po = (showResult && site.result && site.result.payouts) || null;
@@ -4358,7 +4395,8 @@ function renderBetRuleGroup(site, br, order, headCls) {
     if (!pl) return '';
     // 2026-09-09 ユーザー決定: 帯の右の材料の説明（例「オッズ帯・頭数… 129ルール」）は出さない。
     // 代わりに点数（確定後は払戻）を出し、帯を押すと表が開く形にする（既定は閉じる）
-    if (!pl.points) {
+    // win-6 は0点でも「買わない」行を並べて見せる（決定3）ので、ここでは落とさない
+    if (!pl.points && br.engine !== 'w6ideas') {
       return `<div class="secthead${hcls}">${escapeHtml(name)}</div>`
         + `<div class="conf">${oddsPending(site) ? BETS_PENDING_TEXT : '本レースは見送り（買い目なし）'}</div>`;
     }
@@ -4375,10 +4413,16 @@ function renderBetRuleGroup(site, br, order, headCls) {
     const rows = pl.types.map((t) => {
       const label = t.type.replace('三連', '3連');
       const ordered = /馬単|三連単/.test(t.type);
+      // 2026-09-28: win-6 は券種ごとに決め方（desc）を添え、条件に合う馬がいない券種も「買わない」行を出す（決定3）
+      const desc = t.desc ? `<span class="bn" style="margin-left:8px">${escapeHtml(t.desc)}</span>` : '';
+      if (t.none) {
+        return `<tr class="btyhead"><td class="l" colspan="${ncols}">${label}<span class="bn">買わない</span>`
+          + `<span class="bn" style="margin-left:8px">${escapeHtml(t.desc || '')}：条件に合う馬がいない</span></td></tr>`;
+      }
       const tyHead = `<tr class="btyhead"><td class="l" colspan="${ncols}">${label}`
-        + `<span class="bn">${t.tickets.length}点</span></td></tr>`;
-      // 単勝は1頭ずつ1行（まとめる相手がいない）。brGroups は2頭以上の組を前提にしている
-      const groups = t.type === '単勝'
+        + `<span class="bn">${t.tickets.length}点</span>${desc}</td></tr>`;
+      // 単勝・複勝は1頭ずつ1行（まとめる相手がいない）。brGroups は2頭以上の組を前提にしている
+      const groups = (t.type === '単勝' || t.type === '複勝')
         ? t.tickets.map((tk) => ({ single: true, others: tk, n: 1, tickets: [tk], ordered: false, axes: [] }))
         : brGroups(t.type, t.tickets);
       return tyHead + groups.map((g) => {
@@ -4425,7 +4469,8 @@ function renderBetRuleGroup(site, br, order, headCls) {
     const cap = showResult
       ? `${pl.points}点 ${fmtYen(pl.stake)} → ${fmtYen(ret)}`
       : `${pl.points}点 ${fmtYen(pl.stake)}`;
-    return `<details class="brdet"><summary class="secthead${hcls}">${escapeHtml(name)}`
+    const title = br.engine === 'w6ideas' ? `${name}の買い方` : name;
+    return `<details class="brdet"${openAll ? ' open' : ''}><summary class="secthead${hcls}">${escapeHtml(title)}`
       + `<span class="cnt">${cap}</span></summary>`
       + brWhyCards(pl, br, byNum)
       + `<table class="fixed betstbl"><thead>${header}</thead>`

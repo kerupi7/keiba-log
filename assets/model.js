@@ -6,7 +6,8 @@
 const SLUG_NAME = { tokaido: '東海', koshu: '甲州', nakasendo: '中山',
                     oshu: '奥州', nikko: '日光' };
 // 2026-09-15: win-5 の6案に単勝が入ったので先頭に足した（五街道5案には単勝が無いので行が出ないだけ）
-const TYPE_ORDER = ['単勝', 'ワイド', '馬連', '馬単', '三連複', '三連単'];
+// 2026-09-28: win-6 の16券種に複勝が入ったので足した
+const TYPE_ORDER = ['単勝', '複勝', 'ワイド', '馬連', '馬単', '三連複', '三連単'];
 const UPSET_ORDER = ['堅い', '中荒れ', '大荒れ'];
 
 // 回収率の色は100円が戻るかどうかで分ける（100%＝ちょうど元手）
@@ -26,7 +27,9 @@ function render(doc, slug) {
   // 2026-09-15: win-5 の6案（plans_w5・slug が w5- で始まる）も同じページで開く。
   // 順位・期間・ほかのモデルは、その案が属するまとまりの中で数える
   const isW5 = String(slug).startsWith('w5-');
-  const plans = (isW5 ? doc.plans_w5 : doc.plans) || [];
+  // 2026-09-28: win-6 の16券種（案＝荒れ度・slug が w6- で始まる）
+  const isW6 = String(slug).startsWith('w6-');
+  const plans = (isW6 ? doc.plans_w6 : (isW5 ? doc.plans_w5 : doc.plans)) || [];
   const name = SLUG_NAME[slug];
   const p = plans.find((x) => x.slug === slug) || plans.find((x) => x.name === name);
   if (!p) {
@@ -35,14 +38,15 @@ function render(doc, slug) {
   }
   const ranked = [...plans].sort((a, b) => b.roi - a.roi);
   const rank = ranked.findIndex((x) => x.name === p.name) + 1;
-  const per = isW5 ? doc.period_w5 : doc.period;
-  const nr = isW5 ? doc.n_races_w5 : doc.n_races;
+  const per = isW6 ? doc.period_w6 : (isW5 ? doc.period_w5 : doc.period);
+  const nr = isW6 ? doc.n_races_w6 : (isW5 ? doc.n_races_w5 : doc.n_races);
   const bfn = isW5 ? (doc.n_backfilled_w5 || 0) : 0;
   const period = (per && per.from
     ? `参考値・${per.from.slice(5)}〜${per.to.slice(5)}の${nr}レース`
     : '参考値')
     + (bfn ? `（うち${bfn}レースは本番化の日に遡って計算した参考値）` : '');
-  const chip = `<span class="mdlchip${isW5 ? '' : ' w4'}">${isW5 ? 'win-5' : 'win-4'}</span>`;
+  const chip = isW6 ? '<span class="mdlchip">win-6</span>'
+    : `<span class="mdlchip${isW5 ? '' : ' w4'}">${isW5 ? 'win-5' : 'win-4'}</span>`;
 
   const typeRows = TYPE_ORDER.map((ty) => {
     const x = p.by_type[ty];
@@ -86,7 +90,7 @@ function render(doc, slug) {
   el.innerHTML = `
     <div class="mhead">
       <div class="nm">${chip}${escapeHtml(p.name)}<span class="rk">${plans.length}案中${rank}位</span></div>
-      <div class="ds">何を見て買うか　<b>${escapeHtml((p.materials || []).join('・'))}</b></div>
+      ${(p.materials || []).length ? `<div class="ds">何を見て買うか　<b>${escapeHtml(p.materials.join('・'))}</b></div>` : ''}
       <div class="ds">選び方　${escapeHtml(p.desc || '')}</div>
     </div>
     <div class="mroi">
@@ -121,7 +125,7 @@ async function main() {
       `<div class="error-box">データの読み込みに失敗しました: ${escapeHtml(e.message)}</div>`;
     return;
   }
-  const all = [...(doc.plans || []), ...(doc.plans_w5 || [])];
+  const all = [...(doc.plans || []), ...(doc.plans_w5 || []), ...(doc.plans_w6 || [])];
   const hit = all.find((x) => x.slug === slug);
   document.title = `${(hit && hit.name) || SLUG_NAME[slug] || 'モデル'}の成績 — Ans.`;
   render(doc, slug);
