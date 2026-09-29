@@ -522,7 +522,7 @@
   //   数字は画面で計算しない。公開データ data/races/{race_id}.json の horses[].rankcard（総合点 p・順位 rank・段の点とランク groups・札のランク・少・表示 cards）と
   //   rankcard_meta.cards（総合点の重みがある札の名前。これに無い札に「点外」を付ける）をそのまま使う。
   //   rankcard が無いレース（作り始める前の公開）は、絞り込みも今までの10ページのまま出す（m225On が偽）。
-  //   例外：「流れ」の札は総合点の重みが無く rankcard に入っていないので、この札だけ 3着以内率の線で S〜D をここで付ける
+  //   例外：rankcard-1 の公開分は「流れ」の札が rankcard に入っていないので、そのときだけ 3着以内率の線で S〜D をここで付ける
   const M225_R = ['S', 'A', 'B', 'C', 'D'];
   const M225_FLOW_LINE = [0.65, 0.43, 0.20, 0.10];   // 流れの札の S・A・B・C の下限（3着以内率）
   const M225_THIN_RUNS = 2;                           // 流れの札の「少」（走数がこれ以下）
@@ -572,7 +572,11 @@
     const tz = m225Zone(h.number, H.length);
     if (tz) add('条件', '内外', `${tz}枠`);
     const sm = ((site.prediction || {}).scenario || {}).main || {};
-    if (sm.code && sm.side) {
+    const fc = cards['流れ'];
+    if (fc) {
+      // rankcard-2（2026-09-29 ユーザー「流れの札もランクに入れて」）から、流れの札も公開データに入る。予想の流れが無いレース（name が空）は出さない
+      if (fc.name) out.push({ grp: '条件', key: '流れ', label: fc.name, g: fc.grade || null, thin: Boolean(fc.thin), val: fc.val || '—' });
+    } else if (sm.code && sm.side) {   // rankcard-1 の公開分（流れの札が入っていない）だけ、ここで付ける
       const code = `${sm.code}_${sm.side === '前' ? '前残り' : '差し・追込'}`;
       const nm = `${{ S: 'スロー', M: '平均', H: 'ハイ' }[sm.code] || ''}${sm.side === '前' ? '前残り' : '差し'}`;
       const row = ((h.race_type_record || {}).rows || []).find((r) => r.code === code);
