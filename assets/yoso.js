@@ -266,7 +266,7 @@
     const oldBack = document.getElementById('yf-back');
     const keepBack = S.screen === 'swipe' && oldBack && Number(oldBack.dataset.n) === (Q[S.idx + 1] || {}).number ? oldBack : null;
     const keepLater = S.screen === 'swipe' ? [...document.querySelectorAll('.yf-card.later')] : [];
-    col.innerHTML = { swipe: vSwipe, view: vSwipe, ask: vAsk, duel: vCompare, marked: vMarked }[S.screen]();
+    col.innerHTML = { swipe: vSwipe, view: vSwipe, ask: vAsk, duel: (m225On() ? vTenbin : vCompare), marked: vMarked }[S.screen]();
     if (S.screen === 'swipe' || S.screen === 'view') {
       fitPage();
       const deck = document.getElementById('yf-deck');
@@ -2373,6 +2373,325 @@
     requestAnimationFrame(step);
   }
   let cmpWait = null;
+  // ---------- 印を決める画面を1画面の天秤に（2026-09-29 壁打ち・試作 mockup-228・handoff_2026-09-29_duel-onescreen.md） ----------
+  //   ランク札（rankcard）が全頭にあるレースだけこの画面。無いレース（新馬など）は下の vCompare（Apple の比べる表）のまま
+  //   上に2頭の名前、真ん中に5つの段（ランク札の段）、下に「この馬を選ぶ」。縦には送らない。
+  //   天秤は段の大きいランクの差だけで傾く（同じ＝水平・1つ違い＝少し・2つ以上＝大きく）。片方が「初」なら水平。
+  //   点の細かい差は使わない（ランクの文字と天秤の向きが食い違ったため）。中の札の小さいランクは真ん中に出さない
+  //   （札ごとの重さがバラバラで、見た目と傾きが食い違うため）。札は段を押すと下から出る。
+  //   外したもの：金の枠・3着以内の見込みの%・下のまとめ文・棒。
+  //   馬名を押すと、本番と同じ「1頭だけ見る」画面が開く（下の openDetail。.ap の中の [data-hist] を押したとき）
+  const TB_GROUPS = [
+    ['馬の力', ['直近5走', '前走', '2走前', '3走前', '4走前', '5走前']],
+    ['条件', ['コース', '場', '距離', '回り', '馬場', '内外', '流れ']],
+    ['状態', ['調教']],
+    ['人と血統', ['前走コース', '騎手', '調教師', '種牡馬', '母父']],
+    ['コースの傾向', ['枠', '脚質']],
+  ];
+  const TB_R = ['S', 'A', 'B', 'C', 'D'];
+  const tbV = (g) => { const i = TB_R.indexOf(g); return i < 0 ? null : 5 - i; };   // 初は null
+  const tbChip = (g, cls = '') => `<span class="tb-g ${TB_R.includes(g) ? g : 'F'} ${cls}">${TB_R.includes(g) ? g : esc(g || '—')}</span>`;
+  // 天秤：上の側の皿が下がって青くなる
+  function tbScale(side, steps) {
+    const deg = side === 0 ? 0 : steps >= 2 ? 16 : 9;
+    const t = (deg * Math.PI) / 180, cx = 36, cy = 12, r = 27;
+    const dy = side * r * Math.sin(t);
+    const lx = cx - r * Math.cos(t), rx = cx + r * Math.cos(t), ly = cy - dy, ry = cy + dy;
+    const pan = (x, y, w) => `<path class="str" d="M${x} ${y}l-7 12M${x} ${y}l7 12"/><path class="pan ${w ? 'w' : ''}" d="M${x - 10} ${y + 12}h20a10 5 0 0 1-20 0z"/>`;
+    return `<svg viewBox="0 0 72 44" class="tb-scale" aria-hidden="true"><path class="post" d="M34.5 12h3v28h-3zM28 40h16v3H28z"/>
+      <path class="beam" d="M${lx} ${ly}L${rx} ${ry}"/>${pan(lx, ly, side === -1)}${pan(rx, ry, side === 1)}</svg>`;
+  }
+  // 札の表示：天秤と同じランク札の値をそのまま出す。枠・脚質も展開のページの値に写さない
+  //   （2026-09-29 ユーザー決定。写すと段・天秤と中身の向きが逆になる組があった＝エイシンディード対アクートゥス。
+  //   脚質は展開のページの物差しだと3着以内率が S 22.5%〜D 20.6% でほぼ並ばず、ランク札は S 29.8%〜D 13.4%。ml/SCOREBOARD.md §2.126）
+  function tbCard(h, k) {
+    const c = ((h.rankcard || {}).cards || {})[k] || {};
+    return { g: c.grade, val: c.val, thin: Boolean(c.thin) };
+  }
+  function vTenbin() {
+    const t = S.t;
+    const mk = MARKS3[S.step];
+    const L = byNum(t.left), R = byNum(t.right);
+    const HS = [L, R];
+    const gs = (h, g) => (((h.rankcard || {}).groups || {})[g] || {}).grade;
+    const V = TB_GROUPS.map(([g]) => {
+      const a = gs(L, g), b = gs(R, g), va = tbV(a), vb = tbV(b);
+      const steps = va == null || vb == null ? 0 : Math.abs(va - vb);
+      return { g, a, b, steps, side: steps === 0 ? 0 : va > vb ? -1 : 1 };
+    });
+    const top = HS.map((h) => `<div class="ap-top" data-side="${h.number}">
+        <div class="ap-tn" data-hist="${h.number}">${umaBox(h.number, h.gate)}<b>${esc(h.name)}</b><i class="ap-chev">›</i></div>
+        <div class="ap-ts">${esc(h.sex_age || '')}・${esc(String(h.weight_carried ?? '').replace(/\.0$/, ''))}kg・${esc(h.jockey || '')}</div>
+      </div>`).join('');
+    const cell = (grade, isL, x) => {
+      const st = x.side === 0 ? '' : x.side === (isL ? -1 : 1) ? 'win' : 'lose';
+      return `<div class="tb-side ${isL ? 'L' : 'R'} ${st}">${tbChip(grade)}</div>`;
+    };
+    const rows = V.map((x) => `<button type="button" class="tb-row" data-tbgrp="${x.g}">
+        ${cell(x.a, true, x)}<span class="tb-mid">${tbScale(x.side, x.steps)}<b>${x.g}</b></span>${cell(x.b, false, x)}</button>`).join('');
+    return `<div class="ap tb">
+        <div class="ap-bar"><div><small>2 / 2　印を決める</small><b>${mk} を決めよう</b></div><span class="ap-left">あと${t.total - t.done}回</span>
+          <button type="button" class="ap-quit" data-act="quit">やめる</button></div>
+        <div class="ap-body tb-body" id="ap-body">
+          <div class="ap-tops">${top}</div>
+          <div class="tb-rows">${rows}</div>
+        </div>
+        <div class="ap-pick">${HS.map((h) => `<button type="button" class="ap-go" data-pick="${h.number}"><span>${esc(h.name)}</span>この馬を選ぶ</button>`).join('')}</div>
+      </div>`;
+  }
+  // 段を押すと、その段の札を2頭並べて下から出す（見るだけ）。画面は描き直さず、上に重ねて閉じたら外す。
+  //   中身は「1頭だけ見る」画面と同じ絵と数字の出し方にする（2026-09-29 ユーザー「馬の詳細を出した時のイラストや数字にしたい」）：
+  //   コース・場・距離・内外・流れ＝1切れ1走の輪（塗った切れ＝好走）、回り＝楕円と矢印、馬場＝太陽／しずく、
+  //   騎手・調教師・父・母父・前走コース＝コースのページの絵、枠＝枠の色の四角、脚質＝走る馬、調教＝ストップウォッチ、
+  //   直近5走＝着順の折れ線、前走〜5走前＝着順の数字（1〜3着は金銀銅）。
+  //   数字はどれもランク札の値（天秤と同じ元の数字）。色は上の側＝青、下の側＝灰（詳細画面の緑・赤は「その馬のふだん」との比べなので使わない）
+  let TB_SG = null;
+  const TB_WIN = '#0068BC', TB_OFF = '#AEAEB2';
+  const tbRing = (c, size, col) => {
+    const sw = size * 0.13, r = (size - sw) / 2, cx = size / 2, C = 2 * Math.PI * r;
+    if (!c.n) return `<svg width="${size}" height="${size}"><circle cx="${cx}" cy="${cx}" r="${r}" fill="none" stroke="#E5E5EA" stroke-width="${sw}" stroke-dasharray="3 4"/></svg>`;
+    const gap = c.n > 1 ? Math.min(4, (C / c.n) * 0.18) : 0, seg = C / c.n - gap;
+    let o = '';
+    for (let i = 0; i < c.n; i++) {
+      o += `<circle cx="${cx}" cy="${cx}" r="${r}" fill="none" stroke="${i < c.good ? col : '#E8E8ED'}" stroke-width="${sw}" stroke-dasharray="${seg} ${C - seg}" stroke-dashoffset="${-(i * (C / c.n)) + C / 4 - gap / 2}"/>`;
+    }
+    return `<svg width="${size}" height="${size}">${o}</svg>`;
+  };
+  const tbOval = (right, col, dash) => `<svg width="64" height="40" viewBox="0 -2 100 62"><rect x="6" y="6" width="88" height="48" rx="24" fill="none" stroke="${col}" stroke-width="6" ${dash ? 'stroke-dasharray="3 4"' : ''}/>
+    <polygon points="${right ? '59,6 45,-2 45,14' : '41,6 55,-2 55,14'}" fill="${col}" stroke="#fff" stroke-width="1.5"/></svg>`;
+  const tbSun = (dash) => `<svg width="56" height="56" viewBox="-6 -6 112 74"><circle cx="50" cy="31" r="23" fill="none" stroke="#F58700" stroke-width="5" ${dash ? 'stroke-dasharray="3 4"' : ''}/>${[0, 45, 90, 135, 180, 225, 270, 315].map((d) => { const t = (d * Math.PI) / 180; return `<line x1="${(50 + Math.cos(t) * 29).toFixed(1)}" y1="${(31 + Math.sin(t) * 29).toFixed(1)}" x2="${(50 + Math.cos(t) * 34).toFixed(1)}" y2="${(31 + Math.sin(t) * 34).toFixed(1)}" stroke="#F58700" stroke-width="4" stroke-linecap="round"/>`; }).join('')}</svg>`;
+  const tbDrop = (dash) => `<svg width="56" height="56" viewBox="20 -2 60 66"><path d="M50 2 C50 2 25 27 25 38 A25 25 0 0 0 75 38 C75 27 50 2 50 2 Z" fill="none" stroke="#3AA3DC" stroke-width="5" stroke-linejoin="round" ${dash ? 'stroke-dasharray="3 4"' : ''}/></svg>`;
+  const tbPct = (c) => (c.n ? `<b class="tb-dg">${Math.round((c.good / c.n) * 100)}<small>%</small></b>` : '<span class="tb-first">初</span>');
+  const tbRuns = (c, w = '好走') => (c.n ? `<span class="tb-un">${w} <b>${c.good}</b>/${c.n}走</span>` : '<span class="tb-un">走っていない</span>');
+  // 脚質の絵は「漢字の札」（逃・先・差・追の1文字）に決定（2026-09-29 ユーザー。10案から選んだ）。
+  //   選ばなかった絵：9/25 の6つ（○○●＞の並び・位置の折れ線・走る馬の横顔・カーブの馬群・番号札・コーナーの旗）、
+  //   9/29 の3つ（動きの矢印・ゴール板まで・仕掛けどころ）と、10案の残り9つ（ひとこと・電車の車両・行列の人・前半後半の力・
+  //   力を出す所に炎・太さが変わる矢印・時計・足あとの歩幅・馬群と自分の位置）
+  const tbStyleIc = (st) => `<svg viewBox="0 0 64 28" class="tb-pack"><rect x="17" y="2" width="30" height="24" rx="7" fill="currentColor"/>`
+    + `<text x="32" y="19.5" text-anchor="middle" font-size="15" font-weight="700" fill="#fff" font-family="-apple-system,'Hiragino Sans',sans-serif">${esc(st || '—')}</text></svg>`;
+  // 1頭・1枚ぶんの絵と数字
+  function tbArt(h, k, win) {
+    const c = ((h.rankcard || {}).cards || {})[k] || {};
+    const col = win ? TB_WIN : TB_OFF;
+    const hd = tbHead({ g: c.grade, val: c.val });
+    const thin = c.thin ? '<em class="tb-thin">少</em>' : '';
+    const race = site.race || {};
+    const cnt = { n: c.n || 0, good: c.good || 0 };
+    if (['コース', '場', '距離', '内外', '流れ'].includes(k)) {
+      const zn = k === '内外' && c.zone ? `<span class="tb-zn">${esc(c.zone)}の枠</span>` : '';
+      return `<div class="tb-aw"><div class="tb-rw">${tbRing(cnt, 58, col)}<div class="tb-rc">${tbPct(cnt)}</div></div>${zn}${tbRuns(cnt)}${thin}</div>`;
+    }
+    if (k === '回り') {
+      const right = /右/.test(race.direction || '') || !/左/.test(race.direction || '');
+      return `<div class="tb-aw"><div class="tb-rw o">${tbOval(right, cnt.n ? col : '#D1D1D6', !cnt.n)}<div class="tb-rc">${tbPct(cnt)}</div></div>${tbRuns(cnt)}${thin}</div>`;
+    }
+    if (k === '馬場') {
+      const wet = /^(稍|重|不)/.test(String(race.going || ''));
+      return `<div class="tb-aw"><div class="tb-rw">${wet ? tbDrop(!cnt.n) : tbSun(!cnt.n)}<div class="tb-rc${wet ? ' drop' : ''}">${tbPct(cnt)}</div></div>${tbRuns(cnt)}${thin}</div>`;
+    }
+    const DIM = { 騎手: 'jockey', 調教師: 'trainer', 種牡馬: 'sire', 母父: 'damsire' };
+    let ic = '';
+    if (DIM[k]) ic = IC_E5(DIM[k]);
+    else if (k === '枠') ic = `<i class="hn wk${h.gate} tb-wk">${h.gate}</i>`;
+    else if (k === '脚質') ic = tbStyleIc(String(c.val || '').charAt(0));
+    else if (k === '調教') ic = IC_WATCH;
+    else if (k === '直近5走') ic = m225Spark((h.past_runs || []).slice(0, 5));
+    else {
+      const i = k === '前走コース' ? 0 : RUN_LABEL.indexOf(k);
+      const r = i >= 0 ? (h.past_runs || [])[i] : null;
+      const fn = r ? finN(r.finish) : null;
+      ic = `<i class="m225-fin tb-fin${fn && fn <= 3 ? ` f${fn}` : ''}">${fn ?? '—'}</i>`;
+    }
+    // 前走〜5走前は、クラスを他の画面と同じ札（clsBadge・G3＝緑 など）で出す。着差は勝った走では出さない
+    let sub = esc(hd.r);
+    let big = esc(hd.h);
+    if (['騎手', '調教師', '種牡馬', '母父'].includes(k) && TB_R.includes(c.grade)) {
+      const m = String(c.val || '').match(/(\d+)\/(\d+)走/);
+      sub = `<span class="tb-who">${esc(c.who || '')}</span>${m ? `3着以内 <b>${m[1]}</b>/${m[2]}走` : ''}`;
+    }
+    // 枠・脚質は「倍」でなく、このコースで3着以内に来た割合と、このコースの全馬の平均で出す（2026-09-29 ユーザー「倍じゃわかりづらい」）。
+    //   元の数字：rate＝その枠・脚質の3着以内率、val の「1.13倍」＝rate ÷ このコースの全馬の3着以内率 → 平均＝rate ÷ 倍
+    if ((k === '枠' || k === '脚質') && c.rate != null) {
+      const m = String(c.val || '').match(/(\d+(?:\.\d+)?)倍/);
+      const avg = m ? c.rate / Number(m[1]) : null;
+      const who = k === '枠' ? `${h.gate}枠` : ({ 逃: '逃げ', 先: '先行', 差: '差し', 追: '追込' }[String(c.val || '').charAt(0)] || '');
+      big = `${Math.round(c.rate)}<small>%</small>`;
+      sub = `${k === '脚質' ? `${esc(who)}・` : ''}平均${avg != null ? Math.round(avg) : '—'}%`;
+    }
+    // 直近5走の（C・A・S・B・S）は元の文字が前走→5走前の順。線（左が古い）と向きをそろえて古い順に並べ直す（2026-09-29 ユーザー）
+    if (k === '直近5走' && Array.isArray(c.runs) && c.runs.length) {
+      sub = `（${c.runs.slice().reverse().map((r) => esc(r.grade || '−')).join('・')}）<small class="tb-ord">古→前走</small>`;
+    }
+    if (RUN_LABEL.includes(k) && TB_R.includes(c.grade)) {
+      const mg = Number(c.margin);
+      const fn = Number(c.finish);
+      sub = `${fn !== 1 && Number.isFinite(mg) ? `${mg.toFixed(1)}秒` : ''}${c.class_label ? `<span class="race20 tb-cls">${c.class_label === '地方等' ? '<span class="cb c-jusho">地方</span>' : clsBadge(c.class_label)}</span>` : ''}`;
+    }
+    return `<div class="tb-aw ic"><span class="tb-ic" style="color:${col}">${ic}</span>
+      <b class="tb-dg sm" style="color:${win ? TB_WIN : ''}">${big}</b><span class="tb-un">${sub}${thin}</span></div>`;
+  }
+  // 札の中身を「見出しの数字」と「残り」に分ける（例 13% 2/15走 → 13% ／ 2/15走、枠1 1.13倍 419走 → 1.13倍 ／ 枠1・419走）
+  function tbHead(c) {
+    const v = String(c.val || '');
+    if (!TB_R.includes(c.g)) return { h: '—', r: v || '初めて' };   // 初の札は数字が無いので「—」と理由だけ
+    const m = v.match(/\d+(?:\.\d+)?%|\d+\.\d+倍|\d+着|平均[SABCD]/);
+    if (!m) return { h: v, r: '' };
+    const rest = (v.slice(0, m.index) + ' ' + v.slice(m.index + m[0].length)).replace(/\s+/g, ' ').trim();
+    return { h: m[0], r: rest.replace(/ /g, '・') };
+  }
+  // 札の名前を今日の条件で書く（2026-09-29 ユーザー「今回の条件に合わせて記載して」）
+  function tbLabel(k, L) {
+    const r = site.race || {};
+    const sf = String(r.surface || '').startsWith('ダ') ? 'ダート' : '芝';
+    const wet = /^(稍|重|不)/.test(String(r.going || ''));
+    const nm = ((((L.rankcard || {}).cards || {})['流れ'] || {}).name) || '';
+    switch (k) {
+      case 'コース': return `${esc(r.track || '')}${sf}<br>${esc(r.distance || '')}m`;
+      case '場': return `${esc(r.track || '')}${sf}`;
+      case '距離': return `${sf}${esc(r.distance || '')}m<small>全場</small>`;
+      case '回り': return `${esc(r.direction || '')}回り<small>${sf}</small>`;
+      case '馬場': return wet ? `道悪<small>今日 ${esc(r.going || '')}</small>` : `良<small>今日 ${esc(r.going || '')}</small>`;
+      case '内外': return '枠の位置';
+      case '枠': return '枠<small>3着以内の割合</small>';
+      case '脚質': return '脚質<small>3着以内の割合</small>';
+      case '流れ': return nm ? `${esc(nm)}<small>今日の流れ</small>` : '今日の流れ';
+      case '前走コース': return '前走も<br>同じコース';
+      default: return esc(k);
+    }
+  }
+  // 段ごとの「％は何の割合か」（2026-09-29 ユーザー「何の％かわかりやすく表示したい」）
+  function tbNote(g) {
+    const r = site.race || {};
+    const sf = String(r.surface || '').startsWith('ダ') ? 'ダート' : '芝';
+    const here = `${esc(r.track || '')}${sf}${esc(r.distance || '')}m`;
+    return {
+      条件: `％＝その条件で<b>好走</b>した割合。好走＝1着か、勝ち馬と${sf === '芝' ? '0.4' : '0.6'}秒差以内`,
+      人と血統: `％＝その騎手・調教師・父・母父の馬が、<b>${here}で3着以内</b>に来た割合`,
+      コースの傾向: `％＝${here}で、その枠・脚質の馬が<b>3着以内</b>に来た割合`,
+    }[g] || '';
+  }
+  const tbMini = (side, steps) => tbScale(side, steps).replace('class="tb-scale"', 'class="tb-scale mini"');
+  function tbSheetHtml(g) {
+    const L = byNum(S.t.left), R = byNum(S.t.right);
+    const keys = (TB_GROUPS.find((x) => x[0] === g) || [])[1] || [];
+    const gs = (h) => (((h.rankcard || {}).groups || {})[g] || {}).grade;
+    const cmp = (a, b) => { const va = tbV(a), vb = tbV(b); const st = va == null || vb == null ? 0 : Math.abs(va - vb); return { steps: st, side: st === 0 ? 0 : va > vb ? -1 : 1 }; };
+    const gv = cmp(gs(L), gs(R));
+    // 前走コース（前走も今日と同じコースだったときだけ付く札）は、2頭とも付いていなければ行ごと出さない
+    const rows = keys.filter((k) => !(k === '前走コース' && !TB_R.includes(tbCard(L, k).g) && !TB_R.includes(tbCard(R, k).g))).map((k) => {
+      const a = tbCard(L, k), b = tbCard(R, k), x = cmp(a.g, b.g);
+      return `<div class="tb-ar"><div class="tb-as L">${tbArt(L, k, x.side === -1)}</div>
+        <div class="tb-am"><i>${tbLabel(k, L)}</i><span>${tbChip(a.g, 'xs')}${tbChip(b.g, 'xs')}</span></div>
+        <div class="tb-as R">${tbArt(R, k, x.side === 1)}</div></div>`;
+    }).join('');
+    return `<div class="tb-sheet" role="dialog" aria-label="${g}の中身">
+      <div class="tb-sh-h"><b>${g}</b><button type="button" class="tb-x" data-tbclose="1">閉じる</button></div>
+      <div class="tb-sh-top"><span class="L">${tbChip(gs(L), 'sm')}<b>${esc(L.name)}</b></span>${tbMini(gv.side, gv.steps)}<span class="R"><b>${esc(R.name)}</b>${tbChip(gs(R), 'sm')}</span></div>
+      ${tbNote(g) ? `<p class="tb-note">${tbNote(g)}</p>` : ''}
+      <div class="tb-sh-rows">${rows}</div></div>`;
+  }
+  function tbSheet(g) {
+    const ap = document.querySelector('.ap.tb');
+    if (!ap || !S || !S.t) return;
+    TB_SG = g;
+    let el = document.querySelector('.tb-sheet-bg');
+    if (!el) {
+      el = document.createElement('div');
+      el.className = 'tb-sheet-bg';
+      el.dataset.tbclose = '1';
+      ap.appendChild(el);
+    } else el.classList.add('still');
+    el.innerHTML = tbSheetHtml(g);
+  }
+  document.addEventListener('click', (e) => {
+    if (!S || S.screen !== 'duel') return;
+    const cl = e.target.closest && e.target.closest('[data-tbclose]');
+    if (cl && (cl.tagName === 'BUTTON' || e.target === cl)) { const bg = document.querySelector('.tb-sheet-bg'); if (bg) bg.remove(); return; }
+    const gr = e.target.closest && e.target.closest('.ap.tb [data-tbgrp]');
+    if (gr) tbSheet(gr.dataset.tbgrp);
+  });
+
+  // ---------- 「この馬を選ぶ」の動き（2026-09-29 ユーザー「選んだら右側の馬は左側に移動する」「Appleのようにセクシーなアニメーション」） ----------
+  //   選んだ馬はいつも左へ。次の馬は右から入る（本番の 9/25「選んだ馬はその場に残す」をこの画面では変える）。
+  //   動き：①押したボタンが「✓ 選びました」に変わる ②負けた側の列がぼけながら少し縮んで消える（0.26秒）
+  //   ③右で選んだときは、選んだ馬の名前とランクがばねの動きで左の列へ滑る（iPhone の画面遷移と同じばね・少しだけ行き過ぎて戻る）
+  //   ④描き直したら、次の馬の列が右から、ぼけた状態で上の行から順に入ってくる。天秤は水平から新しい傾きへ静かに現れる
+  //   動きを減らす設定の端末では動かさない
+  const tbReduce = () => Boolean(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  function tbCols() {
+    const ap = document.querySelector('.ap.tb');
+    if (!ap) return null;
+    const tops = [...ap.querySelectorAll('.ap-tops > .ap-top')];
+    const rows = [...ap.querySelectorAll('.tb-row')];
+    return { ap, tops, rows, side: (i) => [tops[i], ...rows.map((r) => r.children[i === 0 ? 0 : 2])], mids: rows.map((r) => r.children[1]) };
+  }
+  function tbPick(n, btn) {
+    const t = S.t;
+    const win = t.left === n ? 0 : 1, lose = 1 - win;
+    const reduce = tbReduce();
+    const C = tbCols();
+    btn.classList.add('done');
+    btn.innerHTML = `<span>${esc(byNum(n).name)}</span>✓ 選びました`;
+    const other = document.querySelectorAll('.ap.tb .ap-pick .ap-go')[lose];
+    if (other) other.classList.add('dim');
+    haptic();
+    const EASE = 'cubic-bezier(.32,.72,0,1)';
+    let moveMs = 0;
+    if (!reduce && C) {
+      // ② 負けた側
+      C.side(lose).forEach((el) => el && el.animate(
+        [{ opacity: 1, filter: 'blur(0px)', transform: 'scale(1)' }, { opacity: 0, filter: 'blur(8px)', transform: 'scale(.94)' }],
+        { duration: 260, easing: 'cubic-bezier(.4,0,1,1)', fill: 'forwards' }));
+      C.mids.forEach((el) => el.animate([{ opacity: 1 }, { opacity: 0.25 }], { duration: 260, easing: 'ease-out', fill: 'forwards' }));
+      // ③ 右で選んだときは左へ滑らせる（名前の欄は名前の位置、ランクはランクの位置どうしで距離を測る）
+      if (win === 1) {
+        const pairs = [[C.tops[1].querySelector('.ap-tn') || C.tops[1], C.tops[0].querySelector('.ap-tn') || C.tops[0], C.tops[1]]]
+          .concat(C.rows.map((r) => [r.children[2].querySelector('.tb-g'), r.children[0].querySelector('.tb-g'), r.children[2].querySelector('.tb-g')]));
+        pairs.forEach(([from, to, el], k) => {
+          if (!from || !to || !el) return;
+          const dx = to.getBoundingClientRect().left - from.getBoundingClientRect().left;
+          const sp = springFrames((x) => ({ transform: `translateX(${(dx * x).toFixed(2)}px)` }), { response: 0.5, damping: 0.8 });
+          el.animate(sp.frames, { duration: sp.dur, delay: 90 + k * 22, easing: 'linear', fill: 'forwards' });
+          moveMs = Math.max(moveMs, 90 + k * 22 + sp.dur * 0.72);
+        });
+      }
+    }
+    setTimeout(() => {
+      // 本番の pickWinner と同じ数え方。違うのは、選んだ馬をいつも左に置くところだけ
+      t.done += 1;
+      if (t.champ === n) t.streak += 1; else { t.champ = n; t.streak = 1; }
+      t.bump = true;
+      if (!t.queue.length) { S.busy = false; setWinner(n); return; }
+      const next = t.queue.shift();
+      t.left = n;
+      t.right = next;
+      t.shift = false;
+      t.fresh = 'r';
+      render();
+      S.busy = false;
+      if (reduce) return;
+      const D = tbCols();
+      if (!D) return;
+      // ④ 次の馬が右から入る
+      D.side(1).forEach((el, k) => el && el.animate(
+        [{ opacity: 0, filter: 'blur(8px)', transform: 'translateX(36px)' }, { opacity: 1, filter: 'blur(0px)', transform: 'translateX(0)' }],
+        { duration: 620, delay: Math.min(k * 38, 260), easing: EASE, fill: 'backwards' }));
+      D.mids.forEach((el, k) => el.animate(
+        [{ opacity: 0.25, transform: 'scale(.94)' }, { opacity: 1, transform: 'scale(1)' }],
+        { duration: 560, delay: 120 + Math.min(k * 38, 260), easing: EASE, fill: 'backwards' }));
+    }, reduce ? 0 : Math.max(300, moveMs));
+  }
+  // 本番の「選ぶ」の処理（onClick → cmpPick）より先に受ける
+  document.addEventListener('click', (e) => {
+    const pk = e.target.closest && e.target.closest('.ap.tb [data-pick]');
+    if (!pk || !S || S.screen !== 'duel') return;
+    e.stopPropagation();
+    e.preventDefault();
+    if (S.busy) return;
+    S.busy = true;
+    tbPick(Number(pk.dataset.pick), pk);
+  }, true);
+
   function vCompare() {
     const t = S.t;
     const mk = MARKS3[S.step];
