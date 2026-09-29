@@ -282,7 +282,8 @@
   //   中身が札より長いときは、中身ごと縮めて収める（字の大きさの比は変えない）。全戦績は縮めずに、入るだけの行でページを分ける（2026-09-25 から。前は全戦績だけ縦に動かして見ていた＝同日決定・案B）
   // ---------- 金の枠（2026-09-24・試作 mockup-217） ----------
   //   ユーザー「自分がどこを見ていいと思ったのかを記録したい。タップすればその部分を金色の枠線で囲む」。
-  //   絞り込みの札の部品を押すと金の枠が付き、もう一度押すと外れる。記録は gold:{race_id} に端末の中だけで残す。
+  //   絞り込みの札の部品を長押しすると金の枠が付き、もう一度長押しすると外れる。記録は gold:{race_id} に端末の中だけで残す。
+  //   2026-09-28 から、押すだけ（タップ）ではなく長押し（GOLD_HOLD_MS）でスタンプを押すように付ける（ユーザー指示）
   //   押せる単位（GOLD_UNIT）は輪1つ・マス1つ・過去走の1行などの小さいまとまり。コース適性の山（.ax-hit）は除く
   const GOLD_KEY = `gold:${raceId}`;
   const GOLD_UNIT = [
@@ -298,6 +299,8 @@
     '.rp-race', '.rp-hero', '.pp-fig', '.pp-row', '.pp-flow > *', '.gd-col',
     // 全戦績：1走ぶんの行
     '.al-row',
+    // ランクの画面：ランクの札（総合・札の1行）
+    '.m225-t',
   ].join(',');
   // 部品の外側を押したときに、どの部品として扱うか（押した場所 → 部品）
   //   ・展開の地図：押した位置の脚質の列 → 下の脚質の札
@@ -409,28 +412,408 @@
     mine.forEach((x) => { const u = units[x.idx - goldOff(pg)]; if (u) u.classList.add('gd-on'); });
     goldTwins(pe);
   }
-  // 押された部品に金を付ける／外す。部品の外（余白）を押したときは何もしない
-  function goldTap(target, clientX) {
+  // 長押しで金を付ける（2026-09-28）。GOLD_HOLD_MS 押し続けたら付く。
+  //   GOLD_CHARGE_MS までは何も出さない（ふつうのタップや払い始めで枠がちらつかないように）。
+  //   動きは試作 mockup-223 の4案から「D 金箔」に決定（同日ユーザー。A はんこ・B 印鑑・C ドンは不採用）：
+  //   ① 構える：押している間に部品へ金色のゆらめき（.gd-heat）が広がり、だんだん濃くなる。部品は少し沈む
+  //   ② 押す：ぱっと光って（.gd-flash）金箔が貼られる＝本物の枠（.gd-on）。部品は小さくへこんで跳ね返る。ここで振動
+  //   ③ 光の筋（.gd-band）が左から右へ走り、四隅と上の真ん中で星（.gd-star）が5つまたたく
+  //   外すときは、枠が灰色に冷めて（.gd-ash）広がりながら消える
+  //   次の段へは時計（setTimeout）で進める。動きの終わりの知らせは画面が隠れている間は来ないため
+  const GOLD_T = 1;   // 動きの長さの倍率（試作 mockup-223 の「ゆっくり」で 4 にする）
+  const GOLD_HOLD_MS = 450 * GOLD_T;
+  const GOLD_CHARGE_MS = 120 * GOLD_T;
+  const gdCalm = () => { try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } };
+  const gdLater = (ms, fn) => setTimeout(fn, ms * GOLD_T);
+  // 押した場所の部品（金を付けられる所でなければ null）
+  function goldUnitAt(target, clientX) {
     const pe = document.getElementById('yf-page');
-    if (!pe || !pe.contains(target)) return;
+    if (!pe || !pe.contains(target)) return null;
     const units = goldUnits(pe);
     goldAlias.x = clientX;
     const u = goldAlias(target, pe) || units.find((x) => x.contains(target));
-    if (!u || !units.includes(u)) return;
+    return u && units.includes(u) ? u : null;
+  }
+  // 画面のいちばん上に箱を重ねる（部品の大きさ・並びは動かさない）。途中で止まっても残らないように、時間が来たら外す
+  function goldFixed(cls, x, y, w, h) {
+    const el = document.createElement('i');
+    el.className = cls;
+    el.style.cssText = `left:${x}px;top:${y}px;width:${w}px;height:${h}px`;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 5000 * GOLD_T);
+    return el;
+  }
+  function goldBox(u, cls) {
+    const r = u.getBoundingClientRect();
+    return r.width && r.height ? goldFixed(cls, r.left, r.top, r.width, r.height) : null;
+  }
+  // 動きを使わない形（動きを減らす設定の端末）。付け外しだけする
+  function goldPlain(u, on) { u.classList.toggle('gd-on', on); }
+  // ① 構える。やめたら fx.cancel()
+  function goldRaise(u) {
+    const on = u.classList.contains('gd-on');
+    const dur = GOLD_HOLD_MS - GOLD_CHARGE_MS;
+    const fx = { ua: null, heat: null, cancel() {
+      if (fx.ua) fx.ua.cancel();
+      const h = fx.heat;
+      if (h) { h.animate([{ opacity: getComputedStyle(h).opacity }, { opacity: 0 }], { duration: 160 * GOLD_T, fill: 'forwards' }); gdLater(160, () => h.remove()); }
+    } };
+    if (gdCalm() || !u.animate) return fx;
+    fx.ua = u.animate([{ transform: 'scale(1)' }, { transform: 'scale(.975)' }], { duration: dur, easing: 'ease-in-out', fill: 'forwards' });
+    if (on) return fx;   // 外すときは沈むだけ
+    fx.heat = goldBox(u, 'gd-heat');
+    if (fx.heat) {
+      fx.heat.animate([{ opacity: 0 }, { opacity: 1 }], { duration: dur, easing: 'ease-in', fill: 'forwards' });
+      fx.heat.animate([{ backgroundPosition: '0% 50%' }, { backgroundPosition: '200% 50%' }], { duration: 900 * GOLD_T, iterations: Infinity });
+    }
+    return fx;
+  }
+  // ②③ 押す。光った瞬間に land() を呼ぶ
+  function goldSlam(u, fx, land) {
+    if (fx && fx.ua) fx.ua.cancel();
+    const r = u.getBoundingClientRect();
+    const heat = fx && fx.heat;
+    u.animate([{ transform: 'scale(.975)' }, { transform: 'scale(.95)', offset: 0.25 }, { transform: 'scale(1.015)', offset: 0.6 }, { transform: 'none' }],
+      { duration: 380 * GOLD_T, easing: 'ease-out' });
+    gdLater(60, () => {
+      land();
+      haptic();
+      if (heat) { heat.getAnimations().forEach((a) => a.cancel()); heat.remove(); }
+      if (!r.width) return;
+      const flash = goldFixed('gd-flash', r.left, r.top, r.width, r.height);
+      flash.animate([{ opacity: 0.95 }, { opacity: 0 }], { duration: 320 * GOLD_T, easing: 'ease-out', fill: 'forwards' });
+      gdLater(320, () => flash.remove());
+      // 光の筋：部品の形で切り抜いた箱の中を、左から右へ
+      const clip = goldFixed('gd-clip', r.left, r.top, r.width, r.height);
+      const band = document.createElement('i');
+      band.className = 'gd-band';
+      clip.appendChild(band);
+      band.animate([{ transform: 'translateX(-64px) skewX(-20deg)' }, { transform: `translateX(${r.width + 64}px) skewX(-20deg)` }],
+        { duration: 560 * GOLD_T, delay: 120 * GOLD_T, easing: 'cubic-bezier(.4,0,.2,1)', fill: 'both' });
+      gdLater(700, () => clip.remove());
+      // 星：四隅と上の真ん中
+      [[r.left, r.top], [r.right, r.top], [r.right, r.bottom], [r.left, r.bottom], [r.left + r.width / 2, r.top]].forEach(([x, y], k) => {
+        const sz = k === 4 ? 16 : 22;
+        const st = goldFixed('gd-star', x - sz / 2, y - sz / 2, sz, sz);
+        st.animate([
+          { transform: 'scale(0) rotate(0deg)', opacity: 1 }, { transform: 'scale(1.2) rotate(45deg)', opacity: 1, offset: 0.4 },
+          { transform: 'scale(0) rotate(90deg)', opacity: 0 },
+        ], { duration: 520 * GOLD_T, delay: (150 + k * 70) * GOLD_T, easing: 'ease-out', fill: 'both' });
+        gdLater(700 + k * 70, () => st.remove());
+      });
+    });
+  }
+  // 外す：枠が灰色に冷めて、広がりながら消える
+  function goldPeel(u, fx) {
+    if (fx && fx.ua) fx.ua.cancel();
+    const ash = goldBox(u, 'gd-ash');
+    u.classList.remove('gd-on');
+    u.animate([{ transform: 'scale(.975)' }, { transform: 'none' }], { duration: 300 * GOLD_T, easing: 'ease-out' });
+    if (ash) {
+      ash.animate([{ opacity: 1, transform: 'scale(1)' }, { opacity: 0, transform: 'scale(1.06)' }], { duration: 360 * GOLD_T, easing: 'ease-out', fill: 'forwards' });
+      gdLater(360, () => ash.remove());
+    }
+    haptic();
+  }
+  // ---------- ランクの札（絞り込みの画面・2026-09-29。試作 mockup-225 の「G」） ----------
+  //   絞り込みは、5つの段（馬の力・条件・状態・人と血統・コースの傾向）のランクを並べた1ページ。
+  //   段を押すと中の札が開き（同じ段をもう一度押すとたたむ・開くのは一度に1つ）、札を押すと札が裏返ってその段の詳しいページ（今の1頭だけ見る画面のページ）が出る。
+  //   裏返ったあとは画面のどこを押しても表に戻る。長押しで金の枠を付ける（上の goldTap・部品は .m225-t）。
+  //   数字は画面で計算しない。公開データ data/races/{race_id}.json の horses[].rankcard（総合点 p・順位 rank・段の点とランク groups・札のランク・少・表示 cards）と
+  //   rankcard_meta.cards（総合点の重みがある札の名前。これに無い札に「点外」を付ける）をそのまま使う。
+  //   rankcard が無いレース（作り始める前の公開）は、絞り込みも今までの10ページのまま出す（m225On が偽）。
+  //   例外：「流れ」の札は総合点の重みが無く rankcard に入っていないので、この札だけ 3着以内率の線で S〜D をここで付ける
+  const M225_R = ['S', 'A', 'B', 'C', 'D'];
+  const M225_FLOW_LINE = [0.65, 0.43, 0.20, 0.10];   // 流れの札の S・A・B・C の下限（3着以内率）
+  const M225_THIN_RUNS = 2;                           // 流れの札の「少」（走数がこれ以下）
+  const M225_GROUPS = [
+    ['馬の力', '最近の走り（勝ち馬との差・クラスで補正）'],
+    ['条件', 'この馬が同じ条件で好走した割合'],
+    ['状態', '追い切りの評価'],
+    ['人と血統', 'このコースで3着以内に来た割合'],
+    ['コースの傾向', 'このコースで、その枠・脚質の馬が来た割合'],
+  ];
+  const M225_GC = { 馬の力: 'g4', 条件: 'g1', 状態: 'g5', 人と血統: 'g2', コースの傾向: 'g3' };   // 段の色（css の .g1〜.g5）
+  const M225_STYLE = { 逃: '逃げ', 先: '先行', 差: '差し', 追: '追込' };
+  const M225_OPEN = {};    // 開いている段（馬番ごと）。null＝全部たたむ
+  const M225_ITEMS = {};   // 馬番ごとの札の並び（押した札を引くのに使う）
+  // 全頭に rankcard があるレースだけ、ランクの画面にする
+  const m225On = () => Boolean(site.rankcard_meta && H.length && H.every((x) => x.rankcard));
+  const m225Zone = (n, f) => { n = Number(n); f = Number(f); if (!n || !f || f < 2) return null; const p = (n - 1) / (f - 1); return p <= 1 / 3 ? '内' : p <= 2 / 3 ? '中' : '外'; };
+  // 総合点の重みが無い札（rankcard_meta.cards に名前が無い）
+  const m225NoScore = (x) => Boolean(x.key && !(site.rankcard_meta.cards || []).includes(x.key));
+  // 1頭ぶんの札の並び。{ grp, key, label, g（S〜D か '初'）, val, thin, run（過去走の札は何走前か） }。
+  //   名前は今日の条件の中身（阪神芝・スロー前残りなど）。ランク・少・表示の数字は rankcard.cards[key] から取る
+  function m225Items(h) {
+    const R = site.race || {};
+    const cards = (h.rankcard || {}).cards || {};
+    const out = [];
+    const add = (grp, key, label, extra) => {
+      const c = cards[key];
+      if (!c) return;
+      out.push({ grp, key, label, g: c.grade || null, thin: Boolean(c.thin), val: c.val || '—', ...extra });
+    };
+    // ① 馬の力：最近の走り
+    const past = (h.past_runs || []).slice(0, 5);
+    if (past.length) {
+      add('馬の力', '直近5走', `直近${past.length}走`);
+      past.forEach((r, i) => add('馬の力', RUN_LABEL[i], RUN_LABEL[i], { run: i }));
+    }
+    // ② 条件：この馬が今日と同じ条件で好走した割合
+    const sf = R.surface || '';
+    add('条件', 'コース', `${R.track || ''}${sf}${R.distance || ''}m`);
+    add('条件', '場', `${R.track || ''}${sf}`);
+    add('条件', '距離', `${sf}${R.distance || ''}m`);
+    const turn = (((h.course_record || {}).apt || {}).turn || []).find((c) => c.today);
+    if (turn) add('条件', '回り', turn.label);
+    const gRaw = String(R.going || '');
+    const tg = !gRaw ? null : gRaw.startsWith('良') ? '良' : /^(稍|重|不)/.test(gRaw) ? '道悪' : null;
+    if (tg) add('条件', '馬場', tg === '良' ? '良馬場' : '道悪');
+    const tz = m225Zone(h.number, H.length);
+    if (tz) add('条件', '内外', `${tz}枠`);
+    const sm = ((site.prediction || {}).scenario || {}).main || {};
+    if (sm.code && sm.side) {
+      const code = `${sm.code}_${sm.side === '前' ? '前残り' : '差し・追込'}`;
+      const nm = `${{ S: 'スロー', M: '平均', H: 'ハイ' }[sm.code] || ''}${sm.side === '前' ? '前残り' : '差し'}`;
+      const row = ((h.race_type_record || {}).rows || []).find((r) => r.code === code);
+      const n = row ? row.n : 0;
+      if (!n) out.push({ grp: '条件', key: '流れ', label: nm, g: '初', val: '走っていない', thin: false });
+      else {
+        const good = row.top3 ?? Math.round((row.top3_pct || 0) * n / 100);
+        const v = good / n;
+        const gi = M225_FLOW_LINE.findIndex((t) => v >= t);
+        out.push({ grp: '条件', key: '流れ', label: nm, g: M225_R[gi < 0 ? 4 : gi], val: `${Math.round(v * 100)}% ${good}/${n}走`, thin: n <= M225_THIN_RUNS });
+      }
+    }
+    // ③ 状態：調教
+    add('状態', '調教', '調教');
+    // ④ 人と血統
+    add('人と血統', '騎手', `騎手 ${h.jockey || ''}`);
+    add('人と血統', '種牡馬', `父 ${h.sire || ''}`);
+    add('人と血統', '調教師', `調教師 ${e5Strip(h.trainer) || ''}`);
+    add('人と血統', '母父', `母父 ${h.damsire || ''}`);
+    // ⑤ コースの傾向：枠・脚質・前走コース
+    if (cards['枠']) add('コースの傾向', '枠', `${cards['枠'].gate ?? ''}枠`);
+    if (cards['脚質']) add('コースの傾向', '脚質', M225_STYLE[cards['脚質'].style] || cards['脚質'].style || '脚質');
+    add('コースの傾向', '前走コース', `前走${e5PrevKey(h) || ''}組`);
+    return out;
+  }
+  // 出走馬ぜんぶの総合点と順位（rankcard の値そのまま）。順位の順に並べる
+  function m225Rows() {
+    return H.filter((x) => x.rankcard).map((x) => ({
+      h: x, p: x.rankcard.p, rank: x.rankcard.rank, groups: x.rankcard.groups || {},
+      parts: Object.entries(x.rankcard.cards || {}).filter(([, c]) => c.s != null).map(([card, c]) => ({ card, g: c.grade || '初', s: c.s })),
+    })).sort((a, b) => (a.rank ?? 99) - (b.rank ?? 99));
+  }
+  // 「総合」を押したときの裏：総合点の内訳（押し上げ・押し下げている札）と出走馬の順位
+  function m225TotalW(h) {
+    const rows = m225Rows();
+    const me = rows.find((r) => r.h.number === h.number);
+    if (!me) return null;
+    const list = rows.map((r) => `<tr class="${r.h.number === h.number ? 'me' : ''}"><td class="bt-num">${r.rank}</td><td>${umaBox(r.h.number, r.h.gate, 'sm')}</td>`
+      + `<td class="nm">${esc(r.h.name)}</td><td class="bt-num"><b>${Math.round(r.p * 100)}</b></td></tr>`).join('');
+    const top = me.parts.slice().sort((a, b) => b.s - a.s);
+    const chip = (x) => `<span class="m225-pc ${x.s >= 0 ? 'up' : 'dn'}">${esc(x.card)} ${esc(x.g)}</span>`;
+    const stats = `<div class="m224-tiles one"><div class="k"><i>総合点（3着以内の見込み）</i><b>${Math.round(me.p * 100)}<small>点</small></b></div>`
+      + `<div><i>今日の出走馬で</i><b>${me.rank}<small>位/${rows.length}頭</small></b></div></div>`
+      + `<div class="m225-why"><div><i>押し上げている札</i>${top.slice(0, 5).filter((x) => x.s > 0).map(chip).join('')}</div>`
+      + `<div><i>押し下げている札</i>${top.slice(-4).reverse().filter((x) => x.s < 0).map(chip).join('') || '<span class="m225-pc">なし</span>'}</div></div>`
+      + `<div class="m224-split"><table><thead><tr><th>順位</th><th></th><th></th><th>点</th></tr></thead><tbody>${list}</tbody></table>`
+      + '<p class="m224-note">点は、札のランクを過去のレースで決めた重みで足した「3着以内に来る見込み（%）」。過去走のランクはレースのクラスで補正している</p></div>';
+    return { title: '総合点と順位', stats };
+  }
+  // ---------- 札の絵（札の中身に合わせた絵。馬場＝晴れ／雨、回り＝向きの矢印、内外＝3つのゲートのうち今日の位置、距離＝旗、コース・場＝コースの楕円、
+  //   流れ＝速さのメーター、調教＝ストップウォッチ、騎手・調教師・父・母父・前走コース＝コースのページと同じ絵、枠＝枠の色の四角、脚質＝走る馬、
+  //   直近5走＝着順の折れ線、前走〜5走前＝着順の数字（1〜3着は金銀銅）） ----------
+  const IC_ = (body, vb = '0 0 24 24') => `<svg viewBox="${vb}" class="m225-ic" aria-hidden="true">${body}</svg>`;
+  const IC_TRACK = IC_('<ellipse cx="12" cy="12" rx="9.5" ry="6" fill="none" stroke="currentColor" stroke-width="2.4"/><ellipse cx="12" cy="12" rx="5" ry="2.4" fill="none" stroke="currentColor" stroke-width="1.2" opacity=".5"/>');
+  const IC_FLAG = IC_('<path d="M6 21V3" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M6.5 4h11l-3 4 3 4h-11z" fill="currentColor"/>');
+  const IC_SUN = IC_('<circle cx="12" cy="12" r="4.5" fill="#F58700"/>' + [0, 45, 90, 135, 180, 225, 270, 315].map((d) => { const t = d * Math.PI / 180; return `<line x1="${(12 + Math.cos(t) * 7.3).toFixed(1)}" y1="${(12 + Math.sin(t) * 7.3).toFixed(1)}" x2="${(12 + Math.cos(t) * 10).toFixed(1)}" y2="${(12 + Math.sin(t) * 10).toFixed(1)}" stroke="#F58700" stroke-width="2" stroke-linecap="round"/>`; }).join(''));
+  const IC_RAIN = IC_('<path d="M12 2.5C12 2.5 5.5 10 5.5 14a6.5 6.5 0 0 0 13 0c0-4-6.5-11.5-6.5-11.5z" fill="#3AA3DC"/>');
+  const IC_TURN = (right) => IC_(`<rect x="2.5" y="6" width="19" height="12" rx="6" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="${right ? 'M13 3.5l3.5 2.5L13 8.5' : 'M11 3.5L7.5 6 11 8.5'}" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>`);
+  const IC_GATE = (z) => IC_(['内', '中', '外'].map((k, i) => `<rect x="${2 + i * 7.3}" y="5" width="5.6" height="14" rx="1.5" fill="currentColor" opacity="${k === z ? 1 : 0.22}"/>`).join(''));
+  const IC_PACE = (code) => { const ang = { S: -60, M: 0, H: 60 }[code] ?? 0; const t = (ang - 90) * Math.PI / 180;
+    return IC_(`<path d="M3.5 17a8.5 8.5 0 0 1 17 0" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><line x1="12" y1="17" x2="${(12 + Math.cos(t) * 7).toFixed(1)}" y2="${(17 + Math.sin(t) * 7).toFixed(1)}" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><circle cx="12" cy="17" r="1.8" fill="currentColor"/>`); };
+  const IC_WATCH = IC_('<circle cx="12" cy="13.5" r="7.5" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M12 13.5V9.5M10 2.5h4M12 2.5v3.5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>');
+  const IC_RUN = IC_('<path d="M3 17c2-1 3.5-4 6-5l2-4 2.5 1.5c2.5 0 4.5 1.5 5.5 3.5l2.5 1-1 2-3-.5-2 3h-2.5l1.5-3.5-4 .5-3 3.5H6.5l2.2-3.3z" fill="currentColor"/>');
+  const IC_CUP = IC_('<path d="M7 3h10v5a5 5 0 0 1-10 0z" fill="currentColor"/><path d="M7 5H4a3 3 0 0 0 3 4M17 5h3a3 3 0 0 1-3 4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M10 14h4v3h2.5v3h-9v-3H10z" fill="currentColor"/>');
+  const IC_E5 = (dim) => IC_(String(E5_ICON[dim] || '').replace(/^<svg[^>]*>|<\/svg>$/g, ''), '0 0 32 32');
+  // 段の絵（E5_ICON は yoso.js の後ろの方で作られるので、読み込み時ではなく使う時に作る）
+  const groupIc = (g) => ({ 馬の力: IC_CUP, 条件: IC_TRACK, 状態: IC_WATCH, 人と血統: IC_E5('jockey'), コースの傾向: IC_RUN })[g] || '';
+  // 直近5走の着順の折れ線（古い→新しい。上ほど良い着順）
+  function m225Spark(runs) {
+    const f = runs.slice().reverse().map((r) => Math.min(18, finN(r.finish) || 18));
+    const W = 40, Hh = 20, x = (i) => 2 + (i * (W - 4)) / Math.max(1, f.length - 1), y = (v) => 2 + ((v - 1) / 17) * (Hh - 4);
+    return `<svg viewBox="0 0 ${W} ${Hh}" class="m225-ic sp"><polyline points="${f.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ')}" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>`
+      + f.map((v, i) => `<circle cx="${x(i).toFixed(1)}" cy="${y(v).toFixed(1)}" r="${v <= 3 ? 2.4 : 1.5}" fill="${v === 1 ? '#C49A1C' : v === 2 ? '#5E7185' : v === 3 ? '#B06A34' : 'currentColor'}"/>`).join('') + '</svg>';
+  }
+  function m225Icon(x, h) {
+    const sm = ((site.prediction || {}).scenario || {}).main || {};
+    switch (x.key) {
+      case 'コース': case '場': return IC_TRACK;
+      case '距離': return IC_FLAG;
+      case '回り': return IC_TURN(/右/.test(x.label));
+      case '馬場': return /道悪/.test(x.label) ? IC_RAIN : IC_SUN;
+      case '内外': return IC_GATE(x.label.replace('枠', ''));
+      case '流れ': return IC_PACE(sm.code);
+      case '調教': return IC_WATCH;
+      case '騎手': return IC_E5('jockey');
+      case '調教師': return IC_E5('trainer');
+      case '種牡馬': return IC_E5('sire');
+      case '母父': return IC_E5('damsire');
+      case '前走コース': return IC_E5('prev');
+      case '枠': { const w = parseInt(x.label, 10); return `<i class="hn wk${w} m225-wk">${w || ''}</i>`; }
+      case '脚質': return IC_RUN;
+      case '直近5走': return m225Spark((h.past_runs || []).slice(0, 5));
+      default: {
+        const i = RUN_LABEL.indexOf(x.key);
+        const r = i >= 0 ? (h.past_runs || [])[i] : null;
+        const fn = r ? finN(r.finish) : null;
+        return `<i class="m225-fin${fn && fn <= 3 ? ` f${fn}` : ''}">${fn ?? '—'}</i>`;
+      }
+    }
+  }
+  // ランクの1ページ
+  function m225Page(h) {
+    const items = m225Items(h);
+    M225_ITEMS[h.number] = items;
+    const kg = h.weight_carried != null ? String(h.weight_carried).replace(/\.0$/, '') : '—';
+    const head = `<div class="m225-hd">${umaBox(h.number, h.gate)}<b class="m225-nm">${esc(h.name)}</b>`
+      + `<span class="m225-sub">${esc(h.sex_age || '')} ${esc(kg)}kg ${esc(h.jockey || '')}</span>`
+      + `<span class="m225-od"><b class="bt-num">${h.odds != null ? h.odds.toFixed(1) : '—'}</b>倍 <b class="bt-num">${esc(h.popularity ?? '—')}</b>人気</span></div>`;
+    const rc = h.rankcard || {};
+    const total = `<div class="m225-tot m225-t" data-i="total"><span class="m225-tl">総合</span><b class="bt-num">${Math.round(rc.p * 100)}<small>点</small></b>`
+      + `<span class="m225-tr"><b class="bt-num">${rc.rank}</b>位<small>/${H.filter((x) => x.rankcard).length}頭</small></span></div>`;
+    const GD = Object.fromEntries(M225_GROUPS);
+    const rk = (x) => (x.g === '初' ? 'n' : x.g || 'x');
+    const open = M225_OPEN[h.number] ?? null;
+    const grps = M225_GROUPS.map(([g]) => g).filter((g) => items.some((x) => x.grp === g));
+    const body = grps.map((gname) => {
+      const gr = (rc.groups || {})[gname] || {};
+      const gg = gr.grade || null;
+      const isOpen = open === gname;
+      return `<div class="m225x-g m225g-g ${M225_GC[gname] || ''}${isOpen ? ' open' : ''}" data-grp="${gname}">`
+        + `<div class="m225g-hd r-${gg === '初' ? 'n' : gg || 'x'}"><span class="m225x-gi">${groupIc(gname)}</span>`
+        + `<span class="m225g-nm"><b>${gname}</b><small>${GD[gname] || ''}</small></span>`
+        + `<span class="m225g-rw"><b class="m225g-r">${esc(gg || '—')}</b></span><i class="m225g-ar">${isOpen ? '▲' : '▼'}</i></div>`
+        + (isOpen ? `<div class="m225x-list">${items.map((x, i) => (x.grp !== gname ? ''
+          : `<div class="m225-t m225x-row r-${rk(x)}${x.thin ? ' thin' : ''}" data-i="${i}"><span class="m225x-ic">${m225Icon(x, h)}</span>`
+          + `<span class="m225x-t"><span class="m225x-l">${esc(x.label)}${m225NoScore(x) ? '<em class="m225x-few nosc">点外</em>' : ''}</span><span class="m225x-v">${esc(x.val)}${x.thin ? '・少' : ''}</span></span>`
+          + `<b class="m225-r">${esc(x.g === '初' ? '初' : x.g || '—')}</b></div>`)).join('')}</div>` : '')
+        + '</div>';
+    }).join('');
+    return `<div class="race20 m225 m225-pg">${head}${total}<div class="m225x m225x-e1 m225g">${body}</div></div>`;
+  }
+  // 段のヘッダを押す → 開く／たたむ。札を押す → 札が裏返って詳しいページ。「総合」を押す → 総合点の内訳
+  function m225Tap(target) {
+    if (M225_BACK) return;
+    const gh = target.closest('.m225g-hd');
+    if (gh) {
+      const h0 = Q[S.idx];
+      const g = gh.closest('.m225g-g').dataset.grp;
+      M225_OPEN[h0.number] = M225_OPEN[h0.number] === g ? null : g;   // 同じ段をもう一度押すとたたむ
+      render();
+      return;
+    }
+    const t = target.closest('.m225-t');
+    if (!t) return;
+    const h = Q[S.idx];
+    if (t.dataset.i === 'total') { const w0 = m225TotalW(h); if (w0) m225Open(w0, h); return; }
+    const it = (M225_ITEMS[h.number] || [])[Number(t.dataset.i)];
+    if (!it) return;
+    // 札の裏は、その札の段の詳しいページ（今の1頭だけ見る画面の1ページ）
+    const pg = m225GroupPage(it);
+    if (!pg) { m225Toast('この札の詳しいページはありません'); return; }
+    const title = pg.k === 'run' ? `${RUN_LABEL[pg.i]}のページ` : { p1: '条件と状態（基本のページ）', course: '人と血統（コースのページ）', tenkai: 'コースの傾向（展開のページ）', sum: '直近5走' }[pg.k];
+    m225Open({ title, page: pageHtml(h, pg) }, h);
+  }
+  function m225GroupPage(it) {
+    if (it.grp === '馬の力') return it.run != null ? { k: 'run', i: it.run } : { k: 'sum' };
+    if (it.grp === '条件' || it.grp === '状態') return { k: 'p1' };
+    if (it.grp === '人と血統') return site.course_entities ? { k: 'course' } : null;
+    if (it.grp === 'コースの傾向') return it.key === '前走コース' ? (site.course_entities ? { k: 'course' } : null) : { k: 'tenkai' };
+    return null;
+  }
+  // ---------- 札の裏（札が裏返って中身が出る） ----------
+  //   裏は縦に動かさず1ページに収める（ユーザー「スクロールはできないようにしたい」→「1ページに収めてほしい」）。入りきらないときは中身ごと縮める（字の大きさの比は変えない）。
+  //   裏返ったあとは画面のどこをタップしても表に戻る（ユーザー指示）
+  let M225_BACK = null;   // 開いている裏 { el, close }
+  function m225Close() { if (M225_BACK) M225_BACK.close(); }
+  function m225Fit(panel) {
+    const body = panel.querySelector('.m224-body');
+    // 中身の高さは scrollHeight で測る（中の段の余白まで入る。offsetHeight だと端の余白が抜けて、はみ出すことがあった）
+    const pad = () => { const c = getComputedStyle(body); return (parseFloat(c.paddingTop) || 0) + (parseFloat(c.paddingBottom) || 0); };
+    body.firstElementChild.style.zoom = '';
+    const z = (body.clientHeight - pad()) / (body.scrollHeight - pad());
+    if (z < 1) {
+      const inner = body.firstElementChild;
+      inner.style.zoom = String(Math.floor(z * 1000) / 1000);
+      // 縮めると行の高さの端数で少しはみ出すことがあるので、入るまで少しずつ縮め直す
+      for (let k = 0; k < 8 && body.scrollHeight > body.clientHeight + 0.5; k += 1) inner.style.zoom = String(Number(inner.style.zoom) * 0.98);
+    }
+  }
+  // 中身 w（{ title, page } か { title, stats }）を札が裏返って出す
+  function m225Open(w, h) {
+    if (M225_BACK) return;
+    const yf = document.querySelector('.yf');
+    const card = document.getElementById('yf-page').closest('.yf-card');
+    const cr = card.getBoundingClientRect(), yr = yf.getBoundingClientRect();
+    const el = document.createElement('div');
+    el.className = `m224 m224-v3${w.page ? ' m224-pgmode' : ''}`;
+    el.innerHTML = `<div class="m224-panel"><div class="m224-hd"><b>${esc(w.title)}</b><small class="m224-back">タップで戻る</small></div>`
+      + `<div class="m224-body"><div class="m224-in">${w.page || w.stats}</div></div></div>`;
+    yf.appendChild(el);
+    const p = el.querySelector('.m224-panel');
+    // 札と同じ位置・大きさに置く（.yf の中の位置）
+    Object.assign(p.style, { left: `${cr.left - yr.left}px`, top: `${cr.top - yr.top}px`, width: `${cr.width}px`, height: `${cr.height}px` });
+    m225Fit(p);
+    // 表を90°まで回したら裏（中身）を-90°から戻す
+    p.style.visibility = 'hidden';
+    card.animate([{ transform: 'perspective(1200px) rotateY(0)' }, { transform: 'perspective(1200px) rotateY(90deg)' }], { duration: 200, easing: 'ease-in', fill: 'forwards' });
+    setTimeout(() => {
+      p.style.visibility = '';
+      p.animate([{ transform: 'perspective(1200px) rotateY(-90deg)' }, { transform: 'perspective(1200px) rotateY(0)' }], { duration: 220, easing: 'ease-out' });
+    }, 200);
+    const close = () => {
+      p.animate([{ transform: 'perspective(1200px) rotateY(0)' }, { transform: 'perspective(1200px) rotateY(-90deg)' }], { duration: 200, easing: 'ease-in', fill: 'forwards' });
+      setTimeout(() => {
+        el.remove();
+        card.getAnimations().forEach((a) => a.cancel());
+        card.animate([{ transform: 'perspective(1200px) rotateY(90deg)' }, { transform: 'perspective(1200px) rotateY(0)' }], { duration: 220, easing: 'ease-out' });
+      }, 200);
+    };
+    el.addEventListener('click', () => m225Close());
+    M225_BACK = { el, close: () => { if (!M225_BACK) return; M225_BACK = null; close(); } };
+  }
+  function m225Toast(msg) {
+    const yf = document.querySelector('.yf');
+    if (!yf || yf.querySelector('.m224-toast')) return;
+    const t = document.createElement('div');
+    t.className = 'm224-toast';
+    t.textContent = msg;
+    yf.appendChild(t);
+    t.animate([{ opacity: 0, transform: 'translate(-50%,8px)' }, { opacity: 1, transform: 'translate(-50%,0)' }], { duration: 180, fill: 'forwards' });
+    setTimeout(() => { t.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 200, fill: 'forwards' }); setTimeout(() => t.remove(), 210); }, 1400);
+  }
+  // 押された部品に金を付ける／外す。部品の外（余白）を押したときは何もしない。fx は構えの途中の動き（無ければ null）
+  function goldTap(target, clientX, fx = null) {
+    const pe = document.getElementById('yf-page');
+    const u = goldUnitAt(target, clientX);
+    if (!u) { if (fx) fx.cancel(); return; }
+    const units = goldUnits(pe);
     const h = Q[S.idx];
     const pg = pagesOf(h)[S.page];
     const g = goldLoad();
     const list = g[h.number] || [];
     const idx = units.indexOf(u) + goldOff(pg);
     const at = list.findIndex((x) => x.page === pgKey(pg) && x.idx === idx);
+    const calm = gdCalm() || !u.animate;
     if (at >= 0) {
       list.splice(at, 1);
-      u.classList.remove('gd-on');
+      if (calm) goldPlain(u, false); else goldPeel(u, fx);
     } else {
       list.push({ page: pgKey(pg), label: goldLabel(pg), idx, head: goldHead(u), text: goldText(u), at: new Date().toISOString() });
-      u.classList.remove('gd-pop'); void u.offsetWidth;
-      u.classList.add('gd-on', 'gd-pop');
-      haptic();
+      if (calm) { goldPlain(u, true); haptic(); } else goldSlam(u, fx, () => { u.classList.add('gd-on'); goldTwins(pe); });
     }
     if (list.length) g[h.number] = list; else delete g[h.number];
     goldSave(g);
@@ -538,6 +921,7 @@
 
   // 1頭ぶんのページ。1ページ目に表2つまで入れ、2ページ目は置かない（2026-09-17 ユーザー指示）。走っていない過去走は飛ばす（決定 #9）
   function pagesOf(h) {
+    if (S && !S.view && m225On()) return [{ k: 'rank', label: 'ランク' }];   // 絞り込みはランクの1ページ（rankcard が無いレースは下の10ページのまま）
     const runs = (h.past_runs || []).slice(0, 5);
     // 2ページ目に直近5走のまとめを置く（2026-09-17 ユーザー指示）。過去走の各ページはその後ろ
     const sum = runs.length ? [{ k: 'sum', label: `直近${runs.length}走` }] : [];
@@ -756,6 +1140,7 @@
   }
 
   function pageHtml(h, pg) {
+    if (pg.k === 'rank') return m225Page(h);
     if (pg.k === 'p1') return basicPage(h);
     if (pg.k === 'course') return coursePage(h);
     if (pg.k === 'sum') return summaryPage(h);
@@ -2340,6 +2725,14 @@
     let sx = 0, sy = 0, st = 0, dx = 0, dy = 0, g = 1, drag = false, vdrag = false, down = false, vscroll = false, top0 = 0, over = false;
     let hist = [];
     let base = '';
+    // 長押しの金（2026-09-28）。hold＝構えている部品と2つのタイマー。stamped＝押し終えた（離しても何もしない）
+    let hold = null, stamped = false;
+    const holdStop = () => {
+      if (!hold) return;
+      clearTimeout(hold.t1); clearTimeout(hold.t2);
+      if (hold.fx) hold.fx.cancel();
+      hold = null;
+    };
     const scrollable = () => pageEl && pageEl.scrollHeight > pageEl.clientHeight + 1;
     const tint = document.getElementById('yf-tint');
     const setBack = (p) => {
@@ -2391,7 +2784,25 @@
       g = (sy - rc.top) < rc.height / 2 ? 1 : -1;          // 上の方をつかんだら右に傾く、下の方なら逆（指で紙を払う感じ）
       card.classList.remove('spring', 'nudge-l', 'nudge-r');
       if (!S.view) card.classList.add('press');     // 1頭だけ見るときは押しても縮めない（カードは動かさない）
+      // 絞り込みでは、両端15%より内側の部品を長押しすると金の枠をスタンプする（ボタン・コース適性の山は除く）
+      holdStop(); stamped = false;
+      const hx = (sx - rc.left) / rc.width;
+      const hu = !S.view && (m225On() || (hx >= 0.15 && hx <= 0.85)) && !e.target.closest('button, .ax-hit') ? goldUnitAt(e.target, sx) : null;
+      if (hu) {
+        const tg = e.target, cx = sx;
+        hold = { u: hu };
+        hold.t1 = setTimeout(() => { if (hold) hold.fx = goldRaise(hu); }, GOLD_CHARGE_MS);
+        hold.t2 = setTimeout(() => {
+          if (!hold || !down || drag || vdrag || vscroll) return;
+          const fx = hold.fx;
+          hold = null; stamped = true;
+          card.classList.remove('press');
+          goldTap(tg, cx, fx);
+        }, GOLD_HOLD_MS);
+      }
     });
+    // 長押しで出る文字の選択・コピーの窓（Android の右クリックの窓）を出さない
+    card.addEventListener('contextmenu', (e) => { if (!S.view) e.preventDefault(); });
     card.addEventListener('pointermove', (e) => {
       if (!down) return;
       const now = performance.now();
@@ -2414,6 +2825,8 @@
         sx = e.clientX; sy = e.clientY; st = now; dx = 0; dy = 0; hist = [[now, sx, sy]];
       }
       if (drag || vdrag || vscroll) card.classList.remove('press');
+      // 指が動いたら長押しをやめる（払い・縦の動きに入る前の小さなぶれ 8px までは待つ）
+      if (hold && (drag || vdrag || vscroll || Math.hypot(dx, dy) > 8)) holdStop();
       if (vscroll) { pageEl.scrollTop = top0 - dy; return; }
       if ((drag || vdrag) && !card.hasPointerCapture?.(e.pointerId)) {
         try { card.setPointerCapture(e.pointerId); } catch (_) { /* 取れなくても動く */ }
@@ -2452,6 +2865,9 @@
       if (!down) return;
       down = false;
       card.classList.remove('press');
+      holdStop();
+      // 長押しで金を付け外しした後は、離してもページを送らない
+      if (stamped) { stamped = false; if (!drag && !vdrag) return; }
       const now = performance.now();
       const dt = now - st;
       const h0 = hist[0], h1 = hist[hist.length - 1];
@@ -2485,10 +2901,13 @@
       if (e.target.closest('.ax-hit')) return;
       const rc = card.getBoundingClientRect();
       const x = (e.clientX - rc.left) / rc.width;
-      if (x < 0.15) { turn(-1); return; }
-      if (x > 0.85) { turn(1); return; }
-      // 絞り込みでは、両端15%より内側を押すと金の枠を付ける／外す（ページはめくらない。2026-09-24 ユーザー決定）
-      if (!S.view) { goldTap(e.target, e.clientX); return; }
+      // ランクの1ページ（絞り込み）は、端の札も押せるように両端15%のページめくりをしない
+      if ((S.view || !m225On()) && x < 0.15) { turn(-1); return; }
+      if ((S.view || !m225On()) && x > 0.85) { turn(1); return; }
+      // 絞り込みでは、両端15%より内側を押してもページはめくらない（2026-09-24 ユーザー決定）。
+      //   金の枠は 2026-09-28 から長押しで付ける（上の pointerdown）ので、押すだけでは金は付かない。
+      //   ランクの画面（rankcard があるレース）では、押すと段が開く・札が裏返る（m225Tap）
+      if (!S.view) { if (m225On()) m225Tap(e.target); return; }
       // ページを送った直後の押し直しは、行（直近5走の札・全戦績の行）に当たっても左右の送りとして扱う。
       //   左を続けて押すと、2回目が入れ替わった直近5走の札に当たって4走前へ飛んでいた（2026-09-18 ユーザー指摘）
       const go2 = now - lastTurnAt < TURN_GUARD_MS ? null : e.target.closest('[data-goto]');
