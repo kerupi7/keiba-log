@@ -68,7 +68,7 @@ function render(doc, ref) {
   el.innerHTML = `
     <div class="mhead"><div class="nm">各モデルの成績</div>
       <div class="ds">参考値。1点100円で買ったとして数えた</div></div>
-    <div class="msec"><span class="mdlchip">win-6</span>荒れ度ごとの16券種
+    <div class="msec"><span class="mdlchip">win-6</span>荒れ度ごとの16券種＋100万フラグの3連単
       <span class="msecnote">${escapeHtml(periodText(doc.period_w6, doc.n_races_w6) || '載せた日から記録')}</span></div>
     ${w6.length ? groupTable(w6)
       : '<div class="mnote">載せた日から数え始めます。まだ結果の出たレースがありません。</div>'}

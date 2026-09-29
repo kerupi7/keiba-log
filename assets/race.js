@@ -4242,9 +4242,12 @@ function brWhyPct(v) {
 
 // 2026-09-28: win-6 の16券種（handoff_2026-09-28_win6-betrule-ans.md）。
 // 「使う馬」は bets_rules_w6.roles（札＝穴の一番・穴・勝率◯位、勝率、穴の3着以内率）から作る。
+// 2026-09-29: 案「100万フラグ」が増えたので、案ごとに買い目に入っている馬だけ出す
 function w6WhyCards(pl, br, byNum) {
   const roles = br.roles || {};
-  const nums = (br.horses || []).filter((n) => roles[String(n)]);
+  const used = new Set();
+  for (const t of pl.types || []) for (const tk of t.tickets || []) for (const n of tk) used.add(n);
+  const nums = (br.horses || []).filter((n) => roles[String(n)] && used.has(n));
   if (!nums.length) return '';
   const cards = nums.map((n) => {
     const r = roles[String(n)];
@@ -4309,6 +4312,7 @@ function renderBetRules(site) {
   const w6 = site.bets_rules_w6;
   if (!w6 || (!w6.plans && !w6.skip)) return renderBetRulesW45(site);
   let html = '<div class="grphead">win-6 の買い目<span class="sub">荒れ度ごとに買い方が変わる・答え合わせ中</span></div>';
+  // 2026-09-29: 3連単100万超えのフラグが点いたレースは、荒れ度の買い方の下に「100万フラグの買い方」が足される
   if (w6.skip) {
     html += `<div class="conf">${escapeHtml(w6.skip)}</div>`;
   } else {
