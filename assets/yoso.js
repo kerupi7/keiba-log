@@ -547,15 +547,25 @@
   //   写すのは表示のランクと数字だけ。総合点と段のランク（rankcard.p・groups）は rankcard の値のまま。展開のページに値が無ければ rankcard の値を出す
   const M225_GATE_CUTS = [0.889, 0.974, 1.034, 1.106];   // race.js の GATE_CUTS と同じ（変えるときは両方）
   const M225_STYLE_KEY = { 逃げ: '逃', 先行: '先', 差し: '差', 追込: '追' };   // race.js の PACE_STYLE_KEY と同じ
+  //   数字は印を決める画面（天秤）と同じ「その枠・脚質の3着以内率・平均」の形で「22%・平均21%」と出す（2026-09-29 ユーザー。前は枠だけ「全枠平均の1.06倍」）。
+  //   頭の「3着以内」は付けない（札の幅 375px で「3着以内 22%・平均21%」が切れた。段の説明が「来た割合」）。
+  //   脚質：展開のページの3着以内率と、ランクの物差しの全コースの同じ脚質の平均（baseline）。
+  //   枠：展開のページは倍しか持たないので、倍 × このコースの全馬の3着以内率（rankcard の course_rate）で割合に直す。平均＝course_rate
   function m225Tenkai(h) {
     const p = site.prediction || {};
     const out = {};
+    const pct = (v) => Math.round(Number(v));
     const leg = ((p.display || {}).leg || []).find((d) => M225_STYLE_KEY[d.style] === h.running_style);
-    if (leg && leg.grade) out['脚質'] = { g: leg.grade, label: leg.style, val: `3着以内 ${leg.fukusho_rate}%` };
+    if (leg && leg.grade) {
+      const bl = (leg.baseline || {}).fukusho_rate;
+      out['脚質'] = { g: leg.grade, label: leg.style, val: `${pct(leg.fukusho_rate)}%${bl != null ? `・平均${pct(bl)}%` : ''}` };
+    }
     const gt = ((p.inner_outer_bias || {}).gates || []).find((x) => Number(x.gate) === Number(h.gate));
     if (gt && gt.ratio != null) {
       const i = M225_GATE_CUTS.findIndex((t) => gt.ratio < t);
-      out['枠'] = { g: 'DCBA'[i] || 'S', val: `全枠平均の${Number(gt.ratio).toFixed(2)}倍` };
+      const cr = ((((h.rankcard || {}).cards || {})['枠']) || {}).course_rate;
+      out['枠'] = { g: 'DCBA'[i] || 'S',
+        val: cr != null ? `${pct(gt.ratio * cr)}%・平均${pct(cr)}%` : `全枠平均の${Number(gt.ratio).toFixed(2)}倍` };
     }
     return out;
   }
