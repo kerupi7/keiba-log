@@ -542,6 +542,23 @@
   const m225Zone = (n, f) => { n = Number(n); f = Number(f); if (!n || !f || f < 2) return null; const p = (n - 1) / (f - 1); return p <= 1 / 3 ? '内' : p <= 2 / 3 ? '中' : '外'; };
   // 総合点の重みが無い札（rankcard_meta.cards に名前が無い）
   const m225NoScore = (x) => Boolean(x.key && !(site.rankcard_meta.cards || []).includes(x.key));
+  // 枠・脚質の札のランクは、展開のページ（race.js の renderLeg20・枠の等級）と同じ値を写す（2026-09-29 ユーザー「ランクが見る場所で違うのは混乱を招く」）。
+  //   rankcard の枠・脚質は別の数字（自前の集計）で作っていて、同じ物差しにしても元の数字が違うのでそろわない（ml/SCOREBOARD.md §2.126）。
+  //   写すのは表示のランクと数字だけ。総合点と段のランク（rankcard.p・groups）は rankcard の値のまま。展開のページに値が無ければ rankcard の値を出す
+  const M225_GATE_CUTS = [0.889, 0.974, 1.034, 1.106];   // race.js の GATE_CUTS と同じ（変えるときは両方）
+  const M225_STYLE_KEY = { 逃げ: '逃', 先行: '先', 差し: '差', 追込: '追' };   // race.js の PACE_STYLE_KEY と同じ
+  function m225Tenkai(h) {
+    const p = site.prediction || {};
+    const out = {};
+    const leg = ((p.display || {}).leg || []).find((d) => M225_STYLE_KEY[d.style] === h.running_style);
+    if (leg && leg.grade) out['脚質'] = { g: leg.grade, label: leg.style, val: `3着以内 ${leg.fukusho_rate}%` };
+    const gt = ((p.inner_outer_bias || {}).gates || []).find((x) => Number(x.gate) === Number(h.gate));
+    if (gt && gt.ratio != null) {
+      const i = M225_GATE_CUTS.findIndex((t) => gt.ratio < t);
+      out['枠'] = { g: 'DCBA'[i] || 'S', val: `全枠平均の${Number(gt.ratio).toFixed(2)}倍` };
+    }
+    return out;
+  }
   // 1頭ぶんの札の並び。{ grp, key, label, g（S〜D か '初'）, val, thin, run（過去走の札は何走前か） }。
   //   名前は今日の条件の中身（阪神芝・スロー前残りなど）。ランク・少・表示の数字は rankcard.cards[key] から取る
   function m225Items(h) {
@@ -597,17 +614,26 @@
     add('人と血統', '調教師', `調教師 ${e5Strip(h.trainer) || ''}`);
     add('人と血統', '母父', `母父 ${h.damsire || ''}`);
     // ⑤ コースの傾向：枠・脚質・前走コース
-    if (cards['枠']) add('コースの傾向', '枠', `${cards['枠'].gate ?? ''}枠`);
-    if (cards['脚質']) add('コースの傾向', '脚質', M225_STYLE[cards['脚質'].style] || cards['脚質'].style || '脚質');
+    const pg = m225Tenkai(h);
+    const addPage = (key, label) => {
+      if (!pg[key]) { add('コースの傾向', key, label); return; }
+      if (cards[key]) out.push({ grp: 'コースの傾向', key, label, g: pg[key].g, thin: false, val: pg[key].val });
+    };
+    if (cards['枠']) addPage('枠', `${h.gate ?? cards['枠'].gate ?? ''}枠`);
+    if (cards['脚質']) addPage('脚質', pg['脚質'] ? pg['脚質'].label : (M225_STYLE[cards['脚質'].style] || cards['脚質'].style || '脚質'));
     add('コースの傾向', '前走コース', `前走${e5PrevKey(h) || ''}組`);
     return out;
   }
   // 出走馬ぜんぶの総合点と順位（rankcard の値そのまま）。順位の順に並べる
   function m225Rows() {
-    return H.filter((x) => x.rankcard).map((x) => ({
-      h: x, p: x.rankcard.p, rank: x.rankcard.rank, groups: x.rankcard.groups || {},
-      parts: Object.entries(x.rankcard.cards || {}).filter(([, c]) => c.s != null).map(([card, c]) => ({ card, g: c.grade || '初', s: c.s })),
-    })).sort((a, b) => (a.rank ?? 99) - (b.rank ?? 99));
+    return H.filter((x) => x.rankcard).map((x) => {
+      const pg = m225Tenkai(x);   // 枠・脚質のランクは札と同じく展開のページの値
+      return {
+        h: x, p: x.rankcard.p, rank: x.rankcard.rank, groups: x.rankcard.groups || {},
+        parts: Object.entries(x.rankcard.cards || {}).filter(([, c]) => c.s != null)
+          .map(([card, c]) => ({ card, g: (pg[card] || {}).g || c.grade || '初', s: c.s })),
+      };
+    }).sort((a, b) => (a.rank ?? 99) - (b.rank ?? 99));
   }
   // 「総合」を押したときの裏：総合点の内訳（押し上げ・押し下げている札）と出走馬の順位
   function m225TotalW(h) {
