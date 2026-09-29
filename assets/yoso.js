@@ -364,6 +364,8 @@
   function goldSave(g) {
     try { localStorage.setItem(GOLD_KEY, JSON.stringify(g)); GOLD_MEM = null; } catch (e) { GOLD_MEM = g; }
   }
+  // ランクの1ページの札の名前（総合＝'総合'・札の1行＝rankcard の札の名前）
+  const goldCard = (u) => (u.dataset.i === 'total' ? '総合' : u.dataset.k || null);
   const pgKey = (pg) => (pg ? `${pg.k}${pg.i != null ? pg.i : ''}` : '');
   // 全戦績は何ページかに分かれる（2026-09-25）。金は「何ページ目の何行目」ではなく「何走目か」で覚える
   //   （切れ目は画面の高さで変わるため。分ける前に付けた金も、1ページ目から数えた位置なのでそのまま合う）
@@ -409,7 +411,10 @@
     const units = goldUnits(pe);
     units.forEach((u) => u.classList.add('gd-u'));
     const mine = (goldLoad()[num] || []).filter((x) => x.page === pgKey(pg));
-    mine.forEach((x) => { const u = units[x.idx - goldOff(pg)]; if (u) u.classList.add('gd-on'); });
+    mine.forEach((x) => {
+      const u = x.card ? units.find((v) => goldCard(v) === x.card) : units[x.idx - goldOff(pg)];
+      if (u) u.classList.add('gd-on');
+    });
     goldTwins(pe);
   }
   // 長押しで金を付ける（2026-09-28）。GOLD_HOLD_MS 押し続けたら付く。
@@ -739,7 +744,7 @@
         + `<span class="m225g-nm"><b>${gname}</b><small>${GD[gname] || ''}</small></span>`
         + `<span class="m225g-rw"><b class="m225g-r">${esc(gg || '—')}</b></span><i class="m225g-ar">${isOpen ? '▲' : '▼'}</i></div>`
         + (isOpen ? `<div class="m225x-list">${items.map((x, i) => (x.grp !== gname ? ''
-          : `<div class="m225-t m225x-row r-${rk(x)}${x.thin ? ' thin' : ''}" data-i="${i}"><span class="m225x-ic">${m225Icon(x, h)}</span>`
+          : `<div class="m225-t m225x-row r-${rk(x)}${x.thin ? ' thin' : ''}" data-i="${i}" data-k="${esc(x.key)}"><span class="m225x-ic">${m225Icon(x, h)}</span>`
           + `<span class="m225x-t"><span class="m225x-l">${esc(x.label)}${m225NoScore(x) ? '<em class="m225x-few nosc">点外</em>' : ''}</span><span class="m225x-v">${esc(x.val)}${x.thin ? '・少' : ''}</span></span>`
           + `<b class="m225-r">${esc(x.g === '初' ? '初' : x.g || '—')}</b></div>`)).join('')}</div>` : '')
         + '</div>';
@@ -884,13 +889,15 @@
     const g = goldLoad();
     const list = g[h.number] || [];
     const idx = units.indexOf(u) + goldOff(pg);
-    const at = list.findIndex((x) => x.page === pgKey(pg) && x.idx === idx);
+    // ランクの1ページは開いている段で部品の並びが変わるので、何番目かでなく札の名前（card）で覚える（2026-09-29）。名前の無い前の記録は何番目かで探す
+    const card = pg.k === 'rank' ? goldCard(u) : null;
+    const at = list.findIndex((x) => x.page === pgKey(pg) && (card && x.card ? x.card === card : x.idx === idx));
     const calm = gdCalm() || !u.animate;
     if (at >= 0) {
       list.splice(at, 1);
       if (calm) goldPlain(u, false); else goldPeel(u, fx);
     } else {
-      list.push({ page: pgKey(pg), label: goldLabel(pg), idx, head: goldHead(u), text: goldText(u), at: new Date().toISOString() });
+      list.push({ page: pgKey(pg), label: goldLabel(pg), idx, ...(card ? { card } : {}), head: goldHead(u), text: goldText(u), at: new Date().toISOString() });
       if (calm) { goldPlain(u, true); haptic(); } else goldSlam(u, fx, () => { u.classList.add('gd-on'); goldTwins(pe); });
     }
     if (list.length) g[h.number] = list; else delete g[h.number];
@@ -2422,6 +2429,7 @@
   //   点の細かい差は使わない（ランクの文字と天秤の向きが食い違ったため）。中の札の小さいランクは真ん中に出さない
   //   （札ごとの重さがバラバラで、見た目と傾きが食い違うため）。札は段を押すと下から出る。
   //   外したもの：金の枠・3着以内の見込みの%・下のまとめ文・棒。
+  //   金は 2026-09-29 に戻した（ユーザー「これで金をつけたら、印の比較のところでわかるように出してほしい」）：名前の下に数、段のランクの角に ★、段の中身では札を金の枠で囲む（下の tbGold）
   //   馬名を押すと、本番と同じ「1頭だけ見る」画面が開く（下の openDetail。.ap の中の [data-hist] を押したとき）
   const TB_GROUPS = [
     ['馬の力', ['直近5走', '前走', '2走前', '3走前', '4走前', '5走前']],
@@ -2450,6 +2458,54 @@
     const c = ((h.rankcard || {}).cards || {})[k] || {};
     return { g: c.grade, val: c.val, thin: Boolean(c.thin) };
   }
+  // 絞り込みで付けた金を天秤の札に結ぶ（2026-09-29 ユーザー「これで金をつけたら、印の比較のところでわかるように出してほしい」）。
+  //   金の1件（ページ・何番目か・文字）→ 天秤の札の名前（TB_GROUPS の中の名前）。天秤に無い所（オッズ・人気・通算・総合・別の枠や脚質の列など）は null
+  //   ・ランクの1ページ：札の名前（card）そのまま
+  //   ・直近5走・前走〜5走前：その走 ／ コース：5行目から 前走コース・騎手・種牡馬・調教師・母父
+  //   ・展開：7〜14番目が枠（この馬の枠のときだけ）、15番目からが脚質の列（この馬の脚質のときだけ）
+  //   ・基本：調教の札・コース適性の輪（文字で見分ける）・型べつ成績の「本命」（＝今日の流れ）
+  function tbGoldCard(g, h) {
+    const t = g.text || '';
+    if (g.page === 'rank') return g.card && g.card !== '総合' ? g.card : null;
+    if (g.page === 'sum') return RUN_LABEL[g.idx] || null;
+    if (/^run\d$/.test(g.page)) return RUN_LABEL[Number(g.page.slice(3))] || null;
+    if (g.page === 'course') return ['前走コース', '騎手', '種牡馬', '調教師', '母父'][g.idx - 4] || null;
+    if (g.page === 'tenkai') {
+      if (g.idx >= 6 && g.idx <= 13) return Number((t.match(/^\d+/) || [])[0]) === Number(h.gate) ? '枠' : null;
+      if (g.idx >= 14) return M225_STYLE[h.running_style] && t.startsWith(M225_STYLE[h.running_style]) ? '脚質' : null;
+      return null;
+    }
+    if (g.page === 'p1') {
+      if (/^調教/.test(t)) return '調教';
+      if (g.head === 'コース適性') {
+        const r = site.race || {};
+        if (/[内中外]今日/.test(t)) return '内外';
+        if (/(^|\s)(道悪|良)(\s|$)/.test(t)) return '馬場';
+        if (/[左右]回り/.test(t)) return '回り';
+        if (/全場/.test(t)) return String(r.distance || '') && t.includes(`${r.distance}m`) ? '距離' : null;
+        const A = aptData(h);
+        if (t.includes(A.here)) return 'コース';
+        if (t.includes(A.here.replace(/\d+m$/, '')) && !/\d+m/.test(t)) return '場';
+        return null;
+      }
+      if (g.head === 'レースの型べつ成績') return t.includes('本命') ? '流れ' : null;
+    }
+    return null;
+  }
+  // 1頭の金 → { cards: { 札の名前: 1 }, groups: { 段の名前: 数 }, total: 全部の数 }
+  function tbGold(h) {
+    const list = (goldLoad()[h.number] || []).filter((g) => g.page !== 'cmp');
+    const cards = {}, groups = {};
+    list.forEach((g) => {
+      const k = tbGoldCard(g, h);
+      if (!k || cards[k]) return;
+      cards[k] = 1;
+      const grp = (TB_GROUPS.find((x) => x[1].includes(k)) || [])[0];
+      if (grp) groups[grp] = (groups[grp] || 0) + 1;
+    });
+    return { cards, groups, total: list.length };
+  }
+  const tbStar = (n, cls = '') => (n ? `<i class="tb-gd ${cls}" aria-label="金の枠${n}つ">★${n > 1 ? n : ''}</i>` : '');
   function vTenbin() {
     const t = S.t;
     const mk = MARKS3[S.step];
@@ -2461,13 +2517,16 @@
       const steps = va == null || vb == null ? 0 : Math.abs(va - vb);
       return { g, a, b, steps, side: steps === 0 ? 0 : va > vb ? -1 : 1 };
     });
-    const top = HS.map((h) => `<div class="ap-top" data-side="${h.number}">
+    const GD = HS.map(tbGold);
+    const top = HS.map((h, i) => `<div class="ap-top" data-side="${h.number}">
         <div class="ap-tn" data-hist="${h.number}">${umaBox(h.number, h.gate)}<b>${esc(h.name)}</b><i class="ap-chev">›</i></div>
         <div class="ap-ts">${esc(h.sex_age || '')}・${esc(String(h.weight_carried ?? '').replace(/\.0$/, ''))}kg・${esc(h.jockey || '')}</div>
+        ${GD[i].total ? `<div class="tb-gsum">★ 金の枠 ${GD[i].total}つ</div>` : ''}
       </div>`).join('');
+    // 段に金の付いた札があれば、ランクの角に ★（2つ以上は数）。勝ち側の金の枠とは別の印にする
     const cell = (grade, isL, x) => {
       const st = x.side === 0 ? '' : x.side === (isL ? -1 : 1) ? 'win' : 'lose';
-      return `<div class="tb-side ${isL ? 'L' : 'R'} ${st}">${tbChip(grade)}</div>`;
+      return `<div class="tb-side ${isL ? 'L' : 'R'} ${st}"><span class="tb-gw">${tbChip(grade)}${tbStar(GD[isL ? 0 : 1].groups[x.g] || 0)}</span></div>`;
     };
     const rows = V.map((x) => `<button type="button" class="tb-row" data-tbgrp="${x.g}">
         ${cell(x.a, true, x)}<span class="tb-mid">${tbScale(x.side, x.steps)}<b>${x.g}</b></span>${cell(x.b, false, x)}</button>`).join('');
@@ -2619,12 +2678,13 @@
     const gs = (h) => (((h.rankcard || {}).groups || {})[g] || {}).grade;
     const cmp = (a, b) => { const va = tbV(a), vb = tbV(b); const st = va == null || vb == null ? 0 : Math.abs(va - vb); return { steps: st, side: st === 0 ? 0 : va > vb ? -1 : 1 }; };
     const gv = cmp(gs(L), gs(R));
+    const GL = tbGold(L).cards, GR = tbGold(R).cards;
     // 前走コース（前走も今日と同じコースだったときだけ付く札）は、2頭とも付いていなければ行ごと出さない
     const rows = keys.filter((k) => !(k === '前走コース' && !TB_R.includes(tbCard(L, k).g) && !TB_R.includes(tbCard(R, k).g))).map((k) => {
       const a = tbCard(L, k), b = tbCard(R, k), x = cmp(a.g, b.g);
-      return `<div class="tb-ar"><div class="tb-as L">${tbArt(L, k, x.side === -1)}</div>
+      return `<div class="tb-ar"><div class="tb-as L${GL[k] ? ' gd' : ''}">${tbArt(L, k, x.side === -1)}${GL[k] ? tbStar(1, 'in') : ''}</div>
         <div class="tb-am"><i>${tbLabel(k, L)}</i><span>${tbChip(a.g, 'xs')}${tbChip(b.g, 'xs')}</span></div>
-        <div class="tb-as R">${tbArt(R, k, x.side === 1)}</div></div>`;
+        <div class="tb-as R${GR[k] ? ' gd' : ''}">${tbArt(R, k, x.side === 1)}${GR[k] ? tbStar(1, 'in') : ''}</div></div>`;
     }).join('');
     return `<div class="tb-sheet" role="dialog" aria-label="${g}の中身">
       <div class="tb-sh-h"><b>${g}</b><button type="button" class="tb-x" data-tbclose="1">閉じる</button></div>
