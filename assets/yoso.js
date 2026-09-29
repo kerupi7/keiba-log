@@ -814,7 +814,11 @@
         card.animate([{ transform: 'perspective(1200px) rotateY(90deg)' }, { transform: 'perspective(1200px) rotateY(0)' }], { duration: 220, easing: 'ease-out' });
       }, 200);
     };
-    el.addEventListener('click', () => m225Close());
+    // iPhone の Safari は、指を離したあとに同じ場所へ click を送る。札は指を離した時（pointerup）に裏返すので、
+    //   その click が開いたばかりの裏に当たってすぐ閉じ、「押しても裏返らない」に見えていた（2026-09-29 ユーザー指摘・
+    //   Chrome では起きない）。開いてから少しの間の click は数えない
+    const openedAt = performance.now();
+    el.addEventListener('click', () => { if (performance.now() - openedAt < 700) return; m225Close(); });
     M225_BACK = { el, close: () => { if (!M225_BACK) return; M225_BACK = null; close(); } };
   }
   function m225Toast(msg) {
@@ -2939,7 +2943,11 @@
       // 絞り込みでは、両端15%より内側を押してもページはめくらない（2026-09-24 ユーザー決定）。
       //   金の枠は 2026-09-28 から長押しで付ける（上の pointerdown）ので、押すだけでは金は付かない。
       //   ランクの画面（rankcard があるレース）では、押すと段が開く・札が裏返る（m225Tap）
-      if (!S.view) { if (m225On()) m225Tap(e.target); return; }
+      if (!S.view) {
+        // 裏返しで止まったとき、手元で再現できない不具合の手がかりを画面に出す（2026-09-29・iPhone だけで裏返らなかった件）
+        if (m225On()) { try { m225Tap(e.target); } catch (err) { m225Toast(`裏返せませんでした：${err && err.message}`); } }
+        return;
+      }
       // ページを送った直後の押し直しは、行（直近5走の札・全戦績の行）に当たっても左右の送りとして扱う。
       //   左を続けて押すと、2回目が入れ替わった直近5走の札に当たって4走前へ飛んでいた（2026-09-18 ユーザー指摘）
       const go2 = now - lastTurnAt < TURN_GUARD_MS ? null : e.target.closest('[data-goto]');
