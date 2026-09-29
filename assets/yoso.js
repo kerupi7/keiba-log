@@ -2657,16 +2657,8 @@
       }
     }
     setTimeout(() => {
-      // 本番の pickWinner と同じ数え方。違うのは、選んだ馬をいつも左に置くところだけ
-      t.done += 1;
-      if (t.champ === n) t.streak += 1; else { t.champ = n; t.streak = 1; }
-      t.bump = true;
-      if (!t.queue.length) { S.busy = false; setWinner(n); return; }
-      const next = t.queue.shift();
-      t.left = n;
-      t.right = next;
-      t.shift = false;
-      t.fresh = 'r';
+      // 本番の pickWinner と同じ数え方（答え済みの組は飛ばす）。違うのは、選んだ馬をいつも左に置くところだけ
+      if (tAdvance(n, true) || tSkipKnown(true)) { S.busy = false; setWinner(t.champ); return; }
       render();
       S.busy = false;
       if (reduce) return;
@@ -3279,7 +3271,7 @@
 
   // ---------- 印（勝ち残り型・毎回やり直す） ----------
   //   選んだ馬は画面に残り、負けた馬の側だけ次の馬（馬番の若い順）に入れ替わる（2026-09-17 決定。前は勝ち抜き戦）。
-  //   ✓が8頭なら◎まで7回。○・▲は◎を外して最初からやり直す
+  //   ✓が8頭なら◎まで7回。○・▲は◎を外して最初からやり直す（前の印で答えた組は聞き直さない・下の tSkipKnown）
   // from 番目以降で、まだどの馬にも付いていない印の位置。無ければ 3
   const nextStep = (from) => {
     const held = Object.values(S.my);
@@ -3295,21 +3287,44 @@
     if (p.length === 0) { close(true); return; }
     if (p.length === 1) { setWinner(p[0]); return; }
     S.t = { left: p[0], right: p[1], queue: p.slice(2), total: p.length - 1, done: 0, champ: null, streak: 0, fresh: null };
+    if (tSkipKnown(m225On())) { setWinner(S.t.champ); return; }
     go('duel');
   }
 
-  function pickWinner(n) {
+  // 前の印で答えた組は聞き直さない（2026-09-29 ユーザー「◎で 1より2・2より3 と選んだのに、○でまた 1と2 を比べるのが面倒」）。
+  //   この回（開いてから閉じるまで）に選んだ2頭の組は S.beat に残し、同じ組が来たら前の答えのまま次へ進める。
+  //   直接比べた組だけ使う（1より2・2より3 から「1より3」を推し量ることはしない）
+  const pairKey = (a, b) => (a < b ? `${a}-${b}` : `${b}-${a}`);
+  // n を勝ちとして数え、次の組へ進める。最後の組だったら true（印が決まった）。
+  //   leftAlways：天秤の画面は選んだ馬をいつも左へ、比べる表はその場に残す
+  function tAdvance(n, leftAlways) {
     const t = S.t;
+    (S.beat || (S.beat = {}))[pairKey(t.left, t.right)] = n;
     t.done += 1;
     if (t.champ === n) t.streak += 1; else { t.champ = n; t.streak = 1; }
     t.bump = true;
-    if (!t.queue.length) { setWinner(n); return; }
+    if (!t.queue.length) return true;
     const next = t.queue.shift();
+    if (leftAlways) { t.left = n; t.right = next; }
     // 選んだ馬はその場に残し、負けた側だけ次の馬に入れ替える（2026-09-25。前は選んだ馬をいつも左へ寄せていたので、
     //   右で選ぶと両方の列が入れ替わり、比べる表の上では何が変わったか追えなかった）
-    if (t.left === n) t.right = next; else t.left = next;
+    else if (t.left === n) t.right = next; else t.left = next;
     t.shift = false;
     t.fresh = t.left === next ? 'l' : 'r';
+    return false;
+  }
+  // いま出ている組が答え済みなら、聞いていない組が来るまで進める。印まで決まったら true
+  function tSkipKnown(leftAlways) {
+    const t = S.t;
+    for (;;) {
+      const w = (S.beat || {})[pairKey(t.left, t.right)];
+      if (w == null) return false;
+      if (tAdvance(w, leftAlways)) return true;
+    }
+  }
+
+  function pickWinner(n) {
+    if (tAdvance(n, false) || tSkipKnown(false)) { setWinner(S.t.champ); return; }
     render();
   }
 
@@ -3340,9 +3355,9 @@
     const a = e.target.closest('[data-act]');
     if (!a) return;
     switch (a.dataset.act) {
-      case 'mark0': startMark(0); break;
-      case 'next': startMark(nextStep(S.step + 1)); break;
-      case 'restart': Q = H; S.idx = 0; S.page = 0; S.my = {}; go('swipe'); break;
+      case 'mark0': S.beat = {}; startMark(0); break;
+      case 'next': startMark(nextStep(S.step + 1)); break;   // 前の印で答えた組（S.beat）は持ち越す
+      case 'restart': Q = H; S.idx = 0; S.page = 0; S.my = {}; S.beat = {}; go('swipe'); break;
       case 'done': close(true); break;
       case 'close': close(false); break;   // 1頭だけ見るときの「閉じる」（2026-09-21）
       case 'quit':
