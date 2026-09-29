@@ -426,8 +426,8 @@
   const gdCalm = () => { try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } };
   const gdLater = (ms, fn) => setTimeout(fn, ms * GOLD_T);
   // 押した場所の部品（金を付けられる所でなければ null）
-  function goldUnitAt(target, clientX) {
-    const pe = document.getElementById('yf-page');
+  //   pe を渡すと、そのページの中で探す（札の裏＝m225Open の中身。2026-09-29）
+  function goldUnitAt(target, clientX, pe = document.getElementById('yf-page')) {
     if (!pe || !pe.contains(target)) return null;
     const units = goldUnits(pe);
     goldAlias.x = clientX;
@@ -764,16 +764,18 @@
     const it = (M225_ITEMS[h.number] || [])[Number(t.dataset.i)];
     if (!it) return;
     // 札の裏は、その札の段の詳しいページ（今の1頭だけ見る画面の1ページ）
-    const pg = m225GroupPage(it);
+    const pg = m225GroupPage(it, h);
     if (!pg) { m225Toast('この札の詳しいページはありません'); return; }
     const title = pg.k === 'run' ? `${RUN_LABEL[pg.i]}のページ` : { p1: '条件と状態（基本のページ）', course: '人と血統（コースのページ）', tenkai: 'コースの傾向（展開のページ）', sum: '直近5走' }[pg.k];
-    m225Open({ title, page: pageHtml(h, pg) }, h);
+    m225Open({ title, page: pageHtml(h, pg), pg }, h);
   }
-  function m225GroupPage(it) {
-    if (it.grp === '馬の力') return it.run != null ? { k: 'run', i: it.run } : { k: 'sum' };
-    if (it.grp === '条件' || it.grp === '状態') return { k: 'p1' };
-    if (it.grp === '人と血統') return site.course_entities ? { k: 'course' } : null;
-    if (it.grp === 'コースの傾向') return it.key === '前走コース' ? (site.course_entities ? { k: 'course' } : null) : { k: 'tenkai' };
+  //   label は10ページのとき（pagesOf）と同じ名前。裏で付けた金は、10ページのときと同じページの名前・部品の順番で残す（印の画面の goldKey がそのまま読む）
+  function m225GroupPage(it, h) {
+    const nRun = Math.min(5, (h.past_runs || []).length);
+    if (it.grp === '馬の力') return it.run != null ? { k: 'run', i: it.run, label: RUN_LABEL[it.run] } : { k: 'sum', label: `直近${nRun}走` };
+    if (it.grp === '条件' || it.grp === '状態') return { k: 'p1', label: '基本' };
+    if (it.grp === '人と血統') return site.course_entities ? { k: 'course', label: 'コース' } : null;
+    if (it.grp === 'コースの傾向') return it.key === '前走コース' ? (site.course_entities ? { k: 'course', label: 'コース' } : null) : { k: 'tenkai', label: '展開' };
     return null;
   }
   // ---------- 札の裏（札が裏返って中身が出る） ----------
@@ -806,6 +808,8 @@
       + `<div class="m224-body"><div class="m224-in">${w.page || w.stats}</div></div></div>`;
     yf.appendChild(el);
     const p = el.querySelector('.m224-panel');
+    const inner = el.querySelector('.m224-in');
+    if (w.pg) goldPaint(inner, w.pg);   // 付けてある金を出す（縮める前に。goldCols が列の箱を足すため）
     // 札と同じ位置・大きさに置く（.yf の中の位置）
     Object.assign(p.style, { left: `${cr.left - yr.left}px`, top: `${cr.top - yr.top}px`, width: `${cr.width}px`, height: `${cr.height}px` });
     m225Fit(p);
@@ -828,7 +832,34 @@
     //   その click が開いたばかりの裏に当たってすぐ閉じ、「押しても裏返らない」に見えていた（2026-09-29 ユーザー指摘・
     //   Chrome では起きない）。開いてから少しの間の click は数えない
     const openedAt = performance.now();
-    el.addEventListener('click', () => { if (performance.now() - openedAt < 700) return; m225Close(); });
+    let skipUntil = 0;   // 長押しで金を付け外しした直後の click（指を離したとき）では閉じない
+    el.addEventListener('click', () => { const t = performance.now(); if (t - openedAt < 700 || t < skipUntil) return; m225Close(); });
+    // 裏のページでも、部品を長押しすると金の枠を付け外しする（2026-09-29 ユーザー「絞り込みでこういう画面になった際に、部分を長押しすると金枠がつけられるようにしたい」）。
+    //   押せる部品・長押しの長さ・動きは表の札と同じ（GOLD_UNIT・GOLD_HOLD_MS・goldRaise）。ふつうのタップは今までどおり表に戻る
+    if (w.pg) {
+      let hold = null, stamped = false;
+      const stop = () => { if (!hold) return; clearTimeout(hold.t1); clearTimeout(hold.t2); if (hold.fx) hold.fx.cancel(); hold = null; };
+      el.addEventListener('pointerdown', (e) => {
+        stop(); stamped = false;
+        if (e.button !== 0 || !M225_BACK) return;
+        const u = goldUnitAt(e.target, e.clientX, inner);
+        if (!u) return;
+        const tg = e.target, cx = e.clientX;
+        hold = { sx: e.clientX, sy: e.clientY };
+        hold.t1 = setTimeout(() => { if (hold) hold.fx = goldRaise(u); }, GOLD_CHARGE_MS);
+        hold.t2 = setTimeout(() => {
+          if (!hold) return;
+          const fx = hold.fx;
+          hold = null; stamped = true;
+          goldTap(tg, cx, fx, { pe: inner, pg: w.pg });
+        }, GOLD_HOLD_MS);
+      });
+      el.addEventListener('pointermove', (e) => { if (hold && Math.hypot(e.clientX - hold.sx, e.clientY - hold.sy) > 8) stop(); });
+      const up = () => { stop(); if (stamped) { stamped = false; skipUntil = performance.now() + 500; } };
+      el.addEventListener('pointerup', up);
+      el.addEventListener('pointercancel', up);
+      el.addEventListener('contextmenu', (e) => e.preventDefault());
+    }
     M225_BACK = { el, close: () => { if (!M225_BACK) return; M225_BACK = null; close(); } };
   }
   function m225Toast(msg) {
@@ -842,13 +873,14 @@
     setTimeout(() => { t.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 200, fill: 'forwards' }); setTimeout(() => t.remove(), 210); }, 1400);
   }
   // 押された部品に金を付ける／外す。部品の外（余白）を押したときは何もしない。fx は構えの途中の動き（無ければ null）
-  function goldTap(target, clientX, fx = null) {
-    const pe = document.getElementById('yf-page');
-    const u = goldUnitAt(target, clientX);
+  //   ctx＝{ pe, pg }：札の裏のページで押したとき（ページの箱と、どのページか）。無ければ今の札のページ
+  function goldTap(target, clientX, fx = null, ctx = null) {
+    const pe = ctx ? ctx.pe : document.getElementById('yf-page');
+    const u = goldUnitAt(target, clientX, pe);
     if (!u) { if (fx) fx.cancel(); return; }
     const units = goldUnits(pe);
     const h = Q[S.idx];
-    const pg = pagesOf(h)[S.page];
+    const pg = ctx ? ctx.pg : pagesOf(h)[S.page];
     const g = goldLoad();
     const list = g[h.number] || [];
     const idx = units.indexOf(u) + goldOff(pg);
