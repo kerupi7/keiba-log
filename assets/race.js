@@ -957,6 +957,11 @@ function race20NaturalTop(el) {
 
 // 面の先頭＝切替バーが貼り付く位置。タブバーのぶんだけ上を空ける
 function race20FaceTop(root) {
+  // 2026-09-29: 切替バー（.mm-bar）を外し、タブは下に固定した。面の先頭＝出馬表タブの中身の先頭
+  if (root.classList.contains('r26')) {
+    const pn = root.querySelector('#pane-shutuba');
+    return pn ? Math.max(0, pn.getBoundingClientRect().top + window.scrollY - 8) : 0;
+  }
   const mb = root.querySelector('.mm-bar');
   if (!mb) return 0;
   const tb = root.querySelector('.tabbar');
@@ -1000,9 +1005,11 @@ function setupTabs20(site) {
       b.setAttribute('aria-selected', on ? 'true' : 'false');
     }
     for (const p of panes) p.classList.toggle('on', p.dataset.pane === key);
+    root.dataset.tab = key;              // 2026-09-29: 紺の札の見立て・印／馬券は出馬表タブの時だけ出す（CSS）
     race20Tab = key;                     // 位置を預けるキーに使う（race20Key）
     // 回顧タブは開いた瞬間に初めて幅が確定するので測り直す（折りたたみと同じ理由）
     if (key === 'kaiko') setupFinishOrder();
+    if (key === 'kaiko' && r26LaneFn) r26LaneFn();   // 2026-09-29: レースを再生は開いた時に幅が決まる
     // 111-spec: 出馬表で付けた印をアキネーターにも出すため、開くたびに描き直す
     if (key === 'kaime' && akRefresh) akRefresh();
     // 2026-09-08: シミュレーターは出馬表タブへ移ったので、そちらを開いた時に描き直す
@@ -1024,6 +1031,7 @@ function setupTabs20(site) {
   window.addEventListener('hashchange', () => show(race20TabFromHash(), false));
 
   root.classList.add('tabs-ready');
+  document.body.classList.add('r26-page');   // 下に固定したタブのぶん、ページの下を空ける（CSS）
   race20SyncBarTop(root);
   show(race20TabFromHash(), false);
 }
@@ -3356,7 +3364,7 @@ function mmList(site) {
   const rows = [...site.horses].sort((a, b) => a.number - b.number).map(mmRow).join('');
   return `<div class="mm-list">
       <div class="mm-hd"><span class="h-my">自分</span><span class="h-ai">AI</span>
-        <span class="h-c"><span class="h-nm">馬</span><span class="h-tot">点数・評価</span>
+        <span class="h-c"><span class="h-nm">馬</span><span class="h-tot">評価</span>
           <span class="h-od">オッズ</span></span></div>
       ${rows}
     </div>`;
@@ -3883,10 +3891,12 @@ function renderShutuba20(site) {
   // 馬名ポップアップは 2026-08-27 にタブの外へ出した（renderPopups20）。
   // タブは display:none で切り替えるので、出馬表タブの中に置くと展開タブから
   // 馬番を押しても中身が組み上がらず、幅も高さも0のまま開いていた。
+  // 2026-09-29 ユーザー決定（mockup-230/233）: 上の帯と「印／新聞／展開／馬券」の行は外した。
+  // 荒れ度・メンバー・コースは紺の札（renderHead26）の升目へ、印／馬券の切り替えも紺の札の中へ。
+  // 新聞・展開・好走条件・材料は出さない（面の中身は他の処理が参照するので DOM には残す）
+  void up;
   return `
-    <div class="secthead">出馬表${memberLevelBand(site.prediction)}${crsBand(site)}${up ? up.band : ''}</div>
     <div class="shctl"></div>
-    ${mmBar(site)}
     <div class="shlist off">${cards}</div>
     ${renderPaper(site)}
     ${mmList(site)}
@@ -4309,6 +4319,9 @@ function brWhyCards(pl, br, byNum) {
 // 2026-09-28 ユーザー決定（mockup-227・案A）: win-6 の買い目を一番上に足し、その下は今までどおり
 // （win-5 の6案・win-4 の五街道5案）。bets_rules_w6 が無いレース（開始日より前など）は今までと同じ表示。
 function renderBetRules(site) {
+  // 2026-09-29 ユーザー決定（mockup-235 案C）: win-6・win-5・win-4 を成績表の3行にして、行ごとに折り畳む
+  const r26 = renderBetFold26(site);
+  if (r26) return r26;
   const w6 = site.bets_rules_w6;
   if (!w6 || (!w6.plans && !w6.skip)) return renderBetRulesW45(site);
   let html = '<div class="grphead">win-6 の買い目<span class="sub">荒れ度ごとに買い方が変わる・答え合わせ中</span></div>';
@@ -4418,10 +4431,11 @@ function renderBetRuleGroup(site, br, order, headCls, openAll) {
       const label = t.type.replace('三連', '3連');
       const ordered = /馬単|三連単/.test(t.type);
       // 2026-09-28: win-6 は券種ごとに決め方（desc）を添え、条件に合う馬がいない券種も「買わない」行を出す（決定3）
-      const desc = t.desc ? `<span class="bn" style="margin-left:8px">${escapeHtml(t.desc)}</span>` : '';
+      // 2026-09-29: 決め方（desc）の説明は外した（ユーザー「こういうのいらない」）。買わない理由だけ残す
+      const desc = '';
       if (t.none) {
         return `<tr class="btyhead"><td class="l" colspan="${ncols}">${label}<span class="bn">買わない</span>`
-          + `<span class="bn" style="margin-left:8px">${escapeHtml(t.desc || '')}：条件に合う馬がいない</span></td></tr>`;
+          + '<span class="bn" style="margin-left:8px">条件に合う馬がいない</span></td></tr>';
       }
       const tyHead = `<tr class="btyhead"><td class="l" colspan="${ncols}">${label}`
         + `<span class="bn">${t.tickets.length}点</span>${desc}</td></tr>`;
@@ -4587,6 +4601,285 @@ function renderShinbaNote20(site) {
     </div>`;
 }
 
+// ============================================================
+// 2026-09-29 レースページの作り直し（ユーザー決定。試作は Kelpie.Inc 部署/競馬部/仕様/予測サイト/）
+//   出馬表 … mockup-230（一覧）＋ mockup-233 案A（紺の札：レース情報・見立ての升目・激アツの絵・印／馬券）
+//   買い目 … mockup-235 案C（win-6・win-5・win-4 を成績表の3行にして折り畳む）
+//   回顧   … mockup-239 案B（中身は今までの描き方のまま、7枚のカードに分けて全部出す＋レースを再生）
+//   タブ   … 画面の一番下に固定（出馬表・買い目・回顧）
+// 出馬表の「新聞・展開・好走条件・材料」は入口を外した（ユーザー決定）。
+// ============================================================
+const R26_ICON = {
+  shutuba: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3.5" y="4" width="17" height="16" rx="2.5"/><path d="M7.5 9h9M7.5 12.5h9M7.5 16h6"/></svg>',
+  kaime: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 7.5a2 2 0 0 0 2-2h13a2 2 0 0 0 2 2v2a2.5 2.5 0 0 0 0 5v2a2 2 0 0 0-2 2h-13a2 2 0 0 0-2-2v-2a2.5 2.5 0 0 0 0-5z"/><path d="M14.5 6v12" stroke-dasharray="2 2"/></svg>',
+  kaiko: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4.5v4h4"/><path d="M12 8v4.5l3 2"/></svg>',
+};
+// 「前と後ろ」の言葉は升目の幅で2行に割れるので縮める（意味は同じ・mockup-230）
+const R26_LEGW = { '差しが決まりやすい': '差しが届く', '前が残りやすい': '前が残る' };
+const R26_MEMPOS = { S: 'いちばん上', A: '上から2番目', B: '真ん中', C: '下から2番目', D: 'いちばん下' };
+const r26Yen = (n) => Number(n || 0).toLocaleString('ja-JP');
+
+// 今週の馬場（本番の「今週の馬場」renderWeekTrend20 と同じ元の値）。内と外はそのレースの馬場だけ
+function r26Week(site) {
+  const db = (site.prediction || {}).day_bias;
+  if (!db) return null;
+  const surf = String((site.race || {}).surface || '').startsWith('芝') ? '芝' : 'ダート';
+  const io = db.surfaces ? (db.surfaces[surf] || null) : null;
+  const legs = db.legs || null;
+  if (!io && !legs) return null;
+  const n = db.n_races || (io && io.n_races);
+  const scope = db.prev_races ? `今週の${surf} ${n}レース（前日まで${db.prev_races}＋本日${db.today_races}）` : `本日の${surf} ${n}レース`;
+  return { scope, io, legs };
+}
+
+// 激アツの帯（mockup-233 案A：3連単の馬券に「100万超え」の判子）
+function r26HotBanner(site, bp) {
+  const t = (((BANDS || {}).bigpay || {}).tiers || {}).hot || {};
+  const pct = parseFloat(bp.percent);
+  const avg = parseFloat((String(bp.ratio_line || '').match(/全体([\d.]+)%/) || [])[1]);
+  const mult = avg ? (pct / avg).toFixed(1) : null;
+  const n = t.n || 0;
+  const over = Math.round(n * (t.over_rate || 0) / 100);
+  const man = t.over_yen ? Math.round(t.over_yen / 10000) : 10;
+  const r = site.race || {};
+  const FL = (x, y, sz) => `<g transform="translate(${x},${y}) scale(${sz / 24})"><path d="M12 1.5c.6 3.4 4.8 5.6 4.8 11.2a4.8 4.8 0 0 1-9.6 0c0-2.7 1.4-4 2-6.3 1 1 1.7 2.3 1.9 3.9.6-2.8.9-5.4.9-8.8z" fill="#F0582A"/><path d="M12 11.5c.3 1.6 2.4 2.6 2.4 5.2a2.4 2.4 0 0 1-4.8 0c0-1.6.9-2.3 1.4-3.5.5.6.8 1 .9 1.9.2-1.3.1-2.4.1-3.6z" fill="#FFC23D"/></g>`;
+  const box = (k) => `<g transform="translate(${22 + k * 40},46)"><rect width="30" height="26" rx="4" fill="#fff" stroke="#C9B89A"/><text x="15" y="10" font-size="6.5" fill="#8A7A60" text-anchor="middle">${k + 1}着</text><text x="15" y="22" font-size="11" font-weight="800" fill="#B9A988" text-anchor="middle">?</text></g>${k < 2 ? `<text x="${56 + k * 40}" y="63" font-size="9" fill="#C9B89A">→</text>` : ''}`;
+  const art = `<svg class="r26-hot-art" viewBox="0 0 170 128" role="img" aria-label="3連単の馬券に100万超え${escapeHtml(bp.percent)}%の判子">
+    <g transform="rotate(-6 80 64)">
+      <rect x="10" y="14" width="140" height="96" rx="7" fill="#FFFDF6" stroke="#E7D3B4" stroke-width="1.5"/>
+      <rect x="10" y="14" width="140" height="22" rx="7" fill="#E35D6A"/><rect x="10" y="28" width="140" height="8" fill="#E35D6A"/>
+      <text x="22" y="30" font-size="12" font-weight="800" fill="#fff">3連単</text>
+      <text x="138" y="30" font-size="8" fill="#fff" text-anchor="end">${escapeHtml(r.track || '')}${escapeHtml(String(r.race_number || ''))}R</text>
+      ${[0, 1, 2].map(box).join('')}
+      ${Array.from({ length: 26 }, (_, k) => `<rect x="${22 + k * 4.2}" y="84" width="${k % 3 ? 1.6 : 2.6}" height="14" fill="#6B5E4A"/>`).join('')}
+    </g>
+    <g transform="rotate(12 122 70)">
+      <circle cx="122" cy="70" r="33" fill="rgba(215,38,61,.08)" stroke="#D7263D" stroke-width="3.5"/>
+      <circle cx="122" cy="70" r="27" fill="none" stroke="#D7263D" stroke-width="1"/>
+      <text x="122" y="60" font-size="7.5" font-weight="800" fill="#D7263D" text-anchor="middle">100万超え</text>
+      <text x="122" y="79" font-size="18" font-weight="700" fill="#D7263D" text-anchor="middle" class="r26-num">${escapeHtml(bp.percent)}<tspan font-size="10">%</tspan></text>
+    </g>
+    ${FL(140, 2, 22)}
+  </svg>`;
+  const med = t.median ? `${(t.median / 10000).toFixed(1)}<small>万円</small>` : '—';
+  return `<div class="r26-hot">
+    <div class="r26-hot-hd"><svg viewBox="0 0 24 24" aria-hidden="true">${FL(0, 0, 24)}</svg><b>激アツ</b><span>20レースに1回の水準</span></div>
+    ${art}
+    <div class="r26-hot-cap">このレースの3連単が100万円を超える見込みは${escapeHtml(bp.percent)}%${mult ? `。全レース平均（${avg}%）の${mult}倍出やすい` : ''}。右の2つは同じ水準だった過去${n}レースの結果</div>
+    <div class="r26-hot-st">
+      <div><span>出やすさ</span><b>${mult || '—'}<small>倍</small></b>${avg ? `<em>平均${avg}%→今回${escapeHtml(bp.percent)}%</em>` : ''}</div>
+      <div><span>真ん中の配当</span><b>${med}</b></div>
+      <div><span>${man}万超え</span><b>${over}<small>/${n}回</small></b></div>
+    </div>
+  </div>`;
+}
+
+// 紺の札（mockup-233 案A）。レース情報＋見立ての升目＋印／馬券。升目と印／馬券は出馬表タブの時だけ（CSS）
+function renderHead26(site) {
+  const r = site.race;
+  const p = site.prediction || {};
+  const baba = (p.baba_detail || {}).going_weather || r.going || '—';
+  const turf = r.surface === '芝';
+  const buyOn = isBuyRace(r.race_id);
+  const buyBtn = `<button type="button" class="brchk r26-buy${buyOn ? ' on' : ''}" data-buyrace`
+    + ` aria-pressed="${buyOn ? 'true' : 'false'}"><span class="bx" aria-hidden="true"></span>買いレース</button>`;
+  const d = r.date ? new Date(`${r.date}T00:00:00+09:00`) : null;
+  const when = d ? `${d.getMonth() + 1}/${d.getDate()}(${'日月火水木金土'[d.getDay()]})` : escapeHtml(r.date || '');
+  const course = site.course_entities ? '<button type="button" class="r26-crs" data-pop="course">コース ▸</button>' : '';
+  const cls = r.class ? `<i>・</i><span>${escapeHtml(r.class)}${r.weight_rule ? `・${escapeHtml(r.weight_rule)}` : ''}</span>` : '';
+
+  // 見立ての升目（6列の格子。1行目は2つずつ、2行目は3つずつ使う）
+  const cells = [];
+  const cell = (span, lb, v, sub, hot, attr) => ({ span, html: (rs, sp) => `<${attr ? 'button type="button"' : 'div'} class="r26-c s${sp}${rs ? ' rs' : ''}"${attr || ''}>`
+    + `<span class="l">${lb}</span><span class="v${hot ? ' hot' : ''}">${v}</span><span class="n">${sub}</span></${attr ? 'button' : 'div'}>` });
+  const up = p.upset;
+  const upSel = up && Array.isArray(up.classes) ? (up.classes.find((c) => c.selected) || null) : null;
+  const upCell = upSel ? cell(2, '荒れ度 ▸', `${escapeHtml(up.label_name)} <b>${upSel.percent}</b><small>%</small>`,
+    up.classes.filter((c) => !c.selected).map((c) => `${escapeHtml(c.name)}${c.percent}`).join('・'), true, ' data-pop="upset"') : null;
+  const bp = p.bigpay && p.bigpay.field_size ? p.bigpay : null;
+  const tier = bp ? (bigpayTier(parseFloat(bp.percent)) || 'quiet') : 'off';   // bands が読めないときは1行で出す（renderBigPay と同じ）
+  const avg = bp ? parseFloat((String(bp.ratio_line || '').match(/全体([\d.]+)%/) || [])[1]) : NaN;
+  const mem = p.member_grade ? cell(2, 'メンバー', `<b>${escapeHtml(p.member_grade)}</b>`, `5段の${R26_MEMPOS[p.member_grade] || ''}`, false) : null;
+  let hot = '';
+  if (tier === 'quiet') {
+    if (upCell) cells.push(upCell);
+    cells.push(cell(2, '3連単100万超え', `<b>${escapeHtml(bp.percent)}</b><small>%</small>`, avg ? `平均の${(parseFloat(bp.percent) / avg).toFixed(1)}倍` : escapeHtml(bp.ratio_line || ''), false));
+    if (mem) cells.push(mem);
+  } else {
+    // 激アツは升目の上に帯で出す。4%未満は今までどおり出さない。どちらも残りで1行を分ける
+    if (tier === 'hot') hot = r26HotBanner(site, bp);
+    if (upCell) cells.push(upCell);
+    if (mem) cells.push(mem);
+  }
+  // 1行目の残り幅を埋める（2つなら3ずつ、1つなら6）
+  const row1 = cells.length;
+  if (row1 && row1 < 3) cells.forEach((c) => { c.span = 6 / row1; });
+  const wk = r26Week(site);
+  if (wk && wk.io) {
+    const flat = wk.io.label === '大きな偏りなし';
+    cells.push(cell(3, '今週・内と外', escapeHtml(String(wk.io.label).replace('傾向', '')), `3着内 内${Math.round(wk.io.inner_pct)}%・外${Math.round(wk.io.outer_pct)}%`, !flat));
+  }
+  if (wk && wk.legs) {
+    const base = wk.legs.base_pct != null ? wk.legs.base_pct : 62.2;
+    const lab = wk.legs.label || `前${Math.round(wk.legs.front_pct)}%`;
+    const flat = !wk.legs.label || wk.legs.label === '大きな偏りなし';
+    cells.push(cell(3, '今週・前と後ろ', escapeHtml(R26_LEGW[lab] || lab), `前${Math.round(wk.legs.front_pct)}%（ふだん${Math.round(base)}%）`, !flat));
+  }
+  if (cells.length && cells.length - row1 === 1) cells[cells.length - 1].span = 6;
+  let col = 0;
+  const grid = cells.map((c) => { const rs = col % 6 === 0; col += c.span; return c.html(rs, c.span); }).join('');
+  const seg = `<div class="r26-seg" role="tablist"><button type="button" data-view="mark" class="on">印</button>`
+    + `${site.shinba ? '' : '<button type="button" data-view="baken">馬券</button>'}</div>`;
+  return `<section class="r26-fa">
+    <div class="r26-hd"><span class="r26-when">${when} ${escapeHtml(r.track || '')}${escapeHtml(String(r.race_number || ''))}R${r.post_time ? ` ・ ${escapeHtml(r.post_time)}発走` : ''}</span>${buyBtn}</div>
+    <h1 class="r26-ttl">${r.grade ? `<span class="gb2">${escapeHtml(r.grade)}</span>` : ''}${escapeHtml(r.race_name || '')}</h1>
+    <div class="r26-cond"><span><span class="r26-sf${turf ? ' turf' : ''}">${escapeHtml(r.surface || '')}</span> <b>${r.distance}</b>m ${escapeHtml(r.direction || '')}</span><i>・</i><span>${escapeHtml(baba)}</span><i>・</i><span><b>${r.field_size}</b>頭</span>${cls}${course}</div>
+    <div class="r26-mit">
+      ${hot}
+      ${grid ? `<div class="r26-grid">${grid}</div>` : ''}
+      ${wk ? `<div class="r26-scope">内と外・前と後ろは ${escapeHtml(wk.scope)} から</div>` : ''}
+      ${seg}
+    </div>
+    ${p.predicted_at ? `<div class="r26-pt">予想: ${fmtDateTimeShort(p.predicted_at)}（${escapeHtml(p.odds_basis || '')}基準）</div>` : ''}
+  </section>`;
+}
+
+// 買い目（mockup-235 案C）。win-6・win-5・win-4 を成績表の3行にし、行を押すとその下に今までの案が開く。
+// win-5 の段が無い古いレースは null を返し、今までの表示に落とす
+function renderBetFold26(site) {
+  const has = (g) => !!(g && (g.plans || g.skip));
+  const w6 = site.bets_rules_w6;
+  const w5 = site.bets_rules_w5;
+  const br = site.bets_rules;
+  if (!has(w6) && !has(w5)) return null;
+  const showResult = site.status === 'final';
+  const groups = [];
+  const add = (key, name, g, order, headCls, openAll, note) => {
+    if (!has(g)) { groups.push({ key, name, body: `<div class="conf">このレースは ${name} の買い目がありません</div>` }); return; }
+    if (g.skip) { groups.push({ key, name, body: `<div class="conf">${escapeHtml(g.skip)}</div>` }); return; }
+    const keys = order.filter((k) => g.plans[k]);
+    const r = renderBetRuleGroup(site, g, keys, headCls, openAll);
+    groups.push({ key, name, pts: r.points, ret: r.ret,
+      body: (note || '') + r.secs + betRuleSumHtml(site, `${name} ${keys.length}案の合計（重複を除かず）`, r.points, r.ret) });
+  };
+  // 案はそのレースの荒れ度の1つ（＋100万フラグ）。しっかり見られるよう、win-6 の案は最初から開いておく
+  if (has(w6)) add('w6', 'win-6', w6, Object.keys(w6.plans || {}), '', true);
+  add('w5', 'win-5', w5, Object.keys((w5 || {}).plans || {}), '', false,
+    w5 && w5.backfilled ? '<div class="conf">遡って計算した参考値（当日は出していない）</div>' : '');
+  add('w4', 'win-4', br, BETRULE_ORDER, 'w4', false);
+  const num = (v) => (v == null ? '—' : v);
+  const rows = groups.map((g, i) => `<details class="r26-g"${i === 0 ? ' open' : ''}>
+      <summary class="r26-gr"><span class="nm"><i class="k-${g.key}"></i>${g.name}</span>
+        <span class="v">${num(g.pts)}</span><span class="v">${g.pts == null ? '—' : r26Yen(g.pts * 100)}</span>
+        <span class="v${g.ret ? ' hit' : ''}">${showResult && g.pts != null ? r26Yen(g.ret) : '—'}</span><span class="c" aria-hidden="true">▸</span></summary>
+      <div class="r26-gb">${g.body}</div></details>`).join('');
+  return `<section class="r26-bf"><div class="r26-bfh"><span>買い目</span><span>点数</span><span>金額</span><span>払戻</span><span></span></div>${rows}</section>`;
+}
+
+// 回顧（mockup-239 案B）。今までの描き方で組んだ部品を7枚のカードに振り分け、上にレースを再生を置く。
+// 回顧データ（site.review）の無い古いレースと結果前のレースは今までのまま
+let r26LaneFn = null;
+function setupKaiko26(site) {
+  if (site.status !== 'final' || !site.review) return;
+  const pane = document.querySelector('#race-content #pane-kaiko');
+  if (!pane) return;
+  const SECS = [['chaku', '着順'], ['donna', 'どんなレース'], ['lap', 'ラップ'], ['corner', '通過順'], ['mark', '印と買い目'], ['pay', '払戻'], ['furi', '振り返り']];
+  const parts = Object.fromEntries(SECS.map(([k]) => [k, []]));
+  let cur = 'chaku';
+  // 見出し（eyebrow）はカードの見出しが代わりをするので捨てる（「気になった馬」だけ中に残す）
+  [...pane.children].forEach((el) => {
+    const t = (el.textContent || '').trim();
+    let keep = true;
+    if (el.classList.contains('secthead')) keep = false;
+    else if (el.classList.contains('eyebrow')) {
+      if (/^着順/.test(t)) { cur = 'chaku'; keep = false; }
+      else if (/どんなレース/.test(t)) { cur = 'donna'; keep = false; }
+      else if (/印と買い目/.test(t)) { cur = 'mark'; keep = false; }
+      else cur = 'furi';
+    } else if (el.classList.contains('rv-lap')) cur = 'lap';
+    else if (el.classList.contains('rv-corner')) cur = 'corner';
+    else if (el.matches('table.rv-pay')) cur = 'pay';
+    else if (el.classList.contains('rv-blk') && cur !== 'furi') cur = 'furi';
+    if (keep) parts[cur].push(el);
+  });
+  const res = site.result || {};
+  const pay = res.payouts || {};
+  const top = (res.top3 || [])[0];
+  const HS = site.horses.filter((h) => !h.scratched);
+  const HB = Object.fromEntries(HS.map((h) => [h.number, h]));
+  const txt = (k, sel) => { const e = parts[k].find((n) => n.matches && n.matches(sel)); return e ? e.textContent.trim().replace(/\s+/g, ' ') : ''; };
+  const summary = (k) => {
+    if (k === 'chaku') return top ? `1着 <b>${top.number}</b> ${escapeHtml(top.name)}（${top.popularity}番人気）` : '';
+    if (k === 'donna') return escapeHtml(txt('donna', '.rv-lead'));
+    if (k === 'lap') return escapeHtml(txt('lap', '.rv-note').replace(/（.*$/, ''));
+    if (k === 'corner') { const w = top && HB[top.number]; return w && w.passing ? `勝ち馬 <b>${escapeHtml(w.passing)}</b>` : ''; }
+    if (k === 'mark') { const m = txt('mark', '.rv-msum').match(/3着以内\s*(\d+)\/(\d+)頭/); return m ? `印の3着以内 <b class="${+m[1] ? 'hit' : ''}">${m[1]}</b>/${m[2]}頭` : ''; }
+    if (k === 'pay') return pay.sanrentan ? `3連単 <b>${r26Yen([].concat(pay.sanrentan)[0].payout)}</b>円` : '';
+    if (k === 'furi') { const n = parts.furi.filter((e) => e.classList && e.classList.contains('rv-nc')).length; return n ? `気になった馬 <b>${n}</b>頭` : ''; }
+    return '';
+  };
+
+  // レースを再生：1角→4角は回顧の通過順（review.race.corners の元の文字列）、ゴールは着順
+  const parseCorner = (str) => {
+    const out = []; let i = 0; let gap = false;
+    while (i < str.length) {
+      const c = str[i];
+      if (c === '(') { const j = str.indexOf(')', i); out.push({ ns: str.slice(i + 1, j).replace(/\*/g, '').split(',').map(Number), gap }); gap = false; i = j + 1; continue; }
+      if (c === '-') { gap = true; i += 1; continue; }
+      if (/\d/.test(c)) { let j = i; while (j < str.length && /\d/.test(str[j])) j += 1; out.push({ ns: [Number(str.slice(i, j))], gap }); gap = false; i = j; continue; }
+      i += 1;
+    }
+    return out;
+  };
+  const corners = (site.review.race || {}).corners || {};
+  const CPS = [['1c', '1角'], ['2c', '2角'], ['3c', '3角'], ['4c', '4角']].filter(([k]) => corners[k])
+    .map(([k, l]) => ({ l, groups: parseCorner(corners[k]) }))
+    .concat([{ l: 'ゴール', groups: HS.filter((h) => h.finish).sort((a, b) => a.finish - b.finish).map((h) => ({ ns: [h.number], gap: false })) }]);
+  const mk = (h) => [h.ability_mark, h.landmine_reason != null ? '地雷' : null, h.ana_reason != null ? '穴' : null].filter(Boolean);
+  let cp = CPS.length - 1;
+  let playing = null;
+  const stage = CPS.length > 1 ? `<section class="r26-rp">
+      <div class="r26-rp-top"><b>レースを再生</b><span>1角からゴールまで、並びがどう変わったか（左が先頭）</span></div>
+      <div class="r26-lane${site.race.surface === '芝' ? '' : ' dirt'}"><div class="rail"></div><span class="dir">← 進む向き</span>
+        ${HS.filter((h) => h.finish).map((h) => { const m = mk(h); return `<div class="r26-h${m.length ? ' me' : ''}" data-rh="${h.number}">${m.length ? `<em>${escapeHtml(m[0])}</em>` : ''}${umaBox(h.number, h.gate, 'sm')}</div>`; }).join('')}</div>
+      <div class="r26-cps">${CPS.map((c, i) => `<button type="button" data-rcp="${i}" class="${cp === i ? 'on' : ''}">${c.l}</button>`).join('')}</div>
+      <div class="r26-play"><button type="button" data-rplay>▶ 1角から再生</button><span>金の枠は印・穴・地雷の馬</span></div>
+    </section>` : '';
+
+  pane.innerHTML = stage + SECS.filter(([k]) => parts[k].length).map(([k, t]) => `<section class="r26-kc" data-kc="${k}">
+      <div class="r26-kch"><span class="t">${t}</span><span class="s">${summary(k)}</span></div><div class="r26-kcb"></div></section>`).join('');
+  pane.querySelectorAll('.r26-kc').forEach((c) => { const b = c.querySelector('.r26-kcb'); parts[c.dataset.kc].forEach((n) => b.appendChild(n)); });
+
+  const lane = pane.querySelector('.r26-lane');
+  const place = () => {
+    if (!lane || !lane.clientWidth) return;   // 回顧タブが隠れている間は幅が0なので、開いた時にもう一度呼ぶ
+    const c = CPS[cp];
+    const W = lane.clientWidth - 16;
+    const gs = c.groups.length + c.groups.filter((g) => g.gap).length;
+    const step = Math.min(24, W / Math.max(gs, 1));
+    let x = 8;
+    c.groups.forEach((g) => {
+      if (g.gap) x += step;
+      g.ns.forEach((n, k) => { const el = lane.querySelector(`[data-rh="${n}"]`); if (el) el.style.transform = `translate(${x}px, ${26 + k * 24}px)`; });
+      x += step;
+    });
+    pane.querySelectorAll('[data-rcp]').forEach((b) => b.classList.toggle('on', +b.dataset.rcp === cp));
+  };
+  const stop = () => { clearInterval(playing); playing = null; const b = pane.querySelector('[data-rplay]'); if (b) b.textContent = '▶ 1角から再生'; };
+  pane.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-rcp]');
+    if (b) { stop(); cp = +b.dataset.rcp; place(); return; }
+    if (e.target.closest('[data-rplay]')) {
+      if (playing) { stop(); return; }
+      cp = 0; place();
+      pane.querySelector('[data-rplay]').textContent = '止める';
+      playing = setInterval(() => { if (cp >= CPS.length - 1) { stop(); return; } cp += 1; place(); }, 1100);
+    }
+  });
+  window.addEventListener('resize', place);
+  r26LaneFn = place;
+}
+
 function buildRace20Html(site, oddsAll) {
   const banner = site.status === 'cancelled' ? '<div class="alert">このレースは中止になりました</div>' : '';
   // 結果が出ているレースだけ「回顧」に赤ドットを出す（renderVerification20 と同じ判定）
@@ -4597,20 +4890,21 @@ function buildRace20Html(site, oddsAll) {
     // 新馬は買い目を出さない（買い目モデル bet-1 は新馬を1レースも学習していない）。
     // 空のタブを残すと「押したのに何も無い」になるので、タブごと落とす
     .filter((t) => t.key !== 'kaime' || !site.shinba);
+  // 2026-09-29 ユーザー決定（mockup-230）: タブは画面の一番下に固定し、アイコン＋文字にした
   const bar = tabs.map((t) => `<button type="button" class="t20" role="tab"`
     + ` data-tab="${t.key}" aria-controls="pane-${t.key}" aria-selected="false">`
-    + `${!settled && t.labelPre ? t.labelPre : t.label}`
+    + `${R26_ICON[t.key] || ''}<span class="tl">${!settled && t.labelPre ? t.labelPre : t.label}</span>`
     + `${t.key === 'kaiko' && settled ? '<span class="dot" aria-hidden="true"></span>' : ''}`
     + `</button>`).join('');
   const pane = (key, body) => `<div class="tabpane" id="pane-${key}" data-pane="${key}"`
     + ` role="tabpanel">${body}</div>`;
   return `
-    <div class="race20">
-      ${renderHeader20(site)}
+    <div class="race20 r26">
+      ${renderHead26(site)}
       ${banner}
       ${renderShinbaNote20(site)}
       <div class="tabbar" role="tablist">${bar}</div>
-      ${pane('shutuba', renderMitate20(site) + renderShutuba20(site))}
+      ${pane('shutuba', renderShutuba20(site))}
       ${/* 2026-09-09 ユーザー決定: 買い目シミュレーター（質問で決める）は買い目タブから外す。
             renderOddsMasterSection は古い版のページ（race20 でない方）で使い続けるので残す */''}
       ${pane('kaime', renderBetRules(site))}
@@ -5797,6 +6091,7 @@ async function main() {
     ${renderCounterFold(site)}
   `;
   document.getElementById('race-content').innerHTML = html;
+  if (is20) setupKaiko26(site);   // 2026-09-29（mockup-239 案B）: 回顧をカード7枚＋レースを再生に
   const simCtl = setupOddsMasterPanel(site, oddsAll);
   setupAkinatorPanel(site, oddsAll, simCtl);
   setupBetSheet(site, oddsAll);   // 128-spec: 下に貼る要約バーとドロワー
