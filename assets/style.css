@@ -4336,3 +4336,18 @@ body.r26-page.has-bsbar .racepage{padding-bottom:calc(150px + env(safe-area-inse
 .race20.r26 .r26-gb > .secthead + .conf{border-radius:0 0 10px 10px;padding:0 12px 12px;color:var(--cap);font-size:12px}
 .race20.r26 .r26-gb .brdet > :not(summary){margin-left:10px;margin-right:10px}
 .race20.r26 .r26-gb .brdet > table{width:calc(100% - 20px);margin-bottom:10px}
+
+/* WIN5の配当（2026-09-30）：選ぶ／外すはチェック欄だけ。指で押しやすいよう押せる範囲を枠の外まで広げる */
+.ak-wrap .ak-h.w5row{cursor:default}
+.ak-wrap .ak-h.w5row:hover{background:#fff}
+.ak-wrap .ak-h.w5row.sel:hover{background:var(--green-row)}
+.ak-wrap .ak-h.w5row .nm{cursor:pointer}
+.ak-wrap .ak-h .chk.w5chk{position:relative;cursor:pointer}
+.ak-wrap .ak-h .chk.w5chk::before{content:"";position:absolute;inset:-14px -12px}
+/* 馬名から開く「1頭だけ見る」画面の枠（race.html?yf= を重ねる） */
+.w5view{position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.35)}
+.w5view iframe{position:absolute;inset:0;width:100%;height:100%;border:0;opacity:0;background:transparent}
+.w5view.on iframe{opacity:1}
+.w5view.on .w5view-wait{display:none}
+.w5view-wait{position:absolute;left:50%;top:45%;transform:translateX(-50%);padding:10px 18px;
+  border-radius:8px;background:#fff;font-size:13px;color:#444;box-shadow:0 2px 10px rgba(0,0,0,.15)}

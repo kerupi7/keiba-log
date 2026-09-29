@@ -3952,6 +3952,29 @@ function setupShutuba20(site) {
   setupPaperZoom(root);
   setupPopups20(root, site);
   setupMyMarks(site);   // 111-spec: 自分の印
+  setupYosoEmbed();
+}
+
+// 2026-09-30 ユーザー指示：WIN5の画面で馬名を押したら、出馬表の馬名と同じ「1頭だけ見る」画面を出す。
+//   その画面（yoso.js）はレース画面の部品を借りて組むので、WIN5は race.html?id=…&yf=馬番 を
+//   枠（iframe）で読み込み、ここで開く。開けた・閉じた・開けなかったを親（win5.js）へ知らせる。
+//   yf の無い普通のレース画面では何もしない。
+function setupYosoEmbed() {
+  const n = new URLSearchParams(location.search).get('yf');
+  if (!/^\d+$/.test(n || '') || window.parent === window) return;
+  const tell = (type) => { try { window.parent.postMessage({ type, n }, location.origin); } catch (e) { /* 親が居なければ何もしない */ } };
+  document.body.classList.add('yf-embed');
+  (async () => {
+    // yoso.js はレースの中身を読み終えてから YosoView を出すので、出るまで待つ（最大10秒）
+    for (let i = 0; i < 100 && !window.YosoView; i++) await new Promise((r) => setTimeout(r, 100));
+    if (!window.YosoView || !window.YosoView.open(n)) { tell('yf-fail'); return; }
+    tell('yf-open');
+    new MutationObserver((_, ob) => {
+      if (document.querySelector('.yf')) return;
+      ob.disconnect();
+      tell('yf-close');
+    }).observe(document.body, { childList: true });
+  })();
 }
 
 // 105-spec §5.5: 馬名ポップアップ。閉じ方は「閉じる」ボタン・背景クリック・Esc の3つ。

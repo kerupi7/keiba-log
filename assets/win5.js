@@ -297,12 +297,14 @@ function w5pRender() {
     w5pState.day = Number(x.dataset.w5pday); w5pInitSel(); w5pRender();
   });
   box.querySelectorAll('[data-w5pleg]').forEach(x => x.onclick = (e) => {
-    // 馬名を押したときは選ばずに戦績の札を開く（race.js の RacePopup）
+    // 馬名・馬番を押したときは選ばずに馬の詳細を開く。
+    // 選ぶ／外すはチェック欄を押したときだけ（2026-09-30 ユーザー指示。行のほかの所は何もしない）
     const nm = e.target.closest('[data-w5hpop]');
-    if (nm && nm.dataset.w5hpop && window.RacePopup) {
+    if (nm && nm.dataset.w5hpop) {
       w5pOpenHorse(nm.dataset.w5hpop, nm.dataset.w5hnum);
       return;
     }
+    if (!e.target.closest('.chk')) return;
     const lg = Number(x.dataset.w5pleg), n = Number(x.dataset.w5pnum);
     const set = w5pState.sel[lg];
     if (set.has(n)) set.delete(n); else set.add(n);
@@ -563,10 +565,13 @@ function w5pDayTabs() {
       + ` data-w5pday="${i}">${escapeHtml(d.date)}</button>`).join('') + '</div>';
 }
 
-// 馬名から戦績の札を開く（2026-09-14）。レースの中身は data/races/{race_id}.json を
-// 押したときに初めて読み、同じレースは読み直さない。読めなければ何もしない（画面は止めない）。
+// 馬名・馬番から、出馬表の馬名と同じ「1頭だけ見る」画面を開く（2026-09-30 ユーザー指示）。
+//   その画面はレース画面の部品を借りて組むので、race.html?id=…&yf=馬番 を枠で重ねて読み込む
+//   （race.js の setupYosoEmbed が開いて知らせてくる）。開けないときは今までの戦績の札に落とす。
+// 戦績の札（2026-09-14）はレースの中身 data/races/{race_id}.json を押したときに初めて読み、
+// 同じレースは読み直さない。読めなければ何もしない（画面は止めない）。
 const w5pSites = {};
-async function w5pOpenHorse(raceId, number) {
+async function w5pOpenPopup(raceId, number) {
   try {
     if (!w5pSites[raceId]) w5pSites[raceId] = await getData(`data/races/${raceId}.json`);
     window.RacePopup.open(w5pSites[raceId], number);
@@ -575,25 +580,62 @@ async function w5pOpenHorse(raceId, number) {
   }
 }
 
+let w5pView = null;   // いま重ねている枠
+function w5pCloseView() {
+  if (!w5pView) return;
+  clearTimeout(w5pView.timer);
+  w5pView.el.remove();
+  w5pView = null;
+  document.body.style.overflow = '';
+}
+
+function w5pOpenHorse(raceId, number) {
+  if (w5pView) return;
+  const el = document.createElement('div');
+  el.className = 'w5view';
+  el.innerHTML = '<div class="w5view-wait">読み込み中…</div>'
+    + `<iframe title="馬の詳細" src="race.html?id=${encodeURIComponent(raceId)}&yf=${encodeURIComponent(number)}"></iframe>`;
+  document.body.appendChild(el);
+  document.body.style.overflow = 'hidden';
+  // 10秒たっても開かなければ、今までの札に落とす
+  const timer = setTimeout(() => { w5pCloseView(); if (window.RacePopup) w5pOpenPopup(raceId, number); }, 10000);
+  w5pView = { el, timer, raceId, number };
+}
+
+window.addEventListener('message', (e) => {
+  if (e.origin !== location.origin || !w5pView || !e.data) return;
+  const { raceId, number } = w5pView;
+  if (e.data.type === 'yf-open') {
+    clearTimeout(w5pView.timer);
+    w5pView.el.classList.add('on');
+  } else if (e.data.type === 'yf-close') {
+    w5pCloseView();
+    w5pRender();          // 開いている間に印を付け替えたときのため、印の表示を読み直す
+  } else if (e.data.type === 'yf-fail') {
+    w5pCloseView();
+    if (window.RacePopup) w5pOpenPopup(raceId, number);
+  }
+});
+
 function w5pHorseRow(lg, i, h) {
   const on = w5pState.sel[i].has(h.number);
   const mk = w5pMyMarks(lg.race_id)[String(h.number)];
   const my = W5P_MY_OK[mk]
     ? `<span class="ak-mk ${W5P_MY_CLS[mk]}">${mk}</span>`
     : '<span class="ak-mk none">・</span>';
-  return `<button class="ak-h${on ? ' sel' : ''}" data-w5pleg="${i}" data-w5pnum="${h.number}">`
+  return `<button class="ak-h w5row${on ? ' sel' : ''}" data-w5pleg="${i}" data-w5pnum="${h.number}">`
     // 2026-09-14: 馬番だけは押すと戦績の札を開く（出馬表と同じ札）。行のほかの所は今までどおり選ぶ。
     // 同日、馬名から馬番へ移した（ユーザー決定）
     + `<span class="w5hno" data-w5hpop="${escapeHtml(lg.race_id || '')}" data-w5hnum="${h.number}"`
     + ` title="${escapeHtml(h.name)}の戦績を見る">${umaBox(h.number, h.gate, 'sm')}</span>` + my
-    // 2026-09-29: 馬名を押しても戦績の札を開く（ユーザー決定。馬番もそのまま開く）
+    // 2026-09-29: 馬名を押しても馬の詳細を開く（ユーザー決定。馬番もそのまま開く）
     + `<span class="nmwrap"><span class="nm" data-w5hpop="${escapeHtml(lg.race_id || '')}" data-w5hnum="${h.number}">`
     + `${escapeHtml(h.name)}</span>`
     + `<span class="meta"><span class="od${oddsHotClass(h.odds)}">`
     + `${h.odds.toFixed(1)}倍</span>`
     + `<span class="pop">${h.popularity == null ? '' : h.popularity + '番人気'}</span>`
     + `<span class="pop">${W5P_BAND[w5pBandOf(h.odds)]}</span></span></span>`
-    + '<span class="chk"></span></button>';
+    + '<span class="chk w5chk" role="checkbox" aria-checked="' + on + '"></span></button>';
 }
 
 // ===== 選ぶたびに動く配当のものさし（2026-08-26・1鞍ずつ選ぶ画面で使う）=====
