@@ -532,7 +532,8 @@ function w5pCurrentDay() {
   return w5pDays[w5pState.day] || w5pDays[0] || null;
 }
 
-// 出馬表で付けた印を初期値にする。印が無い鞍は空のまま（勝手に馬を足さない）
+// 出馬表で付けた印のうち◎だけを初期値にする（2026-09-29 ユーザー決定。○▲△☆✓は印を見せるだけで選ばない）。
+// ◎が無い鞍は空のまま（勝手に馬を足さない）
 function w5pInitSel() {
   const day = w5pCurrentDay();
   w5pState.sel = [0, 1, 2, 3, 4].map(() => new Set());
@@ -541,7 +542,7 @@ function w5pInitSel() {
   day.legs.forEach((lg, i) => {
     const mk = w5pMyMarks(lg.race_id);
     (lg.horses || []).forEach(h => {
-      if (W5P_MY_OK[mk[String(h.number)]]) w5pState.sel[i].add(h.number);
+      if (mk[String(h.number)] === '◎') w5pState.sel[i].add(h.number);
     });
   });
 }
@@ -585,7 +586,9 @@ function w5pHorseRow(lg, i, h) {
     // 同日、馬名から馬番へ移した（ユーザー決定）
     + `<span class="w5hno" data-w5hpop="${escapeHtml(lg.race_id || '')}" data-w5hnum="${h.number}"`
     + ` title="${escapeHtml(h.name)}の戦績を見る">${umaBox(h.number, h.gate, 'sm')}</span>` + my
-    + `<span class="nmwrap"><span class="nm">${escapeHtml(h.name)}</span>`
+    // 2026-09-29: 馬名を押しても戦績の札を開く（ユーザー決定。馬番もそのまま開く）
+    + `<span class="nmwrap"><span class="nm" data-w5hpop="${escapeHtml(lg.race_id || '')}" data-w5hnum="${h.number}">`
+    + `${escapeHtml(h.name)}</span>`
     + `<span class="meta"><span class="od${oddsHotClass(h.odds)}">`
     + `${h.odds.toFixed(1)}倍</span>`
     + `<span class="pop">${h.popularity == null ? '' : h.popularity + '番人気'}</span>`
