@@ -709,7 +709,9 @@
     M225_ITEMS[h.number] = items;
     const kg = h.weight_carried != null ? String(h.weight_carried).replace(/\.0$/, '') : '—';
     const head = `<div class="m225-hd">${umaBox(h.number, h.gate)}<b class="m225-nm">${esc(h.name)}</b>`
-      + `<span class="m225-sub">${esc(h.sex_age || '')} ${esc(kg)}kg ${esc(h.jockey || '')}</span>`
+      // 年齢・斤量・騎手は濃く大きく、前走からの間隔（h.rotation・例 中53週）を最後に添える（2026-09-29 ユーザー）
+      + `<span class="m225-sub"><b>${esc(h.sex_age || '')}</b><b>${esc(kg)}kg</b><b>${esc(h.jockey || '')}</b>`
+      + `${h.rotation ? `<i class="m225-rot">${esc(h.rotation)}</i>` : ''}</span>`
       + `<span class="m225-od"><b class="bt-num">${h.odds != null ? h.odds.toFixed(1) : '—'}</b>倍 <b class="bt-num">${esc(h.popularity ?? '—')}</b>人気</span></div>`;
     const rc = h.rankcard || {};
     const total = `<div class="m225-tot m225-t" data-i="total"><span class="m225-tl">総合</span><b class="bt-num">${Math.round(rc.p * 100)}<small>点</small></b>`
