@@ -35,7 +35,7 @@ function backfillNote(doc) {
     + '本番化の日（9/15）に発走前のオッズで遡って計算した参考値です。当日は出していません。</div>';
 }
 
-// 2026-09-28: win-6 の16券種の「過去の答え合わせ」（参考・data/w6_reference.json）。
+// 2026-09-28: win-6 の券種の「過去の答え合わせ」（09-30 から17券種）（参考・data/w6_reference.json）。
 // 決め方を選ぶのに使った期間の数字なので、本番の記録（上の表）とは混ぜない（handoff_2026-09-28_win6-betrule-ans.md 決定4）
 function w6RefBox(ref) {
   if (!ref || !Array.isArray(ref.rows) || !ref.rows.length) return '';
@@ -68,7 +68,7 @@ function render(doc, ref) {
   el.innerHTML = `
     <div class="mhead"><div class="nm">各モデルの成績</div>
       <div class="ds">参考値。1点100円で買ったとして数えた</div></div>
-    <div class="msec"><span class="mdlchip">win-6</span>荒れ度ごとの16券種＋100万フラグの3連単
+    <div class="msec"><span class="mdlchip">win-6</span>荒れ度ごとの17券種＋100万フラグの3連単
       <span class="msecnote">${escapeHtml(periodText(doc.period_w6, doc.n_races_w6) || '載せた日から記録')}</span></div>
     ${w6.length ? groupTable(w6)
       : '<div class="mnote">載せた日から数え始めます。まだ結果の出たレースがありません。</div>'}
