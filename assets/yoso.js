@@ -2425,7 +2425,7 @@
   // ---------- 印を決める画面を1画面の天秤に（2026-09-29 壁打ち・試作 mockup-228・handoff_2026-09-29_duel-onescreen.md） ----------
   //   ランク札（rankcard）が全頭にあるレースだけこの画面。無いレース（新馬など）は下の vCompare（Apple の比べる表）のまま
   //   上に2頭の名前、真ん中に5つの段（ランク札の段）、下に「この馬を選ぶ」。縦には送らない。
-  //   天秤は段の大きいランクの差だけで傾く（同じ＝水平・1つ違い＝少し・2つ以上＝大きく）。片方が「初」なら水平。
+  //   天秤は段の大きいランクの差だけで傾く（同じ＝水平・差1〜4で4段階に傾きと色の濃さが増す＝tbScale）。片方が「初」なら水平。
   //   点の細かい差は使わない（ランクの文字と天秤の向きが食い違ったため）。中の札の小さいランクは真ん中に出さない
   //   （札ごとの重さがバラバラで、見た目と傾きが食い違うため）。札は段を押すと下から出る。
   //   外したもの：金の枠・3着以内の見込みの%・下のまとめ文・棒。
@@ -2442,13 +2442,16 @@
   const tbV = (g) => { const i = TB_R.indexOf(g); return i < 0 ? null : 5 - i; };   // 初は null
   const tbChip = (g, cls = '') => `<span class="tb-g ${TB_R.includes(g) ? g : 'F'} ${cls}">${TB_R.includes(g) ? g : esc(g || '—')}</span>`;
   // 天秤：上の側の皿が下がって青くなる
+  //   2026-09-30 ユーザー指示「ランク差に応じて傾き度合いと天秤の色が変わる形に」：
+  //   差1〜4（S対Dで4）ごとに5°ずつ傾き、竿と下がった皿の青が差の分だけ濃くなる（.s1〜.s4）。前は差1＝9°・2以上＝16°の2段だった
   function tbScale(side, steps) {
-    const deg = side === 0 ? 0 : steps >= 2 ? 16 : 9;
+    const st = side === 0 ? 0 : Math.min(Math.max(steps, 1), 4);
+    const deg = st * 5;
     const t = (deg * Math.PI) / 180, cx = 36, cy = 12, r = 27;
     const dy = side * r * Math.sin(t);
     const lx = cx - r * Math.cos(t), rx = cx + r * Math.cos(t), ly = cy - dy, ry = cy + dy;
     const pan = (x, y, w) => `<path class="str" d="M${x} ${y}l-7 12M${x} ${y}l7 12"/><path class="pan ${w ? 'w' : ''}" d="M${x - 10} ${y + 12}h20a10 5 0 0 1-20 0z"/>`;
-    return `<svg viewBox="0 0 72 44" class="tb-scale" aria-hidden="true"><path class="post" d="M34.5 12h3v28h-3zM28 40h16v3H28z"/>
+    return `<svg viewBox="0 0 72 44" class="tb-scale s${st}" aria-hidden="true"><path class="post" d="M34.5 12h3v28h-3zM28 40h16v3H28z"/>
       <path class="beam" d="M${lx} ${ly}L${rx} ${ry}"/>${pan(lx, ly, side === -1)}${pan(rx, ry, side === 1)}</svg>`;
   }
   // 札の表示：天秤と同じランク札の値をそのまま出す。枠・脚質も展開のページの値に写さない
