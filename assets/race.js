@@ -3310,7 +3310,9 @@ function mmSub(h) {
   const bw = h.body_weight != null
     ? `${h.body_weight}${h.body_weight_diff != null
       ? `(${h.body_weight_diff > 0 ? '+' : ''}${h.body_weight_diff})` : ''}` : '';
-  const j = h.jockey && h.jockey !== 'N/A' ? h.jockey : '—';
+  // 全角の英字・記号（Ｍ．デムーロ）は半角にする。1行に収めるため（2026-10-06）
+  const j = h.jockey && h.jockey !== 'N/A'
+    ? h.jockey.replace(/[！-～]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xFEE0)) : '—';
   return `<span class="mm-sub"><span>${escapeHtml(h.sex_age ?? '')}</span>`
     + `<span>${escapeHtml(j)}</span><span>${escapeHtml(kg)}kg</span>`
     + (bw ? `<span>${escapeHtml(bw)}</span>` : '') + '</span>';
@@ -3437,9 +3439,40 @@ function mmChanged() {
   if (akRefresh && ak && !ak.hidden) akRefresh();
 }
 
+// 一覧の2行目が欄に入らない馬（例 牡2 Ｍ．デムーロ 56kg 484(-12)）は、2行に折らずに字を小さくする
+//   （2026-10-06 ユーザー「2行にならないように直して」）。0.5px ずつ 8px まで。
+//   8px でも入らない時だけ、元の大きさに戻して項目の切れ目で折り返す（切れて読めなくなるよりよい）。
+//   一覧が隠れている間は幅0で測れないので、見えた時・幅が変わった時に ResizeObserver で測り直す。
+function fitMmSub(list) {
+  if (!list.clientWidth) return;
+  list.querySelectorAll('.mm-row .mm-sub').forEach((el) => {
+    el.classList.remove('wrap');
+    el.style.removeProperty('font-size');
+    let fs = parseFloat(getComputedStyle(el).fontSize);
+    while (el.scrollWidth > el.clientWidth + 0.5 && fs > 8) {
+      fs -= 0.5;
+      el.style.fontSize = `${fs}px`;
+    }
+    if (el.scrollWidth > el.clientWidth + 0.5) {
+      el.style.removeProperty('font-size');
+      el.classList.add('wrap');
+    }
+  });
+}
+
 function setupMyMarks(site) {
   const root = document.querySelector('.race20');
   if (!root || !root.querySelector('.mm-list')) return;
+  const mmList = root.querySelector('.mm-list');
+  // 測り直すのは幅が変わった時だけ（字を縮めると高さが変わり、また呼ばれるのを防ぐ）
+  let mmFitW = -1;
+  const refit = () => {
+    if (mmList.clientWidth === mmFitW) return;
+    mmFitW = mmList.clientWidth;
+    fitMmSub(mmList);
+  };
+  refit();
+  if (window.ResizeObserver) new ResizeObserver(refit).observe(mmList);
 
   site.horses.forEach((h) => { MM.by[String(h.number)] = h; });
   mmLoad(site.race.race_id);

@@ -4272,9 +4272,11 @@ body.r26-page.has-bsbar .racepage{padding-bottom:calc(150px + env(safe-area-inse
 .race20.r26 .mm-list{margin-top:0;background:#fff;border:0;border-radius:12px;box-shadow:0 1px 2px rgba(0,0,0,.05);overflow:hidden}
 .race20.r26 .yf-entry{background:#fff}
 .race20.r26 .bakenview{background:#fff;border-radius:12px;padding:8px}
-/* 2行目（性齢・騎手・斤量・馬体重）は項目の切れ目でだけ折り返す（字の途中では折らない） */
-.race20.r26 .mm-row .mm-sub{white-space:normal;flex-wrap:wrap}
+/* 2行目（性齢・騎手・斤量・馬体重）は1行に収める（2026-10-06 ユーザー「2行にならないように」）。
+   入らない馬は race.js の fitMmSub が字を小さくする。8px でも入らない時だけ、項目の切れ目で折り返す（.wrap） */
+.race20.r26 .mm-row .mm-sub{white-space:nowrap;flex-wrap:nowrap}
 .race20.r26 .mm-row .mm-sub > span{white-space:nowrap}
+.race20.r26 .mm-row .mm-sub.wrap{white-space:normal;flex-wrap:wrap}
 .race20.r26 .r26-buy .bx{width:12px;height:12px;border:1.5px solid rgba(255,255,255,.85);border-radius:3px;display:inline-block}
 .race20.r26 .r26-buy.on .bx{border-color:var(--navy);background:var(--navy)}
 
