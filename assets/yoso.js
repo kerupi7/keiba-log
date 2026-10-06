@@ -618,6 +618,10 @@
     if (tg) add('条件', '馬場', tg === '良' ? '良馬場' : '道悪');
     const tz = m225Zone(h.number, H.length);
     if (tz) add('条件', '内外', `${tz}枠`);
+    // 頭数（rankcard-6・2026-10-06 ユーザー「条件に頭数のレースごとでの好走率を載せたい。小頭数、多頭数みたいな感じで」）：
+    //   今日と同じ頭数の帯（少頭数・中頭数・多頭数）での好走率。名前は「多頭数 16頭〜」。rankcard-5 以前の公開分は札が無いので出さない
+    const fbc = cards['頭数'];
+    if (fbc && fbc.band) add('条件', '頭数', `${fbc.band} ${m225FieldRange(fbc.range)}`);
     const sm = ((site.prediction || {}).scenario || {}).main || {};
     const fc = cards['流れ'];
     if (fc) {
@@ -658,6 +662,8 @@
       pc.rate != null && pc.course_rate != null ? { val: `${Math.round(pc.rate)}%・平均${Math.round(pc.course_rate)}%` } : undefined);
     return out;
   }
+  // 頭数の帯の幅を短く（10頭以下→〜10頭・11〜15頭→11-15頭・16頭以上→16頭〜）。札の名前の欄が狭いため（幅375で「中頭数 11〜15頭」は切れた）
+  const m225FieldRange = (r) => String(r || '').replace(/^(\d+)頭以下$/, '〜$1頭').replace(/^(\d+)頭以上$/, '$1頭〜').replace(/^(\d+)〜(\d+)頭$/, '$1-$2頭');
   // 出走馬ぜんぶの総合点と順位。順位の順に並べる
   //   総合点＝その馬の画面に出ている5つの段のランクの平均（S5〜D1・5点満点・「初」の段は除く。2026-10-06 ユーザー「総合点も平均で出して」）。
   //   順位は平均の高い順、同点は段の平均値（丸める前）の平均、それも同じなら rankcard.p の順（公開データ側 keiba_rankcard.rank_order と同じ）。
@@ -701,7 +707,7 @@
     return { title: '総合点と順位', stats };
   }
   // ---------- 札の絵（札の中身に合わせた絵。馬場＝晴れ／雨、回り＝向きの矢印、内外＝3つのゲートのうち今日の位置、距離＝旗、コース・場＝コースの楕円、
-  //   流れ＝速さのメーター、調教＝ストップウォッチ、騎手・調教師・父・母父・前走コース＝コースのページと同じ絵、枠＝枠の色の四角、脚質＝走る馬、
+  //   流れ＝速さのメーター、頭数＝9頭の点のうち帯の数だけ濃く（少3・中6・多9）、調教＝ストップウォッチ、騎手・調教師・父・母父・前走コース＝コースのページと同じ絵、枠＝枠の色の四角、脚質＝走る馬、
   //   直近5走＝着順の折れ線、前走〜5走前＝着順の数字（1〜3着は金銀銅）） ----------
   const IC_ = (body, vb = '0 0 24 24') => `<svg viewBox="${vb}" class="m225-ic" aria-hidden="true">${body}</svg>`;
   const IC_TRACK = IC_('<ellipse cx="12" cy="12" rx="9.5" ry="6" fill="none" stroke="currentColor" stroke-width="2.4"/><ellipse cx="12" cy="12" rx="5" ry="2.4" fill="none" stroke="currentColor" stroke-width="1.2" opacity=".5"/>');
@@ -710,6 +716,8 @@
   const IC_RAIN = IC_('<path d="M12 2.5C12 2.5 5.5 10 5.5 14a6.5 6.5 0 0 0 13 0c0-4-6.5-11.5-6.5-11.5z" fill="#3AA3DC"/>');
   const IC_TURN = (right) => IC_(`<rect x="2.5" y="6" width="19" height="12" rx="6" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="${right ? 'M13 3.5l3.5 2.5L13 8.5' : 'M11 3.5L7.5 6 11 8.5'}" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>`);
   const IC_GATE = (z) => IC_(['内', '中', '外'].map((k, i) => `<rect x="${2 + i * 7.3}" y="5" width="5.6" height="14" rx="1.5" fill="currentColor" opacity="${k === z ? 1 : 0.22}"/>`).join(''));
+  const IC_FIELD = (band) => { const k = { 少頭数: 3, 中頭数: 6, 多頭数: 9 }[band] || 0;
+    return IC_([0, 1, 2, 3, 4, 5, 6, 7, 8].map((i) => `<circle cx="${5 + (i % 3) * 7}" cy="${5 + Math.floor(i / 3) * 7}" r="2.6" fill="currentColor" opacity="${i < k ? 1 : 0.22}"/>`).join('')); };
   const IC_PACE = (code) => { const ang = { S: -60, M: 0, H: 60 }[code] ?? 0; const t = (ang - 90) * Math.PI / 180;
     return IC_(`<path d="M3.5 17a8.5 8.5 0 0 1 17 0" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><line x1="12" y1="17" x2="${(12 + Math.cos(t) * 7).toFixed(1)}" y2="${(17 + Math.sin(t) * 7).toFixed(1)}" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><circle cx="12" cy="17" r="1.8" fill="currentColor"/>`); };
   const IC_WATCH = IC_('<circle cx="12" cy="13.5" r="7.5" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M12 13.5V9.5M10 2.5h4M12 2.5v3.5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>');
@@ -734,6 +742,7 @@
       case '馬場': return /道悪/.test(x.label) ? IC_RAIN : IC_SUN;
       case '内外': return IC_GATE(x.label.replace('枠', ''));
       case '流れ': return IC_PACE(sm.code);
+      case '頭数': return IC_FIELD(x.label.split(' ')[0]);
       case '調教': return IC_WATCH;
       case '騎手': return IC_E5('jockey');
       case '調教師': return IC_E5('trainer');
@@ -2468,7 +2477,7 @@
   //   馬名を押すと、本番と同じ「1頭だけ見る」画面が開く（下の openDetail。.ap の中の [data-hist] を押したとき）
   const TB_GROUPS = [
     ['馬の力', ['直近5走', '前走', '2走前', '3走前', '4走前', '5走前']],
-    ['条件', ['コース', '場', '距離', '回り', '馬場', '内外', '流れ']],
+    ['条件', ['コース', '場', '距離', '回り', '馬場', '内外', '頭数', '流れ']],
     ['状態', ['調教']],
     ['人と血統', ['前走コース', '騎手', '調教師', '種牡馬', '母父']],
     ['コースの傾向', ['枠', '脚質']],
@@ -2580,7 +2589,7 @@
   }
   // 段を押すと、その段の札を2頭並べて下から出す（見るだけ）。画面は描き直さず、上に重ねて閉じたら外す。
   //   中身は「1頭だけ見る」画面と同じ絵と数字の出し方にする（2026-09-29 ユーザー「馬の詳細を出した時のイラストや数字にしたい」）：
-  //   コース・場・距離・内外・流れ＝1切れ1走の輪（塗った切れ＝好走）、回り＝楕円と矢印、馬場＝太陽／しずく、
+  //   コース・場・距離・内外・頭数・流れ＝1切れ1走の輪（塗った切れ＝好走）、回り＝楕円と矢印、馬場＝太陽／しずく、
   //   騎手・調教師・父・母父・前走コース＝コースのページの絵、枠＝枠の色の四角、脚質＝走る馬、調教＝ストップウォッチ、
   //   直近5走＝着順の折れ線、前走〜5走前＝着順の数字（1〜3着は金銀銅）。
   //   数字はどれもランク札の値（天秤と同じ元の数字）。色は上の側＝青、下の側＝灰（詳細画面の緑・赤は「その馬のふだん」との比べなので使わない）
@@ -2616,8 +2625,9 @@
     const thin = c.thin ? '<em class="tb-thin">少</em>' : '';
     const race = site.race || {};
     const cnt = { n: c.n || 0, good: c.good || 0 };
-    if (['コース', '場', '距離', '内外', '流れ'].includes(k)) {
-      const zn = k === '内外' && c.zone ? `<span class="tb-zn">${esc(c.zone)}の枠</span>` : '';
+    if (['コース', '場', '距離', '内外', '頭数', '流れ'].includes(k)) {
+      const zn = k === '内外' && c.zone ? `<span class="tb-zn">${esc(c.zone)}の枠</span>`
+        : k === '頭数' && c.band ? `<span class="tb-zn">${esc(c.band)}</span>` : '';
       return `<div class="tb-aw"><div class="tb-rw">${tbRing(cnt, 58, col)}<div class="tb-rc">${tbPct(cnt)}</div></div>${zn}${tbRuns(cnt)}${thin}</div>`;
     }
     if (k === '回り') {
@@ -2691,6 +2701,7 @@
       case '回り': return `${esc(r.direction || '')}回り<small>${sf}</small>`;
       case '馬場': return wet ? `道悪<small>今日 ${esc(r.going || '')}</small>` : `良<small>今日 ${esc(r.going || '')}</small>`;
       case '内外': return '枠の位置';
+      case '頭数': { const c = ((L.rankcard || {}).cards || {})['頭数'] || {}; return `${esc(c.band || '頭数')}<small>${esc(c.range || '')}</small>`; }
       case '枠': return '枠<small>3着以内の割合</small>';
       case '脚質': return '脚質<small>3着以内の割合</small>';
       case '流れ': return nm ? `${esc(nm)}<small>今日の流れ</small>` : '今日の流れ';
