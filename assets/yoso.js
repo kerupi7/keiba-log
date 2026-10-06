@@ -530,6 +530,21 @@
   //   例外：rankcard-1 の公開分は「流れ」の札が rankcard に入っていないので、そのときだけ 3着以内率の線で S〜D をここで付ける
   const M225_R = ['S', 'A', 'B', 'C', 'D'];
   const M225_FLOW_LINE = [0.65, 0.43, 0.20, 0.10];   // 流れの札の S・A・B・C の下限（3着以内率）
+  // 段のランク＝その画面に出している札のランク（「初」を除く）の平均（2026-10-06 ユーザー「細かいランクを合計してトータルランクがどうなのか
+  //   みないと表示してる意味がない」）。線は rankcard_meta.group_grade.avg_lines（公開データ側 keiba_rankcard.group_grade_of と同じ・S/A/B/C の下限）。
+  //   画面で取り直すのは、枠・脚質のように画面のランクが rankcard の札と違うことがあるため（見えている札とそろえる）。
+  //   group_grade が avg でない公開分は rankcard.groups の値のまま
+  const M225_PT = { S: 5, A: 4, B: 3, C: 2, D: 1 };
+  const m225AvgGrade = (h, gname, grades) => {
+    const gg = (site.rankcard_meta || {}).group_grade || {};
+    const stored = ((((h.rankcard || {}).groups) || {})[gname] || {}).grade || null;
+    if (gg.method !== 'avg' || !Array.isArray(gg.avg_lines) || gg.avg_lines.length !== 4) return stored;
+    const ps = grades.map((g) => M225_PT[g]).filter((v) => v != null);
+    if (!ps.length) return stored == null ? null : '初';
+    const avg = ps.reduce((a, b) => a + b, 0) / ps.length;
+    const i = gg.avg_lines.findIndex((t) => avg >= t - 1e-9);
+    return i < 0 ? 'D' : M225_R[i];
+  };
   const M225_THIN_RUNS = 2;                           // 流れの札の「少」（走数がこれ以下）
   const M225_GROUPS = [
     ['馬の力', '最近の走り（勝ち馬との差・クラスで補正）'],
@@ -736,8 +751,7 @@
     const open = M225_OPEN[h.number] ?? null;
     const grps = M225_GROUPS.map(([g]) => g).filter((g) => items.some((x) => x.grp === g));
     const body = grps.map((gname) => {
-      const gr = (rc.groups || {})[gname] || {};
-      const gg = gr.grade || null;
+      const gg = m225AvgGrade(h, gname, items.filter((x) => x.grp === gname).map((x) => x.g));
       const isOpen = open === gname;
       return `<div class="m225x-g m225g-g ${M225_GC[gname] || ''}${isOpen ? ' open' : ''}" data-grp="${gname}">`
         + `<div class="m225g-hd r-${gg === '初' ? 'n' : gg || 'x'}"><span class="m225x-gi">${groupIc(gname)}</span>`
@@ -2514,7 +2528,7 @@
     const mk = MARKS3[S.step];
     const L = byNum(t.left), R = byNum(t.right);
     const HS = [L, R];
-    const gs = (h, g) => (((h.rankcard || {}).groups || {})[g] || {}).grade;
+    const gs = (h, g) => m225AvgGrade(h, g, ((TB_GROUPS.find((x) => x[0] === g) || [])[1] || []).map((k) => tbCard(h, k).g));
     const V = TB_GROUPS.map(([g]) => {
       const a = gs(L, g), b = gs(R, g), va = tbV(a), vb = tbV(b);
       const steps = va == null || vb == null ? 0 : Math.abs(va - vb);
@@ -2678,7 +2692,7 @@
   function tbSheetHtml(g) {
     const L = byNum(S.t.left), R = byNum(S.t.right);
     const keys = (TB_GROUPS.find((x) => x[0] === g) || [])[1] || [];
-    const gs = (h) => (((h.rankcard || {}).groups || {})[g] || {}).grade;
+    const gs = (h) => m225AvgGrade(h, g, keys.map((k) => tbCard(h, k).g));
     const cmp = (a, b) => { const va = tbV(a), vb = tbV(b); const st = va == null || vb == null ? 0 : Math.abs(va - vb); return { steps: st, side: st === 0 ? 0 : va > vb ? -1 : 1 }; };
     const gv = cmp(gs(L), gs(R));
     const GL = tbGold(L).cards, GR = tbGold(R).cards;
