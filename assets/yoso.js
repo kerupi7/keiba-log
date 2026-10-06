@@ -564,7 +564,7 @@
   const m225NoScore = (x) => Boolean(x.key && !(site.rankcard_meta.cards || []).includes(x.key));
   // 枠・脚質の札のランクは、展開のページ（race.js の renderLeg20・枠の等級）と同じ値を写す（2026-09-29 ユーザー「ランクが見る場所で違うのは混乱を招く」）。
   //   rankcard の枠・脚質は別の数字（自前の集計）で作っていて、同じ物差しにしても元の数字が違うのでそろわない（ml/SCOREBOARD.md §2.126）。
-  //   写すのは表示のランクと数字だけ。総合点と段のランク（rankcard.p・groups）は rankcard の値のまま。展開のページに値が無ければ rankcard の値を出す
+  //   写すのは表示のランクと数字だけ。展開のページに値が無ければ rankcard の値を出す（段のランク・総合点は、写した後の表示の札から画面で出す）
   const M225_GATE_CUTS = [0.889, 0.974, 1.034, 1.106];   // race.js の GATE_CUTS と同じ（変えるときは両方）
   const M225_STYLE_KEY = { 逃げ: '逃', 先行: '先', 差し: '差', 追込: '追' };   // race.js の PACE_STYLE_KEY と同じ
   //   数字は印を決める画面（天秤）と同じ「その枠・脚質の3着以内率・平均」の形で「22%・平均21%」と出す（2026-09-29 ユーザー。前は枠だけ「全枠平均の1.06倍」）。
@@ -654,32 +654,46 @@
     add('コースの傾向', '前走コース', `前走${e5PrevKey(h) || ''}組`);
     return out;
   }
-  // 出走馬ぜんぶの総合点と順位（rankcard の値そのまま）。順位の順に並べる
+  // 出走馬ぜんぶの総合点と順位。順位の順に並べる
+  //   総合点＝その馬の画面に出ている5つの段のランクの平均（S5〜D1・5点満点・「初」の段は除く。2026-10-06 ユーザー「総合点も平均で出して」）。
+  //   順位は平均の高い順、同点は段の平均値（丸める前）の平均、それも同じなら rankcard.p の順（公開データ側 keiba_rankcard.rank_order と同じ）。
+  //   rankcard_meta.total が group_avg でない公開分は、前のまま rankcard.p（重みの見込み）と rank
+  const m225ByAvg = () => (((site.rankcard_meta || {}).total || {}).method === 'group_avg');
+  const m225Mean = (xs) => { const v = xs.filter((x) => x != null); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; };
   function m225Rows() {
-    return H.filter((x) => x.rankcard).map((x) => {
-      const pg = m225Tenkai(x);   // 枠・脚質のランクは札と同じく展開のページの値
-      return {
-        h: x, p: x.rankcard.p, rank: x.rankcard.rank, groups: x.rankcard.groups || {},
-        parts: Object.entries(x.rankcard.cards || {}).filter(([, c]) => c.s != null)
-          .map(([card, c]) => ({ card, g: (pg[card] || {}).g || c.grade || '初', s: c.s })),
-      };
-    }).sort((a, b) => (a.rank ?? 99) - (b.rank ?? 99));
+    const byAvg = m225ByAvg();
+    const rows = H.filter((x) => x.rankcard).map((x) => {
+      const items = m225Items(x);
+      const gs = M225_GROUPS.map(([g]) => {
+        const xs = items.filter((it) => it.grp === g);
+        return { g, grade: m225AvgGrade(x, g, xs.map((it) => it.g)), raw: m225Mean(xs.map((it) => M225_PT[it.g])) };
+      }).filter((r) => r.grade);
+      return { h: x, p: x.rankcard.p, rank: x.rankcard.rank, gs,
+        avg: m225Mean(gs.map((r) => M225_PT[r.grade])), raw: m225Mean(gs.map((r) => r.raw)) };
+    });
+    if (byAvg) {
+      const v = (n) => (n == null ? -1 : n);
+      rows.sort((a, b) => (v(b.avg) - v(a.avg)) || (v(b.raw) - v(a.raw)) || (b.p - a.p));
+      rows.forEach((r, i) => { r.rank = i + 1; });
+    } else rows.sort((a, b) => (a.rank ?? 99) - (b.rank ?? 99));
+    return rows;
   }
-  // 「総合」を押したときの裏：総合点の内訳（押し上げ・押し下げている札）と出走馬の順位
+  const m225Pts = (r) => (m225ByAvg() ? (r.avg == null ? '—' : r.avg.toFixed(1)) : String(Math.round(r.p * 100)));
+  // 「総合」を押したときの裏：5つの段のランクと、出走馬の順位
   function m225TotalW(h) {
     const rows = m225Rows();
     const me = rows.find((r) => r.h.number === h.number);
     if (!me) return null;
+    const byAvg = m225ByAvg();
     const list = rows.map((r) => `<tr class="${r.h.number === h.number ? 'me' : ''}"><td class="bt-num">${r.rank}</td><td>${umaBox(r.h.number, r.h.gate, 'sm')}</td>`
-      + `<td class="nm">${esc(r.h.name)}</td><td class="bt-num"><b>${Math.round(r.p * 100)}</b></td></tr>`).join('');
-    const top = me.parts.slice().sort((a, b) => b.s - a.s);
-    const chip = (x) => `<span class="m225-pc ${x.s >= 0 ? 'up' : 'dn'}">${esc(x.card)} ${esc(x.g)}</span>`;
-    const stats = `<div class="m224-tiles one"><div class="k"><i>総合点（3着以内の見込み）</i><b>${Math.round(me.p * 100)}<small>点</small></b></div>`
+      + `<td class="nm">${esc(r.h.name)}</td><td class="bt-num"><b>${m225Pts(r)}</b></td></tr>`).join('');
+    const chip = (x) => `<span class="m225-pc ${'SA'.includes(x.grade) ? 'up' : 'CD'.includes(x.grade) ? 'dn' : ''}">${esc(x.g)} ${esc(x.grade)}</span>`;
+    const stats = `<div class="m224-tiles one"><div class="k"><i>${byAvg ? '総合点（5つの段の平均・5点満点）' : '総合点（3着以内の見込み）'}</i><b>${m225Pts(me)}<small>点</small></b></div>`
       + `<div><i>今日の出走馬で</i><b>${me.rank}<small>位/${rows.length}頭</small></b></div></div>`
-      + `<div class="m225-why"><div><i>押し上げている札</i>${top.slice(0, 5).filter((x) => x.s > 0).map(chip).join('')}</div>`
-      + `<div><i>押し下げている札</i>${top.slice(-4).reverse().filter((x) => x.s < 0).map(chip).join('') || '<span class="m225-pc">なし</span>'}</div></div>`
+      + `<div class="m225-why"><div><i>5つの段のランク</i>${me.gs.map(chip).join('')}</div></div>`
       + `<div class="m224-split"><table><thead><tr><th>順位</th><th></th><th></th><th>点</th></tr></thead><tbody>${list}</tbody></table>`
-      + '<p class="m224-note">点は、札のランクを過去のレースで決めた重みで足した「3着以内に来る見込み（%）」。過去走のランクはレースのクラスで補正している</p></div>';
+      + (byAvg ? '<p class="m224-note">点は、5つの段のランク（S5・A4・B3・C2・D1）の平均。「初」の段は入れない。同じ点のときは、段の中の札の平均が高い順</p></div>'
+        : '<p class="m224-note">点は、札のランクを過去のレースで決めた重みで足した「3着以内に来る見込み（%）」。過去走のランクはレースのクラスで補正している</p></div>');
     return { title: '総合点と順位', stats };
   }
   // ---------- 札の絵（札の中身に合わせた絵。馬場＝晴れ／雨、回り＝向きの矢印、内外＝3つのゲートのうち今日の位置、距離＝旗、コース・場＝コースの楕円、
@@ -744,8 +758,9 @@
       + `${h.rotation ? `<i class="m225-rot">${esc(h.rotation)}</i>` : ''}</span>`
       + `<span class="m225-od"><b class="bt-num">${h.odds != null ? h.odds.toFixed(1) : '—'}</b>倍 <b class="bt-num">${esc(h.popularity ?? '—')}</b>人気</span></div>`;
     const rc = h.rankcard || {};
-    const total = `<div class="m225-tot m225-t" data-i="total"><span class="m225-tl">総合</span><b class="bt-num">${Math.round(rc.p * 100)}<small>点</small></b>`
-      + `<span class="m225-tr"><b class="bt-num">${rc.rank}</b>位<small>/${H.filter((x) => x.rankcard).length}頭</small></span></div>`;
+    const tot = m225Rows().find((r) => r.h.number === h.number) || { p: rc.p, rank: rc.rank };
+    const total = `<div class="m225-tot m225-t" data-i="total"><span class="m225-tl">総合</span><b class="bt-num">${m225Pts(tot)}<small>点</small></b>`
+      + `<span class="m225-tr"><b class="bt-num">${tot.rank}</b>位<small>/${H.filter((x) => x.rankcard).length}頭</small></span></div>`;
     const GD = Object.fromEntries(M225_GROUPS);
     const rk = (x) => (x.g === '初' ? 'n' : x.g || 'x');
     const open = M225_OPEN[h.number] ?? null;
