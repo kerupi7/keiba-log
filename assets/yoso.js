@@ -1007,6 +1007,18 @@
     const inner = pe.firstElementChild;
     if (!inner) return;
     inner.style.zoom = '';
+    // ランクの札の名前が欄に入らないとき（例 阪神ダート2000m）は、「…」で切らずに字を少し小さくして全部出す
+    //   （2026-10-06 ユーザー「コースの名前が切れるのも直して」）。0.5px ずつ 9px まで。
+    //   9px でも入らない名前（父 マインドユアビスケッツ など）は、元の大きさに戻して前のとおり「…」
+    pe.querySelectorAll('.m225x-l').forEach((el) => {
+      el.style.removeProperty('font-size');
+      let fs = parseFloat(getComputedStyle(el).fontSize);
+      while (el.scrollWidth > el.clientWidth + 0.5 && fs > 9) {
+        fs -= 0.5;
+        el.style.setProperty('font-size', `${fs}px`, 'important');
+      }
+      if (el.scrollWidth > el.clientWidth + 0.5) el.style.removeProperty('font-size');
+    });
     const cs = getComputedStyle(pe);
     // 縮めると折り返しが変わって高さも変わるので、実際の下端を見ながら数回詰める（最小 0.5 倍）。
     //   下限は 0.6 倍だったが、1ページ目の中身は縮めない状態で約924px（390px幅・2026-09-24 実測）あり、
