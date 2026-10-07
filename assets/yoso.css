@@ -1177,10 +1177,13 @@ html.rc-frame .mx .mg-close .mg-tag{background:#5E7185}
 .m225-hd .hn{grid-row:1/3}
 .m225-nm{display:flex;align-items:center;min-width:0;font-size:18px;cursor:pointer}
 .m225-nm b{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.m225-sub{grid-column:2;display:flex;flex-wrap:wrap;align-items:center;gap:2px 8px;font-size:14px;color:#1C1C1E}
+/* 2行目は右端（オッズの下）まで使う。オッズは1行目だけ（2026-10-07 ユーザー「中10週を1行に」） */
+.m225-sub{grid-column:2/4;display:flex;flex-wrap:nowrap;white-space:nowrap;min-width:0;overflow:hidden;align-items:center;gap:2px 8px;font-size:14px;color:#1C1C1E}
+.m225-sub.wrap{flex-wrap:wrap;white-space:normal}
+.m225-sub > *{flex:none}
 .m225-sub b{font-weight:700}
-.m225-rot{font-style:normal;font-size:12px;font-weight:700;color:#3A3A3C;background:#E9E9EE;border-radius:6px;padding:1px 6px}
-.m225-od{grid-column:3;grid-row:1/3;font-size:11px;color:#3A3A3C;text-align:right;white-space:nowrap}
+.m225-rot{font-style:normal;font-size:.86em;font-weight:700;color:#3A3A3C;background:#E9E9EE;border-radius:6px;padding:1px 6px}
+.m225-od{grid-column:3;grid-row:1;font-size:11px;color:#3A3A3C;text-align:right;white-space:nowrap}
 .m225-od b{font:600 17px Futura,Jost,sans-serif;color:#1C1C1E}
 .m225-pg{background:#fff;border-radius:12px;padding:6px 8px 8px}
 .m225-t{position:relative;display:flex;flex-direction:column;align-items:center;gap:1px;padding:5px 2px 6px;border-radius:10px;background:#F4F4F7;cursor:pointer;min-width:0}

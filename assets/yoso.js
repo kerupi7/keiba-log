@@ -768,7 +768,8 @@
     // 馬名は押すと「1頭だけ見る」画面が開く（2026-10-07 ユーザー「馬名押したら馬の詳細が見れるように」）。比べる画面の馬名と同じ › を添える
     const head = `<div class="m225-hd">${umaBox(h.number, h.gate)}<span class="m225-nm"><b>${esc(h.name)}</b><i class="ap-chev">›</i></span>`
       // 年齢・斤量・騎手は濃く大きく、前走からの間隔（h.rotation・例 中53週）を最後に添える（2026-09-29 ユーザー）
-      + `<span class="m225-sub"><b>${esc(h.sex_age || '')}</b><b>${esc(kg)}kg</b><b>${esc(h.jockey || '')}</b>`
+      // 騎手名の全角の英字・記号（Ｍ．デムーロ）は半角にする。1行に収めるため（出馬表の mmSub と同じ・2026-10-07）
+      + `<span class="m225-sub"><b>${esc(h.sex_age || '')}</b><b>${esc(kg)}kg</b><b>${esc(String(h.jockey || '').replace(/[！-～]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xFEE0)))}</b>`
       + `${h.rotation ? `<i class="m225-rot">${esc(h.rotation)}</i>` : ''}</span>`
       + `<span class="m225-od"><b class="bt-num">${h.odds != null ? h.odds.toFixed(1) : '—'}</b>倍 <b class="bt-num">${esc(h.popularity ?? '—')}</b>人気</span></div>`;
     const rc = h.rankcard || {};
@@ -1021,6 +1022,21 @@
         el.style.setProperty('font-size', `${fs}px`, 'important');
       }
       if (el.scrollWidth > el.clientWidth + 0.5) el.style.removeProperty('font-size');
+    });
+    // ランクの札の見出しの2行目（性齢・斤量・騎手・中N週）は折り返さずに1行に収める（2026-10-07 ユーザー「中10週が改行されてるから1行に」）。
+    //   入らない馬は字を 0.5px ずつ 10px まで小さくする（中N週の札も同じ比で縮む）。10px でも入らない時だけ、項目の切れ目で折り返す（.wrap）
+    pe.querySelectorAll('.m225-sub').forEach((el) => {
+      el.classList.remove('wrap');
+      el.style.removeProperty('font-size');
+      let fs = parseFloat(getComputedStyle(el).fontSize);
+      while (el.scrollWidth > el.clientWidth + 0.5 && fs > 10) {
+        fs -= 0.5;
+        el.style.fontSize = `${fs}px`;
+      }
+      if (el.scrollWidth > el.clientWidth + 0.5) {
+        el.style.removeProperty('font-size');
+        el.classList.add('wrap');
+      }
     });
     const cs = getComputedStyle(pe);
     // 縮めると折り返しが変わって高さも変わるので、実際の下端を見ながら数回詰める（最小 0.5 倍）。
