@@ -1646,6 +1646,12 @@ function upsetConfidence(upset) {
 //
 // bigpayHtml（3連単100万超え・103-spec）は折りたたみの**上**に入れる（110-spec §2）。
 // 呼び出し元 renderMitate20 が組み立てて渡す。
+// 荒れ度の札の見出しの3本の棒（137-spec・2026-10-07 ユーザー「ここも他と同じデザインに寄せてほしい」）。上の札の荒れ度と同じ形
+function upsetBars27(name) {
+  const lv = { '堅い': 1, '中荒れ': 2, '大荒れ': 3 }[name] || 2;
+  return `<span class="ub27" aria-hidden="true">${[1, 2, 3].map((i) => `<i${i <= lv ? ' class="on"' : ''}></i>`).join('')}</span>`;
+}
+
 function renderUpset20(upset) {
   if (!upset || !Array.isArray(upset.classes) || upset.classes.length !== 3) return null;
   const sel = upset.classes.find((c) => c.selected) || upset.classes[0];
@@ -1696,7 +1702,7 @@ function renderUpset20(upset) {
     popup: `
       <div class="popup" id="pop-upset">
         <div class="phead">
-          <span class="pname k-${escapeHtml(sel.key)}">${escapeHtml(upset.label_name)}</span>
+          <span class="pname k-${escapeHtml(sel.key)}">${upsetBars27(upset.label_name)}${escapeHtml(upset.label_name)}</span>
           <span class="pmeta">${escapeHtml(sel.card)}</span>
           <button type="button" class="pclose" data-close>閉じる</button>
         </div>
