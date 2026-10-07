@@ -1377,32 +1377,48 @@ html.rc-frame .mx .mg-close .mg-tag{background:#5E7185}
 
 /* ===== 自分の激アツ（138-spec） =====
    絞り込みのランクの1ページで札を上に払うと、見出しの右に金の判子が押される（2026-10-07 ユーザー「上にスライドしたら激アツに」）。
-   .on＝押してある／.press＝押した瞬間の動き／.off＝外した瞬間の動き。払っている間は札の下の方に「自分の激アツ」（.yf-gk）が出る */
+   動きは mockup-267 案2「札で押し付ける」（金の印 .yf-seal に札を押し当てる）。.on＝押してある／.press＝押した瞬間の動き／.off＝外した瞬間の動き。払っている間は札の下の方に「自分の激アツ」（.yf-gk）が出る */
 .geki-tx text{font-family:"Zen Antique","Hiragino Mincho ProN","Yu Mincho",serif}
 .m225-pg{position:relative}
 /* 判子は見出しの2行目の右（中N週の右の空き・オッズの下）に押す */
-.m225-geki{position:absolute;right:30px;top:35px;z-index:2;display:none;place-items:center;pointer-events:none}
-.m225-geki.on,.m225-geki.off{display:grid}
-.gk-st{grid-area:1/1;line-height:0;transform:rotate(-4deg)}
+.m225-geki{position:absolute;right:30px;top:35px;z-index:2;display:grid;width:48px;height:48px;place-items:center;pointer-events:none}
+.gk-st{grid-area:1/1;line-height:0;transform:rotate(-4deg);visibility:hidden}
+.m225-geki.on .gk-st,.m225-geki.off .gk-st{visibility:visible}
 .gk-st .geki-st{mix-blend-mode:multiply}
 .yf-gk{position:absolute;bottom:18px;left:50%;z-index:5;display:flex;align-items:center;gap:6px;padding:4px 16px 4px 6px;border-radius:999px;
   background:#120D09;box-shadow:inset 0 0 0 1.2px rgba(233,199,102,.6),0 6px 14px rgba(0,0,0,.25);opacity:0;transform:translateX(-50%) scale(.7);pointer-events:none;white-space:nowrap}
 .yf-gk b{font-family:"Zen Antique",serif;font-weight:400;font-size:16px;letter-spacing:.08em;
   background:linear-gradient(120deg,#9A6B12,#F3D98A 38%,#B8862B 58%,#F7E3A1 78%,#A9781E);-webkit-background-clip:text;background-clip:text;color:transparent}
 .yf-deck.view .yf-gk{display:none}
-/* 押した瞬間：金の判子が上から押され、金の粒が散る */
-.m225-geki.press .gk-st{animation:gaPress .62s cubic-bezier(.18,1.5,.4,1) both}
-@keyframes gaPress{0%{transform:translateY(-60px) scale(1.8) rotate(10deg);opacity:0;filter:blur(3px)}45%{transform:rotate(-4deg);opacity:1;filter:none}70%{transform:rotate(-4deg) scale(1.04)}100%{transform:rotate(-4deg)}}
+/* 押し付けた瞬間：判子の跡がにじんで付き、金の粒が散る（mockup-267 案2） */
+.m225-geki.press .gk-st{animation:gkInk .18s ease-out both}
+@keyframes gkInk{from{opacity:0;transform:rotate(-4deg) scale(1.15)}to{opacity:1;transform:rotate(-4deg)}}
 .ga-sparks{grid-area:1/1;position:relative;width:0;height:0;pointer-events:none}
 .ga-sparks i{position:absolute;width:10px;height:10px;margin:-5px;opacity:0;background:conic-gradient(from 45deg,#F3D98A,#B8862B,#F3D98A,#B8862B,#F3D98A);
   clip-path:polygon(50% 0,62% 38%,100% 50%,62% 62%,50% 100%,38% 62%,0 50%,38% 38%)}
-.m225-geki.press .ga-sparks i{animation:gaSpark .8s ease-out .28s both}
+.m225-geki.press .ga-sparks i{animation:gaSpark .8s ease-out both}
 .ga-sparks i:nth-child(1){--x:52px;--y:-8px}.ga-sparks i:nth-child(2){--x:38px;--y:-40px}.ga-sparks i:nth-child(3){--x:4px;--y:-54px}
 .ga-sparks i:nth-child(4){--x:-34px;--y:-42px}.ga-sparks i:nth-child(5){--x:-52px;--y:-6px}.ga-sparks i:nth-child(6){--x:-40px;--y:36px}
 .ga-sparks i:nth-child(7){--x:-6px;--y:54px}.ga-sparks i:nth-child(8){--x:34px;--y:42px}.ga-sparks i:nth-child(9){--x:58px;--y:22px}
 .ga-sparks i:nth-child(10){--x:-58px;--y:20px}
 @keyframes gaSpark{0%{transform:translate(0,0) scale(.3);opacity:1}100%{transform:translate(var(--x),var(--y)) scale(1) rotate(120deg);opacity:0}}
-/* 外した瞬間：判子が持ち上がって消える */
-.m225-geki.off .gk-st{animation:gaLift .35s ease-in both}
-@keyframes gaLift{from{transform:rotate(-4deg)}to{transform:translateY(-30px) scale(1.2);opacity:0}}
-@media (prefers-reduced-motion:reduce){.m225-geki.press .gk-st,.m225-geki.press .ga-sparks i,.m225-geki.off .gk-st{animation:none}}
+/* 外した瞬間：印が判子の跡を吸い取る */
+.m225-geki.off .gk-st{animation:gkSuck .22s ease-in both}
+@keyframes gkSuck{from{transform:rotate(-4deg)}to{transform:translateY(-14px) scale(.8);opacity:0}}
+/* 金の印（持ち手つきの判子）。.yf の直下に置き、yoso.js が置き場の真上に合わせる（top＝印の底の高さ）。.glow＝越えた／.hit＝押し付けた瞬間 */
+.yf-seal{position:absolute;left:0;top:0;width:50px;height:54px;margin:-54px 0 0 -25px;z-index:60;pointer-events:none;opacity:0;transform-origin:50% 100%}
+.yf-seal i{position:absolute;display:block}
+.yf-seal .hand{left:12px;right:12px;top:0;height:28px;border-radius:13px 13px 5px 5px;
+  background:linear-gradient(90deg,#9A6B12,#F3D98A 35%,#C79A3A 55%,#F6E2A2 75%,#A9781E);box-shadow:inset 0 -5px 6px rgba(0,0,0,.18)}
+.yf-seal .neck{left:17px;right:17px;top:27px;height:7px;background:linear-gradient(90deg,#7D560E,#D9B45A,#8F6416)}
+.yf-seal .base{left:3px;right:3px;top:33px;height:20px;border-radius:50%/40%;
+  background:linear-gradient(90deg,#8A5E10,#F3D98A 30%,#B98A2C 55%,#F7E3A1 78%,#9A6B12);box-shadow:0 5px 9px rgba(0,0,0,.3),inset 0 2px 3px rgba(255,255,255,.4)}
+.yf-seal .face{left:7px;right:7px;bottom:-2px;height:7px;border-radius:50%;background:#C0302A;opacity:.9}
+.yf-seal.glow .base{box-shadow:0 0 0 3px rgba(243,217,138,.55),0 0 20px rgba(233,190,80,.9),inset 0 2px 3px rgba(255,255,255,.4)}
+.yf-seal::after{content:"";position:absolute;left:50%;bottom:-28px;width:110px;height:56px;margin-left:-55px;border-radius:50%;
+  background:radial-gradient(closest-side,rgba(255,240,190,.95),rgba(255,220,120,0));opacity:0}
+.yf-seal.hit{animation:gkSquash .18s ease-out}
+.yf-seal.hit::after{animation:gkFlash .42s ease-out}
+@keyframes gkSquash{50%{transform:translateY(3px) scale(1.04,.94)}}
+@keyframes gkFlash{0%{opacity:0;transform:scale(.4)}35%{opacity:1;transform:scale(1.3)}100%{opacity:0;transform:scale(1.8)}}
+@media (prefers-reduced-motion:reduce){.m225-geki.press .gk-st,.m225-geki.press .ga-sparks i,.m225-geki.off .gk-st,.yf-seal.hit,.yf-seal.hit::after{animation:none}}

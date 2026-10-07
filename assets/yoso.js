@@ -805,6 +805,9 @@
 
   // ---------- 自分の激アツ（138-spec） ----------
   //   絞り込みのランクの1ページで札を上に払うと、札の見出しの右に金の判子が押される。もう一度上に払うと外す
+  //   動きは mockup-267 案2「札で押し付ける」（2026-10-07 ユーザー「案2で実装して」）：上げると置き場の真上に持ち手つきの金の印が現れ、
+  //   札が近づくほど光る。離すと札が印まで跳ね上がって押し付けられ（光がはじける）、判子の跡を付けて弾んで戻る。外す時は印が跡を吸い取る。
+  //   札の上には画面の余白がほとんど無い（札の上端は画面の上から約10px）ので、札は指の動きの1/6ほどしか上げない（印が画面に収まるように）
   //   （2026-10-07 ユーザー「上にスライドしたら激アツにするようにして」。下の空き地の台と長押しのボタンはやめた。
   //   台があると段を開いた時に台か札の大きさが変わるため）。判子の絵と記録（gekiatsu:{race_id}）は app.js の gekiStampSvg・gekiLoad・gekiSave
   const GEKI_UP = 90;   // 上へこれだけ動かして離すと押す（px）。払う（横 100px）より少し短い
@@ -3311,6 +3314,60 @@
     let udrag = false;   // 上に払っている（自分の激アツ）
     // 上に払えるのは、絞り込みのランクの1ページ（判子の置き場がある時）だけ
     const gekiPage = () => !S.view && Boolean(document.querySelector('#yf-page .m225-geki'));
+    let liftR = 0;       // 上に払っている間に札を上げている量（px）
+    // 金の印（持ち手つきの判子）。札の外（.yf の直下）に1つだけ置き、置き場の真上に合わせる
+    const sealEl = () => {
+      const yf = document.querySelector('.yf');
+      if (!yf) return null;
+      let s = yf.querySelector('.yf-seal');
+      if (!s) {
+        yf.insertAdjacentHTML('beforeend', '<div class="yf-seal" aria-hidden="true"><i class="hand"></i><i class="neck"></i><i class="base"></i><i class="face"></i></div>');
+        s = yf.querySelector('.yf-seal');
+      }
+      return s;
+    };
+    const slotRect = () => { const m = document.querySelector('#yf-page .m225-geki'); return m ? m.getBoundingClientRect() : null; };
+    // 印は置き場の真上で待つ。札が上がるほど、すき間が 26px→4px に縮み、越えたら光る
+    const sealAt = (p) => {
+      const s = sealEl(), m = slotRect();
+      if (!s || !m) return;
+      s.classList.remove('hit');
+      s.style.transition = 'none';
+      s.style.left = `${(m.left + m.width / 2).toFixed(1)}px`;
+      s.style.top = `${(m.top - (4 + 22 * (1 - p))).toFixed(1)}px`;
+      s.style.opacity = Math.min(1, p * 1.5).toFixed(3);
+      s.style.transform = `scale(${(0.85 + 0.15 * p).toFixed(3)})`;
+      s.classList.toggle('glow', p >= 1);
+    };
+    const sealHide = (delay = 0) => {
+      const s = document.querySelector('.yf .yf-seal');
+      if (!s) return;
+      s.style.transition = `opacity .3s ease ${delay}s, transform .3s ease ${delay}s`;
+      s.style.opacity = '0';
+      s.style.transform = 'translateY(-16px) scale(.9)';
+      s.classList.remove('glow');
+    };
+    // 離した時：札を印まで跳ね上げて押し付け、判子を付け外しして、弾んで戻す
+    const gekiPress = () => {
+      const s = sealEl(), m = slotRect();
+      const n = Q[S.idx].number;
+      if (gk) { gk.style.transition = 'opacity .2s'; gk.style.opacity = 0; }
+      if (!s || !m) { springHome(); gekiToggle(n); return; }
+      const gap = Math.max(0, m.top - parseFloat(s.style.top));
+      card.style.transition = 'transform .16s cubic-bezier(.5,0,1,.6)';
+      card.style.transform = `translateY(${(-(liftR + gap)).toFixed(1)}px)${base}`;
+      setTimeout(() => {
+        s.classList.remove('hit'); void s.offsetWidth; s.classList.add('hit');
+        gekiToggle(n);
+        setTimeout(() => {
+          sealHide(0.15);
+          if (down) return;   // もう次の操作でつかんでいる
+          springHome();
+          card.style.transition = 'transform .62s cubic-bezier(.25,1.45,.45,1)';
+          setTimeout(() => { if (!down) card.style.transition = ''; }, 650);
+        }, 90);
+      }, 160);
+    };
     let hist = [];
     let base = '';
     // 長押しの金（2026-09-28）。hold＝構えている部品と2つのタイマー。stamped＝押し終えた（離しても何もしない）
@@ -3359,6 +3416,7 @@
       if (e.button !== 0 || card.dataset.gone) return;
       // せり上がりの途中でつかんだら、その場の位置で止めて指に付ける（最後まで飛ばすと、かくっと跳ねたため）
       base = '';
+      card.style.transition = '';   // 押し付けた後の弾み（下の gekiPress）の途中でつかんだ時
       if (card.getAnimations().length) {
         const m = getComputedStyle(card).transform;
         card.getAnimations().forEach((a) => a.cancel());
@@ -3413,6 +3471,7 @@
       // 乗り換え。指の今いる所を始点に取り直すので、カードは跳ねずに0から付いてくる。
       //   縦に動かしている最中の小さな横ぶれで払ってしまわないよう、横40px以上・縦との差24px以上にしてある
       if ((vscroll || udrag) && Math.abs(dx) > 40 && Math.abs(dx) - Math.abs(dy) > 24) {
+        if (udrag) sealHide();
         vscroll = false; udrag = false; drag = true;
         if (gk) { gk.style.opacity = 0; gk.style.transform = ''; }
         sx = e.clientX; sy = e.clientY; st = now; dx = 0; dy = 0; hist = [[now, sx, sy]];
@@ -3428,12 +3487,13 @@
       //   カードをスワイプしてずらせないように」）。横に払った量だけ数えて、離したときにページを送る
       if (S.view) return;
       if (udrag) {
-        // 札が指に付いて上がる（上げすぎると重くなる）。下の方の「自分の激アツ」が濃くなり、越えたら震える
+        // 札は重く少しだけ上がる（90px 動かして約14px）。下の方の「自分の激アツ」が濃くなり、上の印が近づいて、越えたら光って震える
         const y = Math.max(0, -dy);
-        const r = y < 120 ? y : 120 + (y - 120) * 0.35;
-        card.style.transform = `translateY(${(-r).toFixed(1)}px)${base}`;
+        liftR = Math.min(y, GEKI_UP) * 0.16 + Math.max(0, y - GEKI_UP) * 0.04;
+        card.style.transform = `translateY(${(-liftR).toFixed(1)}px)${base}`;
         const p = Math.min(1, y / GEKI_UP);
-        if (gk) { gk.style.opacity = p.toFixed(3); gk.style.transform = `translateX(-50%) scale(${(p >= 1 ? 1.08 : 0.7 + 0.25 * p).toFixed(3)})`; }
+        if (gk) { gk.style.transition = 'none'; gk.style.opacity = p.toFixed(3); gk.style.transform = `translateX(-50%) scale(${(p >= 1 ? 1.08 : 0.7 + 0.25 * p).toFixed(3)})`; }
+        sealAt(p);
         const o = y > GEKI_UP;
         if (o !== over) { over = o; if (o) haptic(); }
         return;
@@ -3480,10 +3540,9 @@
       if (vscroll) return;
       if (cancel) { springHome(); return; }
       if (udrag) {
-        // 札は元の位置に戻し、次の馬へは進まない（✓・消とは別に付け外しする）
+        // 足りなければ取りやめ。押した時も札は元の位置に戻し、次の馬へは進まない（✓・消とは別に付け外しする）
         const fire = -dy > GEKI_UP || (vy < -0.9 && -dy > 40);
-        springHome();
-        if (fire) gekiToggle(Q[S.idx].number);
+        if (fire) gekiPress(); else { springHome(); sealHide(); }
         return;
       }
       if (vdrag) {
