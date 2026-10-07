@@ -1080,6 +1080,7 @@
     const inner = pe.firstElementChild;
     if (!inner) return;
     inner.style.zoom = '';
+    inner.querySelectorAll('.m225x-list').forEach((el) => { el.style.zoom = ''; });
     // ランクの札の名前が欄に入らないとき（例 阪神ダート2000m）は、「…」で切らずに字を少し小さくして全部出す
     //   （2026-10-06 ユーザー「コースの名前が切れるのも直して」）。0.5px ずつ 9px まで。
     //   9px でも入らない名前（父 マインドユアビスケッツ など）は、元の大きさに戻して前のとおり「…」
@@ -1115,10 +1116,32 @@
     const ga = inner.querySelector(':scope > .ga27');
     inner.classList.toggle('ga-fill', Boolean(ga));
     if (ga) {
-      ga.classList.remove('tight');
-      // 空き地が 120px に足りない（小さい画面・段を開いた時）は、台を細く詰める（84px〜）。それでも入らない時だけ全体が縮む
+      // 空き地が 120px に足りない（小さい画面・段を開いた時）は、台のほうを譲らせる：細い台（84px）→ 1行の帯（32〜48px）→ 隠す。
+      //   段を開いても札全体の大きさは変えない（2026-10-07 ユーザー「開くとサイズが変わるのをやめてほしい」）。
+      //   台を隠しても入らない時だけ、下の縮める処理で全体が縮む（台を足す前からの動き）
       const avail = pe.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
-      if (inner.offsetHeight > avail + 0.5) ga.classList.add('tight');
+      ga.classList.remove('tight', 'mini', 'gone');
+      // 隠すのは段を開いている間だけ。段を閉じれば台は必ず見える（見えない画面を作らない）
+      const steps = inner.querySelector('.m225g-g.open') ? ['tight', 'mini', 'gone'] : ['tight', 'mini'];
+      for (const c of steps) {
+        if (inner.offsetHeight <= avail + 0.5) break;
+        ga.classList.remove('tight', 'mini');
+        ga.classList.add(c);
+      }
+    }
+    // 台を隠しても入らない時は、開いた段の中身だけを縮める（0.7倍まで）。札の見出し・総合・ほかの段の大きさは変えない
+    //   （2026-10-07 ユーザー「開くとサイズが変わるのをやめてほしい」。390×660 で「条件」を開くと全体が0.97倍になっていた）
+    const body = inner.querySelector('.m225g-g.open > .m225x-list');
+    if (body) {
+      let zb = 1;
+      for (let k = 0; k < 4; k += 1) {
+        const over = inner.getBoundingClientRect().bottom - (pe.getBoundingClientRect().bottom - parseFloat(cs.paddingBottom));
+        if (over <= 0.5) break;
+        const bh = body.getBoundingClientRect().height;
+        zb = Math.max(0.7, zb * ((bh - over) / bh) * 0.995);
+        body.style.zoom = zb.toFixed(3);
+        if (zb <= 0.7) break;
+      }
     }
     // 縮めると折り返しが変わって高さも変わるので、実際の下端を見ながら数回詰める（最小 0.5 倍）。
     //   下限は 0.6 倍だったが、1ページ目の中身は縮めない状態で約924px（390px幅・2026-09-24 実測）あり、
