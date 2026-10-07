@@ -124,6 +124,8 @@
 /* 流れを開いている間は、後ろの出馬表が指で動かないようにする（iPhoneで画面全体が縦に動いたため） */
 html:has(body.yf-open),body.yf-open{overflow:hidden;overscroll-behavior:none}
 body.yf-open{position:fixed;inset:0;width:100%}
+/* 絞り込み・印・1頭だけ見る画面を開いている間は、買い目シートのバーを出さない（札の下の段を隠していたため。2026-10-08 ユーザー「絞り込みや印の時は買い目シート出さないようにしたい」） */
+body.yf-open #bs-bar-host{display:none}
 .yf{overscroll-behavior:none;height:100dvh}
 .yf-page.pop{animation:yfPg .2s ease-out}
 @keyframes yfPg{from{opacity:.3}to{opacity:1}}
