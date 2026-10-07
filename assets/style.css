@@ -4682,3 +4682,27 @@ body:has(.container.st26){background:#F2F2F7}
 .st26tw td.ty{font-weight:400}
 .st26tw tr.g td{border-top:.5px solid rgba(60,60,67,.18)}
 .st26tw td.pos{color:var(--hit)} .st26tw td.neg{color:var(--live)} .st26tw td.zero{color:#AEAEB2}
+/* モデル詳細（model.html）も同じ部品で組む（2026-10-07 ユーザー「ここのまとめも同じようなデザインにしてほしい」）。
+   塊ごとに白いカード、表は灰のタイル。数字の単位（円・点・R）は小さく */
+.st26 .md26nm{font-size:20px;font-weight:800}
+.st26 .md26rk{margin-left:auto;flex:none;font-size:11.5px;font-weight:600;color:#8E8E93}
+.st26 .md26rk b{font-family:var(--num26);font-weight:600;font-size:14px;color:var(--text);margin:0 1px}
+.st26 .st26per b{color:#3C3C43}
+.st26c > .st26ch + .st26tw,.st26c > .st26ch + .st26list,.st26c > .st26ch + .st26note{margin-top:8px}
+.st26tw.md26 td small{font-family:var(--font);font-size:10px;font-weight:600;margin-left:1px;color:#8E8E93}
+.st26tw.md26 td.pos small,.st26tw.md26 td.neg small{color:inherit}
+.st26tw.md26 td.up i{display:block;font-style:normal;font-size:10.5px;font-weight:600;color:#8E8E93;line-height:1.3}
+.st26tw.md26 td.up a{color:var(--text);text-decoration:none}
+.st26tw.md26 td.up a i{color:var(--navy);font-weight:400;font-size:11px;max-width:11em;overflow:hidden;text-overflow:ellipsis}
+.st26tw.md26 tr + tr td{border-top:.5px solid rgba(60,60,67,.18)}
+/* スマホ幅：甲州の券種べつ（7列・投資448,400円）が 398px 要るのに 315px しかなかった。字と余白を詰めて収める。
+   余白の数は「16モデル全部で表が横にはみ出さない」ための代わりの数（2026-10-07 の数字で測った）。金額の桁が増えたら刻みを捨てて中身を優先する */
+@media (max-width:480px){
+  .st26:has(.md26) .st26c{padding:12px 8px 10px}
+  .st26tw.md26{padding:2px 4px}
+  .st26tw.md26 table{font-size:11px}
+  .st26tw.md26 th{font-size:9.5px;padding:6px 1.5px 4px}
+  .st26tw.md26 td{padding:6px 1.5px}
+  .st26tw.md26 td small{font-size:8.5px;margin-left:0}
+  .st26tw.md26 td.up i{font-size:9.5px}
+}
