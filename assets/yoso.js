@@ -790,8 +790,70 @@
           + `<b class="m225-r">${esc(x.g === '初' ? '初' : x.g || '—')}</b></div>`)).join('')}</div>` : '')
         + '</div>';
     }).join('');
-    return `<div class="race20 m225 m225-pg">${head}${total}<div class="m225x m225x-e1 m225g">${body}</div></div>`;
+    return `<div class="race20 m225 m225-pg">${head}${total}<div class="m225x m225x-e1 m225g">${body}</div>${gekiBlock(h)}</div>`;
   }
+
+  // ---------- 自分の激アツ（138-spec・2026-10-07 ユーザー決定・mockup-266 案2「金屏風」） ----------
+  //   ランクの1ページの下の空いた所。左が金箔（判子を押す所）、右が黒漆（「自分の」「激アツ」と馬名）、右端に押すボタン。
+  //   ボタンを長押し（GEKI_HOLD_MS）すると、ふちに金の輪がたまり、金の判子が押される。もう一度長押しで外す。
+  //   判子の絵と記録（gekiatsu:{race_id}）は race.js の gekiStampSvg・gekiLoad・gekiSave。
+  //   ボタンの長押しは、札の受け口（払う・金の枠・裏返す）に届く前に止める（下の document の先回りの受け口）
+  const GEKI_HOLD_MS = 600;
+  function gekiBlock(h) {
+    if (typeof gekiStampSvg !== 'function') return '';
+    ensureGekiDefs();
+    const on = gekiLoad(raceId).has(h.number);
+    return `<div class="ga27${on ? ' on' : ''}" data-n="${h.number}">`
+      + `<div class="ga-gold"><span class="ga-slot">${gekiStampSvg(84)}</span><span class="ga-sparks">${'<i></i>'.repeat(10)}</span><span class="ga-ph">押す</span></div>`
+      + `<div class="ga-mid"><span class="ga-lab"><small>自分の</small><b>激アツ</b><span class="ga-hn">${esc(h.name)}</span></span>`
+      + '<span class="ga-hint">この馬を<br>激アツに</span></div>'
+      + `<div class="ga-bcol"><button type="button" class="ga-btn" aria-pressed="${on}" aria-label="自分の激アツ（長押しで付け外し）">`
+      + '<svg class="ga-ring" viewBox="0 0 90 90" aria-hidden="true"><circle cx="45" cy="45" r="41" class="rb"/><circle cx="45" cy="45" r="41" class="rf"/></svg>'
+      + `<span class="ga-face">${gekiStampSvg(44)}</span></button><small class="ga-cap">${on ? '長押しで外す' : '長押し'}</small></div></div>`;
+  }
+  let gekiHold = null;
+  function gekiCancel() {
+    if (!gekiHold) return;
+    clearTimeout(gekiHold.t);
+    gekiHold.box.classList.remove('charging');
+    gekiHold = null;
+  }
+  function gekiFire(box) {
+    gekiHold = null;
+    box.classList.remove('charging');
+    const n = Number(box.dataset.n);
+    const set = gekiLoad(raceId);
+    const on = !set.has(n);
+    if (on) set.add(n); else set.delete(n);
+    gekiSave(raceId, set);
+    box.classList.remove('on', 'press', 'off');
+    void box.offsetWidth;   // 押す動きを毎回はじめから
+    box.classList.add(on ? 'on' : 'off');
+    if (on) box.classList.add('press');
+    box.querySelector('.ga-btn').setAttribute('aria-pressed', String(on));
+    box.querySelector('.ga-cap').textContent = on ? '長押しで外す' : '長押し';
+    if (on) haptic();
+    document.dispatchEvent(new CustomEvent('gekiatsu-change'));
+  }
+  document.addEventListener('pointerdown', (e) => {
+    const b = e.target.closest && e.target.closest('.ga-btn');
+    if (!b) return;
+    e.stopPropagation();
+    e.preventDefault();
+    gekiCancel();
+    const box = b.closest('.ga27');
+    box.classList.remove('off');
+    box.classList.add('charging');
+    gekiHold = { box, sx: e.clientX, sy: e.clientY, t: setTimeout(() => gekiFire(box), GEKI_HOLD_MS) };
+  }, true);
+  document.addEventListener('pointermove', (e) => {
+    if (gekiHold && Math.hypot(e.clientX - gekiHold.sx, e.clientY - gekiHold.sy) > 12) gekiCancel();
+  }, true);
+  ['pointerup', 'pointercancel'].forEach((ev) => document.addEventListener(ev, (e) => {
+    if (e.target.closest && e.target.closest('.ga-btn')) e.stopPropagation();
+    gekiCancel();
+  }, true));
+  document.addEventListener('contextmenu', (e) => { if (e.target.closest && e.target.closest('.ga-btn')) e.preventDefault(); }, true);
   // 段のヘッダを押す → 開く／たたむ。札を押す → 札が裏返って詳しいページ。「総合」を押す → 総合点の内訳
   function m225Tap(target) {
     if (M225_BACK) return;
@@ -1036,6 +1098,17 @@
       }
     });
     const cs = getComputedStyle(pe);
+    // 自分の激アツの台（.ga27）があるページは、ページの高さを見える高さまで伸ばし、台を下の空いた所に置く（138-spec）。
+    //   台は空き地に合わせて 120〜190px で伸び縮みする。120px も空いていない画面だけ、下の縮める処理で全体が少し縮む
+    inner.style.minHeight = '';
+    const ga = inner.querySelector(':scope > .ga27');
+    if (ga) {
+      ga.classList.remove('tight');
+      inner.style.boxSizing = 'border-box';
+      inner.style.minHeight = `${pe.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom)}px`;
+      // 空き地が 120px に足りない（小さい画面・段を開いた時）は、台を細く詰める（84px〜）。それでも入らない時だけ全体が縮む
+      if (inner.scrollHeight > inner.clientHeight + 0.5 || inner.getBoundingClientRect().height > parseFloat(inner.style.minHeight) + 0.5) ga.classList.add('tight');
+    }
     // 縮めると折り返しが変わって高さも変わるので、実際の下端を見ながら数回詰める（最小 0.5 倍）。
     //   下限は 0.6 倍だったが、1ページ目の中身は縮めない状態で約924px（390px幅・2026-09-24 実測）あり、
     //   見える高さ620pxでは 0.6 倍でも13pxはみ出して縦に動いた。縦に動かないことを優先して 0.5 倍まで許す

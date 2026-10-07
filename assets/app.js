@@ -211,3 +211,41 @@ function toggleBuyRace(raceId) {
   } catch (e) { /* 保存しないだけ */ }
   return i === -1;
 }
+
+// ---------- 自分の激アツ（138-spec・2026-10-07 ユーザー決定・mockup-266 案2） ----------
+// 絞り込み（yoso.js のランクの1ページ）で、気に入った馬に長押しで押す判子。記録は端末の中だけ（gekiatsu:{race_id} に馬番の一覧）。
+// 判子の絵（天下布武の楕円・金の箔・朱の字・禅骨董・朱肉のかすれ）と記録の読み書きはここに1つだけ置き、race.js（出馬表の一覧）と yoso.js（絞り込み）が使う
+const GEKI_SHU = '#C0302A';
+const gekiKey = (raceId) => `gekiatsu:${raceId}`;
+function gekiLoad(raceId) {
+  try { return new Set((JSON.parse(localStorage.getItem(gekiKey(raceId))) || []).map(Number)); } catch (e) { return new Set(); }
+}
+function gekiSave(raceId, set) {
+  try { localStorage.setItem(gekiKey(raceId), JSON.stringify([...set].sort((x, y) => x - y))); } catch (e) { /* 保存しないだけ */ }
+}
+// 金の箔の色と朱肉のかすれ。<use> と同じく id で呼ぶので、ページに1回だけ置く
+function ensureGekiDefs() {
+  if (document.getElementById('geki-defs')) return;
+  document.body.insertAdjacentHTML('beforeend', '<svg id="geki-defs" width="0" height="0" aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden"><defs>'
+    + '<linearGradient id="geki-foil" gradientUnits="userSpaceOnUse" x1="8" y1="14" x2="94" y2="86">'
+    + '<stop offset="0" stop-color="#9A6B12"/><stop offset=".22" stop-color="#E9C766"/><stop offset=".42" stop-color="#B8862B"/>'
+    + '<stop offset=".62" stop-color="#F3D98A"/><stop offset=".82" stop-color="#A9781E"/><stop offset="1" stop-color="#D8B04E"/></linearGradient>'
+    + '<filter id="geki-ink" x="-10%" y="-10%" width="120%" height="120%">'
+    + '<feTurbulence type="fractalNoise" baseFrequency="1.4" numOctaves="2" seed="7" result="n"/>'
+    + '<feDisplacementMap in="SourceGraphic" in2="n" scale="1.2" result="d"/>'
+    + '<feTurbulence type="fractalNoise" baseFrequency=".55" numOctaves="2" seed="11" result="g"/>'
+    + '<feColorMatrix in="g" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -14 10.6" result="hole"/>'
+    + '<feComposite in="d" in2="hole" operator="in"/></filter></defs></svg>');
+}
+// 判子。右の列に「激」を大きく縦に伸ばし、左の列に「ア」「ツ」（判子の決まりどおり右から読む）
+function gekiStampSvg(size, cls) {
+  return `<svg class="geki-st${cls ? ` ${cls}` : ''}" viewBox="0 0 100 100" width="${size}" height="${size}" aria-hidden="true">`
+    + '<g filter="url(#geki-ink)" transform="rotate(-8 50 50)">'
+    + '<ellipse cx="50" cy="50" rx="41" ry="47" fill="none" stroke="url(#geki-foil)" stroke-width="4.2"/>'
+    + '<ellipse cx="50" cy="50" rx="35.5" ry="41.5" fill="none" stroke="url(#geki-foil)" stroke-width="1.4"/>'
+    + `<g class="geki-tx" fill="${GEKI_SHU}" stroke="${GEKI_SHU}" stroke-width="1.4" paint-order="stroke">`
+    + '<text transform="translate(63 50) scale(1 1.86)" y="11" text-anchor="middle" font-size="31">激</text>'
+    + '<text transform="translate(37 36) scale(1.05 1.12)" y="9" text-anchor="middle" font-size="25">ア</text>'
+    + '<text transform="translate(37 64) scale(1.05 1.12)" y="9" text-anchor="middle" font-size="25">ツ</text></g></g></svg>';
+}
+

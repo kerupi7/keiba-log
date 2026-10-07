@@ -3410,7 +3410,29 @@ function mmPaint() {
   // 111-spec §3.5 では、ボトムシートが説明文を出さずに閉じるので、印のマスと
   // この行の2つで「何が起きたか」を示していた。マスの方は残っているので、
   // 付けた印がその場で変わることは今までどおり分かる。
+  gekiPaint();
 }
+
+// ---------- 自分の激アツ（138-spec・2026-10-07 ユーザー決定・mockup-266 案2） ----------
+// 絞り込み（yoso.js のランクの1ページ）で、気に入った馬に長押しで押す判子。✓・消・◎○▲とは別に、1頭ずつ付け外しできる。
+// 記録は端末の中だけ（gekiatsu:{race_id} に馬番の一覧）。端末をまたいでは残らない。
+// 判子の絵と記録の読み書き（gekiStampSvg・gekiLoad・gekiSave・ensureGekiDefs）は app.js（yoso.js からも呼ぶため）
+// 出馬表の一覧：自分の印の丸の右上に、小さな判子
+function gekiPaint() {
+  const raceId = new URLSearchParams(location.search).get('id');
+  if (!raceId) return;
+  const set = gekiLoad(raceId);
+  document.querySelectorAll('.race20 .mm-list [data-my]').forEach((b) => {
+    const old = b.querySelector('.mm-geki');
+    const on = set.has(Number(b.dataset.my));
+    if (on && !old) {
+      ensureGekiDefs();
+      b.insertAdjacentHTML('beforeend', `<i class="mm-geki" title="自分の激アツ">${gekiStampSvg(20)}</i>`);
+    } else if (!on && old) old.remove();
+  });
+}
+// 絞り込みで押した・外したとき（絞り込みを閉じてもページを読み直さない時があるので、その場で描き直す）
+document.addEventListener('gekiatsu-change', gekiPaint);
 
 function mmOpenSheet(n) {
   const h = MM.by[n];
