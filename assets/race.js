@@ -3283,6 +3283,7 @@ function mmCell(h) {
 }
 
 // 「印を付ける」モードの1行。札から戦績5走を落とし、AIの点数・評価を残したもの
+// 137-spec（2026-10-07・mockup-254 案A）: 見た目は白い角丸の表に1頭1行（CSS）。馬名の印は ›、人気は「6人気」
 // 111-spec §3.6: 馬名は押せる（札の柱と同じ馬名ポップアップが開く）。戦績5走を落とした
 // モードなので、戦績を見る道がここに無いと「印を付ける」から戻らないと確かめられない。
 // ポップアップ（#pop-N）は renderShutuba20 が出走馬ぶん出しており、モードによらず同じものを開く。
@@ -3296,10 +3297,10 @@ function mmRow(h) {
   }
   return `<div class="mm-row${h.ability_mark ? ' pred' : ''}" data-n="${h.number}">${mmCell(h)}
     <span class="mm-ai">${markBadge20(h) || '<span class="none">—</span>'}</span>
-    <span class="mm-c">${umaBox(h.number, h.gate, 'sm')}<span class="mm-nmwrap"><button type="button" class="nm" data-pop="${h.number}"><span class="t">${escapeHtml(h.name)}</span><i class="apop">▸</i></button>${mmSub(h)}</span>
+    <span class="mm-c">${umaBox(h.number, h.gate, 'sm')}<span class="mm-nmwrap"><button type="button" class="nm" data-pop="${h.number}"><span class="t">${escapeHtml(h.name)}</span><i class="apop">›</i></button>${mmSub(h)}</span>
       <span class="tot">${fmtNum(dispScore(h), 1)}<i class="grade ${gradeClass(dispGrade(h))}">${gradeDisp(dispGrade(h))}</i></span>
       <span class="od${oddsHotClass(h.odds)}">${h.odds != null ? h.odds.toFixed(1) : '—'}<i>倍</i>
-        <span class="pp">${h.popularity ?? '—'}人</span></span></span></div>`;
+        <span class="pp">${h.popularity ?? '—'}人気</span></span></span></div>`;
 }
 
 // 一覧の2行目（2026-09-03 ユーザー指示）。性齢・騎手・斤量・馬体重を出す。
@@ -4730,73 +4731,194 @@ function r26HotBanner(site, bp) {
   </div>`;
 }
 
-// 紺の札（mockup-233 案A）。レース情報＋見立ての升目＋印／馬券。升目と印／馬券は出馬表タブの時だけ（CSS）
+// 上の札（137-spec・2026-10-07 ユーザー決定・mockup-253「案B-1a-3 直したもの」）。
+// 紺の札（mockup-233）をやめ、絞り込み・印の画面と同じ白い角丸のカード1枚にした。出す中身は紺の札と同じで、
+// 注記の文（「前70%（ふだん62%）」「3着内に入った割合」「5段の下から2番目」）は外して絵で読ませる。
+// 上から：日付の行と買いレース／レース名／条件の4つの欄／激アツの帯／荒れ度（横いっぱい）／100万超えとメンバー／
+// 今週の傾向／印・馬券／予想時刻。激アツから印・馬券までは出馬表タブの時だけ（.r26-mit・CSS）
+const R27_UPKEY = { '堅い': 'kata', '中荒れ': 'naka', '大荒れ': 'dai' };
+const R27_UPLV = { kata: 1, naka: 2, dai: 3 };
+// メンバーの勲章（2026-10-07 ユーザー「ここ勲章でいいよ」）。S＝金・A＝銀・B＝銅・C＝青灰・D＝薄い灰
+// [明るい, 中, 暗い, リボン, 字]
+const R27_MEDAL = {
+  S: ['#FFE48A', '#E2A400', '#B57F00', '#C8236A', '#5A3E00'],
+  A: ['#F4F6F9', '#B9C2CD', '#8590A0', '#003E70', '#3A4655'],
+  B: ['#F2C7A0', '#C27C45', '#93552A', '#2E8B7A', '#5A2E10'],
+  C: ['#C9D3DF', '#7F90A6', '#5D6E84', '#8E9AAB', '#3A4655'],
+  D: ['#ECECEF', '#C4C4CA', '#9E9EA6', '#C7C7CC', '#6D6D72'],
+};
+const R27_NAVY = '#003E70';
+const R27_GREY = '#8E8E93';
+const R27_MORE = '#5B93D6';   // 前と後ろ：いつもより多い分
+// 走る馬（左向き＝ゴールへ）と旗。札の中に1回だけ置いて <use> で呼ぶ
+const R27_DEFS = '<svg class="r27-defs" width="0" height="0" aria-hidden="true"><defs>'
+  + '<symbol id="r27-hs" viewBox="0 0 24 18"><g stroke-linecap="round" stroke-linejoin="round">'
+  + '<path d="M7.6 6.6 4.2 2.6 1.4 3.4 1.1 4.9 3.2 5.6 5.2 5.3 7 9.4z" stroke="currentColor" stroke-width="1.1" fill="currentColor"/>'
+  + '<ellipse cx="12.6" cy="8.8" rx="6.6" ry="3.3" fill="currentColor"/>'
+  + '<path d="M8.6 10.8 6.4 15.6M10.8 11.6 11.8 16M15.6 11.2 13.6 16M18 10.4 21.2 14.6" stroke="currentColor" stroke-width="1.7" fill="none"/>'
+  + '<path d="M19 7.2 Q22 6.8 23 10.4" stroke="currentColor" stroke-width="1.5" fill="none"/></g></symbol>'
+  + '<symbol id="r27-flag" viewBox="0 0 12 16"><path d="M1.5 1v14" stroke="#3C3C43" stroke-width="1.3" stroke-linecap="round"/>'
+  + '<path d="M2 1.5h8.5v6H2z" fill="#fff" stroke="#3C3C43" stroke-width=".8"/>'
+  + '<path d="M2 1.5h2.8v3H2zM7.7 1.5h2.8v3H7.7zM4.8 4.5h2.9v3H4.8z" fill="#3C3C43"/></symbol>'
+  + '</defs></svg>';
+
+function r27Medal(g) {
+  const m = R27_MEDAL[g];
+  if (!m) return `<b class="r27-num">${escapeHtml(g)}</b>`;
+  return `<svg class="r27-medal" viewBox="0 0 40 48" role="img" aria-label="メンバーレベル ${g}">`
+    + `<defs><linearGradient id="r27-md" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${m[0]}"/>`
+    + `<stop offset=".55" stop-color="${m[1]}"/><stop offset="1" stop-color="${m[2]}"/></linearGradient></defs>`
+    + `<path d="M11 1h7l4 15h-7z" fill="${m[3]}"/><path d="M29 1h-7l-4 15h7z" fill="${m[3]}" opacity=".78"/>`
+    + '<circle cx="20" cy="30" r="16" fill="url(#r27-md)"/>'
+    + '<circle cx="20" cy="30" r="12.6" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="1"/>'
+    + `<text x="20" y="36.5" text-anchor="middle" class="r27-mt" fill="${m[4]}">${g}</text></svg>`;
+}
+
+// 内と外：コーナーの内の道・外の道。濃いほうが3着内によく来た道（2026-10-07「柵とか書かなくていい」）
+function r27Lanes(io, flat) {
+  const vi = Math.round(io.inner_pct);
+  const vo = Math.round(io.outer_pct);
+  const mx = Math.max(io.inner_pct, io.outer_pct, 1);
+  const op = (v) => 0.16 + 0.84 * (v / mx) ** 2;
+  const c = flat ? R27_GREY : R27_NAVY;
+  return '<svg class="r27-lanes" viewBox="0 0 150 72" role="img"'
+    + ` aria-label="3着内に入った割合 内${vi}% 外${vo}%">`
+    + `<path d="M17 70 A58 58 0 0 1 133 70" fill="none" stroke="${c}" stroke-opacity="${op(io.outer_pct).toFixed(2)}" stroke-width="15"/>`
+    + `<path d="M33 70 A42 42 0 0 1 117 70" fill="none" stroke="${c}" stroke-opacity="${op(io.inner_pct).toFixed(2)}" stroke-width="15"/>`
+    + `<text x="75" y="32" text-anchor="middle" class="r27-lt${op(io.inner_pct) > 0.55 ? ' r27-ltw' : ''}">内 <tspan class="n">${vi}</tspan>%</text>`
+    + `<text x="75" y="16" text-anchor="middle" class="r27-lt${op(io.outer_pct) > 0.55 ? ' r27-ltw' : ''}">外 <tspan class="n">${vo}</tspan>%</text>`
+    + '</svg>';
+}
+
+// 前と後ろ：旗（ゴール）から伸びる1本の帯。紺の長さ＝3着内の馬のうち前にいた割合、先頭に馬。
+// 黒い刻み＝いつもの割合で、字は「いつも」の3文字だけ（無いと刻みの意味が読めないため）
+function r27Queue(legs, flat) {
+  const f = Number(legs.front_pct);
+  const base = legs.base_pct != null ? Number(legs.base_pct) : 62.2;
+  const c = flat ? R27_GREY : R27_NAVY;
+  const L = 14;
+  const R = 148;
+  const X = (v) => L + (R - L) * Math.max(0, Math.min(100, v)) / 100;
+  let s = '<use href="#r27-flag" x="0" y="17" width="11" height="15"/>'
+    + `<rect x="${L}" y="24" width="${R - L}" height="9" rx="4.5" fill="#E6E6EB"/>`
+    + `<rect x="${L}" y="24" width="${(X(Math.min(f, base)) - L).toFixed(1)}" height="9" rx="4.5" fill="${c}"/>`;
+  if (f > base) {
+    s += `<rect x="${(X(base) - 4).toFixed(1)}" y="24" width="${(X(f) - X(base) + 4).toFixed(1)}" height="9" rx="4.5" fill="${flat ? '#B5B5BB' : R27_MORE}"/>`
+      + `<rect x="${(X(base) - 4).toFixed(1)}" y="24" width="4" height="9" fill="${c}"/>`;
+  } else if (f < base) {
+    s += `<rect x="${X(f).toFixed(1)}" y="24.6" width="${(X(base) - X(f)).toFixed(1)}" height="7.8" fill="none" stroke="${c}" stroke-width="1" stroke-dasharray="2 1.6"/>`;
+  }
+  s += `<path d="M${X(base).toFixed(1)} 21 V36" stroke="#1C1C1E" stroke-width="1.2"/>`
+    + `<text x="${X(base).toFixed(1)}" y="45" text-anchor="middle" class="r27-ax">いつも</text>`
+    + `<use href="#r27-hs" x="${(X(f) - 11).toFixed(1)}" y="4" width="22" height="16.5" style="color:${c}"/>`
+    + `<text x="${L}" y="15" class="r27-qv" fill="${c}">前 <tspan class="n">${Math.round(f)}</tspan>%</text>`;
+  return `<svg class="r27-queue" viewBox="0 0 150 48" role="img" aria-label="3着内の馬のうち前にいた割合 ${Math.round(f)}%（いつも${Math.round(base)}%）">${s}</svg>`;
+}
+
+// 何レースから出したか。灰の四角＝前日まで、紺の四角＝今日（2026-10-07「色ありと色なしの意味が伝わらない」→字を添える）
+function r27Scope(db, surf) {
+  const n = db.n_races || 0;
+  const prev = db.prev_races || 0;
+  const today = db.prev_races ? (db.today_races || 0) : n;
+  const grp = (k, cls, lab) => (k ? `<span class="r27-sg ${cls}"><span class="sq">${'<i></i>'.repeat(Math.min(k, 24))}</span>${lab}<b class="r27-num">${k}</b></span>` : '');
+  return `<span class="r27-scd"><span class="tt">${surf} <b class="r27-num">${n}</b>レース</span>${grp(prev, 'p', '前日まで')}${grp(today, 't', '今日')}</span>`;
+}
+
 function renderHead26(site) {
   const r = site.race;
   const p = site.prediction || {};
-  const baba = (p.baba_detail || {}).going_weather || r.going || '—';
-  const turf = r.surface === '芝';
+  const num = (v) => `<b class="r27-num">${escapeHtml(String(v))}</b>`;
+  const turf = String(r.surface || '').startsWith('芝');
   const buyOn = isBuyRace(r.race_id);
   const buyBtn = `<button type="button" class="brchk r26-buy${buyOn ? ' on' : ''}" data-buyrace`
     + ` aria-pressed="${buyOn ? 'true' : 'false'}"><span class="bx" aria-hidden="true"></span>買いレース</button>`;
   const d = r.date ? new Date(`${r.date}T00:00:00+09:00`) : null;
-  const when = d ? `${d.getMonth() + 1}/${d.getDate()}(${'日月火水木金土'[d.getDay()]})` : escapeHtml(r.date || '');
-  const course = site.course_entities ? '<button type="button" class="r26-crs" data-pop="course">コース ▸</button>' : '';
-  const cls = r.class ? `<i>・</i><span>${escapeHtml(r.class)}${r.weight_rule ? `・${escapeHtml(r.weight_rule)}` : ''}</span>` : '';
+  const when = d
+    ? `${num(`${d.getMonth() + 1}/${d.getDate()}`)}<small>(${'日月火水木金土'[d.getDay()]})</small>`
+    : escapeHtml(r.date || '');
+  const dot = '<i class="dt"></i>';
+  const eye = `<span class="r27-when">${when}${dot}${escapeHtml(r.track || '')} ${num(r.race_number || '')}R`
+    + `${r.post_time ? `${dot}${num(r.post_time)} 発走` : ''}</span>`;
 
-  // 見立ての升目（6列の格子。1行目は2つずつ、2行目は3つずつ使う）
-  const cells = [];
-  const cell = (span, lb, v, sub, hot, attr) => ({ span, html: (rs, sp) => `<${attr ? 'button type="button"' : 'div'} class="r26-c s${sp}${rs ? ' rs' : ''}"${attr || ''}>`
-    + `<span class="l">${lb}</span><span class="v${hot ? ' hot' : ''}">${v}</span><span class="n">${sub}</span></${attr ? 'button' : 'div'}>` });
+  // 条件の4つの欄（コース・馬場・頭数・クラス）。コースが確定できないレースは押せない欄にする
+  const baba = (p.baba_detail || {}).going_weather || r.going || '—';
+  const bm = String(baba).match(/^(.*?)（(.*)）$/);
+  const babaV = bm ? `${escapeHtml(bm[1])}<small>天気 ${escapeHtml(bm[2])}</small>` : escapeHtml(baba);
+  const cls = String(r.class || '').normalize('NFKC');
+  const crsIn = `<span class="l">コース${site.course_entities ? '<em>›</em>' : ''}</span>`
+    + `<span class="v"><span class="r27-sf${turf ? ' tf' : ' dt'}">${escapeHtml(String(r.surface || '').slice(0, 1))}</span>`
+    + `${num(r.distance || '—')}<small>m ${escapeHtml(r.direction || '')}</small></span>`;
+  const crs = site.course_entities
+    ? `<button type="button" class="r27-sc tap" data-pop="course">${crsIn}</button>`
+    : `<div class="r27-sc">${crsIn}</div>`;
+  const spec = `<div class="r27-spec">${crs}`
+    + `<div class="r27-sc"><span class="l">馬場</span><span class="v wr">${babaV}</span></div>`
+    + `<div class="r27-sc"><span class="l">頭数</span><span class="v">${num(r.field_size || '—')}<small>頭</small></span></div>`
+    + `<div class="r27-sc"><span class="l">クラス</span><span class="v wr cl">${escapeHtml(cls || '—')}`
+    + `${r.weight_rule ? `<small>${escapeHtml(r.weight_rule)}</small>` : ''}</span></div></div>`;
+
+  // 荒れ度（横いっぱい）：選ばれた荒れ方とその割合、3つの割合を長さで分けた1本の帯。押すと説明（data-pop="upset"）
   const up = p.upset;
   const upSel = up && Array.isArray(up.classes) ? (up.classes.find((c) => c.selected) || null) : null;
-  const upCell = upSel ? cell(2, '荒れ度 ▸', `${escapeHtml(up.label_name)} <b>${upSel.percent}</b><small>%</small>`,
-    up.classes.filter((c) => !c.selected).map((c) => `${escapeHtml(c.name)}${c.percent}`).join('・'), true, ' data-pop="upset"') : null;
+  let upHtml = '';
+  if (upSel) {
+    const k = R27_UPKEY[up.label_name] || 'naka';
+    const bars = [1, 2, 3].map((i) => `<i${i <= R27_UPLV[k] ? ' class="on"' : ''}></i>`).join('');
+    const segs = up.classes.map((c) => `<i class="${R27_UPKEY[c.name] || 'naka'}${c.selected ? ' on' : ''}" style="flex:${Math.max(Number(c.percent) || 0, 3)}"></i>`).join('');
+    const labs = up.classes.map((c) => `<span class="${R27_UPKEY[c.name] || 'naka'}${c.selected ? ' on' : ''}">${escapeHtml(c.name)}<b class="r27-num">${escapeHtml(String(c.percent))}</b>%</span>`).join('');
+    upHtml = `<button type="button" class="r27-up ${k}" data-pop="upset">`
+      + `<span class="hd"><span class="l">荒れ度<em>›</em></span><span class="vr"><span class="bars">${bars}</span>`
+      + `<span class="nm">${escapeHtml(up.label_name)}</span>${num(upSel.percent)}<small>%</small></span></span>`
+      + `<span class="stk">${segs}</span><span class="slb">${labs}</span></button>`;
+  }
+
+  // 100万超え（4〜6%の時だけ升目に出す。6%以上は激アツの帯）とメンバー（勲章）。判定は今までと同じ bigpayTier
   const bp = p.bigpay && p.bigpay.field_size ? p.bigpay : null;
-  const tier = bp ? (bigpayTier(parseFloat(bp.percent)) || 'quiet') : 'off';   // bands が読めないときは1行で出す（renderBigPay と同じ）
+  const tier = bp ? (bigpayTier(parseFloat(bp.percent)) || 'quiet') : 'off';   // bands が読めないときは升目で出す（今までと同じ）
   const avg = bp ? parseFloat((String(bp.ratio_line || '').match(/全体([\d.]+)%/) || [])[1]) : NaN;
-  const mem = p.member_grade ? cell(2, 'メンバー', `<b>${escapeHtml(p.member_grade)}</b>`, `5段の${R26_MEMPOS[p.member_grade] || ''}`, false) : null;
-  let hot = '';
+  const hot = tier === 'hot' ? r26HotBanner(site, bp) : '';
+  const row = [];
   if (tier === 'quiet') {
-    if (upCell) cells.push(upCell);
-    cells.push(cell(2, '3連単100万超え', `<b>${escapeHtml(bp.percent)}</b><small>%</small>`, avg ? `平均の${(parseFloat(bp.percent) / avg).toFixed(1)}倍` : escapeHtml(bp.ratio_line || ''), false));
-    if (mem) cells.push(mem);
-  } else {
-    // 激アツは升目の上に帯で出す。4%未満は今までどおり出さない。どちらも残りで1行を分ける
-    if (tier === 'hot') hot = r26HotBanner(site, bp);
-    if (upCell) cells.push(upCell);
-    if (mem) cells.push(mem);
+    row.push(`<div class="r27-t"><span class="lf"><span class="l">3連単100万超え</span>`
+      + `<span class="sb">${avg ? `平均の${(parseFloat(bp.percent) / avg).toFixed(1)}倍` : escapeHtml(bp.ratio_line || '')}</span></span>`
+      + `<span class="vr">${num(bp.percent)}<small>%</small></span></div>`);
   }
-  // 1行目の残り幅を埋める（2つなら3ずつ、1つなら6）
-  const row1 = cells.length;
-  if (row1 && row1 < 3) cells.forEach((c) => { c.span = 6 / row1; });
+  if (p.member_grade) {
+    row.push(`<div class="r27-t mem"><span class="l">メンバー</span>${r27Medal(p.member_grade)}</div>`);
+  }
+  const rowHtml = row.length ? `<div class="r27-row${row.length === 1 ? ' one' : ''}">${row.join('')}</div>` : '';
+
+  // 今週の傾向（内と外・前と後ろ）。答えの言葉の決め方は今までと同じ（偏りあり＝紺、偏りなし＝黒、絵も灰）
   const wk = r26Week(site);
-  if (wk && wk.io) {
-    const flat = wk.io.label === '大きな偏りなし';
-    cells.push(cell(3, '今週・内と外', escapeHtml(String(wk.io.label).replace('傾向', '')), `3着内 内${Math.round(wk.io.inner_pct)}%・外${Math.round(wk.io.outer_pct)}%`, !flat));
+  let wkHtml = '';
+  if (wk) {
+    const db = p.day_bias || {};
+    const surf = turf ? '芝' : 'ダート';
+    const cells = [];
+    if (wk.io) {
+      const flat = wk.io.label === '大きな偏りなし';
+      cells.push(`<div class="r27-wc"><span class="k">内と外</span><span class="w${flat ? '' : ' em'}">${escapeHtml(String(wk.io.label).replace('傾向', ''))}</span>${r27Lanes(wk.io, flat)}</div>`);
+    }
+    if (wk.legs) {
+      const flat = !wk.legs.label || wk.legs.label === '大きな偏りなし';
+      const lab = wk.legs.label ? (R26_LEGW[wk.legs.label] || wk.legs.label) : `前${Math.round(wk.legs.front_pct)}%`;
+      cells.push(`<div class="r27-wc"><span class="k">前と後ろ</span><span class="w${flat ? '' : ' em'}">${escapeHtml(lab)}</span>${r27Queue(wk.legs, flat)}</div>`);
+    }
+    wkHtml = `<div class="r27-wk"><div class="wh"><span class="l">今週の傾向</span>${r27Scope(db, surf)}</div>`
+      + `<div class="wg n${cells.length}">${cells.join('')}</div></div>`;
   }
-  if (wk && wk.legs) {
-    const base = wk.legs.base_pct != null ? wk.legs.base_pct : 62.2;
-    const lab = wk.legs.label || `前${Math.round(wk.legs.front_pct)}%`;
-    const flat = !wk.legs.label || wk.legs.label === '大きな偏りなし';
-    cells.push(cell(3, '今週・前と後ろ', escapeHtml(R26_LEGW[lab] || lab), `前${Math.round(wk.legs.front_pct)}%（ふだん${Math.round(base)}%）`, !flat));
-  }
-  if (cells.length && cells.length - row1 === 1) cells[cells.length - 1].span = 6;
-  let col = 0;
-  const grid = cells.map((c) => { const rs = col % 6 === 0; col += c.span; return c.html(rs, c.span); }).join('');
-  const seg = `<div class="r26-seg" role="tablist"><button type="button" data-view="mark" class="on">印</button>`
+
+  const seg = `<div class="r27-seg" role="tablist"><button type="button" data-view="mark" class="on">印</button>`
     + `${site.shinba ? '' : '<button type="button" data-view="baken">馬券</button>'}</div>`;
-  return `<section class="r26-fa">
-    <div class="r26-hd"><span class="r26-when">${when} ${escapeHtml(r.track || '')}${escapeHtml(String(r.race_number || ''))}R${r.post_time ? ` ・ ${escapeHtml(r.post_time)}発走` : ''}</span>${buyBtn}</div>
-    <h1 class="r26-ttl">${r.grade ? `<span class="gb2">${escapeHtml(r.grade)}</span>` : ''}${escapeHtml(r.race_name || '')}</h1>
-    <div class="r26-cond"><span><span class="r26-sf${turf ? ' turf' : ''}">${escapeHtml(r.surface || '')}</span> <b>${r.distance}</b>m ${escapeHtml(r.direction || '')}</span><i>・</i><span>${escapeHtml(baba)}</span><i>・</i><span><b>${r.field_size}</b>頭</span>${cls}${course}</div>
-    <div class="r26-mit">
-      ${hot}
-      ${grid ? `<div class="r26-grid">${grid}</div>` : ''}
-      ${wk ? `<div class="r26-scope">内と外・前と後ろは ${escapeHtml(wk.scope)} から</div>` : ''}
-      ${seg}
+  return `<section class="r27">${R27_DEFS}
+    <div class="r27-card">
+      <div class="r27-eye">${eye}${buyBtn}</div>
+      <h1 class="r27-ttl">${escapeHtml(r.race_name || '')}${r.grade ? `<span class="r27-gb">${escapeHtml(r.grade)}</span>` : ''}</h1>
+      ${spec}
+      <div class="r26-mit r27-mit">${hot}${upHtml}${rowHtml}${wkHtml}</div>
     </div>
-    ${p.predicted_at ? `<div class="r26-pt">予想: ${fmtDateTimeShort(p.predicted_at)}（${escapeHtml(p.odds_basis || '')}基準）</div>` : ''}
+    <div class="r26-mit">${seg}</div>
+    ${p.predicted_at ? `<div class="r27-pt">予想 <span class="r27-num">${fmtDateTimeShort(p.predicted_at)}</span>（${escapeHtml(p.odds_basis || '')}基準）</div>` : ''}
   </section>`;
 }
 

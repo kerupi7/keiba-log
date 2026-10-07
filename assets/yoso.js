@@ -113,11 +113,13 @@
     const st = markState();
     const box = document.createElement('div');
     box.className = 'yf-entry';
+    // 137-spec（2026-10-07 ユーザー「絞り込み → 印 の順に決めます これいらない」）: 説明の行は外した。
+    // 絞り込みを済ませた後の「いまの予想」の行だけ残す
     const line = st.swiped
       ? `いまの予想：✓${st.cand}・消${st.kesi}${st.got.length ? `・${st.got.join('')}` : '・印はまだ'}`
-      : '絞り込み → 印 の順に決めます';
-    box.innerHTML = `<button type="button" class="yf-btn" id="yf-go">予想をはじめる</button>
-      <p>${line}</p>`;
+      : '';
+    box.innerHTML = `<button type="button" class="yf-btn" id="yf-go">予想をはじめる</button>`
+      + (line ? `<p>${line}</p>` : '');
     list.insertBefore(box, list.firstChild);
     box.querySelector('#yf-go').addEventListener('click', openMenu);
   }
