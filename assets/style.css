@@ -589,18 +589,19 @@ details.fold.om-fold>summary .cnt{color:#fff;opacity:.85;font-size:11px}
 .om-empty{font-size:13px;color:var(--cap);padding:14px 0}
 
 /* ===== 8b. 手動シミュレーター IPAT型UI（45-spec §2。Block B専用。Aは上のom-table/om-comboを共用） ===== */
-.sim-types{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}
-.sim-type{font-size:12.5px;font-weight:700;padding:8px 2px;border-radius:7px;
-  border:1px solid #C9C9C4;background:#fff;color:var(--text);cursor:pointer;text-align:center}
+.sim-types{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-top:8px}
+/* 2026-10-07（mockup-271）: 券種は灰の地のボタン。選んだ券種だけ青で塗る */
+.sim-type{height:34px;font-size:12.5px;font-weight:700;padding:0 2px;border:0;border-radius:8px;
+  background:#F2F2F0;color:#48484A;cursor:pointer;text-align:center}
 .sim-type.wide2{grid-column:span 2}
-.sim-type.active{background:var(--cta);color:#fff;border-color:var(--cta)}
+.sim-type.active{background:var(--cta);color:#fff}
 .sim-type:disabled{opacity:.4;cursor:not-allowed}
 
-.sim-methods{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
-.sim-method{flex:1;min-width:88px;font-size:12.5px;font-weight:700;padding:8px 4px;
-  border-radius:7px;border:1px solid #C9C9C4;background:#fff;color:var(--text);cursor:pointer}
-.sim-method.active{background:var(--cta);color:#fff;border-color:var(--cta)}
-.sim-method.sub{flex:none;min-width:72px}
+/* 買い方は灰の地に白いつまみ（単勝・複勝のときは段ごと出さない。切り替えは色の帯の中） */
+.sim-methods{display:flex;margin-top:8px;padding:2px;border-radius:8px;background:#EEEEEC}
+.sim-method{flex:1 1 auto;height:30px;padding:0 8px;border:0;border-radius:6px;background:transparent;
+  font-size:12px;font-weight:700;color:#5C5C5C;cursor:pointer;white-space:nowrap}
+.sim-method.active{background:#fff;color:var(--text);box-shadow:0 1px 2px rgba(0,0,0,.12)}
 
 .sim-axispos{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px}
 .sim-axispos button{font-size:12px;font-weight:700;padding:6px 9px;border-radius:6px;
@@ -615,86 +616,88 @@ details.fold.om-fold>summary .cnt{color:#fff;opacity:.85;font-size:11px}
 .sim-band.umatan{background:#e59300}.sim-band.sanrenpuku{background:#4aa3d6}
 .sim-band.sanrentan{background:#e57d1e}
 
-/* 2026-09-07: table-layout を fixed にした。印を2列足したことで、320px幅では
-   馬名・オッズ・騎手の3行の「これ以上縮まない幅」が効いて表が容器から44〜75pxはみ出し、
-   ページに横スクロールが出た（印なしでは出ない＝この変更で出た退行）。
-   fixed にすると選択列を先に確定でき、余りが本文に回って3行が省略記号で収まる。 */
-.sim-sel{width:100%;table-layout:fixed;border-collapse:collapse;font-size:12.5px}
-.sim-sel th:not(.l),.sim-sel td:not(.l){width:30px}
-.sim-sel th{background:var(--sub-bg2);color:var(--cap);font-size:10.5px;font-weight:700;
-  padding:5px 2px;border-bottom:1px solid var(--rule);text-align:center}
-.sim-sel th.l{text-align:left}
-.sim-sel td{border-bottom:1px solid var(--rule);padding:6px 2px;text-align:center;vertical-align:middle}
-.sim-sel td.l{text-align:left;padding-left:4px}
-.sim-sel tr.green td{background:var(--green-row)}
-/* 2026-09-08（案C）: 自分の印が「消」の行を沈める。出馬表の .my-keshi と同じ値。
-   tr.green より後に書いて、両方立った時は「消」を勝たせる（実際には simulator.js が
-   消の馬に green を付けないので重ならないが、順番で意図を残しておく） */
-.sim-sel tr.my-keshi td{background:#F2F2F0}
-.sim-sel tr.my-keshi .sim-hbody,.sim-sel tr.my-keshi .sim-ai{opacity:.62}
-/* 45-spec §2.8: 印は既存の色トークンを流用（.n-honなどの命名は使わず新規スコープ）。
-   2026-09-07: 能力印だけの1列（.sim-mk）をやめ、「自分の印（.sim-my）＋AIの印（.sim-ai）」の
-   2列にした。.sim-mk は出す所が無くなったので削除。 */
+.sim-band.sim-hd{display:flex;align-items:center;justify-content:space-between;gap:8px;
+  min-height:36px;padding:5px 6px 5px 10px;border-radius:8px 8px 0 0}
+.sim-tf{display:flex;padding:2px;border-radius:6px;background:rgba(255,255,255,.22)}
+.sim-tf button{height:24px;padding:0 12px;border:0;border-radius:5px;background:transparent;
+  font:inherit;font-size:12px;font-weight:700;color:#fff;cursor:pointer}
+.sim-tf button.active{background:#fff;color:#4657b8}
 
-/* 自分の印。読むだけで、押すと出馬表タブのその馬へ飛ぶ。
-   見た目は隣タブ（アキネーター）の .ak-my と同じ「紺の枠＋薄青の地＋印ごとの文字色」。
-   出馬表の .mm-my（32px・その場で付け替える）とは幅も役目も違う。 */
-/* 2026-09-08: 読むだけの札にした（押しても何も起きない）。押す先は馬名に一本化 */
-.sim-my{flex:none;display:inline-flex;align-items:center;justify-content:center;
-  min-width:16px;height:19px;padding:0 2px;border:1px solid var(--rule);border-radius:4px;
-  background:#fff;font-size:12px;font-weight:700;line-height:1;color:#C4C4BF}
-.sim-my.set{border-color:var(--navy);background:#F4F8FC}
-.sim-my i{font-style:normal;font-size:9px;font-weight:400}
+/* 2026-10-07（mockup-271 案3・ユーザー決定）: 馬の表を「灰の地に1頭ずつの白い帯」にした。
+   列は 印｜馬番｜馬名・騎手｜オッズ｜選ぶ欄×列数。評価・点数は出さない。
+   375px の画面で表は 335px（実測）。選ぶ列が2つ以上（.multi）は選ぶ欄とオッズ欄を詰めて、
+   3列でも馬名9文字（例: マウンテンバローズ）が切れないようにしてある。
+   選ぶ欄の塗り・帯の色は券種の色（--tc）。 */
+.sim-list{--tc:var(--cta);background:#F2F2F5;border-radius:0 0 10px 10px;padding:0 3px 3px}
+.sim-list.tansho{--tc:#4657b8}.sim-list.wakuren{--tc:#009944}.sim-list.umaren{--tc:#8b5fbf}
+.sim-list.wide{--tc:#4bb3b3}.sim-list.umatan{--tc:#e59300}.sim-list.sanrenpuku{--tc:#4aa3d6}
+.sim-list.sanrentan{--tc:#e57d1e}
+.sim-lh,.sim-r{display:grid;align-items:center;column-gap:6px;padding:0 6px;
+  grid-template-columns:24px 22px minmax(0,1fr) 46px repeat(var(--sim-n),28px)}
+.sim-list.multi .sim-lh,.sim-list.multi .sim-r{column-gap:4px;padding:0 4px 0 5px;
+  grid-template-columns:24px 22px minmax(0,1fr) 40px repeat(var(--sim-n),24px)}
+.sim-lh{height:24px;font-size:10px;font-weight:700;color:#8E8E89;letter-spacing:.02em}
+.sim-lh .c{text-align:center;white-space:nowrap}
+.sim-list.multi .sim-lh .c{font-size:9px;letter-spacing:-.04em}
+.sim-lh .r{text-align:right}
+.sim-rows{display:flex;flex-direction:column;gap:4px}
+.sim-r{min-height:52px;background:#fff;border-radius:11px}
+.sim-r.green{background:#E7F4EC}
+/* 2026-09-08（案C）: 自分の印が「消」の行は沈める。simulator.js が消の馬に green を付けないので重ならない */
+.sim-r.my-keshi>*{opacity:.36}
+.sim-r.scr .sim-hbody,.sim-r.scr .hn,.sim-r.scr .sim-od{opacity:.4}
+
+/* 印。上が自分の印（色つきの記号・読むだけ）、下がAIの印（markBadge20 の札を小さく） */
+.sim-mk{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px}
+.sim-my{height:15px;display:inline-flex;align-items:center;font-size:15px;font-weight:800;line-height:1}
 .sim-my.m1{color:var(--mk-hon)} .sim-my.m2{color:var(--mk-tai)}
 .sim-my.m3{color:var(--mk-tan)} .sim-my.m4{color:var(--mk-oku)}
 .sim-my.m5{color:var(--orange)}
 .sim-my.m7{color:var(--mk-chk)}
-.sim-my.m6{color:var(--cap);font-size:10.5px}
+.sim-my.m6{color:var(--keshi);font-size:12px}
+.sim-list .sim-ai{display:flex;flex-direction:column;align-items:center;gap:2px}
+.sim-list .sim-ai .mkb{min-width:22px;height:15px;padding:0 3px;margin:0;border-radius:4px;
+  font-size:10px;line-height:15px;white-space:nowrap}
+.sim-list .sim-ai .mkb.m-jir{font-size:8.5px;letter-spacing:-.06em;padding:0 2px;min-width:24px}
+/* AIの消しは塗らずに字だけ（並ぶ数が多いので目立たせない） */
+.sim-list .sim-ai .mkb.m-kes{background:none;color:#A9A9A4;font-weight:600}
+.sim-list .sim-ai .mkstack{display:flex;flex-direction:column;align-items:center;gap:2px}
+.sim-list .sim-ai .mkstack .mkb.sub{height:12px;line-height:12px;font-size:8.5px;min-width:0}
+.sim-list .hn{font-family:Futura,Jost,'Century Gothic',system-ui,sans-serif;font-weight:600;font-size:12.5px;border-radius:5px}
 
-/* AIの印。出馬表の .mm-ai と同じ30pxの器で、中身は markBadge20（能力印＋穴／地雷／消し）。
-   器が無いと .mkstack（能力印＋地雷の2段）が横に伸びて、表が34pxはみ出す（実測） */
-.sim-ai{flex:none;width:30px;display:flex;flex-direction:column;align-items:center;
-  justify-content:center;gap:1px}
-.sim-ai .none{font-size:9px;color:#C4C4BF}
-.sim-ai .mkb{margin-right:0}
-.sim-ai .mkstack{display:flex;flex-direction:column;align-items:center;gap:1px}
-.sim-ai .mkstack .mkb{font-size:10.5px;line-height:14px;padding:0 4px;min-width:15px}
-.sim-ai .mkstack .mkb.sub{font-size:8.5px;line-height:11px;padding:0 3px;min-width:0}
-/* 馬名・オッズ・騎手の3行。印2列と馬番のぶん残りが狭いので、はみ出さずに詰める */
-.sim-hbody{min-width:0}
-/* 45-spec §2.8: 評価バッジは既存.race20 .gradeと同色だが、Block Bは1.xページでは.race20外に
-   出るためスコープなしで複製（.race20 .gradeは変更しない） */
-.sim-grade{display:inline-block;min-width:22px;text-align:center;font-weight:700;
-  font-size:10.5px;border-radius:3px;padding:1px 4px;color:#fff}
-.sim-grade.g-s{background:#0B5E2E} .sim-grade.g-ap{background:#0F7A3D} .sim-grade.g-a{background:#2f8f4e}
-.sim-grade.g-bp{background:#5a9bd4} .sim-grade.g-b{background:#8aadc9}
-.sim-grade.g-cp{background:#b0b0a8} .sim-grade.g-c{background:#c2c2ba}
-.sim-grade.g-d{background:#d8b48a} .sim-grade.g-e{background:#d89a9a}
-/* 2026-09-07: 幅が足りないときは折り返さず「…」で切る。折り返すと行の高さが馬ごとに
-   変わって、右の選択欄と目が合わなくなるため（table-layout:fixed とセットで効く） */
-.sim-hname,.sim-hodds,.sim-hmeta{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.sim-hname{font-weight:700;font-size:12.5px;line-height:1.25}
+/* 馬名（押すと戦績のポップアップ）と、騎手・斤量の行。幅が足りなければ「…」で切る */
+.sim-hbody{min-width:0;display:flex;flex-direction:column;gap:3px}
+.sim-hname{display:flex;min-width:0;font-size:13.5px;font-weight:700;line-height:1.2;letter-spacing:.01em}
 /* 2026-09-08: 馬名を押すと戦績のポップアップ（#pop-N）。出馬表の .nm と同じ作りで、
    ボタンの地・枠・余白を消して見た目は文字のまま。取消馬は span で出るので押せない */
-.sim-nm{border:0;background:transparent;padding:0;margin:0;font:inherit;color:inherit;
-  text-align:left;cursor:pointer}
-.sim-nm .apop{font-style:normal;font-size:9px;color:var(--cap);margin-left:2px;vertical-align:2px}
-span.sim-nm{cursor:default}
-.sim-hodds{font-size:10.5px;color:var(--cap)}
-/* 2026-09-07: 点数はオッズの行の右へ移した（案A）。行の中で一番読ませたい数字なので本文色 */
-.sim-hsc{color:var(--text);font-variant-numeric:tabular-nums}
-.sim-hodds .hot{color:var(--live);font-weight:700}
-.sim-hmeta{font-size:10px;color:var(--sub)}
-.sim-gflag{display:inline-block;font-size:9.5px;font-weight:700;color:var(--hit);
-  border:1px solid var(--hit);border-radius:3px;padding:0 4px;margin-left:3px}
-.sim-pick{width:22px;height:22px;border:1.5px solid #bbb;border-radius:5px;background:#fff;
-  cursor:pointer;display:inline-flex;align-items:center;justify-content:center;
-  font-size:13px;color:transparent}
-.sim-pick.on{background:var(--cta);border-color:var(--cta);color:#fff}
-.sim-pick.on::after{content:"✓"}
+.sim-nm{display:flex;align-items:center;min-width:0;border:0;background:transparent;padding:0;margin:0;
+  font:inherit;color:inherit;text-align:left;cursor:pointer}
+.sim-nm .t,span.sim-nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sim-nm .apop{flex:none;font-style:normal;font-size:7px;color:#B5B5B0;margin-left:2px}
+span.sim-nm{display:block;cursor:default}
+.sim-hmeta{display:flex;align-items:center;gap:5px;min-width:0;font-size:10.5px;color:#5E5E5A;
+  white-space:nowrap;overflow:hidden}
+.sim-hmeta .kg{font-family:Futura,Jost,'Century Gothic',system-ui,sans-serif;font-weight:600;font-size:10px;color:#8E8E89}
+.sim-buy{flex:none;font-size:10px;font-weight:800;color:var(--hit)}
+
+/* オッズ（10倍未満は赤）と人気 */
+.sim-od{text-align:right;line-height:1}
+.sim-od b{display:block;font-family:Futura,Jost,'Century Gothic',system-ui,sans-serif;font-weight:600;font-size:15px;
+  font-variant-numeric:tabular-nums;letter-spacing:.01em}
+.sim-od b.hot{color:var(--live)}
+.sim-od small{display:block;margin-top:3px;font-size:9.5px;font-weight:600;color:#8E8E89;white-space:nowrap}
+.sim-list.multi .sim-od b{font-size:14px}
+
+/* 選ぶ欄。列が複数なら中に「1・2・3／軸／相」を入れ、選ぶと券種の色で塗る */
+.sim-pick{justify-self:center;width:24px;height:24px;padding:0;border:0;border-radius:7px;
+  background:#EDEDF0;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;
+  font-family:Futura,Jost,'Century Gothic',system-ui,sans-serif;font-weight:600;font-size:12px;color:#B9B9BE}
+.sim-list.multi .sim-pick{width:22px}
 .sim-pick.radio{border-radius:50%}
-.sim-pick.radio.on{background:var(--navy);border-color:var(--navy)}
-.sim-pick.radio.on::after{content:"";width:8px;height:8px;border-radius:50%;background:#fff}
+.sim-list.multi .sim-pick.radio{height:22px}
+.sim-r.green .sim-pick:not(.on){background:#fff}
+.sim-pick.on{background:var(--tc);color:#fff}
+.sim-pick.on:not(.lbl)::after{content:"✓";font-family:system-ui,sans-serif;font-size:13px;font-weight:700}
 .sim-pick:disabled{opacity:.35;cursor:not-allowed}
 
 .sim-summary{display:flex;justify-content:center;gap:12px;font-size:13px;font-weight:700;padding:10px 0 4px}

@@ -8,7 +8,7 @@
  * ブラウザ(window.Simulator)とNode(module.exports)の両方で同一オブジェクトを公開する（harville.js踏襲）。
  *
  * 依存（グローバル前提。script読み込み順は race.html: app.js → harville.js → simulator.js → race.js）:
- *   app.js:      umaBox, wakuBox, gradeClass, gradeDisp, escapeHtml, fmtNum, MARK_CLASS
+ *   app.js:      umaBox, wakuBox, escapeHtml, MARK_CLASS（評価・点数は 2026-10-07 に表から外した）
  *   harville.js: window.Harville（probTansho/probFukusho/probWide/probUmaren/probUmatan/
  *                probSanrenpuku/probSanrentan/normKey/oddsUsed/buyLine/ev/P_MIN/buildProbs）
  *
@@ -581,15 +581,11 @@
     }).join('');
   }
 
+  // 2026-10-07（mockup-271・ユーザー決定）: 単勝／複勝の切り替えは色の帯の中（renderBand）へ移した。
+  // 単勝・複勝のときは買い方の段そのものを出さない（renderBlockB が空なら器ごと省く）
   function renderMethods(state) {
     var t = typeOf(state.betType);
-    if (t.arity === 1) {
-      return ['tansho', 'fukusho'].map(function (k) {
-        var active = state.tanFuku === k ? ' active' : '';
-        return '<button type="button" class="sim-method sub' + active + '" data-sim-tf="' + k + '">'
-          + (k === 'tansho' ? '単勝' : '複勝') + '</button>';
-      }).join('');
-    }
+    if (t.arity === 1) return '';
     return methodsFor(t).map(function (m) {
       var active = state.method === m.m ? ' active' : '';
       return '<button type="button" class="sim-method' + active + '" data-sim-method="' + m.m + '">' + m.label + '</button>';
@@ -616,9 +612,19 @@
     if (t.arity === 1) return state.tanFuku === 'fukusho' ? '複勝' : '単勝';
     return t.bandLabel;
   }
+  // 2026-10-07（mockup-271）: 帯は「券種＋買い方」（例: 3連単 フォーメーション）。
+  // .sim-band は買い目シートのカードも使うので、表の上の帯だけ .sim-hd を足して見た目を分ける
   function renderBand(state) {
     var t = typeOf(state.betType);
-    return '<div class="sim-band ' + t.band + '">' + escapeHtml(bandLabel(state)) + '</div>';
+    var label = bandLabel(state) + (t.arity === 1 ? '' : ' ' + methodLabel(state));
+    var tf = '';
+    if (t.arity === 1) {
+      tf = '<span class="sim-tf">' + ['tansho', 'fukusho'].map(function (k) {
+        return '<button type="button" class="' + (state.tanFuku === k ? 'active' : '') + '" data-sim-tf="' + k + '">'
+          + (k === 'tansho' ? '単勝' : '複勝') + '</button>';
+      }).join('') + '</span>';
+    }
+    return '<div class="sim-band sim-hd ' + t.band + '"><span>' + escapeHtml(label) + '</span>' + tf + '</div>';
   }
 
   // ===== 印の2列（2026-09-07 ユーザー決定・111-spec §3.5 と同じ読み方） =====
@@ -640,79 +646,84 @@
     } catch (e) { /* localStorage が使えない環境では印なしで描く */ }
     return out;
   }
-  // 印が無い馬にも「—」を置く（アキネーターは何も出さないが、こちらは表で列が縦に揃うため）。
+  // 2026-10-07（mockup-271）: 印の列は「自分＝色つきの記号」の下に「AI＝札」を重ねる。
+  // 印が無い馬には何も出さない（「—」は置かない。列の幅は器 .sim-mk が持つので縦は揃う）。
   // 2026-09-08: 押すと出馬表へ飛ぶ導線をやめ、読むだけの札にした（ユーザー決定）。
   // 押す先は馬名（戦績のポップアップ）に一本化してある。
   function myCell(h, myMarks) {
     var mk = myMarks[String(h.number)];
-    var cls = 'sim-my' + (mk ? ' set ' + MY_CLS[mk] : '');
-    return '<span class="' + cls + '">' + (mk ? escapeHtml(mk) : '<i>—</i>') + '</span>';
+    return mk ? '<span class="sim-my ' + MY_CLS[mk] + '">' + escapeHtml(mk) + '</span>' : '';
   }
   // AIの印は出馬表に揃える（能力印の塗りチップ＋穴／地雷／消し）。描くのは呼び手が渡す関数
   function aiCell(h, aiMark) {
     var inner = (typeof aiMark === 'function') ? aiMark(h) : '';
-    return '<span class="sim-ai">' + (inner || '<span class="none">—</span>') + '</span>';
+    return inner ? '<span class="sim-ai">' + inner + '</span>' : '';
+  }
+  // 選ぶ欄の中の字。列が1つ（単勝・ボックス）は ✓ だけ。列が複数あるときは押す前に
+  // どの列か分かるよう、1着→1・馬2→2・枠1→1・軸系→軸・相手→相 を入れる
+  function pickLabel(c, nCols) {
+    if (nCols === 1) return '';
+    var m = c.label.match(/^(\d)着$/) || c.label.match(/^(?:馬|枠)(\d)$/);
+    if (m) return m[1];
+    if (c.label.indexOf('軸') !== -1) return '軸';
+    if (c.label === '相手') return '相';
+    return c.label.charAt(0);
   }
 
+  // 2026-10-07（mockup-271 案3・ユーザー決定）: 表を「1頭ずつの白い帯」にした。
+  // 評価・点数は出さない（ユーザー「点数は消して」「ランクもいらない」）。
+  // 1行目＝馬名、2行目＝（買い）騎手・斤量、右にオッズと人気。「買い」は帯ごと薄い緑＋2行目の頭の文字。
+  // 幅は 375px の画面で表が 335px（実測）。選ぶ列が3つの時も馬名9文字が切れないよう、
+  // 列が2つ以上なら選ぶ欄とオッズ欄を詰める（.sim-list.multi。.wide はワイドの券種色なので使わない）。
   function renderHorseTable(site, state, probs, heads, oddsAll, opts) {
     var t = typeOf(state.betType);
     if (t.arity === 1 && state.tanFuku === 'fukusho' && heads <= 4) {
       return '<div class="om-empty">5頭未満のため複勝は発売されません</div>';
     }
     var cols = columns(state);
+    var wide = cols.length > 1;
     var g = greenSet(state, site, probs, heads, oddsAll);
     var horses = site.horses.slice().sort(function (a, b) { return a.number - b.number; });
     var myMarks = loadMyMarks(site);   // 描画のたびに読み直す（出馬表で付け替えて戻る動きに追いつく）
-    var head = '<tr><th class="l">自分 / AI / 馬番・馬名・騎手・評価</th>'
-      + cols.map(function (c) { return '<th>' + escapeHtml(c.label) + '</th>'; }).join('') + '</tr>';
+    var head = '<div class="sim-lh"><span class="c">印</span><span></span><span>馬名・騎手</span><span class="r">オッズ</span>'
+      + cols.map(function (c) { return '<span class="c">' + escapeHtml(wide ? c.label : '選ぶ') + '</span>'; }).join('') + '</div>';
     var body = horses.map(function (h) {
       var id = t.frame ? h.gate : h.number;
       var disabled = h.scratched || !(h.number in probs);
       // 2026-09-08（案C・ユーザー決定）: 自分の印が「消」の馬は行を沈め、緑と「買い」を出さない。
       // 自分で切った馬に「買い」と出続けるのは矛盾なので、自分の判断を勝たせる。
-      // 沈める塗りは出馬表の .my-keshi と同じ値（新しい色は作らない）。
       // 緑判定そのもの（greenSet）は変えていない。他の馬の緑は今までどおり出る。
       var isKeshi = myMarks[String(h.number)] === '消';
       var isGreen = !isKeshi && !!g[h.number];
-      var mkHtml = myCell(h, myMarks) + aiCell(h, opts && opts.aiMark);
       var oddsVal = (t.arity === 1 && state.tanFuku === 'fukusho') ? fukushoOddsFor(h, oddsAll) : h.odds;
-      var hot = (oddsVal !== null && oddsVal !== undefined && oddsVal < 10) ? ' hot' : '';
-      // 2026-09-07: 点数と評価を出馬表と同じ dispScore/dispGrade（勝率モデルの換算点）に揃えた。
-      // 2026-08-12 に出馬表を勝率側へ寄せた時、ここだけ h.total/h.grade（8観点）のままで、
-      // 同じ馬に2つの点数が出ていた（例: モカラマーズ 出馬表58.2 C＋ / ここ62.2 B）。
-      var gradeVal = dispGrade(h);
-      var gradeHtml = gradeVal ? ' <span class="sim-grade ' + gradeClass(gradeVal) + '">' + escapeHtml(gradeDisp(gradeVal)) + '</span>' : '';
-      var gflag = isGreen ? ' <span class="sim-gflag">買い</span>' : '';
-      var oddsHtml = (oddsVal !== null && oddsVal !== undefined)
-        ? '<span class="' + hot.trim() + '">' + oddsVal.toFixed(1) + '</span>' : '—';
-      var popHtml = h.popularity ? ' (' + h.popularity + '人気)' : '';
-      var metaHtml = h.jockey
-        ? '<div class="sim-hmeta">' + escapeHtml(h.jockey) + (h.weight_carried !== null && h.weight_carried !== undefined ? ' ・ ' + h.weight_carried.toFixed(1) + 'kg' : '') + '</div>'
-        : '';
-      // 2026-09-07（ユーザー決定・mock-sim-marks.html 案A）: 点数は馬名の行ではなくオッズの行に置く。
-      // 印を2列足したぶん馬名の行が狭くなり、3連単・3連複（選択3列）では行の末尾＝点数から
-      // 「…」で消えていた（375px・16頭で9頭が該当）。オッズの行は空きが多いのでここが入る。
-      var scoreHtml = ' ・ <b class="sim-hsc">' + fmtNum(dispScore(h), 1) + '</b>';
+      var hot = (oddsVal !== null && oddsVal !== undefined && oddsVal < 10) ? ' class="hot"' : '';
+      var oddsHtml = '<span class="sim-od"><b' + hot + '>'
+        + ((oddsVal !== null && oddsVal !== undefined) ? oddsVal.toFixed(1) : '—') + '</b>'
+        + (h.popularity ? '<small>' + h.popularity + '人気</small>' : '') + '</span>';
       // 取消馬にはポップアップそのものが無い（renderPopups が live だけ作る）ので押せない
       var nameHtml = h.scratched
         ? '<span class="sim-nm">' + escapeHtml(h.name) + '</span>'
         : '<button type="button" class="sim-nm" data-pop="' + h.number + '">'
-          + escapeHtml(h.name) + '<i class="apop">▸</i></button>';
-      var nameCell = '<td class="l"><div style="display:flex;align-items:center;gap:5px">'
-        + mkHtml + umaBox(h.number, h.gate)
-        + '<div class="sim-hbody"><div class="sim-hname">' + nameHtml + gradeHtml + gflag + '</div>'
-        + '<div class="sim-hodds">' + oddsHtml + popHtml + scoreHtml + '</div>'
-        + metaHtml + '</div></div></td>';
+          + '<span class="t">' + escapeHtml(h.name) + '</span><i class="apop">▸</i></button>';
+      var meta = (isGreen ? '<b class="sim-buy">買い</b>' : '')
+        + (h.jockey ? escapeHtml(h.jockey) : '')
+        + ((h.weight_carried !== null && h.weight_carried !== undefined) ? '<span class="kg">' + h.weight_carried.toFixed(1) + '</span>' : '');
       var cells = cols.map(function (c) {
         var arr = state.cols[c.key] || [];
         var on = arr.indexOf(id) !== -1;
-        var shape = c.type === 'radio' ? ' radio' : '';
-        return '<td><button type="button" class="sim-pick' + shape + (on ? ' on' : '') + '" data-sim-pick data-col="' + c.key + '" data-id="' + id + '" data-radio="' + (c.type === 'radio' ? '1' : '0') + '"' + (disabled ? ' disabled' : '') + '></button></td>';
+        var lb = pickLabel(c, cols.length);
+        var cls = 'sim-pick' + (c.type === 'radio' ? ' radio' : '') + (lb ? ' lbl' : '') + (on ? ' on' : '');
+        return '<button type="button" class="' + cls + '" data-sim-pick data-col="' + c.key + '" data-id="' + id + '" data-radio="' + (c.type === 'radio' ? '1' : '0') + '"'
+          + (disabled ? ' disabled' : '') + ' aria-label="' + escapeHtml(c.label) + '" aria-pressed="' + (on ? 'true' : 'false') + '">' + lb + '</button>';
       }).join('');
-      var trCls = (isGreen ? 'green' : '') + (isKeshi ? ' my-keshi' : '');
-      return '<tr class="' + trCls.trim() + '">' + nameCell + cells + '</tr>';
+      var rCls = 'sim-r' + (isGreen ? ' green' : '') + (isKeshi ? ' my-keshi' : '') + (h.scratched ? ' scr' : '');
+      return '<div class="' + rCls + '"><span class="sim-mk">' + myCell(h, myMarks) + aiCell(h, opts && opts.aiMark) + '</span>'
+        + umaBox(h.number, h.gate)
+        + '<div class="sim-hbody"><div class="sim-hname">' + nameHtml + '</div><div class="sim-hmeta">' + meta + '</div></div>'
+        + oddsHtml + cells + '</div>';
     }).join('');
-    return '<table class="sim-sel"><thead>' + head + '</thead><tbody>' + body + '</tbody></table>';
+    return '<div class="sim-list ' + t.band + (wide ? ' multi' : '') + '" style="--sim-n:' + cols.length + '">'
+      + head + '<div class="sim-rows">' + body + '</div></div>';
   }
 
   function methodLabel(state) {
@@ -787,7 +798,7 @@
   // opts = { aiMark: 馬 → AIの印のHTML }（race.js の markBadge20。無ければAI印は「—」）
   function renderBlockB(site, probs, heads, oddsAll, state, opts) {
     return '<div class="sim-types">' + renderTypes(state, heads) + '</div>'
-      + '<div class="sim-methods">' + renderMethods(state) + '</div>'
+      + (function (m) { return m ? '<div class="sim-methods">' + m + '</div>' : ''; })(renderMethods(state))
       + renderAxisPosAndMulti(state)
       + renderBand(state)
       + renderHorseTable(site, state, probs, heads, oddsAll, opts)
