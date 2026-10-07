@@ -110,16 +110,11 @@
   function mountEntry() {
     const list = document.querySelector('.race20 .mm-list');
     if (!list || list.querySelector('.yf-entry')) return;
-    const st = markState();
     const box = document.createElement('div');
     box.className = 'yf-entry';
-    // 137-spec（2026-10-07 ユーザー「絞り込み → 印 の順に決めます これいらない」）: 説明の行は外した。
-    // 絞り込みを済ませた後の「いまの予想」の行だけ残す
-    const line = st.swiped
-      ? `いまの予想：✓${st.cand}・消${st.kesi}${st.got.length ? `・${st.got.join('')}` : '・印はまだ'}`
-      : '';
-    box.innerHTML = `<button type="button" class="yf-btn" id="yf-go">予想をはじめる</button>`
-      + (line ? `<p>${line}</p>` : '');
+    // 137-spec（2026-10-07 ユーザー）: ボタンだけ。下の説明の行（「絞り込み → 印 の順に決めます」）も、
+    // 絞り込みの後の「いまの予想：✓2・消0・◎」の行も外した（「これいらない」）
+    box.innerHTML = '<button type="button" class="yf-btn" id="yf-go">予想をはじめる</button>';
     list.insertBefore(box, list.firstChild);
     box.querySelector('#yf-go').addEventListener('click', openMenu);
   }

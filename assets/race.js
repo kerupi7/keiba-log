@@ -4734,8 +4734,8 @@ function r26HotBanner(site, bp) {
 // 上の札（137-spec・2026-10-07 ユーザー決定・mockup-253「案B-1a-3 直したもの」）。
 // 紺の札（mockup-233）をやめ、絞り込み・印の画面と同じ白い角丸のカード1枚にした。出す中身は紺の札と同じで、
 // 注記の文（「前70%（ふだん62%）」「3着内に入った割合」「5段の下から2番目」）は外して絵で読ませる。
-// 上から：日付の行と買いレース／レース名／条件の4つの欄／激アツの帯／荒れ度（横いっぱい）／100万超えとメンバー／
-// 今週の傾向／印・馬券／予想時刻。激アツから印・馬券までは出馬表タブの時だけ（.r26-mit・CSS）
+// 上から：日付の行と買いレース／レース名／予想時刻／条件の4つの欄／激アツの帯／荒れ度（横いっぱい）／100万超えとメンバー／
+// 今週の傾向／印・馬券。激アツから印・馬券までは出馬表タブの時だけ（.r26-mit・CSS）
 const R27_UPKEY = { '堅い': 'kata', '中荒れ': 'naka', '大荒れ': 'dai' };
 const R27_UPLV = { kata: 1, naka: 2, dai: 3 };
 // メンバーの勲章（2026-10-07 ユーザー「ここ勲章でいいよ」）。S＝金・A＝銀・B＝銅・C＝青灰・D＝薄い灰
@@ -4908,17 +4908,20 @@ function renderHead26(site) {
       + `<div class="wg n${cells.length}">${cells.join('')}</div></div>`;
   }
 
+  // 予想を出した時刻は、レース名のすぐ下（2026-10-07 ユーザー「これは上のどこかに入れてほしい」。前はカードの下）
+  const pt = p.predicted_at
+    ? `<div class="r27-pt">予想 <span class="r27-num">${fmtDateTimeShort(p.predicted_at)}</span>（${escapeHtml(p.odds_basis || '')}基準）</div>` : '';
   const seg = `<div class="r27-seg" role="tablist"><button type="button" data-view="mark" class="on">印</button>`
     + `${site.shinba ? '' : '<button type="button" data-view="baken">馬券</button>'}</div>`;
   return `<section class="r27">${R27_DEFS}
     <div class="r27-card">
       <div class="r27-eye">${eye}${buyBtn}</div>
       <h1 class="r27-ttl">${escapeHtml(r.race_name || '')}${r.grade ? `<span class="r27-gb">${escapeHtml(r.grade)}</span>` : ''}</h1>
+      ${pt}
       ${spec}
       <div class="r26-mit r27-mit">${hot}${upHtml}${rowHtml}${wkHtml}</div>
     </div>
     <div class="r26-mit">${seg}</div>
-    ${p.predicted_at ? `<div class="r27-pt">予想 <span class="r27-num">${fmtDateTimeShort(p.predicted_at)}</span>（${escapeHtml(p.odds_basis || '')}基準）</div>` : ''}
   </section>`;
 }
 
