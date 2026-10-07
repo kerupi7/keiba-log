@@ -4620,3 +4620,65 @@ body:has(.container.top){background:#F2F2F7}
 .race20.r26 .mm-list .mm-geki{position:absolute;right:-7px;top:-8px;display:block;line-height:0;background:#fff;border-radius:50%;padding:1px;
   box-shadow:0 1px 2px rgba(0,0,0,.15);pointer-events:none}
 .geki-tx text{font-family:"Zen Antique","Hiragino Mincho ProN","Yu Mincho",serif}
+
+/* ==== 各モデルの成績（stats.html）を TOP・レース詳細と同じ見た目にした（2026-10-07 ユーザー「ここのデザインも他の場所と同じようにしたい」） ====
+   灰の地 #F2F2F7・白い角丸のカード（TOPの .rc26 と同じ影）・補足の灰 #8E8E93・数字は Futura。
+   モデル1つにカード1枚。win-6 は4案を足し合わせた1枚（大きい回収率＋灰のタイル）、win-5・win-4 は案の一覧。
+   セレクタは .st26 に閉じてある（model.html は今の見た目のまま） */
+body:has(.container.st26){background:#F2F2F7}
+.container.st26{background:#F2F2F7;padding:4px 16px 24px;--num26:Futura,Jost,"Avenir Next",-apple-system,sans-serif}
+.container.st26 .back-link{display:inline-block;padding:8px 0 4px}
+.st26h{padding:4px 2px 12px}
+.st26h h1{margin:0;font-size:22px;font-weight:800;letter-spacing:-.01em;color:var(--text)}
+.st26h p{margin:3px 0 0;font-size:12.5px;color:#8E8E93}
+.st26c{background:#fff;border-radius:16px;padding:14px 14px 12px;margin-bottom:12px;
+  box-shadow:0 1px 2px rgba(0,0,0,.04),0 4px 14px rgba(0,0,0,.04)}
+.st26ch{display:flex;align-items:center;gap:8px}
+.st26chip{flex:none;display:inline-block;font-family:var(--num26);font-size:11.5px;font-weight:600;color:#fff;background:var(--navy);
+  border-radius:999px;padding:1px 9px;line-height:18px;letter-spacing:.02em}
+.st26chip.w4{background:#8E8E93}
+.st26ct{font-size:15px;font-weight:700;line-height:1.35;color:var(--text);min-width:0}
+.st26per{margin-top:4px;font-size:12px;color:#8E8E93}
+.st26note{margin-top:8px;font-size:11.5px;line-height:1.6;color:#8E8E93}
+.st26 .rv{font-family:var(--num26);font-weight:600;letter-spacing:.01em;white-space:nowrap}
+.st26 .rv small{font-size:.62em;margin-left:1px}
+.st26 .rv.pos{color:var(--hit)} .st26 .rv.neg{color:var(--live)} .st26 .rv.zero{color:#AEAEB2}
+.st26 .cv{flex:none;font-size:20px;line-height:1;color:#C7C7CC;margin-left:2px}
+/* win-6：1枚にまとめた成績 */
+.st26big{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:10px;padding:12px;border-radius:12px;background:#F5F5F8;
+  color:inherit;text-decoration:none}
+.st26big:hover{text-decoration:none}
+.st26big .l{flex:1;min-width:0}
+.st26big .cap{display:block;font-size:10.5px;font-weight:600;color:#8E8E93}
+.st26big .rv{display:block;font-size:34px;line-height:1.1}
+.st26big .tiles{order:3;flex:0 0 100%;display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.st26big .tl{display:block;background:#fff;border-radius:9px;padding:6px 10px;font-size:11.5px;color:#3C3C43;white-space:nowrap}
+.st26big .tl b{font-family:var(--num26);font-weight:600;font-size:15px;color:var(--text)}
+.st26big .tl.wide{grid-column:1 / -1}
+/* win-5・win-4：案の一覧（行を押すとモデル詳細） */
+.st26list{margin-top:8px;background:#F5F5F8;border-radius:12px;padding:2px 12px}
+.st26r{display:flex;align-items:center;gap:10px;padding:10px 0;color:inherit;text-decoration:none}
+.st26r:hover{text-decoration:none}
+.st26r + .st26r{border-top:.5px solid rgba(60,60,67,.18)}
+.st26r .l{flex:1;min-width:0;display:flex;flex-direction:column}
+.st26r .nm{font-size:15px;font-weight:700;color:var(--text)}
+.st26r .mi{margin-top:2px;font-size:11.5px;color:#8E8E93}
+.st26r .mi b{font-family:var(--num26);font-weight:600;color:#3C3C43}
+.st26r .rv{font-size:19px}
+/* 参考：過去の答え合わせ（押すと開く） */
+.st26ref{margin-top:10px}
+.st26ref summary{cursor:pointer;font-size:12px;font-weight:600;color:#3C3C43;padding:4px 2px;list-style:none}
+.st26ref summary::-webkit-details-marker{display:none}
+.st26ref summary:before{content:"›";display:inline-block;margin-right:6px;color:#AEAEB2;transition:transform .15s}
+.st26ref[open] summary:before{transform:rotate(90deg)}
+.st26ref summary i{display:block;font-style:normal;font-weight:400;font-size:11px;color:#8E8E93;margin:1px 0 0 13px}
+.st26tw{margin-top:8px;background:#F5F5F8;border-radius:12px;padding:4px 10px;overflow-x:auto}
+.st26tw table{width:100%;border-collapse:collapse;font-size:12px}
+.st26tw th{font-size:10.5px;font-weight:600;color:#8E8E93;text-align:right;padding:7px 4px 5px;white-space:nowrap}
+.st26tw th:nth-child(-n+2){text-align:left}
+.st26tw td{padding:6px 4px;text-align:right;font-family:var(--num26);font-weight:600;white-space:nowrap}
+.st26tw td.up,.st26tw td.ty{text-align:left;font-family:var(--font);color:var(--text)}
+.st26tw td.up{font-weight:700}
+.st26tw td.ty{font-weight:400}
+.st26tw tr.g td{border-top:.5px solid rgba(60,60,67,.18)}
+.st26tw td.pos{color:var(--hit)} .st26tw td.neg{color:var(--live)} .st26tw td.zero{color:#AEAEB2}

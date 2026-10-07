@@ -7,7 +7,8 @@ const SLUG_NAME = { tokaido: '東海', koshu: '甲州', nakasendo: '中山',
                     oshu: '奥州', nikko: '日光' };
 // 2026-09-15: win-5 の6案に単勝が入ったので先頭に足した（五街道5案には単勝が無いので行が出ないだけ）
 // 2026-09-28: win-6 の16券種に複勝が入ったので足した
-const TYPE_ORDER = ['単勝', '複勝', 'ワイド', '馬連', '馬単', '三連複', '三連単'];
+// 2026-10-07: win-6 のまとめ（w6-all）では100万フラグの3連単を別の行で出す
+const TYPE_ORDER = ['単勝', '複勝', 'ワイド', '馬連', '馬単', '三連複', '三連単', '三連単（100万フラグ）'];
 const UPSET_ORDER = ['堅い', '中荒れ', '大荒れ'];
 
 // 回収率の色は100円が戻るかどうかで分ける（100%＝ちょうど元手）
@@ -29,7 +30,9 @@ function render(doc, slug) {
   const isW5 = String(slug).startsWith('w5-');
   // 2026-09-28: win-6 の16券種（案＝荒れ度・slug が w6- で始まる）
   const isW6 = String(slug).startsWith('w6-');
-  const plans = (isW6 ? doc.plans_w6 : (isW5 ? doc.plans_w5 : doc.plans)) || [];
+  // 2026-10-07 ユーザー「WIN6は一つにまとめたい」: win-6 は4案を足した1枚（plan_w6_all・w6-all）が表で、4案はその内訳
+  const plans = (isW6 ? [doc.plan_w6_all, ...(doc.plans_w6 || [])].filter(Boolean)
+    : (isW5 ? doc.plans_w5 : doc.plans)) || [];
   const name = SLUG_NAME[slug];
   const p = plans.find((x) => x.slug === slug) || plans.find((x) => x.name === name);
   if (!p) {
@@ -85,11 +88,11 @@ function render(doc, slug) {
   const rest = (p.n_paid_races || 0) - (p.top_races || []).length;
 
   const others = plans.filter((x) => x.name !== p.name)
-    .map((x) => `<a class="mother" href="model.html?m=${x.slug}">${escapeHtml(x.name)}</a>`).join('');
+    .map((x) => `<a class="mother" href="model.html?m=${x.slug}">${escapeHtml(x.slug === 'w6-all' ? 'まとめ' : x.name)}</a>`).join('');
 
   el.innerHTML = `
     <div class="mhead">
-      <div class="nm">${chip}${escapeHtml(p.name)}<span class="rk">${plans.length}案中${rank}位</span></div>
+      <div class="nm">${chip}${escapeHtml(isW6 && slug === 'w6-all' ? 'まとめ' : p.name)}${isW6 ? '' : `<span class="rk">${plans.length}案中${rank}位</span>`}</div>
       ${(p.materials || []).length ? `<div class="ds">何を見て買うか　<b>${escapeHtml(p.materials.join('・'))}</b></div>` : ''}
       <div class="ds">選び方　${escapeHtml(p.desc || '')}</div>
     </div>
@@ -109,7 +112,7 @@ function render(doc, slug) {
     ${hitRows ? table(['レース', '', '回収率', '買った', '払戻'], hitRows)
       : '<div class="mnote">払戻のあったレースはありません</div>'}
     ${rest > 0 ? `<div class="mnote">ほか${rest}レースでも払戻あり（回収率の高い${(p.top_races || []).length}件だけ表示）</div>` : ''}
-    <div class="msec">ほかのモデル</div>
+    <div class="msec">${isW6 ? (slug === 'w6-all' ? '案ごとの内訳' : 'win-6 のまとめ・ほかの案') : 'ほかのモデル'}</div>
     <div class="mothers">${others}</div>
   `;
 }
@@ -125,7 +128,7 @@ async function main() {
       `<div class="error-box">データの読み込みに失敗しました: ${escapeHtml(e.message)}</div>`;
     return;
   }
-  const all = [...(doc.plans || []), ...(doc.plans_w5 || []), ...(doc.plans_w6 || [])];
+  const all = [...(doc.plans || []), ...(doc.plans_w5 || []), ...(doc.plans_w6 || []), doc.plan_w6_all].filter(Boolean);
   const hit = all.find((x) => x.slug === slug);
   document.title = `${(hit && hit.name) || SLUG_NAME[slug] || 'モデル'}の成績 — Ans.`;
   render(doc, slug);
