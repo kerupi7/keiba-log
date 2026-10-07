@@ -20,6 +20,8 @@
   let S = null;
   let Q = H;         // この回にスワイプで出す馬（2026-09-18：未入力の馬だけ。全頭済みなら16頭やり直し）
   let root = null;   // 重ねる画面
+  let rootRO = null; // 重ねる画面の大きさを見張る（ResizeObserver）
+  let rootPoll = null; // 同じく、0.4秒ごとに高さを見比べる
 
   function toast(msg) {
     const t = document.createElement('div');
@@ -213,6 +215,12 @@
     root.className = 'yf';
     root.innerHTML = '<div class="yf-col" id="yf-col"></div>';
     document.body.appendChild(root);
+    // 重ねる画面の大きさが変わったら収め直す。window の resize が来ないブラウザ（アプリの中のブラウザなど）でも
+    //   見える高さの変化を拾うため（2026-10-07 ユーザー「スクロールしなきゃいけないケースがあった」）
+    //   ResizeObserver が動かない時に備えて、0.4秒ごとに高さを見比べる（変わった時だけ収め直す・軽い）
+    if (window.ResizeObserver) { rootRO = new ResizeObserver(() => refit()); rootRO.observe(root); }
+    let lastH = root.clientHeight;
+    rootPoll = setInterval(() => { if (root && root.clientHeight !== lastH) { lastH = root.clientHeight; refit(); } }, 400);
     document.body.style.overflow = 'hidden';
     document.body.classList.add('yf-open');
     root.addEventListener('click', onClick);
@@ -244,6 +252,8 @@
       location.reload();   // 本番の一覧を印つきで描き直させる
       return;
     }
+    if (rootRO) { rootRO.disconnect(); rootRO = null; }
+    clearInterval(rootPoll); rootPoll = null;
     root.remove(); root = null;
     document.body.style.overflow = '';
     document.body.classList.remove('yf-open');
@@ -1100,14 +1110,15 @@
     const cs = getComputedStyle(pe);
     // 自分の激アツの台（.ga27）があるページは、ページの高さを見える高さまで伸ばし、台を下の空いた所に置く（138-spec）。
     //   台は空き地に合わせて 120〜190px で伸び縮みする。120px も空いていない画面だけ、下の縮める処理で全体が少し縮む
-    inner.style.minHeight = '';
+    //   高さは px で固定せず CSS（.ga-fill の min-height:100%）で伸ばす。見える高さが後から縮んでも（ツールバー・アプリの中のブラウザ）
+    //   中身が一緒に縮み、はみ出して縦に動かせる状態にならないようにするため（2026-10-07 ユーザー「スクロールしなきゃいけないケースがあった」）
     const ga = inner.querySelector(':scope > .ga27');
+    inner.classList.toggle('ga-fill', Boolean(ga));
     if (ga) {
       ga.classList.remove('tight');
-      inner.style.boxSizing = 'border-box';
-      inner.style.minHeight = `${pe.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom)}px`;
       // 空き地が 120px に足りない（小さい画面・段を開いた時）は、台を細く詰める（84px〜）。それでも入らない時だけ全体が縮む
-      if (inner.scrollHeight > inner.clientHeight + 0.5 || inner.getBoundingClientRect().height > parseFloat(inner.style.minHeight) + 0.5) ga.classList.add('tight');
+      const avail = pe.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+      if (inner.offsetHeight > avail + 0.5) ga.classList.add('tight');
     }
     // 縮めると折り返しが変わって高さも変わるので、実際の下端を見ながら数回詰める（最小 0.5 倍）。
     //   下限は 0.6 倍だったが、1ページ目の中身は縮めない状態で約924px（390px幅・2026-09-24 実測）あり、
