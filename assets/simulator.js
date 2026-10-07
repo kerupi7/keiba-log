@@ -598,13 +598,18 @@
       var posHtml = AXISPOS.map(function (a) {
         return '<button type="button" class="' + (state.axisPos === a.k ? 'active' : '') + '" data-sim-axispos="' + a.k + '">' + a.label + '</button>';
       }).join('');
-      return '<div class="sim-axispos">' + posHtml + '</div>'
-        + '<label class="sim-multi"><input type="checkbox" data-sim-multi' + (state.multi ? ' checked' : '') + '>マルチ</label>';
+      return '<div class="sim-axispos">' + posHtml + '</div>' + multiSwitch(state);
     }
     if (t.type === 'umatan' && state.method === 'nagashi') {
-      return '<label class="sim-multi"><input type="checkbox" data-sim-multi' + (state.multi ? ' checked' : '') + '>マルチ</label>';
+      return multiSwitch(state);
     }
     return '';
+  }
+  // 2026-10-07（ユーザー「ながしのボタンとマルチもそろえて」）: マルチは切り替えスイッチの形。
+  // 中身は今までどおりのチェックボックス（data-sim-multi の change を handleChange が受ける）
+  function multiSwitch(state) {
+    return '<label class="sim-multi' + (state.multi ? ' on' : '') + '"><span>マルチ</span>'
+      + '<input type="checkbox" role="switch" data-sim-multi' + (state.multi ? ' checked' : '') + '></label>';
   }
 
   function bandLabel(state) {
