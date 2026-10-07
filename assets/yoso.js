@@ -765,7 +765,8 @@
     const items = m225Items(h);
     M225_ITEMS[h.number] = items;
     const kg = h.weight_carried != null ? String(h.weight_carried).replace(/\.0$/, '') : '—';
-    const head = `<div class="m225-hd">${umaBox(h.number, h.gate)}<b class="m225-nm">${esc(h.name)}</b>`
+    // 馬名は押すと「1頭だけ見る」画面が開く（2026-10-07 ユーザー「馬名押したら馬の詳細が見れるように」）。比べる画面の馬名と同じ › を添える
+    const head = `<div class="m225-hd">${umaBox(h.number, h.gate)}<span class="m225-nm"><b>${esc(h.name)}</b><i class="ap-chev">›</i></span>`
       // 年齢・斤量・騎手は濃く大きく、前走からの間隔（h.rotation・例 中53週）を最後に添える（2026-09-29 ユーザー）
       + `<span class="m225-sub"><b>${esc(h.sex_age || '')}</b><b>${esc(kg)}kg</b><b>${esc(h.jockey || '')}</b>`
       + `${h.rotation ? `<i class="m225-rot">${esc(h.rotation)}</i>` : ''}</span>`
@@ -796,6 +797,8 @@
   // 段のヘッダを押す → 開く／たたむ。札を押す → 札が裏返って詳しいページ。「総合」を押す → 総合点の内訳
   function m225Tap(target) {
     if (M225_BACK) return;
+    // 馬名 → その馬の「1頭だけ見る」画面（比べる画面で馬名を押したときと同じ openDetail）。閉じると絞り込みの同じ馬に戻る
+    if (target.closest('.m225-nm')) { openDetail(Q[S.idx]); return; }
     const gh = target.closest('.m225g-hd');
     if (gh) {
       const h0 = Q[S.idx];
@@ -3011,14 +3014,16 @@
   //   前は上に札（基本・コース…）とボタン（前のページ／次のページ）を並べた専用の詳細画面を重ねていた。
   //   今は出馬表で馬名を押したときと同じ「1頭だけ見る」画面（上の点々・見出しの横の閉じる・端を押す／横に払うとめくる）を、
   //   同じ処理（S.view）で出す。比べる画面は外して取っておき、閉じたら元の位置のまま戻す
-  let DV = null;   // 開いている間だけ：比べる画面の状態（S・Q）・画面の部品・スクロールの位置
+  //   2026-10-07 から、絞り込み（ランクの1ページ）の馬名からも開く。こちらは部品を取っておかず、閉じたら同じ馬の札を描き直す
+  let DV = null;   // 開いている間だけ：開く前の画面の状態（S・Q）・比べる画面の部品・スクロールの位置
   function openDetail(h, first = 0) {
     const col = document.getElementById('yf-col');
     const apEl = col && col.querySelector('.ap');
-    if (!apEl || !h || DV) return;
+    if (!col || !h || DV) return;
+    if (S.screen === 'duel' && !apEl) return;
     const body = document.getElementById('ap-body');
     DV = { S, Q, node: apEl, y: body ? body.scrollTop : 0 };
-    apEl.remove();
+    if (apEl) apEl.remove();
     Q = [h];
     S = { screen: 'view', idx: 0, page: first, my: {}, step: 0, t: null, busy: false, view: true };
     go('view');
@@ -3027,6 +3032,7 @@
     const col = document.getElementById('yf-col');
     S = DV.S;
     Q = DV.Q;
+    if (!DV.node) { DV = null; go(S.screen); return; }   // 絞り込みから開いたとき：同じ馬の札を描き直す
     col.innerHTML = '';
     col.appendChild(DV.node);
     const b = document.getElementById('ap-body');
