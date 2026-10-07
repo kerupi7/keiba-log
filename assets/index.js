@@ -167,10 +167,11 @@ function renderDateTabs(state, rerender) {
   });
 }
 
+// 136-spec（2026-10-07 ユーザー決定・mockup-248）: 場の切り替えは灰色の切り替えボタン（絞り込み・印の画面と同じ部品）
 function renderTracks(state, rerender) {
   const el = document.getElementById('tracks');
   const tracks = state.tracksForDate(state.activeDate);
-  el.innerHTML = `<div class="tracks">${tracks
+  el.innerHTML = `<div class="tracks seg26">${tracks
     .map((t) => `<span class="trk ${t === state.activeTrack ? 'on' : ''}" data-track="${escapeHtml(t)}">${escapeHtml(t)}</span>`)
     .join('')}</div>`;
   el.querySelectorAll('.trk').forEach((trkEl) => {
@@ -181,161 +182,101 @@ function renderTracks(state, rerender) {
   });
 }
 
+// 136-spec: 凡例（発走前＝紺／終了＝赤の箱）はやめた。R番号の色の箱を無くし、
+// 終わったレースはカードを沈めて見分けるようにしたため。#legend は空にしておく
 function renderLegend() {
-  document.getElementById('legend').innerHTML = `
-    <div class="legend">
-      <span><span class="sw" style="background:var(--upcoming)"></span>発走前</span>
-      <span><span class="sw" style="background:var(--finished)"></span>終了</span>
-    </div>
-  `;
+  document.getElementById('legend').innerHTML = '';
 }
 
-// 荒れ度ラベル（119-spec）。manifest の upset は「選ばれたクラス1つ」だけ入っている。
-// 無いレース（旧データ）は空文字＝行の見た目が一切変わらない。
-// 色は詳細ページの荒れ度パネルと同じ3色（--up-*-t）。色だけに意味を持たせないよう文字も出す。
-const UPSET_CLS = { kata: 'u-kata', naka: 'u-naka', dai: 'u-dai' };
+// ── 一覧のカード（136-spec・mockup-248） ─────────────────────────────
+// 1枚＝1レース。左の柱＝時刻と「6R」（＋WIN5）／1行目＝レース名・荒れ度の札／2行目＝芝ダ・頭数・WIN6 の札。
+// 五街道5案の札と◎・収支は一覧から外した（予想は WIN6 だけ・2026-10-07 ユーザー指示）。
 
+// 荒れ度の札（119-spec の値を、段のメーターで出す。％は出さない）。棒の数＝荒れ方の強さ
+const UPSET_LEVEL = { kata: 1, naka: 2, dai: 3 };
 function upsetChipHtml(upset) {
   if (!upset || !upset.name) return '';
-  const cls = UPSET_CLS[upset.key] || 'u-naka';
-  // percent は「そのクラスになる見込み」。無い旧データではラベル名だけ出す
-  const pct = upset.percent == null ? ''
-    : `<span class="pv">${upset.percent}<small>%</small></span>`;
-  return `<span class="uchip ${cls}">${escapeHtml(upset.name)}${pct}</span>`;
+  const key = UPSET_LEVEL[upset.key] ? upset.key : 'naka';
+  const bars = [1, 2, 3].map((k) => `<i${k <= UPSET_LEVEL[key] ? ' class="on"' : ''}></i>`).join('');
+  return `<span class="ub26 ${key}" title="荒れ度 ${escapeHtml(upset.name)}"><span class="bars">${bars}</span>${escapeHtml(upset.name)}</span>`;
 }
 
-// メンバーレベル（handoff_2026-08-19_member-level.md）。出走馬が走ってきたレースの濃さを
-// 同じクラス・同じ年齢条件の中の相対で S〜D にしたもの。詳細ページの見立てと同じ値。
-// 無いレース（新馬・2歳戦・旧データ）は空文字＝行の見た目が一切変わらない。
-// 荒れ度の札が塗りつぶしなので、こちらは枠線にして一目で別物と分かるようにする。
-function memberChipHtml(grade) {
-  if (!grade) return '';
-  return `<span class="mchip g-${escapeHtml(grade.toLowerCase())}" `
-    + `title="メンバーレベル ${escapeHtml(grade)}（出走馬が走ってきたレースの濃さ）">`
-    + `メンバー${escapeHtml(grade)}</span>`;
-}
-
-// 121-spec: WIN5の脚番号（1〜5）。番号ボックスの下に置く青い札。
-// 対象外のレース・win5.json が無かった過去分は空文字＝行の見た目が一切変わらない。
+// 121-spec: WIN5の脚番号（1〜5）の画像。左の柱の一番下に置く
 function win5LabelHtml(win5) {
   const leg = win5 && win5.leg;
   if (!leg) return '';
-  // 2026-09-04: 文字「WIN1」から画像へ。assets/win5-1.png 〜 win5-5.png（188x74px・透過PNG）。
-  // 5枚とも同じ台紙（563x223px から縮小）に載せてあるので、幅を揃えると字の大きさも揃う。
   return `<div class="w5"><img src="assets/win5-${leg}.png" alt="WIN${leg}" title="WIN5の${leg}レース目" width="188" height="74"></div>`;
 }
 
-// 130-spec §7: 一覧の行に出す五街道5案の札（案A・5枠を固定）。
-// 買わない案も薄い札で残すので、縦に見て「どの案がいつも買っているか」が読める。
-// 色は既存の意味づけのまま：発走前=紺 / 的中=緑 / 外れ=灰。金額・馬名は出さない。
-const PLAN_ORDER = ['東海', '甲州', '中山', '奥州', '日光'];
-// 2026-09-09 ユーザー決定: 一覧の札はモデルのページへ飛ばさない（表示だけ）。
-// モデルのページへの入口は「各モデルの成績」の行だけにする。
+// WIN6 の札が始まった日（manifest の w6 が入っている一番古い日）。main() が入れる。
+// これより前のレースは WIN6 が無いのが当たり前なので、札を出さない（「対象外」と誤読させない）
+let W6_FROM = null;
 
-// 5案が動き始めた日。manifest の plan_stats.period.from を main() が入れる。
-// これより前のレースは「対象外」ではなく旧方式なので、従来の表示に落とす。
-let BETRULE_FROM = null;
-
-function planChipsHtml(race) {
-  // 中止は買い目より先。札より「中止」の1つだけを出す
-  if (race.status === 'cancelled') return `<div class="rpick">${pillHtml('cancel', '中止')}</div>`;
-  const br = race.bets_rules;
-  if (!br) return '';
-  const total = PLAN_ORDER.reduce((n, k) => n + ((br[k] && br[k].points) || 0), 0);
-  if (total === 0) return `<div class="rpick">${pillHtml('pass', '見送り')}</div>`;
-  const chips = PLAN_ORDER.map((k) => {
-    const p = br[k] || {};
-    let st = 'off';
-    if (p.points > 0) st = p.hit === true ? 'hit' : (p.hit === false ? 'miss' : 'buy');
-    return `<span class="pchip ${st}">${escapeHtml(k)}</span>`;
-  }).join('');
-  return `<div class="rpick"><div class="pchips">${chips}</div></div>`;
+// 2行目の右端の札1枚。馬番・馬名は出さない（2026-10-07 ユーザー指示）
+function w6TagHtml(race) {
+  if (race.status === 'cancelled') return '<span class="cp26">中止</span>';
+  const w = race.w6;
+  if (!w) {
+    // 134-spec T4: 前日の先行公開はオッズの発売前で、買い目を出しようがないだけ
+    if (race.odds_pending) return '<span class="cp26">オッズ待ち</span>';
+    return (W6_FROM && race.date >= W6_FROM) ? '<span class="cp26">対象外</span>' : '';
+  }
+  if (w.skip) return '<span class="cp26">対象外</span>';
+  if (!w.points) return '<span class="cp26">買い目なし</span>';
+  if (race.status === 'final' && w.hit) {
+    return `<span class="cp26 hit">WIN6 的中 <b>${fmtYen(w.ret)}</b></span>`;
+  }
+  if (race.status === 'final') return '<span class="cp26 miss">WIN6 外れ</span>';
+  return `<span class="cp26 w6">WIN6 <b>${w.points}</b>点</span>`;
 }
 
-function renderRaceRow(race) {
-  const rnClass = race.status === 'prediction' ? 'up' : 'fin';
-  let metaSurface;
-  if (race.surface === '芝') {
-    metaSurface = `<span class="t">芝${race.distance}m</span>`;
-  } else {
-    metaSurface = `<span class="d">ダ${race.distance}m</span>`;
-  }
-  // 2026-09-04: 発走時刻はメタ行から外し、左の柱（.col1）へ移した。デザイン部の正本 案5。
-  const meta = `${metaSurface} ・ ${race.field_size}頭`;
-  const badge = race.grade ? ` <span class="gbadge">${escapeHtml(race.grade)}</span>` : '';
-  // メンバー札と荒れ度札は1つの箱に入れて右端へ寄せる。別々に右寄せすると横位置が
-  // 行ごとにズレ、幅が足りない画面では片方だけ次の行へ落ちる（style.css の .rtags 参照）
-  // 2026-09-04: メンバーレベルの札は一覧から外した（詳細ページには残る）。
-  // レース名「3歳以上1勝クラス」142px＋メンバー札70px＋荒れ度札82px＋すき間12px＝306px 必要なのに
-  // カード化で使えるのが251pxになり、12レース中3レースで札がレース名の下へ落ちていたため。
-  // 外すと88px空いて、8/30中京の12レースすべてが1行に収まる。
-  const uchip = upsetChipHtml(race.upset);
-  // 2026-09-08: 自分で付けた「買いレース」の札。付け外しは詳細ページだけで、ここは出すだけ。
-  // AI側の「見送り」（stance:'pass'）とは別物なので、下の .rpick ではなくレース名の横に置く
+// 激アツ（3連単100万超えの見込みが6%以上）。判定は keiba_publish.bigpay_for_manifest が済ませている
+const FLAME_SVG = '<svg class="fl26" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.5c.6 3.4 4.8 5.6 4.8 11.2a4.8 4.8 0 0 1-9.6 0c0-2.7 1.4-4 2-6.3 1 1 1.7 2.3 1.9 3.9.6-2.8.9-5.4.9-8.8z" fill="#F0582A"/><path d="M12 11.5c.3 1.6 2.4 2.6 2.4 5.2a2.4 2.4 0 0 1-4.8 0c0-1.6.9-2.3 1.4-3.5.5.6.8 1 .9 1.9.2-1.3.1-2.4.1-3.6z" fill="#FFC23D"/></svg>';
+const isHotRace = (race) => !!(race.bigpay && race.bigpay.hot);
+
+// 日本時間の「今」（YYYY-MM-DD と HH:MM）。端末の時刻帯に左右されないよう Asia/Tokyo で出す
+function nowJst() {
+  const p = {};
+  new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
+    .formatToParts(new Date()).forEach((x) => { p[x.type] = x.value; });
+  return { date: `${p.year}-${p.month}-${p.day}`, hm: `${p.hour}:${p.minute}` };
+}
+
+// 終わったレース＝確定・中止、または発走時刻を過ぎたレース（確定の取り込みは数分遅れるため時刻でも見る）。
+// 前の日の開催は全部終わり、先の日の開催は全部これから
+function isDoneRace(race, now) {
+  if (race.status === 'final' || race.status === 'cancelled') return true;
+  if (race.date < now.date) return true;
+  if (race.date > now.date) return false;
+  return !!race.post_time && race.post_time <= now.hm;
+}
+
+function renderRaceRow(race, ctx) {
+  const done = isDoneRace(race, ctx.now);
+  const isNext = ctx.nextId === race.race_id;
+  const hot = isHotRace(race);
+  const surface = race.surface === '芝'
+    ? `<span class="sf26 tf">芝<b>${race.distance}</b></span>`
+    : `<span class="sf26 dt">ダ<b>${race.distance}</b></span>`;
+  const badge = race.grade ? `<span class="gb26">${escapeHtml(race.grade)}</span>` : '';
+  // 2026-09-08: 自分で付けた「買いレース」の札。付け外しは詳細ページだけで、ここは出すだけ
   const bchip = isBuyRace(race.race_id) ? '<span class="brtag">買い</span>' : '';
-  const tags = (uchip || bchip) ? `<span class="rtags">${bchip}${uchip}</span>` : '';
-
-  let pickHtml = planChipsHtml(race);
-  // 134-spec T4: 前日の先行公開はオッズの発売前で、買い目を出しようがないだけ。
-  // 「対象外」（新馬・少頭数）や「見送り」（買う価値なしの判断）と同じ見た目にすると
-  // 読む人が区別できないので、専用の札を出し、◎も出す。当日朝に作り直されると消える。
-  if (!pickHtml && race.odds_pending) {
-    const pick = race.pick || {};
-    const honmeiBox = pick.honmei_number != null
-      ? umaBox(pick.honmei_number, pick.honmei_gate, 'sm') : '—';
-    pickHtml = `<div class="rpick">${pillHtml('pre', 'オッズ待ち')}`
-      + `<span class="pk">◎${honmeiBox} ${escapeHtml(pick.honmei_name ?? '')}</span></div>`;
-  }
-  // 5案が始まった日以降で買い目が無いレース（新馬・2歳未勝利・8頭未満）は「対象外」。
-  // それより前のレースは旧方式なので、下の従来表示（◎と収支）をそのまま出す。
-  if (!pickHtml && BETRULE_FROM && race.date >= BETRULE_FROM) {
-    pickHtml = `<div class="rpick">${pillHtml('pass', '対象外')}</div>`;
-  }
-  if (pickHtml) {
-    // 札を出したレースでは、◎馬名・収支・状態ピルは出さない（2026-09-09 ユーザー決定）
-  } else if (race.status === 'prediction') {
-    if (race.stance === 'pass') {
-      pickHtml = `<div class="rpick">${pillHtml('pass', '見送り')}</div>`;
-    } else {
-      const pick = race.pick || {};
-      const honmeiBox = pick.honmei_number != null ? umaBox(pick.honmei_number, pick.honmei_gate, 'sm') : '—';
-      pickHtml = `<div class="rpick">${pillHtml('pre', '発走前')}<span class="pk">◎${honmeiBox} ${escapeHtml(pick.honmei_name ?? '')}</span></div>`;
-    }
-  } else if (race.status === 'final') {
-    if (race.stance === 'pass') {
-      pickHtml = `<div class="rpick">${pillHtml('pass', '見送り')}</div>`;
-    } else {
-      const pick = race.pick || {};
-      const outcome = race.outcome || {};
-      const hit = outcome.bets_hit;
-      const net = (outcome.bets_return ?? 0) - (outcome.bets_cost ?? 0);
-      const honmeiBox = pick.honmei_number != null ? umaBox(pick.honmei_number, pick.honmei_gate, 'sm') : '—';
-      pickHtml = `<div class="rpick">${hit ? pillHtml('hit', '的中') : pillHtml('miss', '不的中')}<span class="pk">◎${honmeiBox} ${escapeHtml(pick.honmei_name ?? '')}</span><span class="amt ${hit ? 'hit' : 'miss'}">${fmtNet(net)}</span></div>`;
-      // 2026-09-04: 「勝ち馬: 10（2人気）」の行は一覧から外した。
-      // 出るのは買って外したレースだけで、掲載285レース中67レース（23.5%）。1行あたり25px。
-    }
-  } else if (race.status === 'cancelled') {
-    pickHtml = `<div class="rpick">${pillHtml('cancel', '中止')}</div>`;
-  }
-
-  const w5 = win5LabelHtml(race.win5);
-  // 2026-09-04: 左の柱。上から 発走時刻 / R番号 / WIN5の脚番号。
-  // 柱と中身の間の縦罫線が、行と行を分ける唯一の区切りになる（横罫線は無くした）。
-  // クラス名は .rn ではなく .rno にしてある。.rn は詳細ページ・成績・コースタブ・
-  // モック19枚が同じ名前で使っており、44px角の箱として書かれているため。
-  const col1 = `<div class="col1">`
-    + `<b class="tm">${escapeHtml(race.post_time || '—')}</b>`
-    + `<span class="rno ${rnClass}">${race.race_number}R</span>`
-    + w5
-    + `</div>`;
-
+  const hotTab = hot
+    ? `<span class="hot26">${FLAME_SVG}激アツ<b>${race.bigpay.pct.toFixed(1)}<small>%</small></b><i>100万超え</i></span>` : '';
+  const nextTab = isNext ? `<span class="next26">次<b>${escapeHtml(race.post_time || '')}</b><i>発走</i></span>` : '';
+  const cls = ['rc26', done ? 'done' : '', hot ? 'hot' : '', isNext ? 'next' : ''].filter(Boolean).join(' ');
   return `
-    <a class="race pred" href="race.html?id=${race.race_id}">
-      ${col1}
-      <div class="rmain">
-        <div class="rname">${escapeHtml(race.race_name)}${badge}${tags}</div>
-        <div class="rmeta">${meta}</div>
-        ${pickHtml}
+    <a class="${cls}" href="race.html?id=${race.race_id}">
+      ${hotTab}${nextTab}
+      <div class="c1">
+        <b class="tm">${escapeHtml(race.post_time || '—')}</b>
+        <span class="rno">${race.race_number}R</span>
+        ${win5LabelHtml(race.win5)}
+      </div>
+      <div class="mn">
+        <div class="nm"><span class="nmt">${escapeHtml(race.race_name)}${badge}</span>${bchip}${upsetChipHtml(race.upset)}</div>
+        <div class="mt">${surface}<span class="hc26"><b>${race.field_size}</b>頭</span>${w6TagHtml(race)}</div>
       </div>
     </a>
   `;
@@ -346,7 +287,11 @@ function renderRaceList(state, races) {
   const filtered = races
     .filter((r) => r.date === state.activeDate && r.track === state.activeTrack)
     .sort((a, b) => a.race_number - b.race_number);
-  el.innerHTML = filtered.map(renderRaceRow).join('');
+  const now = nowJst();
+  // 次のレース＝今日の開催で、まだ終わっていない一番早いレース。今日以外の日には出さない
+  const next = filtered.find((r) => r.date === now.date && !isDoneRace(r, now));
+  const ctx = { now, nextId: next ? next.race_id : null };
+  el.innerHTML = `<div class="rl26">${filtered.map((r) => renderRaceRow(r, ctx)).join('')}</div>`;
 }
 
 function renderEmpty() {
@@ -366,8 +311,8 @@ async function main() {
       `<div class="error-box">データの読み込みに失敗しました: ${escapeHtml(e.message)}</div>`;
     return;
   }
-  // 5案が動き始めた日。これより前は旧方式なので一覧の表示を切り替える（130-spec §7）
-  BETRULE_FROM = ((manifest.stats || {}).plan_stats || {}).period?.from || null;
+  // 136-spec: WIN6 の札が始まった日。これより前のレースには札を出さない
+  W6_FROM = (manifest.races || []).filter((r) => r.w6).map((r) => r.date).sort()[0] || null;
   renderSummary(manifest.stats);
   const races = manifest.races || [];
   if (!races.length) {
@@ -384,6 +329,8 @@ async function main() {
     renderRaceList(state, races);
   };
   rerender();
+  // 136-spec: 次のレース・終わったレースは時刻で動くので、1分ごとに一覧だけ描き直す
+  setInterval(() => renderRaceList(state, races), 60000);
 }
 
 main();
