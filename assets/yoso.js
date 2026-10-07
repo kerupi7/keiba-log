@@ -77,7 +77,7 @@
     mark: '<span class="yfm-ic mk">◎</span>',
   };
   const MENU_TXT = {
-    swipe: { t: '絞り込み', s: '1頭ずつスワイプして、残す馬（✓）と消す馬を決める' },
+    swipe: { t: '絞り込み', s: '1頭ずつスワイプして、残す馬（✓）と消す馬を決める。上に払うと自分の激アツ' },
     mark: { t: '印', s: '✓の馬を2頭ずつ比べて、◎○▲を決める' },
   };
   // 行の右端の状態は文字でなく記号で出す（2026-09-18 ユーザー「まだ・先に消しとチェックは芸がない」）。
@@ -800,70 +800,38 @@
           + `<b class="m225-r">${esc(x.g === '初' ? '初' : x.g || '—')}</b></div>`)).join('')}</div>` : '')
         + '</div>';
     }).join('');
-    return `<div class="race20 m225 m225-pg">${head}${total}<div class="m225x m225x-e1 m225g">${body}</div>${gekiBlock(h)}</div>`;
+    return `<div class="race20 m225 m225-pg">${head}${total}<div class="m225x m225x-e1 m225g">${body}</div>${gekiMark(h)}</div>`;
   }
 
-  // ---------- 自分の激アツ（138-spec・2026-10-07 ユーザー決定・mockup-266 案2「金屏風」） ----------
-  //   ランクの1ページの下の空いた所。左が金箔（判子を押す所）、右が黒漆（「自分の」「激アツ」と馬名）、右端に押すボタン。
-  //   ボタンを長押し（GEKI_HOLD_MS）すると、ふちに金の輪がたまり、金の判子が押される。もう一度長押しで外す。
-  //   判子の絵と記録（gekiatsu:{race_id}）は race.js の gekiStampSvg・gekiLoad・gekiSave。
-  //   ボタンの長押しは、札の受け口（払う・金の枠・裏返す）に届く前に止める（下の document の先回りの受け口）
-  const GEKI_HOLD_MS = 600;
-  function gekiBlock(h) {
+  // ---------- 自分の激アツ（138-spec） ----------
+  //   絞り込みのランクの1ページで札を上に払うと、札の見出しの右に金の判子が押される。もう一度上に払うと外す
+  //   （2026-10-07 ユーザー「上にスライドしたら激アツにするようにして」。下の空き地の台と長押しのボタンはやめた。
+  //   台があると段を開いた時に台か札の大きさが変わるため）。判子の絵と記録（gekiatsu:{race_id}）は app.js の gekiStampSvg・gekiLoad・gekiSave
+  const GEKI_UP = 90;   // 上へこれだけ動かして離すと押す（px）。払う（横 100px）より少し短い
+  function gekiMark(h) {
     if (typeof gekiStampSvg !== 'function') return '';
     ensureGekiDefs();
     const on = gekiLoad(raceId).has(h.number);
-    return `<div class="ga27${on ? ' on' : ''}" data-n="${h.number}">`
-      + `<div class="ga-gold"><span class="ga-slot">${gekiStampSvg(84)}</span><span class="ga-sparks">${'<i></i>'.repeat(10)}</span><span class="ga-ph">押す</span></div>`
-      + `<div class="ga-mid"><span class="ga-lab"><small>自分の</small><b>激アツ</b><span class="ga-hn">${esc(h.name)}</span></span>`
-      + '<span class="ga-hint">この馬を<br>激アツに</span></div>'
-      + `<div class="ga-bcol"><button type="button" class="ga-btn" aria-pressed="${on}" aria-label="自分の激アツ（長押しで付け外し）">`
-      + '<svg class="ga-ring" viewBox="0 0 90 90" aria-hidden="true"><circle cx="45" cy="45" r="41" class="rb"/><circle cx="45" cy="45" r="41" class="rf"/></svg>'
-      + `<span class="ga-face">${gekiStampSvg(44)}</span></button><small class="ga-cap">${on ? '長押しで外す' : '長押し'}</small></div></div>`;
+    return `<span class="m225-geki${on ? ' on' : ''}" aria-hidden="true"><span class="gk-st">${gekiStampSvg(48)}</span>`
+      + `<span class="ga-sparks">${'<i></i>'.repeat(10)}</span></span>`;
   }
-  let gekiHold = null;
-  function gekiCancel() {
-    if (!gekiHold) return;
-    clearTimeout(gekiHold.t);
-    gekiHold.box.classList.remove('charging');
-    gekiHold = null;
-  }
-  function gekiFire(box) {
-    gekiHold = null;
-    box.classList.remove('charging');
-    const n = Number(box.dataset.n);
+  // 上に払っている間に札の下の方に出す「自分の激アツ」。押してある馬は「激アツを外す」（札が上がると下の方が見えるため）
+  const gkTag = () => (!S.view && typeof gekiStampSvg === 'function' ? `<div class="yf-gk" id="yf-gk">${gekiStampSvg(30)}<b>自分の激アツ</b></div>` : '');
+  function gekiToggle(n) {
     const set = gekiLoad(raceId);
     const on = !set.has(n);
     if (on) set.add(n); else set.delete(n);
     gekiSave(raceId, set);
-    box.classList.remove('on', 'press', 'off');
-    void box.offsetWidth;   // 押す動きを毎回はじめから
-    box.classList.add(on ? 'on' : 'off');
-    if (on) box.classList.add('press');
-    box.querySelector('.ga-btn').setAttribute('aria-pressed', String(on));
-    box.querySelector('.ga-cap').textContent = on ? '長押しで外す' : '長押し';
-    if (on) haptic();
+    const el = document.querySelector('#yf-page .m225-geki');
+    if (el) {
+      el.classList.remove('on', 'press', 'off');
+      void el.offsetWidth;   // 押す動きを毎回はじめから
+      el.classList.add(on ? 'on' : 'off');
+      if (on) el.classList.add('press');
+    }
+    haptic();
     document.dispatchEvent(new CustomEvent('gekiatsu-change'));
   }
-  document.addEventListener('pointerdown', (e) => {
-    const b = e.target.closest && e.target.closest('.ga-btn');
-    if (!b) return;
-    e.stopPropagation();
-    e.preventDefault();
-    gekiCancel();
-    const box = b.closest('.ga27');
-    box.classList.remove('off');
-    box.classList.add('charging');
-    gekiHold = { box, sx: e.clientX, sy: e.clientY, t: setTimeout(() => gekiFire(box), GEKI_HOLD_MS) };
-  }, true);
-  document.addEventListener('pointermove', (e) => {
-    if (gekiHold && Math.hypot(e.clientX - gekiHold.sx, e.clientY - gekiHold.sy) > 12) gekiCancel();
-  }, true);
-  ['pointerup', 'pointercancel'].forEach((ev) => document.addEventListener(ev, (e) => {
-    if (e.target.closest && e.target.closest('.ga-btn')) e.stopPropagation();
-    gekiCancel();
-  }, true));
-  document.addEventListener('contextmenu', (e) => { if (e.target.closest && e.target.closest('.ga-btn')) e.preventDefault(); }, true);
   // 段のヘッダを押す → 開く／たたむ。札を押す → 札が裏返って詳しいページ。「総合」を押す → 総合点の内訳
   function m225Tap(target) {
     if (M225_BACK) return;
@@ -1109,27 +1077,7 @@
       }
     });
     const cs = getComputedStyle(pe);
-    // 自分の激アツの台（.ga27）があるページは、ページの高さを見える高さまで伸ばし、台を下の空いた所に置く（138-spec）。
-    //   台は空き地に合わせて 120〜190px で伸び縮みする。120px も空いていない画面だけ、下の縮める処理で全体が少し縮む
-    //   高さは px で固定せず CSS（.ga-fill の min-height:100%）で伸ばす。見える高さが後から縮んでも（ツールバー・アプリの中のブラウザ）
-    //   中身が一緒に縮み、はみ出して縦に動かせる状態にならないようにするため（2026-10-07 ユーザー「スクロールしなきゃいけないケースがあった」）
-    const ga = inner.querySelector(':scope > .ga27');
-    inner.classList.toggle('ga-fill', Boolean(ga));
-    if (ga) {
-      // 空き地が 120px に足りない（小さい画面・段を開いた時）は、台のほうを譲らせる：細い台（84px）→ 1行の帯（32〜48px）→ 隠す。
-      //   段を開いても札全体の大きさは変えない（2026-10-07 ユーザー「開くとサイズが変わるのをやめてほしい」）。
-      //   台を隠しても入らない時だけ、下の縮める処理で全体が縮む（台を足す前からの動き）
-      const avail = pe.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
-      ga.classList.remove('tight', 'mini', 'gone');
-      // 隠すのは段を開いている間だけ。段を閉じれば台は必ず見える（見えない画面を作らない）
-      const steps = inner.querySelector('.m225g-g.open') ? ['tight', 'mini', 'gone'] : ['tight', 'mini'];
-      for (const c of steps) {
-        if (inner.offsetHeight <= avail + 0.5) break;
-        ga.classList.remove('tight', 'mini');
-        ga.classList.add(c);
-      }
-    }
-    // 台を隠しても入らない時は、開いた段の中身だけを縮める（0.7倍まで）。札の見出し・総合・ほかの段の大きさは変えない
+    // 段を開いて入らない時は、開いた段の中身だけを縮める（0.7倍まで）。札の見出し・総合・ほかの段の大きさは変えない
     //   （2026-10-07 ユーザー「開くとサイズが変わるのをやめてほしい」。390×660 で「条件」を開くと全体が0.97倍になっていた）
     const body = inner.querySelector('.m225g-g.open > .m225x-list');
     if (body) {
@@ -2262,7 +2210,7 @@
     return `<div class="yf-deck top apple${S.view ? ' view' : ''}" id="yf-deck">
         <div class="yf-card" id="yf-card">
           <div class="yf-tint" id="yf-tint"></div>
-          <div class="yf-stamp ok" id="yf-ok"><i>✓</i>残す</div><div class="yf-stamp ng" id="yf-ng"><i>✕</i>消す</div>
+          <div class="yf-stamp ok" id="yf-ok"><i>✓</i>残す</div><div class="yf-stamp ng" id="yf-ng"><i>✕</i>消す</div>${gkTag()}
           <div class="yf-dots">${dots}</div>
           <div class="yf-plab"><span class="yf-pl"><b>${esc(pg.label)}</b>${TODAY_PAGES.includes(pg.k) ? todayTag : ''}</span>${right}</div>
           <div class="yf-page" id="yf-page">${pageHtml(h, pg)}</div>
@@ -3322,7 +3270,7 @@
     delete el.dataset.p;
     const pg = el.querySelector('.yf-page');
     if (pg) pg.id = 'yf-page';
-    el.insertAdjacentHTML('afterbegin', '<div class="yf-tint" id="yf-tint"></div><div class="yf-stamp ok" id="yf-ok"><i>✓</i>残す</div><div class="yf-stamp ng" id="yf-ng"><i>✕</i>消す</div>');
+    el.insertAdjacentHTML('afterbegin', '<div class="yf-tint" id="yf-tint"></div><div class="yf-stamp ok" id="yf-ok"><i>✓</i>残す</div><div class="yf-stamp ng" id="yf-ng"><i>✕</i>消す</div>' + gkTag());
     if (pagesOf(Q[S.idx]).length > 1) el.insertAdjacentHTML('beforeend', '<span class="yf-edge r">›</span>');
     // 飛んでいく抜け殻より手前に来ないよう、前の札は抜け殻の直前に置く（重なり順）
     const ghost = el.parentElement.querySelector('.yf-card[data-gone]');
@@ -3355,10 +3303,14 @@
     const backEl = () => document.getElementById('yf-back');
     const ok = document.getElementById('yf-ok');
     const ng = document.getElementById('yf-ng');
+    const gk = document.getElementById('yf-gk');
     const pageEl = document.getElementById('yf-page');
     const deck = card.parentElement;
     const TH = 100;
     let sx = 0, sy = 0, st = 0, dx = 0, dy = 0, g = 1, drag = false, vdrag = false, down = false, vscroll = false, top0 = 0, over = false;
+    let udrag = false;   // 上に払っている（自分の激アツ）
+    // 上に払えるのは、絞り込みのランクの1ページ（判子の置き場がある時）だけ
+    const gekiPage = () => !S.view && Boolean(document.querySelector('#yf-page .m225-geki'));
     let hist = [];
     let base = '';
     // 長押しの金（2026-09-28）。hold＝構えている部品と2つのタイマー。stamped＝押し終えた（離しても何もしない）
@@ -3389,6 +3341,7 @@
       card.classList.add('spring');
       card.style.transform = '';
       ok.style.opacity = 0; ng.style.opacity = 0; ok.style.transform = ''; ng.style.transform = '';
+      if (gk) { gk.style.opacity = 0; gk.style.transform = ''; }
       if (tint) { tint.style.transition = 'opacity .35s'; tint.style.opacity = 0; }
       const back = backEl();
       if (back) {
@@ -3413,7 +3366,8 @@
         card.style.transformOrigin = '50% 100%';
         card.style.transform = base.trim();
       }
-      down = true; drag = false; vdrag = false; vscroll = false; over = false; dx = 0; dy = 0;
+      down = true; drag = false; vdrag = false; vscroll = false; udrag = false; over = false; dx = 0; dy = 0;
+      if (gk) gk.querySelector('b').textContent = gekiLoad(raceId).has(Q[S.idx].number) ? '激アツを外す' : '自分の激アツ';
       sx = e.clientX; sy = e.clientY; st = performance.now(); hist = [[st, sx, sy]];
       top0 = pageEl ? pageEl.scrollTop : 0;
       const rc = card.getBoundingClientRect();
@@ -3450,26 +3404,40 @@
       //   ・横は少し甘く（縦の 0.8 倍を超えたら横）、縦は少し辛く（横の 1.25 倍を超えたら縦）。
       //     その間（だいたい39°〜51°）はまだ決めない。指を動かし続ければどちらかに決まる
       //   ・縦に動かし始めた後でも、横がはっきり勝ったら払うほうへ乗り換える
-      if (!drag && !vdrag && !vscroll && Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy) * 0.8) drag = true;
-      if (!drag && !vdrag && !vscroll && Math.abs(dy) > 8 && Math.abs(dy) > Math.abs(dx) * 1.25 && scrollable() && (dy < 0 || top0 > 0)) vscroll = true;
+      if (!drag && !vdrag && !vscroll && !udrag && Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy) * 0.8) drag = true;
+      if (!drag && !vdrag && !vscroll && !udrag && Math.abs(dy) > 8 && Math.abs(dy) > Math.abs(dx) * 1.25 && scrollable() && (dy < 0 || top0 > 0)) vscroll = true;
+      // 上に払う → 自分の激アツ（ランクの1ページだけ。縦に動かせるページでは今までどおり縦に動かす）
+      if (!drag && !vdrag && !vscroll && !udrag && dy < -8 && -dy > Math.abs(dx) * 1.25 && gekiPage()) udrag = true;
       // 1頭だけ見るときは下に払って閉じる操作をしない（2026-09-24 ユーザー決定。閉じるボタンで閉じる）
       if (!drag && !vdrag && !vscroll && !S.view && dy > 8 && dy > Math.abs(dx) * 1.25) vdrag = true;
       // 乗り換え。指の今いる所を始点に取り直すので、カードは跳ねずに0から付いてくる。
       //   縦に動かしている最中の小さな横ぶれで払ってしまわないよう、横40px以上・縦との差24px以上にしてある
-      if (vscroll && Math.abs(dx) > 40 && Math.abs(dx) - Math.abs(dy) > 24) {
-        vscroll = false; drag = true;
+      if ((vscroll || udrag) && Math.abs(dx) > 40 && Math.abs(dx) - Math.abs(dy) > 24) {
+        vscroll = false; udrag = false; drag = true;
+        if (gk) { gk.style.opacity = 0; gk.style.transform = ''; }
         sx = e.clientX; sy = e.clientY; st = now; dx = 0; dy = 0; hist = [[now, sx, sy]];
       }
-      if (drag || vdrag || vscroll) card.classList.remove('press');
+      if (drag || vdrag || vscroll || udrag) card.classList.remove('press');
       // 指が動いたら長押しをやめる（払い・縦の動きに入る前の小さなぶれ 8px までは待つ）
-      if (hold && (drag || vdrag || vscroll || Math.hypot(dx, dy) > 8)) holdStop();
+      if (hold && (drag || vdrag || vscroll || udrag || Math.hypot(dx, dy) > 8)) holdStop();
       if (vscroll) { pageEl.scrollTop = top0 - dy; return; }
-      if ((drag || vdrag) && !card.hasPointerCapture?.(e.pointerId)) {
+      if ((drag || vdrag || udrag) && !card.hasPointerCapture?.(e.pointerId)) {
         try { card.setPointerCapture(e.pointerId); } catch (_) { /* 取れなくても動く */ }
       }
       // 1頭だけ見るときはカードを指に付けて動かさない（2026-09-24 ユーザー指示「予想を始めるとき以外は、
       //   カードをスワイプしてずらせないように」）。横に払った量だけ数えて、離したときにページを送る
       if (S.view) return;
+      if (udrag) {
+        // 札が指に付いて上がる（上げすぎると重くなる）。下の方の「自分の激アツ」が濃くなり、越えたら震える
+        const y = Math.max(0, -dy);
+        const r = y < 120 ? y : 120 + (y - 120) * 0.35;
+        card.style.transform = `translateY(${(-r).toFixed(1)}px)${base}`;
+        const p = Math.min(1, y / GEKI_UP);
+        if (gk) { gk.style.opacity = p.toFixed(3); gk.style.transform = `translateX(-50%) scale(${(p >= 1 ? 1.08 : 0.7 + 0.25 * p).toFixed(3)})`; }
+        const o = y > GEKI_UP;
+        if (o !== over) { over = o; if (o) haptic(); }
+        return;
+      }
       if (vdrag) {
         const y = Math.max(0, dy);
         const r = y < 160 ? y : 160 + (y - 160) * 0.35;      // 下げすぎると重くなる（ゴムのような手ごたえ）
@@ -3503,7 +3471,7 @@
       card.classList.remove('press');
       holdStop();
       // 長押しで金を付け外しした後は、離してもページを送らない
-      if (stamped) { stamped = false; if (!drag && !vdrag) return; }
+      if (stamped) { stamped = false; if (!drag && !vdrag && !udrag) return; }
       const now = performance.now();
       const dt = now - st;
       const h0 = hist[0], h1 = hist[hist.length - 1];
@@ -3511,6 +3479,13 @@
       const vx = (h1[1] - h0[1]) / span, vy = (h1[2] - h0[2]) / span;   // 点／ミリ秒（最後の数コマ）
       if (vscroll) return;
       if (cancel) { springHome(); return; }
+      if (udrag) {
+        // 札は元の位置に戻し、次の馬へは進まない（✓・消とは別に付け外しする）
+        const fire = -dy > GEKI_UP || (vy < -0.9 && -dy > 40);
+        springHome();
+        if (fire) gekiToggle(Q[S.idx].number);
+        return;
+      }
       if (vdrag) {
         if (dy > 120 || vy > 0.9) {
           // 1頭だけ見るときは、下に払ったらそのまま閉じる（やめるかの確認は要らない。2026-09-21）
