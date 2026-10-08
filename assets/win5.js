@@ -69,12 +69,14 @@ function w5GateNote(gate) {
 // win5.json の legs をそのまま並べるだけ。行をタップすると そのレースの詳細へ飛ぶ。
 // 対象5鞍の特定は 121-spec（金曜）で済んでいるので、ここでは判定をしない。
 function w5RaceRowHtml(lg) {
+  // 2026-10-08 mockup-282 A-2：WIN印を左の柱、1段目にレース名、2段目に時刻と場・R
   const rc = `${escapeHtml(lg.track || '')}${lg.race_number || ''}R`;
   return `<a class="w5lrow" href="race.html?id=${encodeURIComponent(lg.race_id)}">`
-    + `<img class="w5lb" src="assets/win5-${lg.leg}.png" alt="WIN${lg.leg}" width="188" height="74">`
-    + `<span class="w5lt">${escapeHtml(lg.post_time || '—')}</span>`
-    + `<span class="w5lc">${rc}</span>`
+    + `<span class="w5lb"><img src="assets/win5-${lg.leg}.png" alt="WIN${lg.leg}" width="188" height="74"></span>`
+    + '<span class="w5lw">'
     + `<span class="w5ln">${escapeHtml(lg.race_name || '—')}</span>`
+    + `<span class="w5lm"><b class="w5lt">${escapeHtml(lg.post_time || '—')}</b>`
+    + `<span class="w5lc">${rc}</span></span></span>`
     + '<span class="w5lgo">›</span></a>';
 }
 
@@ -84,7 +86,7 @@ function w5RaceListHtml(days) {
     const d = fmtDateTab(day.date);
     const head = '<div class="w5lhead">'
       + `<span class="w5ldate">${d.label}<span class="${d.dowClass}">（${d.dow}）</span>の対象レース</span>`
-      + `<span class="w5ldl">締切 ${escapeHtml(day.deadline || '—')}</span></div>`;
+      + `<span class="w5ldl">締切<b>${escapeHtml(day.deadline || '—')}</b></span></div>`;
     return `<div class="w5list">${head}${(day.legs || []).map(w5RaceRowHtml).join('')}</div>`;
   }).join('');
 }
@@ -137,17 +139,22 @@ function w5pBandOf(odds) {
 
 // ===== 第0問: どちらの入り口か =====
 function w5pQ0() {
-  let h = w5pProg('はじめに', '2つの入り口', 1, 3);
-  h += '<div class="ak-card"><div class="ak-q"><div class="qhead">'
-    + '<span class="q">どちらから見ますか？</span></div>'
-    + '</div>'
-    + '<div class="ak-opts">'
-    + '<button class="ak-opt" data-w5pmode="target"><span class="oi">1</span>'
-    + '<span class="obody"><span class="ol">いくら狙うか決める</span></span></button>'
-    + '<button class="ak-opt" data-w5pmode="marks"><span class="oi">2</span>'
-    + '<span class="obody"><span class="ol">選んだ馬から配当を見る</span></span></button>'
+  // 2026-10-08 mockup-282 A-2：見出しは分析ページと同じ形、入り口2つは横に並べた札
+  const tile = (cls, path) => `<span class="w5p-tile ${cls}"><svg viewBox="0 0 24 24" fill="none"`
+    + ` stroke="#fff" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">`
+    + `<path d="${path}"/></svg></span>`;
+  const opt = (mode, t, l, d, q) => `<button class="w5p-entry" data-w5pmode="${mode}">${t}`
+    + `<span class="ol">${l}</span><span class="od">${d}</span>`
+    + `<span class="ft"><span class="qn">${q}</span><span class="go">›</span></span></button>`;
+  return '<div class="w5p-q0">'
+    + '<div class="ttl">どちらから見ますか？</div>'
+    + `<div class="sub">過去 <b>${w5pData.source.n_rounds}</b> 回の配当から目安を出します</div>`
+    + '<div class="w5p-entries">'
+    + opt('target', tile('nv', 'M6 4l6 8 6-8M12 12v8M7 13h10M7 17h10'),
+      'いくら狙うか<br>決める', '狙う配当と予算から、各レースのオッズ帯を出す', '2問')
+    + opt('marks', tile('gr', 'M5 12.5l4.5 4.5L19 7.5'),
+      '選んだ馬から<br>配当を見る', '5レースで馬を選ぶと、配当の目安が出る', '5レース')
     + '</div></div>';
-  return h;
 }
 
 function w5pQ1() {
