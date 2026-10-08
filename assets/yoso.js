@@ -2639,6 +2639,13 @@
     return { cards, groups, total: list.length };
   }
   const tbStar = (n, cls = '') => (n ? `<i class="tb-gd ${cls}" aria-label="金の枠${n}つ">★${n > 1 ? n : ''}</i>` : '');
+  // 絞り込みで押した自分の激アツを、印を決める画面の名前の下にも出す（2026-10-08 ユーザー「ここに激アツ表示を載せて欲しい」）。
+  //   判子の絵は絞り込み・出馬表の一覧と同じ gekiStampSvg。見るだけで、ここでは付け外ししない
+  function apGeki(h) {
+    if (typeof gekiStampSvg !== 'function' || !gekiLoad(raceId).has(h.number)) return '';
+    ensureGekiDefs();
+    return `<div class="ap-geki">${gekiStampSvg(28)}<b>自分の激アツ</b></div>`;
+  }
   function vTenbin() {
     const t = S.t;
     const mk = MARKS3[S.step];
@@ -2654,7 +2661,7 @@
     const top = HS.map((h, i) => `<div class="ap-top" data-side="${h.number}">
         <div class="ap-tn" data-hist="${h.number}">${umaBox(h.number, h.gate)}<b>${esc(h.name)}</b><i class="ap-chev">›</i></div>
         <div class="ap-ts">${esc(h.sex_age || '')}・${esc(String(h.weight_carried ?? '').replace(/\.0$/, ''))}kg・${esc(h.jockey || '')}</div>
-        ${GD[i].total ? `<div class="tb-gsum">★ 金の枠 ${GD[i].total}つ</div>` : ''}
+        ${apGeki(h)}${GD[i].total ? `<div class="tb-gsum">★ 金の枠 ${GD[i].total}つ</div>` : ''}
       </div>`).join('');
     // 段に金の付いた札があれば、ランクの角に ★（2つ以上は数）。勝ち側の金の枠とは別の印にする
     const cell = (grade, isL, x) => {
@@ -2949,6 +2956,7 @@
     const top = HS.map((h, i) => `<div class="ap-top" data-side="${h.number}">
         <div class="ap-tn" data-hist="${h.number}">${umaBox(h.number, h.gate)}<b>${esc(h.name)}</b><i class="ap-chev">›</i></div>
         <div class="ap-ts">${esc(h.sex_age || '')}・${esc(String(h.weight_carried ?? '').replace(/\.0$/, ''))}kg・${esc(h.jockey || '')}</div>
+        ${apGeki(h)}
       </div>`).join('');
     // ---- あなたが良いと思った所（絞り込みの金） ----
     const cnt = HS.map((h) => CUR.fr[h.number].size + rest[h.number].length);
