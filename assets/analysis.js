@@ -2,7 +2,7 @@
 //
 // 何を出すか
 //   ・見出しの一文：残す馬を何で決めているか（重く見ている札の上位2つ）
-//   ・3行：ほとんど見ていない／もっと見ていい／見すぎかも
+//   ・行：良い見方をしている（2026-10-08 追加）／ほとんど見ていない／もっと見ていい／見すぎかも
 //   ・段ごとのカード：▼＝あなたが残した馬の平均、◆＝3着内に来た馬の平均（全レース）
 //
 // 材料
@@ -101,7 +101,7 @@
     const cards = data.cards.map((c) => c[1]).filter((c) =>
       st[c].nk >= MIN_N && st[c].nx >= MIN_N && data.effect[c]);
     const N = cards.length;
-    const res = { heavy: [], light: [], more: [], over: [], tag: {}, N };
+    const res = { heavy: [], light: [], more: [], over: [], good: [], tag: {}, N };
     if (N < 4) return res;
     const my = Object.fromEntries(cards.map((c) => [c, st[c].k - st[c].x]));
     const ef = Object.fromEntries(cards.map((c) => [c, data.effect[c].top - data.effect[c].oth]));
@@ -119,7 +119,13 @@
     // 見すぎかも：あなたは上位なのに、実際は gap 以上低い札で、▼が◆より厳しい側にあるもの
     res.over = cards.filter((c) => myr[c] <= Math.ceil(N * 8 / 22) && efr[c] - myr[c] >= gap && st[c].k > data.effect[c].top)
       .sort((a, b) => (myr[a] - efr[a]) - (myr[b] - efr[b])).slice(0, 3);
+    // 良い見方：あなたも重く見ていて、実際にも着順をよく分けた札（どちらも上位 1/3 以内。22札で8位以内）。
+    //   ▼が◆より甘い側にある札は外す（重く見ていても、残す馬が3着内の馬より弱ければ「良い」とは言えないため）
+    const top3rd = Math.ceil(N * 8 / 22);
+    res.good = cards.filter((c) => myr[c] <= top3rd && efr[c] <= top3rd && st[c].k >= data.effect[c].top - 0.1)
+      .sort((a, b) => Math.max(myr[a], efr[a]) - Math.max(myr[b], efr[b]) || myr[a] - myr[b]).slice(0, 3);
     for (const c of res.heavy) res.tag[c] = ['heavy', '重視'];
+    for (const c of res.good) res.tag[c] = ['good', '良い'];   // 重視と重なったら「良い」を出す
     for (const c of res.light) res.tag[c] = ['light', '軽視'];
     for (const c of res.over) res.tag[c] = ['over', '見すぎ'];
     for (const c of res.more) res.tag[c] = ['more', 'もっと'];
@@ -178,6 +184,7 @@ ${c.waiting ? `<p class="an-note">印を付けたレースが ${c.waiting} 件�
       ? `<h1>残す馬は<em class="c-heavy">${join(ins.heavy.slice(0, 2))}</em>で決めています。</h1>`
       : '<h1 class="sm">印がもう少したまると、何を見て残しているかが出ます。</h1>';
     const dl = ins.heavy.length >= 2 ? `<dl>
+${ins.good.length ? `<div><dt class="c-good">良い見方をしている</dt><dd>${join(ins.good)}</dd></div>` : ''}
 <div><dt class="c-light">ほとんど見ていない</dt><dd>${join(ins.light)}</dd></div>
 <div><dt class="c-more">もっと見ていい</dt>${ins.more.length ? `<dd>${join(ins.more)}</dd>` : '<dd class="none">今はありません</dd>'}</div>
 ${ins.over.length ? `<div><dt class="c-over">見すぎかも</dt><dd>${join(ins.over)}</dd></div>` : ''}</dl>` : '';
