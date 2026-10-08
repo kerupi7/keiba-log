@@ -15,6 +15,10 @@
 //   ・買い目シート：この端末の localStorage の bets:{race_id}（betsheet.js）。端末をまたぐ同期はしない
 //   ・結果：data/bet_results.json（keiba_bet_results.py が夜の一括処理で書き出す）
 //   ・組み合わせの開き方は simulator.js の enumerate をそのまま使う（ここで書き写すと券種の決まりが2か所になる）
+//
+// ここから数え直す（2026-10-08 ユーザー「馬券をリセットできるボタンが欲しい」→ 案C）
+//   ・シートは消さない。押した時点で結果の出ているレースの id を localStorage の betsreset に残し、以後は数えない
+//   ・押した時に結果待ちだったレースは、結果が出たら数える。「元に戻す」で betsreset を消せば全部数え直す
 (function () {
   'use strict';
 
@@ -45,6 +49,25 @@
     } catch (e) { /* 保存が使えない環境ではシートなし扱い */ }
     return out;
   }
+
+  var RKEY = 'betsreset';
+  function readReset() {
+    try {
+      var o = JSON.parse(localStorage.getItem(RKEY));
+      if (!o || !o.at || !Array.isArray(o.rids)) return null;
+      var skip = {};
+      o.rids.forEach(function (r) { skip[r] = true; });
+      return { at: o.at, skip: skip };
+    } catch (e) { return null; }
+  }
+  // 今シートがあって結果の出ているレースを、数えない側に足す（前の数え直しの分も残す）
+  function saveReset(data, sheets, prev) {
+    var rids = Object.keys((prev && prev.skip) || {});
+    Object.keys(sheets).forEach(function (rid) { if (data.races[rid] && rids.indexOf(rid) === -1) rids.push(rid); });
+    var now = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);   // 日本の日付
+    try { localStorage.setItem(RKEY, JSON.stringify({ v: 1, at: now, rids: rids })); return true; } catch (e) { return false; }
+  }
+  function clearReset() { try { localStorage.removeItem(RKEY); } catch (e) { /* そのまま */ } }
 
   function kindOf(state) {
     if (state.betType === 'tansho') return state.tanFuku === 'fukusho' ? 'fukusho' : 'tansho';
@@ -133,9 +156,10 @@
   }
 
   // シート全部を数える
-  function tally(data, sheets) {
-    var recs = [], waiting = 0, used = {};
+  function tally(data, sheets, skip) {
+    var recs = [], waiting = 0, used = {}, skipped = 0;
     Object.keys(sheets).sort().forEach(function (rid) {
+      if (skip && skip[rid]) { skipped += sheets[rid].length; return; }   // 数え直す前に結果の出ていたレース
       var race = data.races[rid];
       if (!race) { waiting += sheets[rid].length; return; }   // まだ結果の出ていないレース（夜の一括処理で入る）
       sheets[rid].forEach(function (l) {
@@ -161,7 +185,7 @@
       rate.push(cn > 0 ? cr * 100 / cn : 0);
     });
     var dates = recs.map(function (r) { return r.d; }).filter(Boolean);
-    return { recs: recs, tot: tot, by: by, how: how, rate: rate, races: Object.keys(used).length, waiting: waiting,
+    return { recs: recs, tot: tot, by: by, how: how, rate: rate, races: Object.keys(used).length, waiting: waiting, skipped: skipped,
       d0: dates[0], d1: dates[dates.length - 1] };
   }
 
@@ -258,13 +282,18 @@
   }
 
   function render(el, data, sheets) {
-    var c = tally(data, sheets);
+    var reset = readReset();
+    var c = tally(data, sheets, reset && reset.skip);
+    var resetNote = reset
+      ? '<p class="an-note bt-rs">' + md(reset.at) + ' に数え直しました。それより前に結果の出ていた買い目' + (c.skipped ? ' ' + c.skipped + ' 本' : '')
+        + 'は数えていません。<button type="button" class="bt-undo" data-bt-undo>元に戻す</button></p>'
+      : '';
     if (!c.recs.length) {
       el.innerHTML = '<div class="an-hero an-empty"><div class="an-ey">あなたの馬券</div><h1 class="sm">まだ数えられる買い目がありません。</h1>'
         + '<p>レースの画面の「自分で組む」で買い目を組み、<b>シートに入れる</b>を押すと、結果が出たあとにここで当たりと回収率が出ます。</p>'
         + '<p>シートはこの端末の中だけに保存されています。別の端末で入れた買い目は数えられません。</p>'
         + (c.waiting ? '<p class="an-note">結果を待っている買い目が ' + c.waiting + ' 本あります。夜の集計のあとに数えられるようになります。</p>' : '')
-        + '</div>';
+        + resetNote + '</div>';
       return;
     }
     var ins = insight(c);
@@ -307,17 +336,19 @@
         + '<span><i class="bg-miss"></i>遠い（軸が来ない／2頭以上）</span></div>'
       : '<p class="bt-none">ながし・ボックスの買い目がまだありません。</p>';
     var wait = c.waiting ? '<p class="an-note">結果を待っている買い目が ' + c.waiting + ' 本あります。夜の集計のあとに数えられるようになります。</p>' : '';
-    el.innerHTML = hero + meta + wait + three
+    el.innerHTML = hero + meta + resetNote + wait + three
       + '<h2 class="bt-h">券種ごと<small>線は券種ごとの収支</small></h2>' + tb
       + '<h2 class="bt-h">外れ方<small>買い方ごと</small></h2>' + howHtml
       + '<p class="an-foot">シートに入れた本は全部買った扱いで数えています（買わなかった本は発走前に消してください）。'
       + '取消・除外の馬を含む点は返還として買った額から引き、競走中止は外れです。'
       + '点が' + FEW + '点に届かない券種は薄く出し、一文には使いません。外れ方は、ながしとボックスだけを数えています。'
-      + 'シートはこの端末の中だけを数えています。</p>';
+      + 'シートはこの端末の中だけを数えています。</p>'
+      + '<div class="bt-reset"><button type="button" data-bt-reset>ここから数え直す</button>'
+      + '<p>今までの買い目を数えないようにします。シートは消えず、あとで元に戻せます。</p></div>';
   }
 
   // 「印の見方｜馬券」の切り替え。馬券を初めて開いた時に結果の表を読む
-  var loaded = false;
+  var loaded = false, DATA = null;
   async function show(which) {
     var marks = document.getElementById('an-content'), bets = document.getElementById('an-bets');
     if (!marks || !bets) return;
@@ -331,14 +362,27 @@
     if (which !== 'bets' || loaded) return;
     loaded = true;
     try {
-      var data = await getData('data/bet_results.json');
-      render(bets, data, readSheets());
+      DATA = await getData('data/bet_results.json');
+      render(bets, DATA, readSheets());
     } catch (e) {
       loaded = false;
       bets.innerHTML = '<p class="an-err">データを読み込めませんでした。時間をおいて開き直してください。</p>';
     }
   }
   document.addEventListener('click', function (e) {
+    var bets = document.getElementById('an-bets');
+    if (DATA && bets && e.target.closest && e.target.closest('[data-bt-reset]')) {
+      if (!confirm('今までの買い目を数えないようにして、ここから数え直しますか？\nシートは消えません。あとで「元に戻す」で戻せます。')) return;
+      saveReset(DATA, readSheets(), readReset());
+      render(bets, DATA, readSheets());
+      window.scrollTo(0, 0);
+      return;
+    }
+    if (DATA && bets && e.target.closest && e.target.closest('[data-bt-undo]')) {
+      clearReset();
+      render(bets, DATA, readSheets());
+      return;
+    }
     var b = e.target.closest && e.target.closest('.an-seg button');
     if (!b) return;
     var which = b.dataset.seg;
