@@ -6253,6 +6253,37 @@ function renderVerification20(site) {
   `;
 }
 
+// 2026-10-08: 上の「← 一覧へ」の代わりに、同じ日・同じ場の前後のレースへの入口を出す。
+// 並びは一覧（index.js）と同じレース番号順。公開していない番号は飛ばす。
+// manifest は大きい（約700KB）ので、レースを出すのを待たせず後から読む。
+// 読めなければ何も出さない（ロゴから一覧へ戻れる）。端のレースは片側を空ける。
+async function setupRaceNav(id) {
+  const el = document.getElementById('race-nav');
+  if (!el) return;
+  let races;
+  try {
+    const res = await fetch('data/manifest.json');
+    if (!res.ok) return;
+    races = (await res.json()).races || [];
+  } catch (e) {
+    return;
+  }
+  const cur = races.find((r) => r.race_id === id);
+  if (!cur) return;
+  const same = races
+    .filter((r) => r.date === cur.date && r.track === cur.track)
+    .sort((a, b) => a.race_number - b.race_number);
+  const i = same.findIndex((r) => r.race_id === id);
+  const link = (r, dir) => {
+    if (!r) return `<span class="rn-${dir} rn-none"></span>`;
+    const label = `${escapeHtml(r.track)}${r.race_number}R`;
+    return dir === 'prev'
+      ? `<a class="rn-prev" href="race.html?id=${r.race_id}"><span class="rn-ar">‹</span><span class="rn-tx"><i>前のレース</i><b>${label}</b></span></a>`
+      : `<a class="rn-next" href="race.html?id=${r.race_id}"><span class="rn-tx"><i>次のレース</i><b>${label}</b></span><span class="rn-ar">›</span></a>`;
+  };
+  el.innerHTML = link(same[i - 1], 'prev') + link(same[i + 1], 'next');
+}
+
 async function main() {
   renderHeader('race');
   const id = getQueryId();
@@ -6260,6 +6291,7 @@ async function main() {
     renderError('不正なレースIDです');
     return;
   }
+  setupRaceNav(id);
   let site, oddsAll, bands;
   try {
     [site, oddsAll, bands] = await Promise.all([
