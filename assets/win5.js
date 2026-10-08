@@ -143,9 +143,10 @@ function w5pQ0() {
   const tile = (cls, path) => `<span class="w5p-tile ${cls}"><svg viewBox="0 0 24 24" fill="none"`
     + ` stroke="#fff" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">`
     + `<path d="${path}"/></svg></span>`;
-  const opt = (mode, t, l, d, q) => `<button class="w5p-entry" data-w5pmode="${mode}">${t}`
-    + `<span class="ol">${l}</span><span class="od">${d}</span>`
-    + `<span class="ft"><span class="qn">${q}</span><span class="go">›</span></span></button>`;
+  // 2026-10-08：スマホで1画面に収めるため、問数と矢印を印の右に上げて札を低くした
+  const opt = (mode, t, l, d, q) => `<button class="w5p-entry" data-w5pmode="${mode}">`
+    + `<span class="ft">${t}<span class="qn">${q}</span><span class="go">›</span></span>`
+    + `<span class="ol">${l}</span><span class="od">${d}</span></button>`;
   return '<div class="w5p-q0">'
     + '<div class="ttl">どちらから見ますか？</div>'
     + `<div class="sub">過去 <b>${w5pData.source.n_rounds}</b> 回の配当から目安を出します</div>`
