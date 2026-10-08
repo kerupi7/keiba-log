@@ -124,12 +124,29 @@ function w5pYen(v) {
   return v.toLocaleString() + '円';
 }
 
-function w5pProg(step, sub, done, total) {
-  return `<div class="ak-prog"><span class="ak-step">${escapeHtml(step)}</span>`
-    + `<span class="ak-cand">${sub}</span></div>`
-    + '<div class="ak-dots">'
-    + Array.from({ length: total }, (_, i) => `<i class="${i < done ? 'on' : ''}"></i>`).join('')
-    + '</div>';
+// 2026-10-08 mockup-283 案A：質問・答え・馬を選ぶ画面の頭を分析ページと同じ形
+// （戻る先 → 紺の小見出し → 太い大見出し → 灰の一言）にした。青い進み具合の線と①〜⑥の丸は外した。
+// ey・ttl・sub は呼ぶ側でエスケープ済みの HTML。back は [行き先, 字]（行き先は w5pRender の data-w5pgo）
+function w5pHead(ey, ttl, sub, back) {
+  return (back ? `<button class="w5a-bk" data-w5pgo="${back[0]}">‹ ${escapeHtml(back[1])}</button>` : '')
+    + `<div class="w5a-ey">WIN5 配当${ey ? ' ・ ' + ey : ''}</div>`
+    + `<div class="w5a-ttl">${ttl}</div>`
+    + (sub ? `<div class="w5a-sub">${sub}</div>` : '');
+}
+
+// 荒れ度の札。トップの一覧（index.js の ub26）と同じ3本の棒に、見込みの%を添える
+const W5P_UP_LV = { kata: 1, naka: 2, dai: 3 };
+function w5pUpChip(u) {
+  if (!u || !u.name) return '';
+  const lv = W5P_UP_LV[u.key] || 0;
+  const bars = [1, 2, 3].map(k => `<i${k <= lv ? ' class="on"' : ''}></i>`).join('');
+  return `<span class="w5a-ub ${escapeHtml(u.key || '')}"><span class="bars">${bars}</span>`
+    + escapeHtml(u.name)
+    + (u.percent == null ? '' : `<b>${u.percent}<small>%</small></b>`) + '</span>';
+}
+
+function w5pOddsHtml(odds) {
+  return `<span class="od${oddsHotClass(odds)}"><b>${odds.toFixed(1)}</b><small>倍</small></span>`;
 }
 
 // 帯のキー。オッズだけで決める（人気は使わない）
@@ -159,50 +176,59 @@ function w5pQ0() {
 }
 
 function w5pQ1() {
-  let h = w5pProg('質問 1 / 2', `過去 <b>${w5pData.source.n_rounds}</b> 回から`, 2, 4);
-  h += '<div class="ak-card"><div class="ak-q"><div class="qhead">'
-    + '<span class="q">いくらくらいの配当を狙いますか？</span></div>'
-    + '</div><div class="ak-opts">';
+  let h = w5pHead('質問 1/2', 'いくらくらいの配当を狙いますか？',
+    `過去 <b>${w5pData.source.n_rounds}</b> 回の配当から目安を出します`, ['top', '入り口']);
+  h += '<div class="w5a-list">';
   w5pData.buckets.forEach((b, i) => {
-    h += `<button class="ak-opt" data-w5pb="${i}"><span class="oi">${i + 1}</span>`
-      + `<span class="obody"><span class="ol">${escapeHtml(b.label)}</span>`
-      + `<span class="od">${w5pYen(b.min)}〜${b.max ? w5pYen(b.max) : '上限なし'}`
-      + ` ・過去 ${b.n_rounds_in_bucket}回（全体の${Math.round(b.share_of_all * 100)}%）`
-      + '</span></span></button>';
+    h += `<button class="w5a-row q" data-w5pb="${i}">`
+      + `<span class="mn"><span class="nm">${escapeHtml(b.label)}</span>`
+      + `<span class="sm">${w5pYen(b.min)}〜${b.max ? w5pYen(b.max) : '上限なし'}</span></span>`
+      + `<span class="rt"><span class="cnt"><b>${b.n_rounds_in_bucket}</b>回</span>`
+      + `<span class="pop">全体の${Math.round(b.share_of_all * 100)}%</span></span>`
+      + '<span class="chev">›</span></button>';
   });
-  return h + '</div></div>';
+  return h + '</div>';
 }
 
 function w5pQ2() {
   const b = w5pData.buckets[w5pState.bucket];
-  let h = w5pProg('質問 2 / 2', `狙い <b>${escapeHtml(b.label)}</b>`, 3, 4);
-  h += '<div class="ak-card"><div class="ak-q"><div class="qhead">'
-    + '<span class="q">予算はいくらですか？</span></div>'
-    + '</div><div class="ak-opts">';
-  w5pData.budgets.forEach((v, i) => {
-    h += `<button class="ak-opt" data-w5pbud="${v}"><span class="oi">${i + 1}</span>`
-      + `<span class="obody"><span class="ol">${v.toLocaleString()}円</span>`
-      + `<span class="od">${Math.floor(v / 100).toLocaleString()}点まで</span></span></button>`;
+  let h = w5pHead('質問 2/2', '予算はいくらですか？',
+    `狙い <b>${escapeHtml(b.label)}</b>`, ['q1', '1つ戻る']);
+  h += '<div class="w5a-list">';
+  w5pData.budgets.forEach(v => {
+    h += `<button class="w5a-row q" data-w5pbud="${v}">`
+      + `<span class="mn"><span class="nm"><b>${v.toLocaleString()}</b><small>円</small></span></span>`
+      + `<span class="rt"><span class="pop">${Math.floor(v / 100).toLocaleString()}点まで</span></span>`
+      + '<span class="chev">›</span></button>';
   });
-  h += '</div>'
-    + '<div class="ak-input"><input id="w5pbudin" type="text" inputmode="numeric"'
+  h += '<div class="w5a-inp"><input id="w5pbudin" type="text" inputmode="numeric"'
     + ' autocomplete="off" placeholder="上に無ければ金額を打つ（例 5000・1万2000）"'
-    + ` value="${w5pState.budgetText || ''}">`
-    + '<div class="parsed" id="w5pbudmsg"></div></div>'
-    + '<div class="ak-foot"><span class="picked">'
-    + '<button class="ak-mini" id="w5pback">1つ戻る</button></span>'
-    + '<button class="ak-btn" id="w5pbudgo" disabled>この予算で見る</button></div></div>';
+    + ` value="${escapeHtml(w5pState.budgetText || '')}">`
+    + '<div class="parsed" id="w5pbudmsg"></div></div></div>'
+    + '<button class="w5a-pr wide" id="w5pbudgo" disabled>この予算で見る</button>';
   return h;
 }
 
-function w5pPlanHtml(p, budget) {
-  const a = p.budgets[String(budget)] || w5pAllocate(p.counts, Math.floor(budget / 100));
-  let h = '<div class="w5p-res">'
-    + `<div class="rh"><span class="rt">真ん中 ${w5pYen(p.median)}`
-    + (a ? `<span class="rt2">${a.points}点・${a.yen.toLocaleString()}円</span>` : '')
-    + '</span>'
-    + `<span class="rn">4回に1回は ${w5pYen(p.q1)} を下回り、4回に1回は `
-    + `${w5pYen(p.q3)} を超えます（過去${p.n}回）</span></div>`;
+function w5pPlanAlloc(p, budget) {
+  return p.budgets[String(budget)] || w5pAllocate(p.counts, Math.floor(budget / 100));
+}
+
+// 真ん中の額の下に添える一言（点数・金額と、4回に1回の上下）
+function w5pPlanSub(p, a) {
+  return (a ? `<b>${a.points}</b>点・<b>${a.yen.toLocaleString()}円</b> ・ ` : '')
+    + `4回に1回は ${w5pYen(p.q1)} を下回り、4回に1回は ${w5pYen(p.q3)} を超えます（過去${p.n}回）`;
+}
+
+// withHead：組み立て方を全部出すときだけ、札の頭にその案の真ん中の額を出す
+// （1案だけのときは画面の大見出しが同じ額を出している）
+function w5pPlanHtml(p, budget, withHead) {
+  const a = w5pPlanAlloc(p, budget);
+  let h = '<div class="w5a-res">';
+  if (withHead) {
+    h += `<div class="w5a-ph"><span class="t">真ん中 <b>${w5pYen(p.median)}</b></span>`
+      + `<span class="s">${w5pPlanSub(p, a)}</span></div>`;
+  }
+  h += '<div class="w5a-card">';
 
   const day = w5pCurrentDay();
   if (day && (day.legs || []).some(l => (l.horses || []).length)) {
@@ -221,40 +247,46 @@ function w5pPlanHtml(p, budget) {
     // 5鞍がまだ分からない週は、帯と頭数だけを出す（金曜の取得前）
     const legs = [];
     W5P_ORDER.forEach(k => ((a && a.heads_by_band[k]) || []).forEach(n => legs.push([k, n])));
-    h += '<div class="legs">' + legs.map((x, i) =>
-      `<div class="lg"><span class="no">WIN${i + 1}</span>`
-      + `<span class="bl">${W5P_BAND[x[0]]} の中から</span>`
-      + `<span class="hd">${x[1]}頭<small>まで</small></span></div>`).join('') + '</div>';
+    h += legs.map((x, i) =>
+      `<div class="w5a-leg"><div class="lh"><img src="assets/win5-${i + 1}.png" alt="WIN${i + 1}" width="188" height="74"></div>`
+      + `<div class="bd"><span class="bt">${W5P_BAND[x[0]]}</span> から <b>${x[1]}</b>頭まで</div></div>`).join('');
   }
+  h += '</div>';
 
   const tags = [escapeHtml(p.label), `${p.n}回中${p.n_in_bucket}回が狙いの額`];
   if (a && a.unused_yen > 0) tags.push(`${a.unused_yen.toLocaleString()}円あまり`);
   if (!p.median_in_bucket) tags.push('<span class="warn">真ん中は狙いの外</span>');
   if (p.n_capped) tags.push(`<span class="warn">上限に届いた回 ${p.n_capped}</span>`);
-  h += `<div class="rf">${tags.join(' ・ ')}</div>`;
-  return h + '</div></div>';
+  h += `<div class="w5a-note">${tags.join(' ・ ')}</div>`;
+  return h + '</div>';
 }
 
 function w5pResult() {
   const b = w5pData.buckets[w5pState.bucket];
-  let h = w5pProg('答え', `狙い <b>${escapeHtml(b.label)}</b>`
-    + ` ／ 予算 <b>${w5pState.budget.toLocaleString()}円</b>`, 4, 4);
+  const ey = `狙い ${escapeHtml(b.label)} ・ 予算 ${w5pState.budget.toLocaleString()}円`;
+  const back = ['bud', '予算を変える'];
+  let h;
   if (!b.plans.length) {
-    h += '<div class="w5p-res"><div class="rf">この配当帯に、'
+    h = w5pHead(ey, '目安を出せません', null, back)
+      + '<div class="w5a-card w5a-msg">この配当帯に、'
       + `過去${w5pData.source.min_n_per_plan}回以上出ている帯の組み合わせがありませんでした。`
-      + '件数が足りないので目安を出しません。</div></div>';
-  } else if (w5pState.showAll) {
-    b.plans.forEach(p => { h += w5pPlanHtml(p, w5pState.budget); });
+      + '件数が足りないので目安を出しません。</div>';
   } else {
-    // 既定は1案だけ出す。3案並べると読む側が選ばされるので、残りは押した時だけ出す
-    h += w5pPlanHtml(b.plans[0], w5pState.budget);
-    if (b.plans.length > 1) {
-      h += `<div class="w5pmore"><button class="ak-mini" id="w5pmore">`
-        + `他の組み立て方を見る（あと${b.plans.length - 1}つ）</button></div>`;
+    const p0 = b.plans[0];
+    h = w5pHead(ey, `真ん中 <span class="num">${w5pYen(p0.median)}</span>`,
+      w5pPlanSub(p0, w5pPlanAlloc(p0, w5pState.budget)), back);
+    if (w5pState.showAll) {
+      b.plans.forEach(p => { h += w5pPlanHtml(p, w5pState.budget, true); });
+    } else {
+      // 既定は1案だけ出す。3案並べると読む側が選ばされるので、残りは押した時だけ出す
+      h += w5pPlanHtml(p0, w5pState.budget, false);
+      if (b.plans.length > 1) {
+        h += '<button class="w5a-gh wide" id="w5pmore">'
+          + `他の組み立て方を見る（あと${b.plans.length - 1}つ）</button>`;
+      }
     }
   }
-  return h + '<div class="w5pagain">'
-    + '<button class="ak-btn ghost" id="w5pagain">はじめから</button></div>';
+  return h + '<button class="w5a-gh wide" id="w5pagain">はじめから</button>';
 }
 
 function w5pFoot() {
@@ -280,6 +312,9 @@ function w5pFoot() {
 function w5pRender() {
   const box = document.getElementById('w5p-app');
   if (!box) return;
+  // 入り口の先では、各画面が自分の小見出し（WIN5 配当 ・ 質問 1/2 など）を出すので、節の見出しは隠す
+  const sec = box.closest('.w5p');
+  if (sec) sec.classList.toggle('flow', w5pState.step !== 0);
   if (w5pState.step === 0) box.innerHTML = w5pQ0();
   else if (w5pState.mode === 'marks') {
     box.innerHTML = w5pState.step === 1 ? w5pPickScreen() : w5pMarksResult();
@@ -293,8 +328,15 @@ function w5pRender() {
   box.querySelectorAll('[data-w5pbud]').forEach(x => x.onclick = () => {
     w5pState.budget = Number(x.dataset.w5pbud); w5pState.step = 3; w5pRender();
   });
-  const back = document.getElementById('w5pback');
-  if (back) back.onclick = () => { w5pState.step = 1; w5pRender(); };
+  // 画面の頭の「‹ 戻る先」（w5pHead）。top＝入り口、q1＝質問1、bud＝質問2、edit＝馬を選び直す
+  box.querySelectorAll('[data-w5pgo]').forEach(x => x.onclick = () => {
+    const go = x.dataset.w5pgo;
+    if (go === 'top') { w5pState.mode = null; w5pState.step = 0; }
+    else if (go === 'q1') w5pState.step = 1;
+    else if (go === 'bud') w5pState.step = 2;
+    else if (go === 'edit') { w5pState.step = 1; w5pState.leg = 0; }
+    w5pRender();
+  });
   box.querySelectorAll('[data-w5pmode]').forEach(x => x.onclick = () => {
     w5pState.mode = x.dataset.w5pmode;
     w5pState.step = 1;
@@ -429,32 +471,25 @@ function w5pLegCardHtml(lg, key, heads) {
   const inband = (lg.horses || [])
     .filter(h => w5pBandOf(h.odds) === key)
     .sort((a, b) => a.odds - b.odds);
-  const u = lg.upset;
-  const uchip = u && u.name
-    ? `<span class="uchip ${W5_UPSET_CLS[u.key] || 'u-naka'}">${escapeHtml(u.name)}`
-      + (u.percent == null ? '' : `<span class="pv">${u.percent}<small>%</small></span>`)
-      + '</span>'
-    : '';
   // レース名は出馬表（race.html）へのリンクにする。race_id が無い鞍だけ文字のまま
   const rcTxt = `${escapeHtml(lg.track || '')}${lg.race_number || ''}R `
     + `${escapeHtml(lg.race_name || '')}`;
   const rc = lg.race_id
-    ? `<a class="w5rc" href="race.html?id=${encodeURIComponent(lg.race_id)}">${rcTxt}`
+    ? `<a class="w5a-rn" href="race.html?id=${encodeURIComponent(lg.race_id)}">${rcTxt}`
       + '<span class="go">›</span></a>'
-    : `<span class="w5rc">${rcTxt}</span>`;
-  let h = '<div class="w5leg"><div class="lgh">'
-    + `<span class="no">WIN${lg.leg}</span>${rc}${uchip}</div>`
-    + `<div class="band"><span class="bt b${key}">${W5P_BAND[key]}</span>`
-    + `<span class="cap">${heads}頭<small>まで</small></span></div>`;
+    : `<span class="w5a-rn">${rcTxt}</span>`;
+  let h = '<div class="w5a-leg"><div class="lh">'
+    + `<img src="assets/win5-${lg.leg}.png" alt="WIN${lg.leg}" width="188" height="74">`
+    + `${rc}${w5pUpChip(lg.upset)}</div>`
+    + `<div class="bd"><span class="bt">${W5P_BAND[key]}</span> から <b>${heads}</b>頭まで</div>`;
   if (!inband.length) {
     return h + '<div class="none">この帯に馬がいません。別の帯から選んでください</div></div>';
   }
-  h += '<div class="unums">'
-    + inband.map(x => `<span class="unum${rec.has(x.number) ? ' on' : ''}">`
-      + umaBox(x.number, x.gate, 'sm')
-      + `<span class="nm">${escapeHtml(x.name || '')}</span>`
-      + `<span class="od${oddsHotClass(x.odds)}">${x.odds.toFixed(1)}</span></span>`).join('')
-    + '</div>';
+  h += inband.map(x => `<div class="hr${rec.has(x.number) ? ' on' : ''}">`
+    + umaBox(x.number, x.gate)
+    + `<span class="nm">${escapeHtml(x.name || '')}</span>`
+    + (rec.has(x.number) ? '<span class="tag">おすすめ</span>' : '')
+    + w5pOddsHtml(x.odds) + '</div>').join('');
   return h + '</div>';
 }
 
@@ -568,8 +603,8 @@ function w5pPointsSoFar() {
 
 function w5pDayTabs() {
   if (w5pDays.length < 2) return '';
-  return '<div class="ak-bar"><span class="lbl">日付</span>'
-    + w5pDays.map((d, i) => `<button class="ak-mini${i === w5pState.day ? ' on' : ''}"`
+  return '<div class="w5a-seg">'
+    + w5pDays.map((d, i) => `<button class="${i === w5pState.day ? 'on' : ''}"`
       + ` data-w5pday="${i}">${escapeHtml(d.date)}</button>`).join('') + '</div>';
 }
 
@@ -629,21 +664,20 @@ function w5pHorseRow(lg, i, h) {
   const on = w5pState.sel[i].has(h.number);
   const mk = w5pMyMarks(lg.race_id)[String(h.number)];
   const my = W5P_MY_OK[mk]
-    ? `<span class="ak-mk ${W5P_MY_CLS[mk]}">${mk}</span>`
-    : '<span class="ak-mk none">・</span>';
-  return `<button class="ak-h w5row${on ? ' sel' : ''}" data-w5pleg="${i}" data-w5pnum="${h.number}">`
-    // 2026-09-14: 馬番だけは押すと戦績の札を開く（出馬表と同じ札）。行のほかの所は今までどおり選ぶ。
-    // 同日、馬名から馬番へ移した（ユーザー決定）
+    ? `<span class="ak-mk ${W5P_MY_CLS[mk]}" title="出馬表で付けた自分の印">${mk}</span>`
+    : '';
+  // 2026-10-08 mockup-283 案A：行の形はレース画面の出馬表と同じ（左に選ぶ丸・馬番・馬名、右にオッズと人気）
+  return `<div class="w5a-row h${on ? ' sel' : ''}" data-w5pleg="${i}" data-w5pnum="${h.number}">`
+    + `<button type="button" class="chk" aria-pressed="${on}" aria-label="${escapeHtml(h.name)}を選ぶ"></button>`
+    // 2026-09-14: 馬番だけは押すと戦績の札を開く（出馬表と同じ札）。
     + `<span class="w5hno" data-w5hpop="${escapeHtml(lg.race_id || '')}" data-w5hnum="${h.number}"`
-    + ` title="${escapeHtml(h.name)}の戦績を見る">${umaBox(h.number, h.gate, 'sm')}</span>` + my
+    + ` title="${escapeHtml(h.name)}の戦績を見る">${umaBox(h.number, h.gate)}</span>`
     // 2026-09-29: 馬名を押しても馬の詳細を開く（ユーザー決定。馬番もそのまま開く）
-    + `<span class="nmwrap"><span class="nm" data-w5hpop="${escapeHtml(lg.race_id || '')}" data-w5hnum="${h.number}">`
-    + `${escapeHtml(h.name)}</span>`
-    + `<span class="meta"><span class="od${oddsHotClass(h.odds)}">`
-    + `${h.odds.toFixed(1)}倍</span>`
-    + `<span class="pop">${h.popularity == null ? '' : h.popularity + '番人気'}</span>`
-    + `<span class="pop">${W5P_BAND[w5pBandOf(h.odds)]}</span></span></span>`
-    + '<span class="chk w5chk" role="checkbox" aria-checked="' + on + '"></span></button>';
+    + `<span class="mn"><span class="nm"><span class="nmt" data-w5hpop="${escapeHtml(lg.race_id || '')}" data-w5hnum="${h.number}">`
+    + `${escapeHtml(h.name)}</span>${my}<span class="go">›</span></span>`
+    + `<span class="sm">${W5P_BAND[w5pBandOf(h.odds)]}</span></span>`
+    + `<span class="rt">${w5pOddsHtml(h.odds)}`
+    + `<span class="pop">${h.popularity == null ? '' : h.popularity + '人気'}</span></span></div>`;
 }
 
 // ===== 選ぶたびに動く配当のものさし（2026-08-26・1鞍ずつ選ぶ画面で使う）=====
@@ -685,22 +719,8 @@ function w5pReachableCompos() {
   return Object.keys(seen).map(k => stat[k]).filter(Boolean);
 }
 
-// ものさしの端。過去に記録のある組み合わせ全体の幅を背景に敷いて、いまの幅を重ねる
-let w5pSpanCache = null;
-function w5pAllSpan() {
-  if (w5pSpanCache) return w5pSpanCache;
-  const m = (w5pData.compositions || []).filter(w5pHasStat).map(x => x.median);
-  w5pSpanCache = { lo: Math.min.apply(null, m), hi: Math.max.apply(null, m) };
-  return w5pSpanCache;
-}
-
-// 配当は2万円から4億円まで1万倍以上ひらくので、目盛りは桁で取る（対数目盛り）
-function w5pMeterPos(v) {
-  const s = w5pAllSpan();
-  const r = (Math.log(v) - Math.log(s.lo)) / (Math.log(s.hi) - Math.log(s.lo));
-  return Math.max(0, Math.min(100, r * 100));
-}
-
+// 2026-10-08 mockup-283 案A：レース画面の「買い目シート」と同じ紺の帯にして、画面の下に浮かせる。
+// 前の版にあった対数目盛りの線は外し、額と一言だけにした
 function w5pMeterHtml() {
   const known = w5pReachableCompos().filter(w5pHasStat)
     .sort((a, b) => a.median - b.median);
@@ -712,7 +732,7 @@ function w5pMeterHtml() {
   const tail = left === 5 ? '鞍を決めるほど狭まります'
     : (left ? `残り${left}鞍を決めると狭まります` : '5鞍そろいました');
   if (!known.length) {
-    return '<div class="w5meter"><div class="mh">'
+    return '<div class="w5a-navy"><div class="mh">'
       + '<span class="ml">当たったときの配当</span>'
       + '<span class="mv dim">目安なし</span></div>'
       + `<div class="mf">${cost} ・ この帯の組み合わせは`
@@ -720,27 +740,26 @@ function w5pMeterHtml() {
       + `${w5pData.source.min_n_per_plan}回に届きません</div></div>`;
   }
   const lo = known[0], hi = known[known.length - 1];
-  const a = w5pMeterPos(lo.median), b = w5pMeterPos(hi.median);
   const val = known.length === 1
-    ? `${w5pYen(lo.median)}`
-    : `${w5pYen(lo.median)} 〜 ${w5pYen(hi.median)}`;
+    ? `<b>${w5pYen(lo.median)}</b>`
+    : `<b>${w5pYen(lo.median)}</b> 〜 <b>${w5pYen(hi.median)}</b>`;
   const note = known.length === 1
     ? `4回に1回は ${w5pYen(lo.q1)} を下回り、4回に1回は ${w5pYen(lo.q3)} を超えます`
     : `${tail} ・ 帯の組み合わせ ${known.length}通り`;
-  return '<div class="w5meter"><div class="mh">'
+  return '<div class="w5a-navy"><div class="mh">'
     + '<span class="ml">当たったときの配当</span>'
     + `<span class="mv">${val}</span></div>`
-    + `<div class="mbar"><i style="left:${a}%;width:${Math.max(1.5, b - a)}%"></i></div>`
     + `<div class="mf">${cost} ・ ${note}</div></div>`;
 }
 
 // 鞍の行き来。選んだ頭数が見えるので、戻る先を探さずに押せる
 function w5pLegNav(day) {
-  return '<div class="w5nav">' + day.legs.map((lg, i) => {
+  // 京都／東京・印／馬券と同じ灰色のつまみ。選んだ頭数を下に小さく出す
+  return '<div class="w5a-seg legs">' + day.legs.map((lg, i) => {
     const n = w5pState.sel[i].size;
-    return `<button class="w5navb${i === w5pState.leg ? ' on' : ''}${n ? ' done' : ''}"`
-      + ` data-w5pgoleg="${i}"><span class="l">WIN${lg.leg}</span>`
-      + `<span class="n">${n ? n + '頭' : '—'}</span></button>`;
+    return `<button class="${i === w5pState.leg ? 'on' : ''}${n ? ' done' : ''}"`
+      + ` data-w5pgoleg="${i}">WIN${lg.leg}`
+      + `<em>${n ? n + '頭' : '—'}</em></button>`;
   }).join('') + '</div>';
 }
 
@@ -748,12 +767,12 @@ function w5pLegNav(day) {
 function w5pPickScreen() {
   const day = w5pCurrentDay();
   if (!day) {
-    return w5pProg('馬を選ぶ', '対象レース未取得', 2, 7)
+    return w5pHead('', '馬を選ぶ', null, ['top', '入り口'])
       + w5pDayTabs()
-      + '<div class="w5p-res"><div class="rf">'
+      + '<div class="w5a-card w5a-msg">'
       + '対象レースの記録がまだありません（金曜の取得後に出ます）。'
-      + 'この入り口は今週の5鞍が決まってから使えます。</div></div>'
-      + '<div class="w5pagain"><button class="ak-btn ghost" id="w5pagain">はじめから</button></div>';
+      + 'この入り口は今週の5鞍が決まってから使えます。</div>'
+      + '<button class="w5a-gh wide" id="w5pagain">はじめから</button>';
   }
   const i = Math.max(0, Math.min(day.legs.length - 1, w5pState.leg));
   const lg = day.legs[i];
@@ -763,31 +782,31 @@ function w5pPickScreen() {
   const empty = !(lg.horses || []).length;
   const done = (w5pState.sel || []).filter(s => s.size).length;
 
-  let h = w5pProg(`WIN${lg.leg} の馬を選ぶ`, `決めた鞍 <b>${done}</b>/5`, i + 2, 7);
+  let h = w5pHead('', `WIN${lg.leg} の馬を選ぶ`,
+    `決めた鞍 <b>${done}</b>/5 ・ 選ぶほど配当の幅が狭まります`, ['top', '入り口']);
   h += w5pDayTabs();
   h += w5pLegNav(day);
-  h += '<div class="ak-card"><div class="ak-q"><div class="qhead">'
-    + `<span class="q" style="font-size:14px">`
-    + `${escapeHtml(lg.track || '')}${lg.race_number || ''}R `
-    + `${escapeHtml(lg.race_name || '')}</span>`
-    + `<span class="qcount${n ? ' on' : ''}"><span class="cn">${n}</span>`
-    + '<span class="cs">頭</span></span></div>'
-    + '</div><div class="ak-hlist">';
-  if (!(lg.horses || []).length) {
-    h += '<div class="none" style="padding:10px 13px;font-size:12px">'
+  h += '<div class="w5a-rl">'
+    + `<span class="w5a-rn">${escapeHtml(lg.track || '')}${lg.race_number || ''}R ${escapeHtml(lg.race_name || '')}</span>`
+    + `<span class="rm"><b>${escapeHtml(lg.post_time || '—')}</b>`
+    + (lg.field_size ? ` ・ <b>${lg.field_size}</b>頭` : '') + '</span>'
+    + `${w5pUpChip(lg.upset)}</div>`;
+  h += '<div class="w5a-list">';
+  if (empty) {
+    h += '<div class="w5a-msg">'
       + 'この鞍の出馬表がまだありません（新馬・障害・2歳未勝利は予想の対象外です）。</div>';
   } else {
     h += lg.horses.map(x => w5pHorseRow(lg, i, x)).join('');
   }
-  h += '</div></div>';
+  h += '</div>';
 
-  // ものさしと送りの button は画面の下に貼り付ける。馬を押すたびに額が動くのを見せるため
-  h += '<div class="w5stick">' + w5pMeterHtml()
-    + '<div class="w5btns">'
-    + `<button class="ak-mini" id="w5pprev">${i ? `WIN${day.legs[i - 1].leg}へ戻る` : '入り口に戻る'}</button>`
-    + `<button class="ak-btn" id="w5pnext"${n || empty ? '' : ' disabled'}>`
+  h += '<div class="w5a-btns">'
+    + `<button class="w5a-gh" id="w5pprev">${i ? `WIN${day.legs[i - 1].leg}へ戻る` : '入り口に戻る'}</button>`
+    + `<button class="w5a-pr" id="w5pnext"${n || empty ? '' : ' disabled'}>`
     + (n || empty ? (last ? '配当を見る' : `WIN${day.legs[i + 1].leg}へ`) : '1頭以上えらぶ')
-    + '</button></div></div>';
+    + '</button></div>';
+  // 配当の目安は画面の下に浮かせる。馬を押すたびに額が動くのを見せるため
+  h += w5pMeterHtml();
   return h;
 }
 
@@ -879,31 +898,29 @@ function w5pMarksResult() {
   const miss = (cur ? cur.legs : [])
     .filter((lg, i) => !w5pState.sel[i].size).map(lg => 'WIN' + lg.leg);
   if (miss.length) {
-    return w5pProg('答え', '5鞍そろっていません', 7, 7)
-      + `<div class="w5p-res"><div class="rf">${miss.join('・')} の馬が決まっていないので`
-      + '、配当の目安が出せません（この鞍の出馬表がまだ出ていません）。</div></div>'
-      + '<div class="w5pagain"><button class="ak-btn ghost" id="w5pedit">馬を選び直す</button> '
-      + '<button class="ak-btn ghost" id="w5pagain">はじめから</button></div>';
+    return w5pHead('', '5鞍そろっていません', null, ['edit', '馬を選び直す'])
+      + `<div class="w5a-card w5a-msg">${miss.join('・')} の馬が決まっていないので`
+      + '、配当の目安が出せません（この鞍の出馬表がまだ出ていません）。</div>'
+      + '<div class="w5a-btns"><button class="w5a-gh" id="w5pedit">馬を選び直す</button>'
+      + '<button class="w5a-gh" id="w5pagain">はじめから</button></div>';
   }
   const rows = w5pCompositions();
   const pts = w5pPoints();
   const known = rows.filter(r => r.n >= w5pData.source.min_n_per_plan && r.median != null);
   const wSum = rows.reduce((a, r) => a + r.ways, 0);
   const maxWays = rows.reduce((a, r) => Math.max(a, r.ways), 1);
-  let h = w5pProg('答え', `${pts.toLocaleString()}点・${(pts * 100).toLocaleString()}円`, 7, 7);
-
+  const ey = `選んだ馬 ・ ${pts.toLocaleString()}点・${(pts * 100).toLocaleString()}円`;
+  let h;
   if (known.length) {
+    // 2026-10-08 mockup-283 案A：一番多い当たり方の額を大見出しにした（前は画面の中の札）
     const meds = known.map(r => r.median).sort((a, b) => a - b);
     const top = known[0];
-    h += '<div class="w5hero">'
-      + '<div class="lb">当たり方が一番多いのは</div>'
-      + `<div class="big">${w5pYen(top.median)}</div>`
-      + `<div class="sub">4回に1回は ${w5pYen(top.q1)} を下回り、`
-      + `4回に1回は ${w5pYen(top.q3)} を超えます</div>`
-      + `<div class="rng"><span>${w5pYen(meds[0])}</span>`
-      + '<i></i>'
-      + `<span>${w5pYen(meds[meds.length - 1])}</span></div>`
-      + '</div>';
+    h = w5pHead(ey, `一番多いのは <span class="num">${w5pYen(top.median)}</span>`,
+      `4回に1回は ${w5pYen(top.q1)} を下回り、4回に1回は ${w5pYen(top.q3)} を超えます`
+      + (meds.length > 1 ? ` ・ 全体では ${w5pYen(meds[0])} 〜 ${w5pYen(meds[meds.length - 1])}` : ''),
+      ['edit', '馬を選び直す']);
+  } else {
+    h = w5pHead(ey, '配当の目安なし', null, ['edit', '馬を選び直す']);
   }
 
   // 金額の安い順に並べる。通り数の多い順だと金額が飛んで読めない
@@ -945,9 +962,8 @@ function w5pMarksResult() {
   });
   h += '</div>';
 
-  h += '<div class="w5pagain">'
-    + '<button class="ak-btn ghost" id="w5pedit">馬を選び直す</button> '
-    + '<button class="ak-btn ghost" id="w5pagain">はじめから</button></div>';
+  h += '<div class="w5a-btns"><button class="w5a-gh" id="w5pedit">馬を選び直す</button>'
+    + '<button class="w5a-gh" id="w5pagain">はじめから</button></div>';
   return h;
 }
 

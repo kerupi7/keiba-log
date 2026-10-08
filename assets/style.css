@@ -1578,10 +1578,6 @@ span.sim-nm{display:block;cursor:default}
 .ak-wrap .ak-my.m6{color:var(--cap);font-size:10.5px}
 /* 馬名の中に入れる場合だけ、名前との間を空ける（行そのものが flex の場所は gap が効く） */
 .ak-wrap .ak-h .nm .ak-my{margin-right:4px}
-/* 馬番から戦績の札を開く（2026-09-14・馬名から馬番へ移した）。押せる幅を少し広げる */
-.ak-wrap .ak-h .w5hno{flex:none;display:inline-flex;align-items:center;justify-content:center;
-  cursor:pointer;margin:-6px -4px;padding:6px 4px;border-radius:4px}
-.ak-wrap .ak-h .w5hno:active{background:rgba(0,0,0,.06)}
 /* 札だけを置く入れ物。中身は position:fixed の札と背景だけなので、場所を取らせない */
 .race20.pophost{margin:0;padding:0;height:0;overflow:visible}
 /* 第1段の見出しは馬名が16pxなので、印も1段大きく。baseline揃えの行なので上下は中央に置く */
@@ -3482,7 +3478,6 @@ body:has(.container.w5page){background:#F2F2F7}
 /* WIN5 配当：見出しは分析ページと同じ紺の小見出し。質問と答えの札は灰の地の上で白く抜く */
 .w5p{margin:18px 0 0}
 .w5p .w5ph{font-size:12px;font-weight:700;color:var(--navy);letter-spacing:.06em;margin:0 4px 2px}
-.w5p .ak-card,.w5p .w5p-res{background:#fff;border:none;border-radius:16px}
 .w5p .w5p-q0{margin:0 4px}
 .w5p .w5p-q0 .ttl{font-size:21px;font-weight:800;letter-spacing:-.01em;line-height:1.3;color:#1D1D1F}
 .w5p .w5p-q0 .sub{font-size:12px;color:#6E6E73;margin-top:2px}
@@ -3503,118 +3498,153 @@ body:has(.container.w5page){background:#F2F2F7}
   justify-content:center;color:var(--navy);font-weight:800;font-size:15px}
 .w5p .w5plead{font-size:11.5px;color:var(--cap);line-height:1.7;margin:0 0 12px}
 .w5p .w5plead b{color:var(--text)}
-.w5p .ak-opt .obody .od{font-variant-numeric:tabular-nums}
-.w5p-res{border:1px solid var(--rule);border-radius:10px;overflow:hidden;margin-bottom:12px}
-.w5p-res .rh{display:flex;flex-direction:column;align-items:flex-start;gap:3px;text-align:left;
-  padding:11px 13px;border-bottom:1px solid var(--rule);background:var(--sub-bg)}
-.w5p-res .rh .rt{font-size:14px;font-weight:700}
-.w5p-res .rh .rn{font-size:11px;color:var(--cap);font-variant-numeric:tabular-nums}
-.w5p-res .legs{display:flex;flex-direction:column}
-.w5p-res .lg{display:flex;align-items:center;gap:10px;padding:9px 13px;border-bottom:1px solid var(--rule)}
-.w5p-res .lg:last-child{border-bottom:none}
-.w5p-res .lg .no{flex:none;font-size:10px;font-weight:700;color:#fff;background:var(--win5);
-  border-radius:4px;padding:3px 6px;letter-spacing:.03em}
-.w5p-res .lg .bl{flex:1;font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
-.w5p-res .lg .hd{flex:none;font-size:13px;font-weight:700;color:var(--cta);font-variant-numeric:tabular-nums}
-.w5p-res .lg .hd small{font-size:10.5px;color:var(--cap);font-weight:400;margin-left:2px}
-.w5p-res .rf{padding:10px 13px;background:var(--sub-bg);border-top:1px solid var(--rule);
-  font-size:11.5px;color:var(--sub);line-height:1.7}
-.w5p-res .rf b{color:var(--text);font-variant-numeric:tabular-nums}
-.w5p-res .rf .warn{color:var(--live);font-weight:700}
 .w5p .w5pfoot{font-size:11px;color:var(--cap);line-height:1.75;margin:12px 0 0}
-.w5p .w5pagain{margin-top:12px}
 
-/* ===== 125-spec §13: 狙う帯をレースに割り当てて、馬番を主役に出す ===== */
-.w5p-res .w5leg{padding:10px 13px;border-bottom:1px solid var(--rule)}
-.w5p-res .w5leg:last-child{border-bottom:none}
-.w5p-res .w5leg .lgh{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:7px}
-.w5p-res .w5leg .lgh .no{flex:none;font-size:10px;font-weight:700;color:#fff;background:var(--win5);
-  border-radius:4px;padding:3px 6px;letter-spacing:.03em}
-.w5p-res .w5leg .lgh .w5rc{font-size:12px;font-weight:600;color:var(--text)}
-.w5p-res .w5leg .lgh a.w5rc{color:var(--link);text-decoration:none}
-.w5p-res .w5leg .lgh a.w5rc .go{margin-left:2px;color:var(--cap);font-weight:400}
-.w5p-res .w5leg .lgh .uchip{margin-left:auto;flex:none;font-size:10.5px;font-weight:700;
-  line-height:1;border-radius:9px;padding:4px 8px;color:#fff}
-.w5p-res .w5leg .lgh .uchip.u-kata{background:var(--up-chip-kata)}
-.w5p-res .w5leg .lgh .uchip.u-naka{background:var(--up-chip-naka)}
-.w5p-res .w5leg .lgh .uchip.u-dai{background:var(--up-chip-dai)}
-.w5p-res .w5leg .lgh .uchip .pv{margin-left:4px;font-variant-numeric:tabular-nums}
-.w5p-res .w5leg .lgh .uchip .pv small{font-size:9px;margin-left:1px}
-.w5p-res .w5leg .band{display:flex;align-items:baseline;gap:7px;margin-bottom:7px;flex-wrap:wrap}
-.w5p-res .w5leg .band .bt{font-size:11px;font-weight:700;border-radius:4px;padding:2px 7px;
-  border:1px solid var(--rule);color:var(--sub);background:#fff;font-variant-numeric:tabular-nums}
-.w5p-res .w5leg .band .bt.bL{border-color:var(--up-kata);color:var(--up-kata)}
-.w5p-res .w5leg .band .bt.bM{border-color:var(--up-naka);color:#4d6b85}
-.w5p-res .w5leg .band .bt.bH{border-color:#9aa9b6;color:#6b7885}
-.w5p-res .w5leg .band .cap{font-size:12px;font-weight:700;color:var(--cta);
-  font-variant-numeric:tabular-nums}
-.w5p-res .w5leg .band .cap small{font-size:10.5px;font-weight:400;color:var(--cap)}
-/* 馬番の並び。ここが主役なので大きめに出す */
-.w5p-res .unums{display:flex;gap:7px;flex-wrap:wrap}
-.w5p-res .unum{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:44px;
-  padding:5px 4px 4px;border:1px solid var(--rule);border-radius:7px;background:#fff}
-.w5p-res .unum.on{border-color:var(--cta);background:#F2F8FD;box-shadow:inset 0 0 0 1px var(--cta)}
-.w5p-res .unum .hn{font-size:15px;min-width:26px;line-height:24px}
-.w5p-res .unum .nm{font-size:10px;color:var(--text);line-height:1.2;white-space:nowrap;
-  padding:0 4px}
-.w5p-res .unum .od{font-size:10.5px;color:var(--cap);font-variant-numeric:tabular-nums}
-.w5p-res .unum.on .od{color:var(--cta);font-weight:700}
-.w5p-res .w5leg .none{font-size:11.5px;color:var(--live);font-weight:700}
-.w5p-res .w5leg .more{font-size:10.5px;color:var(--cap);margin-top:5px}
-.w5p-res .rh .rt2{margin-left:9px;font-size:12px;font-weight:700;color:var(--cta);
-  font-variant-numeric:tabular-nums}
-.w5p .w5pmore{margin:0 0 12px}
-
-/* ===== 1鞍ずつ選ぶ画面（2026-08-26）===== */
-/* 鞍の行き来。選んだ頭数を出して、戻る先を探さずに押せるようにする */
-.w5p .w5nav{display:flex;gap:5px;margin:0 0 10px}
-.w5p .w5navb{flex:1;min-width:0;font-family:inherit;display:flex;flex-direction:column;
-  align-items:center;gap:1px;padding:6px 2px;border:1px solid var(--rule);border-radius:8px;
-  background:#fff;cursor:pointer}
-.w5p .w5navb .l{font-size:10px;font-weight:700;color:var(--cap);letter-spacing:.02em}
-.w5p .w5navb .n{font-size:11px;font-weight:700;color:#c8c8c8;font-variant-numeric:tabular-nums}
-.w5p .w5navb.done .n{color:var(--cta)}
-.w5p .w5navb.on{border-color:var(--cta);background:#EAF3FB;box-shadow:inset 0 0 0 1px var(--cta)}
-.w5p .w5navb.on .l{color:var(--cta)}
-/* ものさしと送りの button。馬を押すたびに額が動くのを見せたいので下に貼り付ける */
-.w5p .w5stick{position:sticky;bottom:0;z-index:5;margin-top:10px;
-  border:1px solid var(--rule);border-radius:10px;background:#fff;
-  box-shadow:0 -2px 10px rgba(0,0,0,.06)}
-.w5p .w5meter{padding:10px 13px 9px;border-bottom:1px solid var(--rule)}
-.w5p .w5meter .mh{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
-.w5p .w5meter .ml{flex:none;font-size:11px;font-weight:700;color:var(--cap)}
-.w5p .w5meter .mv{margin-left:auto;font-size:17px;font-weight:700;color:var(--text);
-  font-variant-numeric:tabular-nums;letter-spacing:-.01em}
-.w5p .w5meter .mv.dim{font-size:13px;color:var(--cap)}
-.w5p .w5meter .mbar{position:relative;height:5px;border-radius:3px;background:var(--sub-bg2);
-  margin:7px 0 5px;overflow:hidden}
-.w5p .w5meter .mbar i{position:absolute;top:0;height:100%;background:var(--cta);border-radius:3px}
-.w5p .w5meter .mf{font-size:10.5px;color:var(--cap);line-height:1.5}
-.w5p .w5btns{display:flex;align-items:center;gap:9px;padding:9px 13px}
-.w5p .w5btns .ak-btn{margin-left:auto}
+/* ===== WIN5 配当の質問・答え・馬を選ぶ画面（2026-10-08 mockup-283 案A）=====
+   部品は他のページから借りる：見出し＝分析ページ（紺の小見出し＋太い大見出し）／
+   WIN1〜5 の切り替え＝京都／東京のつまみ／馬の行＝レース画面の出馬表／配当の帯＝買い目シートの紺の帯／
+   ボタン＝「予想をはじめる」の紺。入り口の先では節の見出し（.w5ph）を隠し、各画面が自分の小見出しを出す */
+.w5p.flow .w5ph{display:none}
+.w5p .w5a-bk{display:block;font-family:inherit;background:none;border:0;padding:4px 2px;margin:0 2px;
+  color:var(--navy);font-size:15px;font-weight:800;cursor:pointer}
+.w5p .w5a-ey{font-size:12px;font-weight:700;color:var(--navy);letter-spacing:.04em;margin:10px 4px 0;line-height:1.5}
+.w5p .w5a-ttl{font-size:23px;font-weight:800;line-height:1.35;margin:4px 4px 0;letter-spacing:-.01em;color:#1D1D1F}
+.w5p .w5a-ttl .num{font-family:var(--num26);font-weight:600;font-size:30px;font-variant-numeric:tabular-nums}
+.w5p .w5a-sub{font-size:12.5px;color:#6E6E73;margin:6px 4px 0;line-height:1.6}
+.w5p .w5a-sub b{font-family:var(--num26);font-weight:600;color:#1D1D1F;font-variant-numeric:tabular-nums}
+/* 白い札と、その中の行 */
+.w5p .w5a-list,.w5p .w5a-card{background:#fff;border-radius:16px;overflow:hidden}
+.w5p .w5a-list{margin-top:16px}
+.w5p .w5a-msg{padding:14px 16px;font-size:13px;color:#3C3C43;line-height:1.7}
+.w5p .w5a-list .w5a-msg{padding:14px 16px}
+.w5p .w5a-card.w5a-msg{margin-top:16px}
+.w5p .w5a-row{display:flex;align-items:center;gap:10px;width:100%;padding:11px 14px 11px 12px;margin:0;
+  border:0;border-top:1px solid #ECECF0;background:#fff;font-family:inherit;text-align:left;color:#1D1D1F}
+.w5p .w5a-row:first-child{border-top:0}
+.w5p button.w5a-row{cursor:pointer}
+.w5p button.w5a-row:active{background:#F5F5F8}
+.w5p .w5a-row.q{padding:14px 12px 14px 16px}
+.w5p .w5a-row .mn{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.w5p .w5a-row .nm{display:flex;align-items:center;gap:4px;font-size:16px;font-weight:700;line-height:1.3;min-width:0}
+.w5p .w5a-row.q .nm{font-size:17px;font-weight:800;gap:0}
+.w5p .w5a-row .nm b{font-family:var(--num26);font-weight:600;font-variant-numeric:tabular-nums}
+.w5p .w5a-row .nm small{font-size:12px;margin-left:1px}
+.w5p .w5a-row .nmt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
+.w5p .w5a-row .nm .go,.w5p .w5a-leg .w5a-rn .go{flex:none;color:#C7C7CC;font-weight:400;margin-left:2px}
+.w5p .w5a-row .ak-mk{width:auto;font-size:13px}
+.w5p .w5a-row .sm{font-size:11.5px;color:#8E8E93}
+.w5p .w5a-row .rt{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:1px}
+.w5p .w5a-row .cnt{font-size:12px;color:#6E6E73}
+.w5p .w5a-row .cnt b{font-family:var(--num26);font-weight:600;font-size:17px;color:#1D1D1F;font-variant-numeric:tabular-nums}
+.w5p .w5a-row .pop{font-size:11.5px;color:#8E8E93;white-space:nowrap}
+.w5p .w5a-row .chev{flex:none;font-size:20px;color:#C7C7CC;line-height:1}
+/* オッズ（出馬表と同じ：数字を大きく・倍を小さく・10倍未満は赤） */
+.w5p .w5a-row .od,.w5p .w5a-leg .od{flex:none;font-family:var(--num26);white-space:nowrap;color:#1D1D1F}
+.w5p .w5a-row .od b{font-size:19px;font-weight:600;font-variant-numeric:tabular-nums}
+.w5p .w5a-leg .od b{font-size:15px;font-weight:600;font-variant-numeric:tabular-nums}
+.w5p .w5a-row .od small,.w5p .w5a-leg .od small{font-family:inherit;font-size:11px;font-weight:600;color:#6E6E73;margin-left:1px}
+.w5p .w5a-row .od.hot b,.w5p .w5a-leg .od.hot b{color:var(--live)}
+/* 馬を選ぶ行：左の丸が選ぶ／外す。馬番・馬名は馬の詳細を開く（2026-09-30 の決まりのまま） */
+.w5p .w5a-row.h .chk{position:relative;flex:none;width:26px;height:26px;border-radius:50%;border:1.5px solid #C7C7CC;
+  background:#fff;padding:0;cursor:pointer}
+.w5p .w5a-row.h .chk::before{content:"";position:absolute;inset:-12px -10px}
+.w5p .w5a-row.h.sel{background:#F3F7FC}
+.w5p .w5a-row.h.sel .chk{background:var(--navy);border-color:var(--navy)}
+.w5p .w5a-row.h.sel .chk::after{content:"";position:absolute;left:8px;top:4px;width:6px;height:11px;
+  border:solid #fff;border-width:0 2.5px 2.5px 0;transform:rotate(45deg)}
+.w5p .w5a-row .w5hno{flex:none;display:inline-flex;cursor:pointer;margin:-6px -4px;padding:6px 4px;border-radius:4px}
+.w5p .w5a-row .w5hno:active{background:rgba(0,0,0,.06)}
+/* WIN1〜5・日付の切り替え（京都／東京と同じ灰色のつまみ） */
+.w5p .w5a-seg{display:flex;background:#E5E5EA;border-radius:10px;padding:3px;margin:16px 0 0}
+.w5p .w5a-seg button{flex:1;min-width:0;font-family:inherit;border:0;background:none;border-radius:8px;
+  padding:7px 0;font-size:13.5px;font-weight:700;color:#3C3C43;line-height:1.15;cursor:pointer}
+.w5p .w5a-seg button.on{background:#fff;color:#1D1D1F;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.w5p .w5a-seg em{display:block;font-style:normal;font-family:var(--num26);font-size:11px;font-weight:600;color:#A1A1A6;margin-top:1px}
+.w5p .w5a-seg button.done em{color:var(--navy)}
+.w5p .w5a-seg + .w5a-seg{margin-top:8px}
+/* 馬を選ぶ画面のレース名の行 */
+.w5p .w5a-rl{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:18px 4px 0}
+.w5p .w5a-rl .w5a-rn{font-size:16px;font-weight:800}
+.w5p .w5a-rl .rm{font-size:12px;color:#6E6E73}
+.w5p .w5a-rl .rm b{font-family:var(--num26);font-weight:600;color:#1D1D1F;font-variant-numeric:tabular-nums}
+.w5p .w5a-rl .w5a-ub{margin-left:auto}
+.w5p .w5a-rl + .w5a-list{margin-top:8px}
+/* 荒れ度の札（トップの一覧の ub26 と同じ3本の棒） */
+.w5p .w5a-ub{flex:none;display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;color:#3C3C43;
+  background:#F2F2F7;border-radius:999px;padding:2px 9px 2px 8px;line-height:16px;white-space:nowrap}
+.w5p .w5a-ub b{font-family:var(--num26);font-weight:600;margin-left:1px}
+.w5p .w5a-ub b small{font-size:9.5px}
+.w5p .w5a-ub .bars{display:inline-flex;align-items:flex-end;gap:2px;height:12px}
+.w5p .w5a-ub .bars i{display:block;width:4px;border-radius:1.5px;background:#D1D1D6}
+.w5p .w5a-ub .bars i:nth-child(1){height:5px}
+.w5p .w5a-ub .bars i:nth-child(2){height:8.5px}
+.w5p .w5a-ub .bars i:nth-child(3){height:12px}
+.w5p .w5a-ub.kata .bars i.on{background:#2E8B7A}
+.w5p .w5a-ub.naka .bars i.on{background:#6A55C2}
+.w5p .w5a-ub.dai .bars i.on{background:#C8236A}
+/* ボタン */
+.w5p .w5a-btns{display:flex;gap:10px;margin:16px 0 0}
+.w5p .w5a-btns > *{flex:1;min-width:0}
+.w5p .w5a-pr,.w5p .w5a-gh{display:block;width:100%;font-family:inherit;text-align:center;font-size:15px;font-weight:800;
+  border-radius:14px;padding:13px 6px;cursor:pointer}
+.w5p .w5a-pr{background:#0E3560;color:#fff;border:0;letter-spacing:.06em}
+.w5p .w5a-pr:disabled{opacity:.32;cursor:not-allowed}
+.w5p .w5a-gh{background:#fff;color:var(--navy);border:1.5px solid #D9DEE6}
+.w5p .w5a-pr:active:not(:disabled),.w5p .w5a-gh:active{filter:brightness(.95)}
+.w5p .wide{margin-top:16px}
+/* 予算を打つ欄 */
+.w5p .w5a-inp{padding:4px 14px 14px}
+.w5p .w5a-inp input{width:100%;box-sizing:border-box;font-family:inherit;font-size:16px;border:1.5px solid #E1E1E6;
+  border-radius:12px;padding:12px 14px;color:#1D1D1F;background:#fff}
+.w5p .w5a-inp input::placeholder{color:#B5B5BA;font-size:13.5px}
+.w5p .w5a-inp .parsed{font-size:12px;color:#6E6E73;margin:6px 2px 0}
+.w5p .w5a-inp .parsed:empty{display:none}
+.w5p .w5a-inp .parsed .dim{color:#B5B5BA}
+/* 配当の目安（レース画面の買い目シートと同じ紺の帯を、画面の下に浮かせる） */
+.w5p .w5a-navy{position:sticky;bottom:10px;z-index:5;margin:16px 0 0;background:#0E3560;color:#fff;border-radius:14px;
+  padding:11px 16px 10px;box-shadow:0 6px 18px rgba(0,30,70,.28)}
+.w5p .w5a-navy .mh{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.w5p .w5a-navy .ml{flex:none;font-size:13px;font-weight:800}
+.w5p .w5a-navy .mv{margin-left:auto;font-size:12px;font-weight:700}
+.w5p .w5a-navy .mv b{font-family:var(--num26);font-size:18px;font-weight:600;font-variant-numeric:tabular-nums}
+.w5p .w5a-navy .mv.dim{font-size:13px;opacity:.7}
+.w5p .w5a-navy .mf{font-size:10.5px;opacity:.72;line-height:1.5;margin-top:3px;word-break:keep-all;overflow-wrap:anywhere}
+/* 答え：5鞍を1枚の白い札にまとめる */
+.w5p .w5a-res{margin-top:16px}
+.w5p .w5a-res + .w5a-res{margin-top:24px}
+.w5p .w5a-ph{display:flex;flex-direction:column;gap:2px;margin:0 4px 8px}
+.w5p .w5a-ph .t{font-size:16px;font-weight:800}
+.w5p .w5a-ph .t b{font-family:var(--num26);font-weight:600;font-size:20px}
+.w5p .w5a-ph .s{font-size:12px;color:#6E6E73;line-height:1.6}
+.w5p .w5a-ph .s b{font-family:var(--num26);font-weight:600;color:#1D1D1F}
+.w5p .w5a-leg{padding:14px 14px 10px;border-top:1px solid #ECECF0}
+.w5p .w5a-leg:first-child{border-top:0}
+.w5p .w5a-leg .lh{display:flex;align-items:center;gap:8px}
+.w5p .w5a-leg .lh img{flex:none;width:auto;height:20px}
+.w5p .w5a-leg .w5a-rn{flex:1;min-width:0;font-size:15px;font-weight:800;color:var(--link);text-decoration:none;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.w5p .w5a-leg .bd{font-size:12.5px;color:#6E6E73;margin:7px 0 4px}
+.w5p .w5a-leg .bd b{font-family:var(--num26);font-weight:600;font-size:15px;color:#1D1D1F}
+.w5p .w5a-leg .bt{display:inline-block;font-family:var(--num26);font-weight:600;font-size:12px;color:var(--navy);
+  background:#E8EFF7;border-radius:6px;padding:1px 7px}
+.w5p .w5a-leg .hr{display:flex;align-items:center;gap:10px;padding:7px 6px}
+.w5p .w5a-leg .hr .nm{flex:1;min-width:0;font-size:14.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.w5p .w5a-leg .hr.on{background:#F3F7FC;border-radius:10px}
+.w5p .w5a-leg .hr .tag{flex:none;font-size:10px;font-weight:700;color:var(--navy);border:1px solid #B9CDE2;
+  border-radius:999px;padding:0 6px;line-height:16px}
+.w5p .w5a-leg .none{font-size:12px;color:var(--live);font-weight:700;margin-top:4px}
+.w5p .w5a-note{font-size:11.5px;color:#6E6E73;line-height:1.7;margin:8px 4px 0}
+.w5p .w5a-note .warn{color:var(--live);font-weight:700}
 
 /* 10倍を切ったら赤オッズ（2026-08-05 ユーザー指定・出馬表と同じ境目）。
    境目は「10.0未満」で、9.9倍までが赤・10.0倍からは黒。
    下地の .od が色を持っているので、勝てるだけの数のクラスを並べている */
-.w5p .ak-h .meta .od.hot,
-.w5p-res .unum .od.hot,
-.w5p-res .unum.on .od.hot,
 .w5p .w5combo .unum .od.hot,
 .w5p .pk .od.hot{color:var(--live)}
 
 /* ===== 125-spec §16: 選んだ馬から見た配当の一覧 ===== */
-.w5hero{border:1px solid var(--rule);border-radius:10px;padding:14px 14px 12px;margin-bottom:12px;
-  background:var(--sub-bg)}
-.w5hero .lb{font-size:11.5px;color:var(--cap);font-weight:700}
-.w5hero .big{font-size:30px;font-weight:700;line-height:1.15;margin:2px 0 4px;
-  font-variant-numeric:tabular-nums;letter-spacing:-.01em}
-.w5hero .sub{font-size:11.5px;color:var(--sub);line-height:1.6}
-.w5hero .rng{display:flex;align-items:center;gap:8px;margin-top:10px;
-  font-size:11px;color:var(--cap);font-variant-numeric:tabular-nums}
-.w5hero .rng i{flex:1;height:3px;border-radius:2px;
-  background:linear-gradient(90deg,var(--up-kata),var(--up-dai))}
 /* 一覧。金額の安い順・金額が主役 */
-.w5cmbs{border:1px solid var(--rule);border-radius:10px;overflow:hidden;margin-bottom:12px}
+.w5cmbs{background:#fff;border-radius:16px;overflow:hidden;margin:16px 0 0}
 .w5cmb{padding:9px 13px;border-bottom:1px solid var(--rule)}
 .w5cmb:last-child{border-bottom:none}
 .w5cmb.top{background:#F5F9FD;box-shadow:inset 3px 0 0 var(--cta)}
@@ -4346,13 +4376,6 @@ body.r26-page.has-bsbar .racepage{padding-bottom:calc(150px + env(safe-area-inse
 .race20.r26 .r26-gb .brdet > :not(summary){margin-left:10px;margin-right:10px}
 .race20.r26 .r26-gb .brdet > table{width:calc(100% - 20px);margin-bottom:10px}
 
-/* WIN5の配当（2026-09-30）：選ぶ／外すはチェック欄だけ。指で押しやすいよう押せる範囲を枠の外まで広げる */
-.ak-wrap .ak-h.w5row{cursor:default}
-.ak-wrap .ak-h.w5row:hover{background:#fff}
-.ak-wrap .ak-h.w5row.sel:hover{background:var(--green-row)}
-.ak-wrap .ak-h.w5row .nm{cursor:pointer}
-.ak-wrap .ak-h .chk.w5chk{position:relative;cursor:pointer}
-.ak-wrap .ak-h .chk.w5chk::before{content:"";position:absolute;inset:-14px -12px}
 /* 馬名から開く「1頭だけ見る」画面の枠（race.html?yf= を重ねる） */
 .w5view{position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.35)}
 .w5view iframe{position:absolute;inset:0;width:100%;height:100%;border:0;opacity:0;background:transparent}
