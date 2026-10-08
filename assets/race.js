@@ -6276,10 +6276,11 @@ async function setupRaceNav(id) {
   const i = same.findIndex((r) => r.race_id === id);
   const link = (r, dir) => {
     if (!r) return `<span class="rn-${dir} rn-none"></span>`;
-    const label = `${escapeHtml(r.track)}${r.race_number}R`;
+    // 2026-10-08: 「前のレース／次のレース」の字と場名はやめ、番号だけ（8R なら 7R・9R）
+    const label = `${r.race_number}R`;
     return dir === 'prev'
-      ? `<a class="rn-prev" href="race.html?id=${r.race_id}"><span class="rn-ar">‹</span><span class="rn-tx"><i>前のレース</i><b>${label}</b></span></a>`
-      : `<a class="rn-next" href="race.html?id=${r.race_id}"><span class="rn-tx"><i>次のレース</i><b>${label}</b></span><span class="rn-ar">›</span></a>`;
+      ? `<a class="rn-prev" href="race.html?id=${r.race_id}"><span class="rn-ar">‹</span><b>${label}</b></a>`
+      : `<a class="rn-next" href="race.html?id=${r.race_id}"><b>${label}</b><span class="rn-ar">›</span></a>`;
   };
   el.innerHTML = link(same[i - 1], 'prev') + link(same[i + 1], 'next');
 }
