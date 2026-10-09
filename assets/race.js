@@ -820,6 +820,13 @@ function bsPaintList() {
   const t = BetSheet.totals(BetSheet.load(BS.raceId), BS.site, BS.probs, BS.heads, BS.oddsAll);
   const sum = document.getElementById('bs-drawer-sum');
   if (sum) sum.innerHTML = `${t.points}<i>点</i>　${String(t.buy).replace(/\B(?=(\d{3})+$)/g, ',')}<i>円</i>`;
+  // 141-spec: ipat-bookmark.html を開いた端末だけ「IPAT投票」を出す（他の閲覧者には出さない）
+  const ip = document.getElementById('bs-ipat');
+  if (ip) {
+    const on = typeof IpatGo !== 'undefined' && IpatGo.ready() && t.lines > 0;
+    ip.hidden = !on;
+    ip.innerHTML = on ? '<button type="button" class="bs-ipat-go" data-ipat-go>IPAT投票</button>' : '';
+  }
 }
 
 function bsOpen() {
@@ -891,6 +898,7 @@ function setupBetSheet(site, oddsAll) {
         <span class="n" id="bs-drawer-sum"></span>
         <button type="button" class="bs-x" data-bs-close aria-label="閉じる">✕</button></div>
       <div class="bs-scroll" id="bs-drawer-body"></div>
+      <div class="bs-ipat" id="bs-ipat" hidden></div>
     </div>`;
   document.body.appendChild(dr);
 
@@ -911,6 +919,7 @@ function setupBetSheet(site, oddsAll) {
       if (i === -1) BS.open.push(id); else BS.open.splice(i, 1);
       bsPaintList(); return;
     }
+    if (e.target.closest('[data-ipat-go]')) { IpatGo.go(BS.raceId, BS.site, bsToast); return; }
     if (e.target.closest('[data-bs-clear]')) {
       // 消すと戻せないので一度だけ確かめる
       if (window.confirm('シートの買い目をすべて消します。よろしいですか。')) {
