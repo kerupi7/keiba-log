@@ -2204,11 +2204,11 @@
     const pg = pages[S.page];
     const dots = pages.map((_, i) => `<i class="${i <= S.page ? 'on' : ''}"></i>`).join('');
     // カード上の見出し（段階・「残す？ 消す？」・やめる）も外した（同日ユーザー指示）。この画面から抜ける手段は今は無い
-    // 1頭だけ見るとき（S.view）は、右側を「N / M頭」から馬番・馬名・閉じるに替える（2026-09-21）。
+    // 1頭だけ見るとき（S.view）は、右側を「N / M頭」から馬番・馬名に替える（2026-09-21）。
+    //   閉じるボタンは外した。下に払うと「閉じますか？」を出す（2026-10-09 ユーザー指示）。
     //   ✓／消の札と色は CSS（.yf-deck.view）で隠すだけにして、動きの側のコードは分けない
     const right = S.view
-      ? `<span class="yf-vw">${umaBox(h.number, h.gate, 'sm')}<b>${esc(h.name)}</b>`
-        + '<button type="button" class="yf-x2" data-act="close">閉じる</button></span>'
+      ? `<span class="yf-vw">${umaBox(h.number, h.gate, 'sm')}<b>${esc(h.name)}</b></span>`
       : `<span>${H.length - Q.length + S.idx + 1} / ${H.length}頭</span>`;
     return `<div class="yf-deck top apple${S.view ? ' view' : ''}" id="yf-deck">
         <div class="yf-card" id="yf-card">
@@ -3295,7 +3295,12 @@
     if (!root || root.querySelector('.yf-sheet-bg')) return;
     const bg = document.createElement('div');
     bg.className = 'yf-sheet-bg';
-    bg.innerHTML = `<div class="yf-sheet"><div class="grp"><div class="t">予想をやめますか？</div><div class="s">ここまでの「残す」「消す」は残ります。次は続きから</div>
+    // 1頭だけ見るとき（S.view）は「閉じますか？」。残す・消すは無いので説明の行は出さない（2026-10-09）
+    bg.innerHTML = S.view
+      ? `<div class="yf-sheet"><div class="grp"><div class="t only">閉じますか？</div>
+      <button type="button" data-q="quit">閉じる</button></div>
+      <button type="button" class="cancel" data-q="keep">キャンセル</button></div>`
+      : `<div class="yf-sheet"><div class="grp"><div class="t">予想をやめますか？</div><div class="s">ここまでの「残す」「消す」は残ります。次は続きから</div>
       <button type="button" class="danger" data-q="quit">やめる</button></div>
       <button type="button" class="cancel" data-q="keep">続ける</button></div>`;
     root.appendChild(bg);
@@ -3474,8 +3479,8 @@
       if (!drag && !vdrag && !vscroll && !udrag && Math.abs(dy) > 8 && Math.abs(dy) > Math.abs(dx) * 1.25 && scrollable() && (dy < 0 || top0 > 0)) vscroll = true;
       // 上に払う → 自分の激アツ（ランクの1ページだけ。縦に動かせるページでは今までどおり縦に動かす）
       if (!drag && !vdrag && !vscroll && !udrag && dy < -8 && -dy > Math.abs(dx) * 1.25 && gekiPage()) udrag = true;
-      // 1頭だけ見るときは下に払って閉じる操作をしない（2026-09-24 ユーザー決定。閉じるボタンで閉じる）
-      if (!drag && !vdrag && !vscroll && !S.view && dy > 8 && dy > Math.abs(dx) * 1.25) vdrag = true;
+      // 下に払う → やめるか／閉じるかの確認。1頭だけ見るときも払える（2026-10-09 ユーザー指示で閉じるボタンを外し、こちらに戻した）
+      if (!drag && !vdrag && !vscroll && dy > 8 && dy > Math.abs(dx) * 1.25) vdrag = true;
       // 乗り換え。指の今いる所を始点に取り直すので、カードは跳ねずに0から付いてくる。
       //   縦に動かしている最中の小さな横ぶれで払ってしまわないよう、横40px以上・縦との差24px以上にしてある
       if ((vscroll || udrag) && Math.abs(dx) > 40 && Math.abs(dx) - Math.abs(dy) > 24) {
@@ -3492,8 +3497,12 @@
         try { card.setPointerCapture(e.pointerId); } catch (_) { /* 取れなくても動く */ }
       }
       // 1頭だけ見るときはカードを指に付けて動かさない（2026-09-24 ユーザー指示「予想を始めるとき以外は、
-      //   カードをスワイプしてずらせないように」）。横に払った量だけ数えて、離したときにページを送る
-      if (S.view) return;
+      //   カードをスワイプしてずらせないように」）。横に払った量だけ数えて、離したときにページを送る。
+      //   下に払うときも札は動かさず、閉じますかを出す量（120px）を越えた所で震わせるだけ
+      if (S.view) {
+        if (vdrag) { const o = dy > 120; if (o !== over) { over = o; if (o) haptic(); } }
+        return;
+      }
       if (udrag) {
         // 札は重く少しだけ上がる（90px 動かして約14px）。下の方の「自分の激アツ」が濃くなり、上の印が近づいて、越えたら光って震える
         const y = Math.max(0, -dy);
@@ -3555,8 +3564,8 @@
       }
       if (vdrag) {
         if (dy > 120 || vy > 0.9) {
-          // 1頭だけ見るときは、下に払ったらそのまま閉じる（やめるかの確認は要らない。2026-09-21）
-          if (S.view) { close(false); return; }
+          // 1頭だけ見るときは「閉じますか？」を出す。札は動かしていないので戻す動きは要らない（2026-10-09）
+          if (S.view) { quitSheet(null); return; }
           card.classList.add('spring'); card.style.transform = 'translateY(40px) scale(.97)';
           quitSheet(() => springHome());
         } else springHome();
