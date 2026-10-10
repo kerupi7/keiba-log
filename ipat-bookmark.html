@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex">
 <title>即PATへ運ぶブックマーク — Ans.</title>
 <!-- 141-ipat-bookmark-spec（2026-10-10）。このページを開いた端末だけ、買い目シートに「IPAT投票」が出る -->
-<link rel="stylesheet" href="assets/style.css?v=20261010ip3">
+<link rel="stylesheet" href="assets/style.css?v=20261010ip4">
 <style>
 .ib{max-width:560px;margin:0 auto;padding:16px 16px 48px;line-height:1.8;font-size:14px}
 .ib h1{font-size:19px;margin:6px 0 4px}
@@ -35,7 +35,18 @@
   <div class="box"><div class="state" id="st"><span class="dot"></span><span id="st-t"></span><button type="button" class="off" id="toggle"></button></div></div>
   <div class="box" id="rl" hidden><div class="state on"><span class="dot"></span><span>中継役（Mac mini）を登録済み。「IPAT投票」で IPATログインが開きます</span><button type="button" class="off" id="rl-off">外す</button></div></div>
 
-  <h2>最初に1回だけ（iPhone の Safari）</h2>
+  <h2>中継役の登録（ホーム画面の Ans. で使う時）</h2>
+  <div class="box">
+    <ol>
+      <li>Mac mini で <b>iphone_link.py</b> を実行する（登録の文字が Mac のコピーに入る）</li>
+      <li>この欄を長押し →「ペースト」→「登録する」（Mac でコピーした物は、同じ Apple ID の iPhone で貼れる）</li>
+    </ol>
+    <input id="rl-in" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="ここに貼る" style="width:100%;font-size:16px;padding:9px;border:1px solid var(--rule);border-radius:6px;margin-top:8px">
+    <button type="button" class="copy" id="rl-go">登録する</button>
+    <p class="ok" id="rl-msg"></p>
+  </div>
+
+  <h2>最初に1回だけ（iPhone の Safari・中継役を使わない時）</h2>
   <div class="box"><ol>
     <li>下の「ブックマークの中身をコピー」を押す</li>
     <li>このページで、下のバーの「≡」（古い iPhone は ⬆︎）→「ブックマークの追加先…」。名前を <b>Ans.の買い目</b> にして「保存」</li>
@@ -57,7 +68,7 @@
   <p class="ver">「ペースト」が出ない時は、貼り付け欄が出ます。長押し →「ペースト」→ OK。</p>
 </div>
 <script src="assets/app.js?v=20261008an"></script>
-<script src="assets/ipatgo.js?v=20261010c"></script>
+<script src="assets/ipatgo.js?v=20261010d"></script>
 <script>
 (function () {
   'use strict';
@@ -74,6 +85,20 @@
   // 中継役の登録（iphone_link.py のリンクで開いた時に ipatgo.js が覚える）
   var rl = document.getElementById('rl');
   rl.hidden = !IpatGo.relay();
+  document.getElementById('rl-go').addEventListener('click', function () {
+    var msg = document.getElementById('rl-msg'), inp = document.getElementById('rl-in');
+    var cfg = IpatGo.register(inp.value);
+    inp.value = '';
+    if (!cfg) { msg.style.color = '#B3261E'; msg.textContent = '登録の文字ではありません。Mac mini で iphone_link.py を実行してから貼ってください'; return; }
+    msg.style.color = ''; msg.textContent = '中継役に確かめています…';
+    IpatGo.ping(cfg).then(function (j) {
+      if (j.ok) { msg.textContent = '登録しました。中継役につながっています'; rl.hidden = false; paint(); }
+      else { msg.style.color = '#B3261E'; msg.textContent = '中継役に断られました（' + (j.error || '') + '）。登録の文字を貼り直してください'; }
+    }, function () {
+      msg.style.color = '#B3261E'; msg.textContent = '登録はしましたが、中継役につながりません。iPhone の Tailscale と、Mac mini の relay.py を確かめてください';
+      rl.hidden = false; paint();
+    });
+  });
   document.getElementById('rl-off').addEventListener('click', function () {
     try { localStorage.removeItem('ipat:relay'); } catch (e) { /* なし */ }
     rl.hidden = true; paint();

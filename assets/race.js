@@ -823,9 +823,12 @@ function bsPaintList() {
   // 141-spec: ipat-bookmark.html を開いた端末だけ「IPAT投票」を出す（他の閲覧者には出さない）
   const ip = document.getElementById('bs-ipat');
   if (ip) {
-    const on = typeof IpatGo !== 'undefined' && IpatGo.ready() && t.lines > 0;
-    ip.hidden = !on;
-    ip.innerHTML = on ? '<button type="button" class="bs-ipat-go" data-ipat-go>IPAT投票</button>' : '';
+    const has = typeof IpatGo !== 'undefined' && t.lines > 0;
+    const on = has && IpatGo.ready();
+    ip.hidden = !has;
+    // 登録していない端末には、設定のページへの小さな入口だけを出す（ホーム画面の Ans. には URL を打つ欄が無いため）
+    ip.innerHTML = on ? '<button type="button" class="bs-ipat-go" data-ipat-go>IPAT投票</button>'
+      : (has ? '<a class="bs-ipat-set" href="ipat-bookmark.html">即PATへ運ぶ設定 ›</a>' : '');
   }
 }
 

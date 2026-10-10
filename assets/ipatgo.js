@@ -168,8 +168,24 @@
     });
   }
 
+  // 貼り付けで登録する（ホーム画面の Ans. は他のアプリのリンクで開けないので、リンクの登録が届かない）。
+  // 受け付ける形: 「https://…ts.net|合言葉」か、iphone_link.py が出すリンクそのもの
+  function register(text) {
+    var raw = String(text || '').trim();
+    var m = /ipat-setup=([^&\s]+)/.exec(raw);
+    if (m) raw = decodeURIComponent(m[1]);
+    var i = raw.indexOf('|');
+    if (i < 0 || !/^https:\/\/[^\s|]+$/.test(raw.slice(0, i)) || raw.length - i < 20) return null;
+    var cfg = { url: raw.slice(0, i).replace(/\/+$/, ''), token: raw.slice(i + 1) };
+    try { localStorage.setItem(RELAY, JSON.stringify(cfg)); } catch (e) { return null; }
+    return cfg;
+  }
+  function ping(cfg) {
+    return fetch(cfg.url + '/ipat/ping', { headers: { 'X-Relay-Token': cfg.token } }).then(function (r) { return r.json(); });
+  }
+
   takeSetup();
-  var IpatGo = { ready: ready, enable: enable, relay: relay, expand: expand, go: go, TAG: TAG };
+  var IpatGo = { ready: ready, enable: enable, relay: relay, register: register, ping: ping, expand: expand, go: go, TAG: TAG };
   if (typeof window !== 'undefined') window.IpatGo = IpatGo;
   if (typeof module !== 'undefined' && module.exports) module.exports = IpatGo;
 })();
