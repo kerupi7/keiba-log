@@ -5155,6 +5155,8 @@ function r27Lanes(io, flat) {
 
 // 前と後ろ：旗（ゴール）から伸びる1本の帯。紺の長さ＝3着内の馬のうち前にいた割合、先頭に馬。
 // 黒い刻み＝いつもの割合で、字は「いつも」の3文字だけ（無いと刻みの意味が読めないため）
+// 「前 ◯%」は馬の上の札にして馬と一緒に動かす（mockup-289 案B。左上に固定していた時は、前が30%を切ると馬が数字にかぶった）
+//   札は帯の幅からはみ出さないよう端で内側へ寄せ、三角だけ馬の位置を指したままにする
 function r27Queue(legs, flat) {
   const f = Number(legs.front_pct);
   const base = legs.base_pct != null ? Number(legs.base_pct) : 62.2;
@@ -5162,20 +5164,27 @@ function r27Queue(legs, flat) {
   const L = 14;
   const R = 148;
   const X = (v) => L + (R - L) * Math.max(0, Math.min(100, v)) / 100;
-  let s = '<use href="#r27-flag" x="0" y="17" width="11" height="15"/>'
-    + `<rect x="${L}" y="24" width="${R - L}" height="9" rx="4.5" fill="#E6E6EB"/>`
-    + `<rect x="${L}" y="24" width="${(X(Math.min(f, base)) - L).toFixed(1)}" height="9" rx="4.5" fill="${c}"/>`;
+  const hx = X(f);
+  const tw = Math.round(f) >= 100 ? 45 : 38;   // 3桁の時だけ広げる
+  const th = 15;
+  const tx = Math.max(L - 2, Math.min(150 - tw, hx - tw / 2));
+  const ax = Math.max(tx + 6, Math.min(tx + tw - 6, hx));
+  let s = '<use href="#r27-flag" x="0" y="30" width="11" height="15"/>'
+    + `<rect x="${L}" y="37" width="${R - L}" height="9" rx="4.5" fill="#E6E6EB"/>`
+    + `<rect x="${L}" y="37" width="${(X(Math.min(f, base)) - L).toFixed(1)}" height="9" rx="4.5" fill="${c}"/>`;
   if (f > base) {
-    s += `<rect x="${(X(base) - 4).toFixed(1)}" y="24" width="${(X(f) - X(base) + 4).toFixed(1)}" height="9" rx="4.5" fill="${flat ? '#B5B5BB' : R27_MORE}"/>`
-      + `<rect x="${(X(base) - 4).toFixed(1)}" y="24" width="4" height="9" fill="${c}"/>`;
+    s += `<rect x="${(X(base) - 4).toFixed(1)}" y="37" width="${(X(f) - X(base) + 4).toFixed(1)}" height="9" rx="4.5" fill="${flat ? '#B5B5BB' : R27_MORE}"/>`
+      + `<rect x="${(X(base) - 4).toFixed(1)}" y="37" width="4" height="9" fill="${c}"/>`;
   } else if (f < base) {
-    s += `<rect x="${X(f).toFixed(1)}" y="24.6" width="${(X(base) - X(f)).toFixed(1)}" height="7.8" fill="none" stroke="${c}" stroke-width="1" stroke-dasharray="2 1.6"/>`;
+    s += `<rect x="${X(f).toFixed(1)}" y="37.6" width="${(X(base) - X(f)).toFixed(1)}" height="7.8" fill="none" stroke="${c}" stroke-width="1" stroke-dasharray="2 1.6"/>`;
   }
-  s += `<path d="M${X(base).toFixed(1)} 21 V36" stroke="#1C1C1E" stroke-width="1.2"/>`
-    + `<text x="${X(base).toFixed(1)}" y="45" text-anchor="middle" class="r27-ax">いつも</text>`
-    + `<use href="#r27-hs" x="${(X(f) - 11).toFixed(1)}" y="4" width="22" height="16.5" style="color:${c}"/>`
-    + `<text x="${L}" y="15" class="r27-qv" fill="${c}">前 <tspan class="n">${Math.round(f)}</tspan>%</text>`;
-  return `<svg class="r27-queue" viewBox="0 0 150 48" role="img" aria-label="3着内の馬のうち前にいた割合 ${Math.round(f)}%（いつも${Math.round(base)}%）">${s}</svg>`;
+  s += `<path d="M${X(base).toFixed(1)} 34 V49" stroke="#1C1C1E" stroke-width="1.2"/>`
+    + `<text x="${X(base).toFixed(1)}" y="58" text-anchor="middle" class="r27-ax">いつも</text>`
+    + `<use href="#r27-hs" x="${(hx - 11).toFixed(1)}" y="18" width="22" height="16.5" style="color:${c}"/>`
+    + `<rect x="${tx.toFixed(1)}" y="0" width="${tw}" height="${th}" rx="${th / 2}" fill="${c}"/>`
+    + `<path d="M${(ax - 3.5).toFixed(1)} ${th - 0.5} L${ax.toFixed(1)} ${th + 3.5} L${(ax + 3.5).toFixed(1)} ${th - 0.5}z" fill="${c}"/>`
+    + `<text x="${(tx + tw / 2).toFixed(1)}" y="11" text-anchor="middle" class="r27-qv">前 <tspan class="n">${Math.round(f)}</tspan>%</text>`;
+  return `<svg class="r27-queue" viewBox="0 0 150 61" role="img" aria-label="3着内の馬のうち前にいた割合 ${Math.round(f)}%（いつも${Math.round(base)}%）">${s}</svg>`;
 }
 
 // 何レースから出したか。灰の四角＝前日まで、紺の四角＝今日（2026-10-07「色ありと色なしの意味が伝わらない」→字を添える）
