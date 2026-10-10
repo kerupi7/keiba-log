@@ -3381,13 +3381,16 @@ function mmBar(site) {
 }
 
 // オッズの「更新」ボタン（2026-10-10 ユーザー「netkeibaみたいに更新ボタンを押したら更新される」・142-spec）。
-//   即PATの中継役を登録した端末（ipatgo.js の IpatGo.relay()）は、押すたびに中継役が JRA から取ったオッズを使う
-//   （同日ユーザー「押したらJRAから取ってくる形」→「その形で作って」）。中継役は同じレースを20秒に1回まで取りに行く。
-//   中継役に届かない（Tailscale が切れている）・未登録の端末は、公開済みの最新の予想JSONと全券種オッズを読み直す
-//   （公開は裏の処理。発走10〜2分前は2分ごと・139-spec）。どちらもオッズ・人気・期待値と取得時刻だけを差し替える。
+//   押すたびに Cloudflare Workers（部署/競馬部/動かすもの/odds_worker）が JRA から取ったオッズを使う。誰の端末でも同じ。
+//   同じレースは20秒に1回まで JRA へ行き、それより早い呼び出しには前に取った分が返る。
+//   はじめは即PATの中継役（Mac mini・Tailscale）に取らせていたが、同日ユーザー「Tailscale使わない形にしたい」
+//   「Mac mini の住所がインターネットから見えるのは嫌」で Cloudflare に移した。
+//   Cloudflare に届かない時は、公開済みの最新の予想JSONと全券種オッズを読み直す（公開は裏の処理。発走10〜2分前は2分ごと・139-spec）。
+//   どちらもオッズ・人気・期待値と取得時刻だけを差し替える。
 //   ページを読み直さないのは、開いているタブ・スクロール位置・ポップアップを崩さないため。
 //   馬の値は site.horses の中身を書き換えるので、後から開く札・ポップアップも新しいオッズで描かれる
-const ODDS_RELAY_WAIT_MS = 20000;   // 中継役の返事を待つ上限。JRA からの取得は 6.4〜9.5秒（2026-10-10 実測）
+const ODDS_WORKER = 'https://ans-odds.ans-odds.workers.dev';
+const ODDS_WORKER_WAIT_MS = 15000;   // 返事を待つ上限。Cloudflare から JRA への取得は 0.7秒（2026-10-10 実測）
 
 function setupOddsRefresh(site, oddsAll, id) {
   const btn = document.querySelector('.race20 .od-rf');
@@ -3401,7 +3404,7 @@ function setupOddsRefresh(site, oddsAll, id) {
     const before = (site.prediction || {}).odds_fetched_at || '';
     let msg;
     try {
-      const live = await oddsFromRelay(id);
+      const live = await oddsFromWorker(id);
       if (live && live.error) {
         msg = live.error;   // 発売前。描き直すものは無い
       } else {
@@ -3422,17 +3425,13 @@ function setupOddsRefresh(site, oddsAll, id) {
   });
 }
 
-// 中継役に JRA のオッズを取ってもらう。未登録・届かない時は null（公開済みの値へ回る）。
-//   中継役が「発売前」などで断った時は { error: '発売前' }（公開済みの値にも新しいものは無いので回らない）
-async function oddsFromRelay(id) {
-  const cfg = window.IpatGo && window.IpatGo.relay ? window.IpatGo.relay() : null;
-  if (!cfg) return null;
+// Cloudflare に JRA のオッズを取ってもらう。届かない・JRA から取れなかった時は null（公開済みの値へ回る）。
+//   「発売前」と断られた時は { error: '発売前' }（公開済みの値にも新しいものは無いので回らない）
+async function oddsFromWorker(id) {
   const ctl = typeof AbortController === 'function' ? new AbortController() : null;
-  const timer = ctl ? setTimeout(() => ctl.abort(), ODDS_RELAY_WAIT_MS) : null;
+  const timer = ctl ? setTimeout(() => ctl.abort(), ODDS_WORKER_WAIT_MS) : null;
   try {
-    const res = await fetch(`${cfg.url}/odds/${id}`, {
-      headers: { 'X-Relay-Token': cfg.token }, cache: 'no-store', signal: ctl ? ctl.signal : undefined,
-    });
+    const res = await fetch(`${ODDS_WORKER}/odds/${id}`, { cache: 'no-store', signal: ctl ? ctl.signal : undefined });
     const body = await res.json().catch(() => null);
     if (res.ok && body && body.ok && body.odds_all) return body.odds_all;
     if (res.status === 422 && body && /発売前/.test(body.error || '')) return { error: '発売前' };
@@ -3444,7 +3443,7 @@ async function oddsFromRelay(id) {
   }
 }
 
-// 中継役が取った全券種オッズ（odds_all-1.x）を site に写す。人気と期待値は keiba_publish.py の
+// Cloudflare が取った全券種オッズ（odds_all-1.x）を site に写す。人気と期待値は keiba_publish.py の
 //   live_odds_one と同じ式（人気＝オッズの低い順・同じなら馬番の小さい順／期待値＝勝率×オッズ−1 を小数2桁）
 function applyLiveOdds(site, oddsAll, live) {
   const tan = (live.odds || {}).tansho || {};
@@ -3479,7 +3478,7 @@ async function oddsFromSite(site, oddsAll, id) {
   ]);
   const closed = fresh.status !== 'prediction' ? '締切' : '';
   const fp = fresh.prediction || {};
-  // 前に中継役から取ったオッズの方が新しければ、公開済みの古い値で戻さない（時刻は "YYYY-MM-DDTHH:MM" で並ぶ）
+  // 前に Cloudflare から取ったオッズの方が新しければ、公開済みの古い値で戻さない（時刻は "YYYY-MM-DDTHH:MM" で並ぶ）
   const cur = (site.prediction || {}).odds_fetched_at || '';
   if (cur && fp.odds_fetched_at && String(fp.odds_fetched_at) < String(cur)) return closed;
   const byNum = {};
