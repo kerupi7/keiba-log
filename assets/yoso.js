@@ -223,6 +223,9 @@
     let lastH = root.clientHeight;
     rootPoll = setInterval(() => { if (root && root.clientHeight !== lastH) { lastH = root.clientHeight; refit(); } }, 400);
     document.body.style.overflow = 'hidden';
+    // 後ろのページは開く前の高さのまま止める。下に払って閉じるとき背景が透けて見えるので、
+    //   先頭ではなく開く前の位置が見えるように（2026-10-10）。close() が元に戻す
+    document.body.style.top = `-${pageY}px`;
     document.body.classList.add('yf-open');
     root.addEventListener('click', onClick);
     if (first === 'swipe' || first === 'view') go(S.screen);
@@ -256,7 +259,7 @@
     if (rootRO) { rootRO.disconnect(); rootRO = null; }
     clearInterval(rootPoll); rootPoll = null;
     root.remove(); root = null; viewSrc = null;
-    document.body.style.top = '';   // 下に払って閉じたときに zoomBack がずらした分を戻す
+    document.body.style.top = '';   // open() でずらした分を戻す（すぐ下で同じ高さへスクロールし直す）
     document.body.style.overflow = '';
     document.body.classList.remove('yf-open');
     window.scrollTo(0, pageY);   // 開く前に見ていた高さへ戻す（2026-09-21）
@@ -3293,8 +3296,10 @@
     fillBack();
   }
   // 1頭だけ見る画面を、開いた元の行へ縮めて戻す（2026-10-10 ユーザー「Bで本番に入れて」・mockup-285 の B）。
-  //   札の中身は描き直さず、そのまま縮めて行の形に切り抜く（字が折り返し直さないように）。
-  //   指を離した速さをバネの初速に引き継ぐ（行が上にあれば、少し下へ流れてから戻る）。
+  //   動かすのは札の位置・倍率と、白い幕・背景の透明度だけ（どれも描き直しの要らない動き）。
+  //   はじめは札を別の場所へ移して行の形に切り抜いていたが、移した瞬間の描き直しと毎コマの切り抜きで
+  //   iPhone でカクついた（同日ユーザー「少しカクツクし重さを感じる」）。札の中身は縮み始めてすぐ白い幕で隠し、
+  //   縦横の倍率を別々にして行の形へ寄せる。指を離した速さをバネの初速に引き継ぐ（行が上なら、少し下へ流れてから戻る）。
   //   行が画面の外・見つからないときは、その場で縮めて薄くする
   function zoomBack(card, vy) {
     if (!root || root.classList.contains('yf-zoom')) return;
@@ -3303,73 +3308,57 @@
     if (!src && num != null) src = document.querySelector(`.race20 .mm-row [data-pop="${num}"]`);
     const row = src ? (src.closest('.mm-row, .acard') || src) : null;
     const vis = card.getBoundingClientRect();
-    const W0 = card.offsetWidth, H0 = card.offsetHeight;
-    const s0 = vis.width / W0;
-    // 開いている間はページ（body）を先頭で止めている（yoso.css の body.yf-open）。背景を溶かすと後ろに
-    //   ページの先頭が見えてしまうので、開く前に見ていた高さまでずらしておく（2026-10-10 ユーザー
-    //   「そのページの一番上がスワイプ後に出てくるから変」）。閉じるとき close() が元に戻す
-    document.body.style.top = `-${pageY}px`;
-    let rr = null;
-    if (row) { const b = row.getBoundingClientRect(); rr = { left: b.left, top: b.top, width: b.width, height: b.height }; }
-    if (rr && (rr.top + rr.height < 0 || rr.top > window.innerHeight || rr.width < 10)) rr = null;
-    // 札を重ねる画面の直下へ出し、左上を原点に「位置＋倍率＋切り抜き」で形を表す
-    root.classList.add('yf-zoom');
-    root.style.pointerEvents = 'none';
-    const bd = document.createElement('div');
-    bd.className = 'yf-zoom-bd';
-    root.appendChild(bd);
+    // 指で動かした分を外した札の位置（描き直しは起きない。同じコマで次の形を入れる）
     card.classList.remove('spring', 'press');
     card.style.transition = 'none';
-    card.style.transformOrigin = '0 0';
-    card.style.position = 'fixed';
-    card.style.left = '0'; card.style.top = '0'; card.style.right = 'auto'; card.style.bottom = 'auto';
-    card.style.width = W0 + 'px'; card.style.height = H0 + 'px';
-    card.style.zIndex = '2';
+    const keep = card.style.transform;
+    card.style.transform = 'none';
+    const L = card.getBoundingClientRect();
+    card.style.transform = keep;
+    // 後ろのページは open() で開く前の高さにずらしてあるので、行の位置はそのまま使える
+    let rr = row ? row.getBoundingClientRect() : null;
+    if (rr && (rr.bottom < 0 || rr.top > window.innerHeight || rr.width < 10)) rr = null;
+    const s0 = vis.width / L.width;
+    const from = { x: vis.left - L.left, y: vis.top - L.top, sx: s0, sy: s0, op: 1, bd: 1 };
+    const to = rr
+      ? { x: rr.left - L.left, y: rr.top - L.top, sx: rr.width / L.width, sy: rr.height / L.height, op: 1, bd: 0 }
+      : { x: from.x + vis.width * 0.075, y: from.y + 60 + vis.height * 0.075, sx: s0 * 0.85, sy: s0 * 0.85, op: 0, bd: 0 };
     const veil = document.createElement('div');
     veil.className = 'yf-zoom-veil';
     card.appendChild(veil);
-    root.appendChild(card);
-    const col = document.getElementById('yf-col');
-    if (col) col.style.visibility = 'hidden';
-    const R = 18;
-    const from = { x: vis.left, y: vis.top, s: s0, cut: 0, r: R / s0, veil: 0, op: 1, bd: 1 };
-    let to;
-    if (rr) {
-      const s1 = rr.width / W0;
-      to = { x: rr.left, y: rr.top, s: s1, cut: Math.max(0, H0 - rr.height / s1), r: 10 / s1, veil: 1, op: 1, bd: 0 };
-    } else {
-      const s1 = s0 * 0.85;
-      to = { x: vis.left + (vis.width - W0 * s1) / 2, y: vis.top + 60 + (vis.height - H0 * s1) / 2, s: s1, cut: 0, r: R / s1, veil: 0, op: 0, bd: 0 };
-    }
+    const bd = document.createElement('div');
+    bd.className = 'yf-zoom-bd';
+    root.insertBefore(bd, root.firstChild);
+    root.style.pointerEvents = 'none';
+    root.classList.add('yf-zoom');
+    card.style.transformOrigin = '0 0';
     const paint = (t) => {
-      const v = {};
-      for (const k in from) v[k] = from[k] + (to[k] - from[k]) * t;
-      card.style.transform = `translate(${v.x.toFixed(2)}px, ${v.y.toFixed(2)}px) scale(${v.s.toFixed(5)})`;
-      card.style.clipPath = `inset(0 0 ${Math.max(0, v.cut).toFixed(1)}px 0 round ${Math.max(0, v.r).toFixed(1)}px)`;
-      card.style.borderRadius = `${Math.max(0, v.r).toFixed(1)}px`;
-      card.style.opacity = Math.max(0, Math.min(1, v.op));
-      // 中身は縮み始めてすぐ白く溶かす（行と札の形の差が大きく、縮む途中の字が潰れて見えるため）
-      veil.style.opacity = rr ? Math.max(0, Math.min(1, (t - 0.12) / 0.4)) : 0;
-      bd.style.opacity = Math.max(0, Math.min(1, v.bd));
+      const x = from.x + (to.x - from.x) * t, y = from.y + (to.y - from.y) * t;
+      const sx = from.sx + (to.sx - from.sx) * t, sy = from.sy + (to.sy - from.sy) * t;
+      card.style.transform = `translate3d(${x.toFixed(2)}px, ${y.toFixed(2)}px, 0) scale(${Math.max(0.01, sx).toFixed(5)}, ${Math.max(0.01, sy).toFixed(5)})`;
+      if (!rr) card.style.opacity = Math.max(0, Math.min(1, 1 - t)).toFixed(3);
+      // 中身は縮み始めてすぐ白く隠す（縦横の倍率が違うので、字が潰れて見える前に）
+      veil.style.opacity = rr ? Math.max(0, Math.min(1, t / 0.28)).toFixed(3) : '0';
+      bd.style.opacity = Math.max(0, Math.min(1, 1 - t * 1.25)).toFixed(3);
     };
     // 下向きの速さ（点／ミリ秒）を、形の進み具合の初速（1／秒）に直す。行が上なら逆向きの初速になる
     const dist = Math.max(60, Math.abs(to.y - from.y));
     const dir = to.y >= from.y ? 1 : -1;
-    const v0 = Math.max(-6, Math.min(8, (Math.max(0, vy) * 1000 * dir) / dist));
-    // バネ（SwiftUI と同じ response 0.46秒・dampingFraction 0.8。少しだけ弾む）
-    const k = Math.pow(2 * Math.PI / 0.46, 2), c = 4 * Math.PI * 0.8 / 0.46;
+    const v0 = Math.max(-5, Math.min(8, (Math.max(0, vy) * 1000 * dir) / dist));
+    // バネ（SwiftUI と同じ指定で response 0.36秒・dampingFraction 0.86。ほんの少しだけ弾む）
+    const k = Math.pow(2 * Math.PI / 0.36, 2), c = 4 * Math.PI * 0.86 / 0.36;
     let t = 0, v = v0, last = performance.now();
     const step = (now) => {
-      const dt = Math.min(0.064, (now - last) / 1000); last = now;
-      for (let i = 0; i < 8; i++) { const a = -k * (t - 1) - c * v; v += a * dt / 8; t += v * dt / 8; }
+      const dt = Math.min(0.034, (now - last) / 1000); last = now;
+      for (let i = 0; i < 8; i++) { const acc = -k * (t - 1) - c * v; v += acc * dt / 8; t += v * dt / 8; }
       paint(t);
-      if (Math.abs(1 - t) < 0.001 && Math.abs(v) < 0.03) {
+      if (Math.abs(1 - t) < 0.002 && Math.abs(v) < 0.05) {
         paint(1);
         close(false);
         // 戻った行を一瞬だけ光らせる
         if (rr && row && row.animate) {
           row.animate([{ backgroundColor: 'rgba(11,61,110,.12)' }, { backgroundColor: 'rgba(11,61,110,0)' }],
-            { duration: 600, easing: 'ease-out' });
+            { duration: 500, easing: 'ease-out' });
         }
         return;
       }
@@ -3603,10 +3592,10 @@
       }
       if (vdrag && S.view) {
         // 1頭だけ見るときは、指に付いて横にも動き、下げるほど小さくなる（2026-10-10 mockup-285 の B）
+        //   縦は指と1対1（遅れると重く感じた・同日）。deck の --dim は札の中まで計算し直させるので、ここでは使わない
         const y = Math.max(0, dy);
         const sc = Math.max(0.62, 1 - y / 900);
-        card.style.transform = `translate(${(dx * 0.7).toFixed(1)}px, ${(dy * 0.9).toFixed(1)}px) scale(${sc.toFixed(4)})`;
-        deck.style.setProperty('--dim', String(Math.min(1, y / 200).toFixed(3)));
+        card.style.transform = `translate3d(${(dx * 0.6).toFixed(1)}px, ${dy.toFixed(1)}px, 0) scale(${sc.toFixed(4)})`;
         const o = y > 120;
         if (o !== over) { over = o; if (o) haptic(); }
         return;

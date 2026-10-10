@@ -498,9 +498,13 @@ html.rc-frame .mx .mg-close .mg-tag{background:#5E7185}
 .yf-deck.apple .yf-card.spring{transition:transform .55s cubic-bezier(.2,1.35,.4,1),opacity .3s}
 .yf-deck.apple .yf-card.back{transition:none}
 /* 1頭だけ見る画面を下に払って閉じるとき、元の行へ縮めて戻す（2026-10-10・mockup-285 の B）。背景の灰色は溶かす */
-.yf.yf-zoom{background:transparent}
-.yf-zoom-bd{position:absolute;inset:0;background:var(--sub-bg2);z-index:1;pointer-events:none}
-.yf-zoom-veil{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:50}
+.yf.yf-zoom,.yf.yf-zoom .yf-col{background:transparent}
+.yf.yf-zoom .yf-col>:not(.yf-deck),.yf.yf-zoom .yf-deck>:not(#yf-card){visibility:hidden}
+.yf.yf-zoom .yf-deck::before{display:none}
+.yf-zoom-bd{position:absolute;inset:0;background:var(--sub-bg2);z-index:-1;pointer-events:none;will-change:opacity}
+.yf-zoom-veil{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:50;will-change:opacity}
+/* 1頭だけ見る札は、開いた時から別の層にしておく（払う・閉じる動きのたびに中身を描き直さないため・2026-10-10） */
+.yf-deck.view .yf-card{will-change:transform}
 /* 後ろの札：次の馬の中身をそのまま描き、薄い影で奥にあることを示す（白い札に見えたため・2026-09-17） */
 .yf-deck.apple .yf-card.back{transform:translateY(12px) scale(.955);transform-origin:50% 100%;opacity:1;backface-visibility:hidden}
 .yf-deck.apple .yf-card.back.pre,.yf-deck.apple .yf-card.back.later{visibility:hidden}
