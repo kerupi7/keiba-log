@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex">
 <title>即PATへ運ぶブックマーク — Ans.</title>
 <!-- 141-ipat-bookmark-spec（2026-10-10）。このページを開いた端末だけ、買い目シートに「IPAT投票」が出る -->
-<link rel="stylesheet" href="assets/style.css?v=20261010ip2">
+<link rel="stylesheet" href="assets/style.css?v=20261010ip3">
 <style>
 .ib{max-width:560px;margin:0 auto;padding:16px 16px 48px;line-height:1.8;font-size:14px}
 .ib h1{font-size:19px;margin:6px 0 4px}
@@ -33,6 +33,7 @@
   <p>買い目シートの「IPAT投票」で買い目をコピーし、即PAT の「通常投票」でこのブックマークを押すと、即PAT の「合計金額入力」まで進みます。即PAT の番号は即PAT の画面にだけ入れます。Ans. は番号に触れません。</p>
 
   <div class="box"><div class="state" id="st"><span class="dot"></span><span id="st-t"></span><button type="button" class="off" id="toggle"></button></div></div>
+  <div class="box" id="rl" hidden><div class="state on"><span class="dot"></span><span>中継役（Mac mini）を登録済み。「IPAT投票」で IPATログインが開きます</span><button type="button" class="off" id="rl-off">外す</button></div></div>
 
   <h2>最初に1回だけ（iPhone の Safari）</h2>
   <div class="box"><ol>
@@ -56,7 +57,7 @@
   <p class="ver">「ペースト」が出ない時は、貼り付け欄が出ます。長押し →「ペースト」→ OK。</p>
 </div>
 <script src="assets/app.js?v=20261008an"></script>
-<script src="assets/ipatgo.js?v=20261010b"></script>
+<script src="assets/ipatgo.js?v=20261010c"></script>
 <script>
 (function () {
   'use strict';
@@ -70,6 +71,13 @@
   }
   document.getElementById('toggle').addEventListener('click', function () { IpatGo.enable(!IpatGo.ready()); paint(); });
   paint();
+  // 中継役の登録（iphone_link.py のリンクで開いた時に ipatgo.js が覚える）
+  var rl = document.getElementById('rl');
+  rl.hidden = !IpatGo.relay();
+  document.getElementById('rl-off').addEventListener('click', function () {
+    try { localStorage.removeItem('ipat:relay'); } catch (e) { /* なし */ }
+    rl.hidden = true; paint();
+  });
 
   fetch('assets/ipat-bookmarklet.js?v=20261010b', { cache: 'no-store' }).then(function (r) { return r.text(); }).then(function (src) {
     var code = src.replace(/\/\*[\s\S]*?\*\//g, '').split('\n').map(function (l) { return l.trim(); })

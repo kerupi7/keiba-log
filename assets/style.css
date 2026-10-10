@@ -4157,6 +4157,29 @@ body.bs-locked{overflow:hidden}
   font:inherit;font-size:15px;font-weight:700;padding:13px;cursor:pointer;box-shadow:0 2px 4px rgba(0,0,0,.18)}
 .bs-ipat-go:active{opacity:.85}
 
+/* 中継役ありの IPATログイン。見出しの青は netkeiba の「IPATログイン」に合わせた（ユーザーが見せた画面） */
+#ipat-login{position:fixed;inset:0;z-index:90;display:flex;flex-direction:column;justify-content:flex-end}
+.ipl-scrim{position:absolute;inset:0;background:rgba(0,0,0,.45)}
+.ipl-panel{position:relative;background:#fff;border-radius:12px 12px 0 0;max-height:90vh;overflow-y:auto;
+  box-shadow:0 -6px 24px rgba(0,0,0,.3)}
+.ipl-head{background:#2B4FBB;color:#fff;font-weight:700;font-size:15px;padding:12px 14px;display:flex;align-items:center}
+.ipl-x{margin-left:auto;border:0;background:transparent;color:#fff;font:inherit;font-size:16px;opacity:.85;cursor:pointer}
+.ipl-sum{padding:9px 14px;background:var(--sub-bg2);border-bottom:1px solid var(--rule);font-size:13px;font-weight:700}
+.ipl-sum span{display:block;font-weight:400;font-size:11.5px;color:var(--cap);margin-top:2px}
+.ipl-body{padding:12px 14px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:12px}
+.ipl-f{display:flex;flex-direction:column;gap:5px;font-size:13px;font-weight:700}
+.ipl-f[hidden],.ipl-ck[hidden]{display:none}
+/* 16px 未満だと iPhone が入力のたびに画面を拡大するので、欄の字は16px */
+.ipl-f input{font:inherit;font-size:16px;font-weight:400;padding:10px;border:1px solid #BDBDBD;border-radius:4px;letter-spacing:.12em}
+.ipl-ck{display:flex;align-items:center;gap:8px;font-size:13px}
+.ipl-ck input{width:20px;height:20px;accent-color:#EE5555}
+.ipl-go{display:block;width:100%;border:0;border-radius:6px;background:#EE5555;color:#fff;font:inherit;font-size:15px;
+  font-weight:700;padding:13px;cursor:pointer;box-shadow:0 2px 4px rgba(0,0,0,.18)}
+.ipl-go:disabled{opacity:.6;cursor:default}
+.ipl-err{margin:0;padding:9px 11px;border-radius:6px;background:#FDECEC;color:#B3261E;font-size:12.5px;line-height:1.6}
+.ipl-err[hidden]{display:none}
+.ipl-note{margin:0;font-size:11.5px;color:var(--cap);line-height:1.7}
+
 /* 買いレース（2026-09-08）。付け外しはレース詳細のヘッダーだけ。一覧は札を出すだけ */
 .race20 .rhead.h2 .brchk{margin-left:auto;flex:none;display:inline-flex;align-items:center;gap:6px;
   border:1px solid var(--rule);background:#fff;border-radius:6px;padding:5px 10px;
