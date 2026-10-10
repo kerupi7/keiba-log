@@ -2774,6 +2774,12 @@
       big = `${Math.round(c.rate)}<small>%</small>`;
       sub = `${k === '脚質' ? `${esc(who)}・` : ''}平均${avg != null ? Math.round(avg) : '—'}%`;
     }
+    // 前走コース組も「倍」でなく、その組がこのコースで3着以内に来た割合と、このコースの全馬の平均で出す（2026-10-10 ユーザー「倍表記だとわかりづらい」）。
+    //   一覧の札（m225 の「前走◯◯組 32%・平均26%」）と同じ数字。行が1行で切れるので、平均を先に・組の名前は「ダート」を「ダ」に縮めて後ろへ
+    if (k === '前走コース' && c.rate != null && c.course_rate != null) {
+      big = `${Math.round(c.rate)}<small>%</small>`;
+      sub = `平均${Math.round(c.course_rate)}%・${esc(String(c.key || '').replace('ダート', 'ダ'))}組`;
+    }
     // 直近5走の（C・A・S・B・S）は元の文字が前走→5走前の順。線（左が古い）と向きをそろえて古い順に並べ直す（2026-09-29 ユーザー）
     if (k === '直近5走' && Array.isArray(c.runs) && c.runs.length) {
       sub = `（${c.runs.slice().reverse().map((r) => esc(r.grade || '−')).join('・')}）<small class="tb-ord">古→前走</small>`;
@@ -2812,7 +2818,7 @@
       case '枠': return '枠<small>3着以内の割合</small>';
       case '脚質': return '脚質<small>3着以内の割合</small>';
       case '流れ': return nm ? `${esc(nm)}<small>今日の流れ</small>` : '今日の流れ';
-      case '前走コース': return '前走も<br>同じコース';
+      case '前走コース': return '前走の<br>コース組';   // 前走が同じ場・芝ダ・距離だった馬たち（rankcard-4）。「前走も同じコース」だと今日と同じコースの意味に読めた
       default: return esc(k);
     }
   }
@@ -2823,7 +2829,7 @@
     const here = `${esc(r.track || '')}${sf}${esc(r.distance || '')}m`;
     return {
       条件: `％＝その条件で<b>好走</b>した割合。好走＝1着か、勝ち馬と${sf === '芝' ? '0.4' : '0.6'}秒差以内`,
-      人と血統: `％＝その騎手・調教師・父・母父の馬が、<b>${here}で3着以内</b>に来た割合`,
+      人と血統: `％＝前走が同じコースの馬・その騎手・調教師・父・母父の馬が、<b>${here}で3着以内</b>に来た割合`,
       コースの傾向: `％＝${here}で、その枠・脚質の馬が<b>3着以内</b>に来た割合`,
     }[g] || '';
   }
