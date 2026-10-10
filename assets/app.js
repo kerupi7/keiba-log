@@ -250,3 +250,65 @@ function gekiStampSvg(size, cls) {
     + '<text transform="translate(37 64) scale(1.05 1.12)" y="9" text-anchor="middle" font-size="25">ツ</text></g></g></svg>';
 }
 
+
+// 下に払って閉じる（2026-10-10 ユーザー指示「閉じる系も全部下スワイプにしたい」）。閉じるボタンの代わり。
+//   付け先 host の中で sel に当たる板を、指に1対1で付けて下げる。120px 以上下げるか速く払うと閉じ、足りなければ元へ戻す
+//   （しきい値と速さは「1頭だけ見る」画面の下払い〔yoso.js〕と同じ）。scrim(板) が返す背景の幕は、下げるほど薄くする。
+//   中身を上へ動かした後（scrollTop > 0）につかんだときは払わない（まず中身を戻す動きにする）。
+//   最初の動きが下向きのときだけ板を動かす。iPhone は最初の動きを止めないと、後からは画面の縦の動きを止められないため
+//   （横や上に動かし始めたら、表の横の動き・中身の縦の動きのまま）。パソコンは今までどおり背景を押す・Esc で閉じる
+function swipeToClose(host, sel, close, scrim) {
+  const EASE = 'cubic-bezier(.32,.72,0,1)';
+  let p = null, s = null, sx = 0, sy = 0, dy = 0, mode = '', hist = [];
+  host.addEventListener('touchstart', (e) => {
+    p = e.touches.length === 1 && e.target.closest ? e.target.closest(sel) : null;
+    if (!p || !host.contains(p)) { p = null; return; }
+    for (let n = e.target; n && n !== p.parentNode; n = n.parentNode) {
+      if (n.scrollTop > 0) { p = null; return; }
+    }
+    const t = e.touches[0];
+    sx = t.clientX; sy = t.clientY; dy = 0; mode = ''; hist = [[e.timeStamp, sy]];
+  }, { passive: true });
+  host.addEventListener('touchmove', (e) => {
+    if (!p || mode === 'no') return;
+    const t = e.touches[0];
+    const dx = t.clientX - sx;
+    dy = t.clientY - sy;
+    if (!mode) {
+      if (!dx && !dy) return;
+      mode = e.cancelable && dy > 0 && dy >= Math.abs(dx) ? 'drag' : 'no';
+      if (mode === 'no') return;
+      s = scrim ? scrim(p) : null;
+      p.style.transition = 'none';
+      if (s) s.style.transition = 'none';
+    }
+    e.preventDefault();
+    hist.push([e.timeStamp, t.clientY]); if (hist.length > 6) hist.shift();
+    const y = Math.max(0, dy);
+    p.style.translate = `0 ${y.toFixed(1)}px`;
+    if (s) s.style.opacity = Math.max(0.2, 1 - y / 500).toFixed(3);
+  }, { passive: false });
+  const end = () => {
+    const el = p, sc = s;
+    p = null; s = null;
+    if (!el || mode !== 'drag') return;
+    const h0 = hist[0], h1 = hist[hist.length - 1];
+    const vy = (h1[1] - h0[1]) / Math.max(1, h1[0] - h0[0]);   // 点／ミリ秒（最後の数コマ）
+    if (dy > 120 || (vy > 0.9 && dy > 30)) {
+      el.style.transition = `translate .22s ${EASE}`;
+      el.style.translate = `0 ${window.innerHeight}px`;
+      if (sc) { sc.style.transition = 'opacity .22s'; sc.style.opacity = '0'; }
+      setTimeout(() => {
+        close();
+        el.style.transition = ''; el.style.translate = '';
+        if (sc) { sc.style.transition = ''; sc.style.opacity = ''; }
+      }, 220);
+    } else {
+      el.style.transition = `translate .35s ${EASE}`;
+      el.style.translate = '';
+      if (sc) { sc.style.transition = 'opacity .35s'; sc.style.opacity = ''; }
+    }
+  };
+  host.addEventListener('touchend', end);
+  host.addEventListener('touchcancel', end);
+}

@@ -898,12 +898,13 @@ function setupBetSheet(site, oddsAll) {
   dr.innerHTML = `<div class="bs-scrim" data-bs-close></div>
     <div class="bs-panel" role="dialog" aria-modal="true" aria-label="買い目シート">
       <div class="bs-head"><span>買い目シート</span>
-        <span class="n" id="bs-drawer-sum"></span>
-        <button type="button" class="bs-x" data-bs-close aria-label="閉じる">✕</button></div>
+        <span class="n" id="bs-drawer-sum"></span></div>
       <div class="bs-scroll" id="bs-drawer-body"></div>
       <div class="bs-ipat" id="bs-ipat" hidden></div>
     </div>`;
   document.body.appendChild(dr);
+  // 右上の ✕ は外した。下に払うと閉じる（2026-10-10 ユーザー指示）。背景を押す・Esc でも閉じる
+  swipeToClose(dr, '.bs-panel', bsClose, () => dr.querySelector('.bs-scrim'));
 
   document.addEventListener('click', (e) => {
     if (e.target.closest('[data-bs-bar]')) { bsOpen(); return; }
@@ -1716,7 +1717,6 @@ function renderUpset20(upset) {
         <div class="phead">
           <span class="pname k-${escapeHtml(sel.key)}">${upsetBars27(upset.label_name)}${escapeHtml(upset.label_name)}</span>
           <span class="pmeta">${escapeHtml(sel.card)}</span>
-          <button type="button" class="pclose" data-close>閉じる</button>
         </div>
         <div class="pbody">
           ${conf ? `<div class="upconf">この予想がその通りになったのは、同じ判断をした過去
@@ -3072,7 +3072,6 @@ function popupBody(h, site) {
     <div class="phead">${markBadge20(h)}${umaBox(h.number, h.gate, 'sm')}
       <span class="pname">${escapeHtml(h.name)}</span>
       <span class="pmeta">${escapeHtml(h.sex_age ?? '')} ${escapeHtml(kg)}kg ${escapeHtml(h.jockey ?? '')}／${oddsTxt} ${escapeHtml(h.popularity ?? '—')}人気</span>
-      <button type="button" class="pclose" data-close>閉じる</button>
     </div>
     <div class="pbody">
       ${mmInline(h)}
@@ -4248,8 +4247,7 @@ function renderPopups20(site) {
   // タブだった頃と同じ仕組みのまま）。
   const crs = site.course_entities && window.CourseTab
     ? `<div class="popup wide" id="pop-course">
-        <div class="phead"><span class="pname">コースデータ</span>
-          <button type="button" class="pclose" data-close>閉じる</button></div>
+        <div class="phead"><span class="pname">コースデータ</span></div>
         <div class="pbody">${window.CourseTab.render(site)}</div>
       </div>` : '';
   // 枠順成績の枠を押したときに出す「その枠の馬」（2026-09-03）。
@@ -4264,8 +4262,7 @@ function renderPopups20(site) {
   const gates = [...byGate.entries()].filter(([, hs]) => hs.length >= 2)
     .sort((a, b) => a[0] - b[0])
     .map(([g, hs]) => `<div class="popup" id="pop-gate-${g}">
-        <div class="phead"><span class="pname">${g}枠の馬</span>
-          <button type="button" class="pclose" data-close>閉じる</button></div>
+        <div class="phead"><span class="pname">${g}枠の馬</span></div>
         <div class="pbody"><div class="gzlist">${hs.map((h) =>
           `<button type="button" class="gzn" data-pop="${h.number}">`
           + `${umaBox(h.number, h.gate, 'sm')}<span class="t">${escapeHtml(h.name)}</span>`
@@ -4314,6 +4311,7 @@ function setupYosoEmbed() {
 }
 
 // 105-spec §5.5: 馬名ポップアップ。閉じ方は「閉じる」ボタン・背景クリック・Esc の3つ。
+// 2026-10-10 ユーザー指示で「閉じる」ボタンは外し、下に払う（swipeToClose）に替えた。背景クリック・Esc は残す。
 // 2026-09-14 に setupShutuba20 から切り出した（WIN5の画面からも同じ札を開くため・中身は変えていない）。
 // 戻り値の open(id) で外から開ける。
 function setupPopups20(root, site) {
@@ -4397,6 +4395,7 @@ function setupPopups20(root, site) {
     if (e.target.closest('[data-close]')) closePopup();
   });
   bg.addEventListener('click', closePopup);
+  swipeToClose(root, '.popup.on', closePopup, () => bg);
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closePopup(); });
   return { open: openPopupById, close: closePopup };
 }

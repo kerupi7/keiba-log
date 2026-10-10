@@ -114,7 +114,7 @@
     el.id = 'ipat-login';
     el.innerHTML = '<div class="ipl-scrim" data-ipl-close></div>'
       + '<form class="ipl-panel" autocomplete="off" novalidate>'
-      + '<div class="ipl-head">IPATログイン<button type="button" class="ipl-x" data-ipl-close aria-label="閉じる">✕</button></div>'
+      + '<div class="ipl-head">IPATログイン</div>'
       + '<div class="ipl-sum">' + ex.bets.length + '点　' + yen(total) + '円'
       + (ex.skipped ? '<span>（取消の馬・組めない枠連の' + ex.skipped + '点は外しました）</span>' : '') + '</div>'
       + '<div class="ipl-body">'
@@ -132,6 +132,8 @@
     var remembered = false;
     function fail(t) { err.textContent = t; err.hidden = false; btn.disabled = false; btn.textContent = 'IPAT投票へすすむ'; }
     el.addEventListener('click', function (e) { if (e.target.closest('[data-ipl-close]')) el.remove(); });
+    // 右上の ✕ は外した。下に払うと閉じる（2026-10-10 ユーザー指示）。背景を押しても閉じる
+    if (typeof swipeToClose === 'function') swipeToClose(el, '.ipl-panel', function () { el.remove(); }, function () { return el.querySelector('.ipl-scrim'); });
 
     // 中継役が加入者番号・P-ARS番号を覚えていれば、暗証番号だけを出す。
     // Tailscale を「必要な時だけ」つなぐ設定だと、最初の1回は届かないことがある（つながるまで数秒）。

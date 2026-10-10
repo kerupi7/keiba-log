@@ -2849,7 +2849,7 @@
         <div class="tb-as R${GR[k] ? ' gd' : ''}">${tbArt(R, k, x.side === 1)}${GR[k] ? tbStar(1, 'in') : ''}</div></div>`;
     }).join('');
     return `<div class="tb-sheet" role="dialog" aria-label="${g}の中身">
-      <div class="tb-sh-h"><b>${g}</b><button type="button" class="tb-x" data-tbclose="1">閉じる</button></div>
+      <div class="tb-sh-h"><b>${g}</b></div>
       <div class="tb-sh-top"><span class="L">${tbChip(gs(L), 'sm')}<b>${esc(L.name)}</b></span>${tbMini(gv.side, gv.steps)}<span class="R"><b>${esc(R.name)}</b>${tbChip(gs(R), 'sm')}</span></div>
       ${tbNote(g) ? `<p class="tb-note">${tbNote(g)}</p>` : ''}
       <div class="tb-sh-rows">${rows}</div></div>`;
@@ -2864,6 +2864,8 @@
       el.className = 'tb-sheet-bg';
       el.dataset.tbclose = '1';
       ap.appendChild(el);
+      // 閉じるボタンは外した。下に払うと閉じる（2026-10-10 ユーザー指示）。背景を押しても閉じる
+      swipeToClose(el, '.tb-sheet', () => el.remove());
     } else el.classList.add('still');
     el.innerHTML = tbSheetHtml(g);
   }
