@@ -133,17 +133,27 @@
     function fail(t) { err.textContent = t; err.hidden = false; btn.disabled = false; btn.textContent = 'IPAT投票へすすむ'; }
     el.addEventListener('click', function (e) { if (e.target.closest('[data-ipl-close]')) el.remove(); });
 
-    // 中継役が加入者番号・P-ARS番号を覚えていれば、暗証番号だけを出す
-    fetch(cfg.url + '/ipat/ping', { headers: { 'X-Relay-Token': cfg.token } })
-      .then(function (r) { return r.json(); })
+    // 中継役が加入者番号・P-ARS番号を覚えていれば、暗証番号だけを出す。
+    // Tailscale を「必要な時だけ」つなぐ設定だと、最初の1回は届かないことがある（つながるまで数秒）。
+    // 2.5秒おきに4回まで（約10秒）やり直してから、つながらないと出す
+    var wait = el.querySelector('.ipl-sum');
+    function pingRetry(n) {
+      return ping(cfg).catch(function (e) {
+        if (n <= 1) throw e;
+        if (wait && !wait.dataset.w) { wait.dataset.w = '1'; wait.insertAdjacentHTML('beforeend', '<span class="ipl-wait">Tailscale がつながるのを待っています…</span>'); }
+        return new Promise(function (ok) { setTimeout(ok, 2500); }).then(function () { return pingRetry(n - 1); });
+      });
+    }
+    pingRetry(4)
       .then(function (j) {
+        var w = el.querySelector('.ipl-wait'); if (w) w.remove();
         if (!j.ok) { fail(j.error || '中継役に断られました'); return; }
         remembered = !!j.remembered;
         if (remembered) el.querySelectorAll('[data-ipl-full]').forEach(function (f) { f.hidden = true; });
         var first = el.querySelector(remembered ? 'input[name=pin]' : 'input[name=userid]');
         if (first) first.focus();
       })
-      .catch(function () { fail(RELAY_DOWN); });
+      .catch(function () { var w = el.querySelector('.ipl-wait'); if (w) w.remove(); fail(RELAY_DOWN); });
 
     form.addEventListener('submit', function (e) {
       e.preventDefault();
