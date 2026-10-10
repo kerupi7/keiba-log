@@ -3380,11 +3380,15 @@ function mmBar(site) {
   </div>`;
 }
 
-// オッズの「更新」ボタン（2026-10-10 ユーザー「netkeibaみたいに更新ボタンを押したら更新される」）。
-//   押すと公開済みの最新の予想JSONと全券種オッズを読み直し、オッズ・人気・期待値と取得時刻だけを差し替える。
-//   JRA へ取りに行くのではない（取るのは裏の処理。発走10〜2分前は2分ごと・139-spec）。
+// オッズの「更新」ボタン（2026-10-10 ユーザー「netkeibaみたいに更新ボタンを押したら更新される」・142-spec）。
+//   即PATの中継役を登録した端末（ipatgo.js の IpatGo.relay()）は、押すたびに中継役が JRA から取ったオッズを使う
+//   （同日ユーザー「押したらJRAから取ってくる形」→「その形で作って」）。中継役は同じレースを20秒に1回まで取りに行く。
+//   中継役に届かない（Tailscale が切れている）・未登録の端末は、公開済みの最新の予想JSONと全券種オッズを読み直す
+//   （公開は裏の処理。発走10〜2分前は2分ごと・139-spec）。どちらもオッズ・人気・期待値と取得時刻だけを差し替える。
 //   ページを読み直さないのは、開いているタブ・スクロール位置・ポップアップを崩さないため。
 //   馬の値は site.horses の中身を書き換えるので、後から開く札・ポップアップも新しいオッズで描かれる
+const ODDS_RELAY_WAIT_MS = 20000;   // 中継役の返事を待つ上限。JRA からの取得は 6.4〜9.5秒（2026-10-10 実測）
+
 function setupOddsRefresh(site, oddsAll, id) {
   const btn = document.querySelector('.race20 .od-rf');
   if (!btn) return;
@@ -3395,34 +3399,20 @@ function setupOddsRefresh(site, oddsAll, id) {
     busy = true;
     btn.classList.add('spin');
     const before = (site.prediction || {}).odds_fetched_at || '';
-    let msg = '更新';
+    let msg;
     try {
-      const [fresh, freshOdds] = await Promise.all([
-        getData(`data/races/${id}.json`),
-        getData(`data/odds/${id}.json`).catch(() => null),
-      ]);
-      const byNum = {};
-      (fresh.horses || []).forEach((h) => { byNum[h.number] = h; });
-      site.horses.forEach((h) => {
-        const n = byNum[h.number];
-        if (!n) return;
-        h.odds = n.odds; h.popularity = n.popularity; h.ev = n.ev;
-      });
-      const fp = fresh.prediction || {};
-      if (site.prediction) {
-        ['odds_fetched_at', 'odds_basis', 'analysis_state'].forEach((k) => { if (k in fp) site.prediction[k] = fp[k]; });
+      const live = await oddsFromRelay(id);
+      if (live && live.error) {
+        msg = live.error;   // 発売前。描き直すものは無い
+      } else {
+        let closed = '';
+        if (live) applyLiveOdds(site, oddsAll, live);
+        else closed = await oddsFromSite(site, oddsAll, id);
+        paintOdds(site);
+        if (simRefresh) simRefresh();
+        const after = (site.prediction || {}).odds_fetched_at || '';
+        msg = closed || (after && after !== before ? '更新済' : '最新');
       }
-      // 全券種オッズは同じ入れ物の中身を入れ替える（シミュレーターがこの入れ物を持っている）
-      if (oddsAll && freshOdds && typeof freshOdds.schema_version === 'string'
-          && freshOdds.schema_version.indexOf('odds_all-1.') === 0) {
-        Object.keys(oddsAll).forEach((k) => { delete oddsAll[k]; });
-        Object.assign(oddsAll, freshOdds);
-      }
-      paintOdds(site);
-      if (simRefresh) simRefresh();
-      const after = (site.prediction || {}).odds_fetched_at || '';
-      msg = after && after !== before ? '更新済' : '最新';
-      if (fresh.status !== 'prediction') msg = '締切';
     } catch (e) {
       msg = '失敗';
     }
@@ -3430,6 +3420,88 @@ function setupOddsRefresh(site, oddsAll, id) {
     label.textContent = msg;
     setTimeout(() => { label.textContent = '更新'; busy = false; }, 1500);
   });
+}
+
+// 中継役に JRA のオッズを取ってもらう。未登録・届かない時は null（公開済みの値へ回る）。
+//   中継役が「発売前」などで断った時は { error: '発売前' }（公開済みの値にも新しいものは無いので回らない）
+async function oddsFromRelay(id) {
+  const cfg = window.IpatGo && window.IpatGo.relay ? window.IpatGo.relay() : null;
+  if (!cfg) return null;
+  const ctl = typeof AbortController === 'function' ? new AbortController() : null;
+  const timer = ctl ? setTimeout(() => ctl.abort(), ODDS_RELAY_WAIT_MS) : null;
+  try {
+    const res = await fetch(`${cfg.url}/odds/${id}`, {
+      headers: { 'X-Relay-Token': cfg.token }, cache: 'no-store', signal: ctl ? ctl.signal : undefined,
+    });
+    const body = await res.json().catch(() => null);
+    if (res.ok && body && body.ok && body.odds_all) return body.odds_all;
+    if (res.status === 422 && body && /発売前/.test(body.error || '')) return { error: '発売前' };
+    return null;
+  } catch (e) {
+    return null;
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
+// 中継役が取った全券種オッズ（odds_all-1.x）を site に写す。人気と期待値は keiba_publish.py の
+//   live_odds_one と同じ式（人気＝オッズの低い順・同じなら馬番の小さい順／期待値＝勝率×オッズ−1 を小数2桁）
+function applyLiveOdds(site, oddsAll, live) {
+  const tan = (live.odds || {}).tansho || {};
+  const runners = site.horses.filter((h) => !h.scratched);
+  const ranked = runners.filter((h) => tan[h.number] != null)
+    .sort((a, b) => (tan[a.number] - tan[b.number]) || (a.number - b.number));
+  const pop = {};
+  ranked.forEach((h, i) => { pop[h.number] = i + 1; });
+  runners.forEach((h) => {
+    const o = tan[h.number] != null ? Number(tan[h.number]) : null;
+    h.odds = o;
+    h.popularity = pop[h.number] ?? null;
+    h.ev = (h.estimated_prob && o) ? Math.round((h.estimated_prob * o - 1) * 100) / 100 : null;
+  });
+  const p = site.prediction;
+  if (p) {
+    const at = String(live.official_datetime || live.fetched_at || '').replace(' ', 'T').slice(0, 16);
+    if (at) p.odds_fetched_at = at;
+    if (p.odds_basis === 'オッズ未取得') {
+      p.odds_basis = '中間オッズ';
+      if ('analysis_state' in p) p.analysis_state = '中間オッズ版';
+    }
+  }
+  replaceOddsAll(oddsAll, live);
+}
+
+// 公開済みの最新の予想JSONと全券種オッズを読み直して site に写す。予想中でなくなっていたら '締切'
+async function oddsFromSite(site, oddsAll, id) {
+  const [fresh, freshOdds] = await Promise.all([
+    getData(`data/races/${id}.json`),
+    getData(`data/odds/${id}.json`).catch(() => null),
+  ]);
+  const closed = fresh.status !== 'prediction' ? '締切' : '';
+  const fp = fresh.prediction || {};
+  // 前に中継役から取ったオッズの方が新しければ、公開済みの古い値で戻さない（時刻は "YYYY-MM-DDTHH:MM" で並ぶ）
+  const cur = (site.prediction || {}).odds_fetched_at || '';
+  if (cur && fp.odds_fetched_at && String(fp.odds_fetched_at) < String(cur)) return closed;
+  const byNum = {};
+  (fresh.horses || []).forEach((h) => { byNum[h.number] = h; });
+  site.horses.forEach((h) => {
+    const n = byNum[h.number];
+    if (!n) return;
+    h.odds = n.odds; h.popularity = n.popularity; h.ev = n.ev;
+  });
+  if (site.prediction) {
+    ['odds_fetched_at', 'odds_basis', 'analysis_state'].forEach((k) => { if (k in fp) site.prediction[k] = fp[k]; });
+  }
+  replaceOddsAll(oddsAll, freshOdds);
+  return closed;
+}
+
+// 全券種オッズは同じ入れ物の中身を入れ替える（シミュレーターがこの入れ物を持っている）
+function replaceOddsAll(oddsAll, fresh) {
+  if (!oddsAll || !fresh || typeof fresh.schema_version !== 'string'
+      || fresh.schema_version.indexOf('odds_all-1.') !== 0) return;
+  Object.keys(oddsAll).forEach((k) => { delete oddsAll[k]; });
+  Object.assign(oddsAll, fresh);
 }
 
 // 画面に出ている馬ごとのオッズ（印の一覧・新聞・札）と取得時刻を、site の値で塗り直す
