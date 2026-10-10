@@ -252,6 +252,9 @@ function isDoneRace(race, now) {
   return !!race.post_time && race.post_time <= now.hm;
 }
 
+// 次のレースのカードを赤くする残り時間（10分）
+const SOON_MS = 10 * 60 * 1000;
+
 // 発走の瞬間（ミリ秒）。post_time は日本時間の HH:MM
 function postAtMs(race) {
   if (!race.date || !/^\d{1,2}:\d{2}$/.test(race.post_time || '')) return null;
@@ -289,7 +292,9 @@ function renderRaceRow(race, ctx) {
       ? `<span class="next26"><i>発走まで</i><b class="cd26" data-post-at="${postAt}">${countdownText(postAt - Date.now())}</b></span>`
       : '<span class="next26">次のレース</span>')
     : '';
-  const cls = ['rc26', done ? 'done' : '', hot ? 'hot' : '', isNext ? 'next' : ''].filter(Boolean).join(' ');
+  // 2026-10-10 ユーザー「10分切ったら色が赤っぽい色に変わるように」→ mockup-287 案B（札・縁・影・発走時刻を全部赤）
+  const soon = isNext && postAt != null && postAt - Date.now() < SOON_MS;
+  const cls = ['rc26', done ? 'done' : '', hot ? 'hot' : '', isNext ? 'next' : '', soon ? 'soon' : ''].filter(Boolean).join(' ');
   return `
     <a class="${cls}" href="race.html?id=${race.race_id}">
       ${hotTab}${nextTab}
@@ -361,6 +366,8 @@ async function main() {
     document.querySelectorAll('.cd26[data-post-at]').forEach((el) => {
       const left = Number(el.dataset.postAt) - Date.now();
       el.textContent = countdownText(left);
+      const card = el.closest('.rc26');
+      if (card) card.classList.toggle('soon', left < SOON_MS);
       if (left <= 0) passed = true;
     });
     if (passed) renderRaceList(state, races);
