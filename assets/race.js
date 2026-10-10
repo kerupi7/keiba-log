@@ -3317,7 +3317,7 @@ function mmRow(h) {
     <span class="mm-ai">${markBadge20(h) || '<span class="none">—</span>'}</span>
     <span class="mm-c">${umaBox(h.number, h.gate, 'sm')}<span class="mm-nmwrap"><button type="button" class="nm" data-pop="${h.number}"><span class="t">${escapeHtml(h.name)}</span><i class="apop">›</i></button>${mmSub(h)}</span>
       <span class="tot">${fmtNum(dispScore(h), 1)}<i class="grade ${gradeClass(dispGrade(h))}">${gradeDisp(dispGrade(h))}</i></span>
-      <span class="od${oddsHotClass(h.odds)}">${h.odds != null ? h.odds.toFixed(1) : '—'}<i>倍</i>
+      <span class="od${oddsHotClass(h.odds)}"><span class="ov">${h.odds != null ? h.odds.toFixed(1) : '—'}</span><i>倍</i>
         <span class="pp">${h.popularity ?? '—'}人気</span></span></span></div>`;
 }
 
@@ -3395,12 +3395,24 @@ const ODDS_WORKER_WAIT_MS = 15000;   // 返事を待つ上限。Cloudflare か�
 function setupOddsRefresh(site, oddsAll, id) {
   const btn = document.querySelector('.race20 .od-rf');
   if (!btn) return;
-  const label = btn.querySelector('span');
+  const label = btn.querySelector('.od-lb');
+  const list = btn.closest('.mm-list');
   let busy = false;
   btn.addEventListener('click', async () => {
     if (busy) return;
     busy = true;
-    btn.classList.add('spin');
+    // mockup-286 案B（2026-10-10 ユーザー「Bで本番に入れて」）：待つ間はボタンの縁が回り、一覧のオッズの文字の上を光が流れる。
+    //   動きを減らす設定の端末では、前と同じく矢印を回すだけにする
+    const motion = !ODDS_REDUCE && typeof btn.animate === 'function';
+    const prev = {};
+    site.horses.forEach((h) => { prev[h.number] = [h.odds, h.popularity]; });
+    if (motion) {
+      btn.classList.add('glowing');
+      if (list) {
+        list.querySelectorAll('.mm-row').forEach((r, i) => r.style.setProperty('--od-i', i));
+        list.classList.add('od-wait');
+      }
+    } else btn.classList.add('spin');
     const before = (site.prediction || {}).odds_fetched_at || '';
     let msg;
     try {
@@ -3411,7 +3423,8 @@ function setupOddsRefresh(site, oddsAll, id) {
         let closed = '';
         if (live) applyLiveOdds(site, oddsAll, live);
         else closed = await oddsFromSite(site, oddsAll, id);
-        paintOdds(site);
+        if (list) list.classList.remove('od-wait');
+        paintOdds(site, motion ? prev : null);
         if (simRefresh) simRefresh();
         const after = (site.prediction || {}).odds_fetched_at || '';
         msg = closed || (after && after !== before ? '更新済' : '最新');
@@ -3419,10 +3432,76 @@ function setupOddsRefresh(site, oddsAll, id) {
     } catch (e) {
       msg = '失敗';
     }
-    btn.classList.remove('spin');
-    label.textContent = msg;
-    setTimeout(() => { label.textContent = 'オッズ'; busy = false; }, 1500);
+    btn.classList.remove('spin', 'glowing');
+    if (list) list.classList.remove('od-wait');
+    if (motion && msg === '失敗') {
+      btn.animate([0, -6, 5, -4, 3, -1.5, 0].map((x) => ({ transform: `translateX(${x}px)` })), { duration: 420, easing: 'ease-out' });
+    }
+    await oddsLabel(btn, label, msg, motion);
+    setTimeout(async () => { await oddsLabel(btn, label, 'オッズ', motion); busy = false; }, 1500);
   });
+}
+
+// ---- オッズを更新した時の動き（mockup-286 案B）----
+const ODDS_REDUCE = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+// バネの動き。SwiftUI の spring(response:, dampingFraction:) と同じ式を CSS の linear() に写す（linear() が使えない端末は近い曲線）
+function oddsSpring(response, damping) {
+  const w = 2 * Math.PI / response, z = damping, wd = w * Math.sqrt(1 - z * z);
+  const T = Math.min(2.5, Math.log(1000) / (z * w));
+  const pts = [];
+  for (let k = 0; k <= 50; k++) {
+    const t = T * k / 50;
+    pts.push(k === 50 ? 1 : +(1 - Math.exp(-z * w * t) * (Math.cos(wd * t) + (z * w / wd) * Math.sin(wd * t))).toFixed(4));
+  }
+  const lin = typeof CSS !== 'undefined' && CSS.supports && CSS.supports('animation-timing-function', 'linear(0, 1)');
+  return { easing: lin ? `linear(${pts.join(',')})` : 'cubic-bezier(.2,.9,.3,1)', duration: T * 1000 };
+}
+const ODDS_SOFT = oddsSpring(0.5, 0.86);
+const ODDS_SNAPPY = oddsSpring(0.38, 0.78);
+const ODDS_SCAN_MS = 720;   // 光の帯が一覧の上から下まで通る時間
+
+// ボタンの字を、ぼかしながら入れ替える。ボタンの幅もバネで追う
+async function oddsLabel(btn, lb, text, motion) {
+  if (!motion || lb.textContent === text) { lb.textContent = text; return; }
+  const w0 = btn.offsetWidth;
+  const out = lb.animate([{ opacity: 1, filter: 'blur(0)', transform: 'none' }, { opacity: 0, filter: 'blur(3px)', transform: 'scale(.86)' }],
+    { duration: 110, easing: 'cubic-bezier(.4,0,1,1)', fill: 'forwards' });
+  await out.finished.catch(() => {});
+  lb.textContent = text;
+  const w1 = btn.offsetWidth;
+  if (w0 !== w1) btn.animate([{ width: `${w0}px` }, { width: `${w1}px` }], ODDS_SNAPPY);
+  lb.animate([{ opacity: 0, filter: 'blur(3px)', transform: 'scale(.86)' }, { opacity: 1, filter: 'blur(0)', transform: 'none' }], ODDS_SNAPPY);
+  out.cancel();
+}
+
+// 光の帯を一覧の上から下へ1回通す。戻り値は「その行を帯が通る時刻（ミリ秒）」を返す関数。一覧が見えていなければ null
+function oddsSweep() {
+  const list = document.querySelector('.race20 .od-rf') && document.querySelector('.race20 .od-rf').closest('.mm-list');
+  if (!list || list.classList.contains('off') || !list.offsetParent) return null;
+  const rows = list.querySelectorAll('.mm-row');
+  if (!rows.length) return null;
+  let scan = list.querySelector('.od-scan');
+  if (!scan) {
+    scan = document.createElement('div');
+    scan.className = 'od-scan';
+    list.appendChild(scan);
+  }
+  const H = list.offsetHeight, top0 = rows[0].offsetTop - 90;
+  scan.animate([
+    { transform: `translateY(${top0}px)`, opacity: 0 }, { opacity: 1, offset: 0.12 }, { opacity: 1, offset: 0.85 },
+    { transform: `translateY(${H}px)`, opacity: 0 },
+  ], { duration: ODDS_SCAN_MS, easing: 'cubic-bezier(.45,.05,.4,1)' });
+  // 帯の曲線（cubic-bezier(.45,.05,.4,1)）で、進み具合 p に届く時刻を逆に解く
+  const at = (p) => {
+    const bz = (a, b, m) => 3 * a * m * (1 - m) ** 2 + 3 * b * m * m * (1 - m) + m ** 3;
+    let lo = 0, hi = 1;
+    for (let k = 0; k < 24; k++) { const m = (lo + hi) / 2; if (bz(0.05, 1, m) < p) lo = m; else hi = m; }
+    return bz(0.45, 0.4, lo);
+  };
+  return (row) => {
+    const y = row.offsetTop + row.offsetHeight / 2;
+    return Math.max(0, at((y - top0) / (H - top0)) * ODDS_SCAN_MS - 30);
+  };
 }
 
 // Cloudflare に JRA のオッズを取ってもらう。届かない・JRA から取れなかった時は null（公開済みの値へ回る）。
@@ -3503,19 +3582,44 @@ function replaceOddsAll(oddsAll, fresh) {
   Object.assign(oddsAll, fresh);
 }
 
-// 画面に出ている馬ごとのオッズ（印の一覧・新聞・札）と取得時刻を、site の値で塗り直す
-function paintOdds(site) {
+// 画面に出ている馬ごとのオッズ（印の一覧・新聞・札）と取得時刻を、site の値で塗り直す。
+//   prev（押す前の {馬番: [オッズ, 人気]}）を渡すと、印の一覧は光の帯が通った行から新しい数字にピントを合わせ、
+//   下がった馬に薄い赤・上がった馬に薄い青を一瞬灯す（mockup-286 案B）。新聞・札はその場で書き換えてぼかしから戻すだけ
+function paintOdds(site, prev) {
+  const sweep = prev ? oddsSweep() : null;
   site.horses.forEach((h) => {
     if (h.scratched) return;
+    const was = prev && prev[h.number];
+    const moved = !!was && (was[0] !== h.odds || was[1] !== h.popularity);
     document.querySelectorAll(`.race20 [data-n="${h.number}"] .od, .race20 [data-h="${h.number}"] .od`).forEach((od) => {
-      od.className = `od${oddsHotClass(h.odds)}`;
-      if (od.firstChild && od.firstChild.nodeType === 3) od.firstChild.nodeValue = h.odds != null ? h.odds.toFixed(1) : '—';
-      const pp = od.querySelector('.pp');
-      if (pp) pp.textContent = `${h.popularity ?? '—'}人気`;
-      else {
-        const is = od.querySelectorAll('i');
-        if (is.length >= 2) is[is.length - 1].textContent = `${h.popularity ?? '—'}人`;
-      }
+      const row = sweep ? od.closest('.mm-list .mm-row') : null;
+      const paint = () => {
+        od.className = `od${oddsHotClass(h.odds)}`;
+        const txt = h.odds != null ? h.odds.toFixed(1) : '—';
+        const ov = od.querySelector('.ov');
+        if (ov) ov.textContent = txt;
+        else if (od.firstChild && od.firstChild.nodeType === 3) od.firstChild.nodeValue = txt;
+        const pp = od.querySelector('.pp');
+        if (pp) pp.textContent = `${h.popularity ?? '—'}人気`;
+        else {
+          const is = od.querySelectorAll('i');
+          if (is.length >= 2) is[is.length - 1].textContent = `${h.popularity ?? '—'}人`;
+        }
+        if (!was) return;
+        const target = ov || od;
+        if (moved) {
+          target.animate([{ filter: 'blur(7px)', opacity: 0.1, transform: 'scale(.86)' }, { filter: 'blur(0)', opacity: 1, transform: 'none' }], ODDS_SOFT);
+          if (row && was[0] != null && h.odds != null && was[0] !== h.odds) {
+            const cls = h.odds < was[0] ? 'od-fl-dn' : 'od-fl-up';
+            od.classList.add(cls);
+            setTimeout(() => od.classList.remove(cls), 1600);
+          }
+        } else if (row) {
+          target.animate([{ opacity: 1 }, { opacity: 0.55 }, { opacity: 1 }], { duration: 380, easing: 'ease-in-out' });
+        }
+      };
+      const d = row ? sweep(row) : 0;
+      if (d) setTimeout(paint, d); else paint();
     });
   });
   // 馬名のポップアップ（予備の表示）は作り直す。1頭だけ見る画面（yoso.js）は自分で読んだ写しを持つので知らせる
@@ -3527,7 +3631,10 @@ function paintOdds(site) {
   const at = (site.prediction || {}).odds_fetched_at;
   const t = at ? String(at).split(/[T ]/)[1] : '';
   const el = document.querySelector('.race20 .r27-oat');
-  if (el && t) el.textContent = t.slice(0, 5);
+  if (el && t && el.textContent !== t.slice(0, 5)) {
+    el.textContent = t.slice(0, 5);
+    if (prev) el.animate([{ filter: 'blur(5px)', opacity: 0, transform: 'scale(.9)' }, { filter: 'blur(0)', opacity: 1, transform: 'none' }], ODDS_SOFT);
+  }
 }
 
 // 既定は「印を付ける」（2026-08-06 ユーザー決定）。従来の札は .shlist 側を off で始める
@@ -3536,7 +3643,7 @@ function mmList(site) {
   // 発走前だけ、見出しの「オッズ」を更新ボタンにする（2026-10-10 ユーザー「netkeibaみたいに更新ボタンを押したら更新される」。
   //   はじめは「オッズ」の下に「↻ 更新」を置いた2行だったが、同日「左のアイコンは残して、更新の部分をオッズにして1行に」）
   const rf = site.status === 'prediction'
-    ? '<button type="button" class="od-rf" aria-label="オッズを更新"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9"/><path d="M12.4 1.6v2.9H9.5"/></svg><span>オッズ</span></button>'
+    ? '<button type="button" class="od-rf" aria-label="オッズを更新"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9"/><path d="M12.4 1.6v2.9H9.5"/></svg><span class="od-lb">オッズ</span><span class="glow" aria-hidden="true"></span></button>'
     : '';
   return `<div class="mm-list">
       <div class="mm-hd"><span class="h-my">自分</span><span class="h-ai">AI</span>

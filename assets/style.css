@@ -4813,3 +4813,36 @@ body:has(.container.st26){background:#F2F2F7}
 .race20 .od-rf svg{width:12px;height:12px;fill:none;stroke:#8E8E93;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .race20 .od-rf.spin svg{animation:od-rf-spin .7s linear infinite}
 @keyframes od-rf-spin{to{transform:rotate(360deg)}}
+/* オッズを更新した時の動き（mockup-286 案B・2026-10-10 ユーザー「Bで本番に入れて」）。
+   待つ間はボタンの縁が Siri の色で回り、一覧のオッズの文字の上を光が流れる（行ごとに 0.055秒ずらして上から下への波）。
+   届いたら光の帯が上から下へ1回通り、通った行から新しい数字にピントが合う。下がった馬は薄い赤・上がった馬は薄い青が一瞬灯る。
+   動きを減らす設定の端末では、光も帯も出さずに前と同じ回る矢印だけ（race.js ODDS_REDUCE） */
+.race20 .od-rf{position:relative;isolation:isolate}
+.race20 .od-rf .od-lb{display:inline-block}
+.race20 .od-rf .glow{position:absolute;inset:-2px;border-radius:8px;opacity:0;pointer-events:none;z-index:-1;transition:opacity .3s;
+  background:conic-gradient(from var(--od-a),#7B61FF,#FF5FA2,#FFB054,#4FC3FF,#7B61FF)}
+.race20 .od-rf .glow::after{content:"";position:absolute;inset:1.5px;border-radius:6.5px;background:#fff}
+@property --od-a{syntax:'<angle>';initial-value:0deg;inherits:false}
+.race20 .od-rf.glowing{border-color:transparent}
+.race20 .od-rf.glowing .glow{opacity:1;animation:od-rf-rot 1.6s linear infinite}
+@keyframes od-rf-rot{to{--od-a:360deg}}
+.race20 .mm-list{position:relative}
+.race20 .mm-list .mm-c .od{position:relative;isolation:isolate;--od-hl:#E5E5EA}
+.race20 .mm-list .mm-c .od > .ov{--od-c:var(--text)}
+.race20 .mm-list .mm-c .od > i{--od-c:#6D6D72}
+.race20 .mm-list .mm-c .od .pp{--od-c:#8E8E93}
+.race20 .mm-list .mm-c .od.hot > .ov,.race20 .mm-list .mm-c .od.hot > i{--od-c:var(--live);--od-hl:#FFD3CC}
+.race20 .mm-list.od-wait .mm-c .od > .ov,.race20 .mm-list.od-wait .mm-c .od > i,.race20 .mm-list.od-wait .mm-c .od .pp{
+  -webkit-text-fill-color:transparent;-webkit-background-clip:text;background-clip:text;
+  background-image:linear-gradient(105deg,var(--od-c) 0%,var(--od-c) 34%,var(--od-hl) 50%,var(--od-c) 66%,var(--od-c) 100%);
+  background-size:200% 100%;animation:od-shim 1.25s cubic-bezier(.45,0,.55,1) infinite;animation-delay:calc(var(--od-i, 0) * 55ms)}
+@keyframes od-shim{from{background-position:150% 0}to{background-position:-50% 0}}
+.race20 .od-scan{position:absolute;right:0;top:0;width:120px;height:90px;pointer-events:none;opacity:0;z-index:1;
+  background:radial-gradient(50% 50% at 60% 50%,rgba(140,110,255,.22),rgba(255,110,170,.12) 45%,rgba(80,170,255,.06) 65%,transparent 75%)}
+.race20 .od-scan::after{content:"";position:absolute;right:6px;width:64px;height:1.5px;top:44px;border-radius:2px;
+  background:linear-gradient(90deg,transparent,rgba(120,100,255,.55),rgba(255,100,160,.55),transparent)}
+.race20 .mm-list .mm-c .od.od-fl-dn::before,.race20 .mm-list .mm-c .od.od-fl-up::before{content:"";position:absolute;inset:-5px -6px -5px -8px;
+  border-radius:9px;z-index:-1;pointer-events:none;animation:od-fl 1.5s ease-out both}
+.race20 .mm-list .mm-c .od.od-fl-dn::before{background:rgba(235,20,0,.10)}
+.race20 .mm-list .mm-c .od.od-fl-up::before{background:rgba(0,104,188,.10)}
+@keyframes od-fl{0%{opacity:0;transform:scale(.9)}18%{opacity:1;transform:none}55%{opacity:1}100%{opacity:0}}
