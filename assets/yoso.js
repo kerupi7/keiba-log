@@ -16,6 +16,15 @@
   try { site = await getData(`data/races/${raceId}.json`); } catch (e) { return; }
   if (!site || !Array.isArray(site.horses)) return;
   const H = [...site.horses].filter((h) => !h.scratched).sort((a, b) => a.number - b.number);
+  // オッズの「更新」ボタン（race.js）で読み直した値を写す。次に描く札から新しいオッズになる（2026-10-10）
+  window.addEventListener('ans:odds', (e) => {
+    const by = {};
+    (e.detail || []).forEach((x) => { by[x.number] = x; });
+    site.horses.forEach((h) => {
+      const n = by[h.number];
+      if (n) { h.odds = n.odds; h.popularity = n.popularity; h.ev = n.ev; }
+    });
+  });
   const KEY = `mymark:${raceId}`;
   let S = null;
   let Q = H;         // この回にスワイプで出す馬（2026-09-18：未入力の馬だけ。全頭済みなら16頭やり直し）

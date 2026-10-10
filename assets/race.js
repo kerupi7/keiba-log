@@ -3380,13 +3380,96 @@ function mmBar(site) {
   </div>`;
 }
 
+// オッズの「更新」ボタン（2026-10-10 ユーザー「netkeibaみたいに更新ボタンを押したら更新される」）。
+//   押すと公開済みの最新の予想JSONと全券種オッズを読み直し、オッズ・人気・期待値と取得時刻だけを差し替える。
+//   JRA へ取りに行くのではない（取るのは裏の処理。発走10〜2分前は2分ごと・139-spec）。
+//   ページを読み直さないのは、開いているタブ・スクロール位置・ポップアップを崩さないため。
+//   馬の値は site.horses の中身を書き換えるので、後から開く札・ポップアップも新しいオッズで描かれる
+function setupOddsRefresh(site, oddsAll, id) {
+  const btn = document.querySelector('.race20 .od-rf');
+  if (!btn) return;
+  const label = btn.querySelector('span');
+  let busy = false;
+  btn.addEventListener('click', async () => {
+    if (busy) return;
+    busy = true;
+    btn.classList.add('spin');
+    const before = (site.prediction || {}).odds_fetched_at || '';
+    let msg = '更新';
+    try {
+      const [fresh, freshOdds] = await Promise.all([
+        getData(`data/races/${id}.json`),
+        getData(`data/odds/${id}.json`).catch(() => null),
+      ]);
+      const byNum = {};
+      (fresh.horses || []).forEach((h) => { byNum[h.number] = h; });
+      site.horses.forEach((h) => {
+        const n = byNum[h.number];
+        if (!n) return;
+        h.odds = n.odds; h.popularity = n.popularity; h.ev = n.ev;
+      });
+      const fp = fresh.prediction || {};
+      if (site.prediction) {
+        ['odds_fetched_at', 'odds_basis', 'analysis_state'].forEach((k) => { if (k in fp) site.prediction[k] = fp[k]; });
+      }
+      // 全券種オッズは同じ入れ物の中身を入れ替える（シミュレーターがこの入れ物を持っている）
+      if (oddsAll && freshOdds && typeof freshOdds.schema_version === 'string'
+          && freshOdds.schema_version.indexOf('odds_all-1.') === 0) {
+        Object.keys(oddsAll).forEach((k) => { delete oddsAll[k]; });
+        Object.assign(oddsAll, freshOdds);
+      }
+      paintOdds(site);
+      if (simRefresh) simRefresh();
+      const after = (site.prediction || {}).odds_fetched_at || '';
+      msg = after && after !== before ? '更新済' : '最新';
+      if (fresh.status !== 'prediction') msg = '締切';
+    } catch (e) {
+      msg = '失敗';
+    }
+    btn.classList.remove('spin');
+    label.textContent = msg;
+    setTimeout(() => { label.textContent = '更新'; busy = false; }, 1500);
+  });
+}
+
+// 画面に出ている馬ごとのオッズ（印の一覧・新聞・札）と取得時刻を、site の値で塗り直す
+function paintOdds(site) {
+  site.horses.forEach((h) => {
+    if (h.scratched) return;
+    document.querySelectorAll(`.race20 [data-n="${h.number}"] .od, .race20 [data-h="${h.number}"] .od`).forEach((od) => {
+      od.className = `od${oddsHotClass(h.odds)}`;
+      if (od.firstChild && od.firstChild.nodeType === 3) od.firstChild.nodeValue = h.odds != null ? h.odds.toFixed(1) : '—';
+      const pp = od.querySelector('.pp');
+      if (pp) pp.textContent = `${h.popularity ?? '—'}人気`;
+      else {
+        const is = od.querySelectorAll('i');
+        if (is.length >= 2) is[is.length - 1].textContent = `${h.popularity ?? '—'}人`;
+      }
+    });
+  });
+  // 馬名のポップアップ（予備の表示）は作り直す。1頭だけ見る画面（yoso.js）は自分で読んだ写しを持つので知らせる
+  site.horses.forEach((h) => {
+    const pop = document.getElementById(`pop-${h.number}`);
+    if (pop && !h.scratched) pop.innerHTML = popupBody(h, site);
+  });
+  window.dispatchEvent(new CustomEvent('ans:odds', { detail: site.horses }));
+  const at = (site.prediction || {}).odds_fetched_at;
+  const t = at ? String(at).split(/[T ]/)[1] : '';
+  const el = document.querySelector('.race20 .r27-oat');
+  if (el && t) el.textContent = t.slice(0, 5);
+}
+
 // 既定は「印を付ける」（2026-08-06 ユーザー決定）。従来の札は .shlist 側を off で始める
 function mmList(site) {
   const rows = [...site.horses].sort((a, b) => a.number - b.number).map(mmRow).join('');
+  // 発走前だけ「更新」ボタンを見出しの下に置く（2026-10-10 ユーザー「netkeibaみたいに更新ボタンを押したら更新される」）
+  const rf = site.status === 'prediction'
+    ? '<button type="button" class="od-rf" aria-label="オッズを更新"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9"/><path d="M12.4 1.6v2.9H9.5"/></svg><span>更新</span></button>'
+    : '';
   return `<div class="mm-list">
       <div class="mm-hd"><span class="h-my">自分</span><span class="h-ai">AI</span>
         <span class="h-c"><span class="h-nm">馬</span><span class="h-tot">評価</span>
-          <span class="h-od">オッズ</span></span></div>
+          <span class="h-od${rf ? ' has-rf' : ''}"><span>オッズ</span>${rf}</span></span></div>
       ${rows}
     </div>`;
 }
@@ -4951,7 +5034,7 @@ function renderHead26(site) {
   // 予想を出した時刻は、レース名のすぐ下（2026-10-07 ユーザー「これは上のどこかに入れてほしい」。前はカードの下）
   //   オッズを取った時刻も並べる。発走10〜2分前は1分ごとに変わる（2026-10-10 ユーザー「最新オッズ更新時間も載せて」・139-spec）
   const oddsAt = p.odds_fetched_at ? String(p.odds_fetched_at).split(/[T ]/)[1] : '';
-  const oddsAtHtml = oddsAt ? ` ・ オッズ <span class="r27-num">${escapeHtml(oddsAt.slice(0, 5))}</span> 更新` : '';
+  const oddsAtHtml = oddsAt ? ` ・ オッズ <span class="r27-num r27-oat">${escapeHtml(oddsAt.slice(0, 5))}</span> 更新` : '';
   const pt = p.predicted_at
     ? `<div class="r27-pt">予想 <span class="r27-num">${fmtDateTimeShort(p.predicted_at)}</span>（${escapeHtml(p.odds_basis || '')}基準）${oddsAtHtml}</div>` : '';
   const seg = `<div class="r27-seg" role="tablist"><button type="button" data-view="mark" class="on">印</button>`
@@ -6353,6 +6436,7 @@ async function main() {
   setupAkinatorPanel(site, oddsAll, simCtl);
   setupBetSheet(site, oddsAll);   // 128-spec: 下に貼る要約バーとドロワー
   setupBuyRace(site);             // 買いレースのチェック
+  if (is20) setupOddsRefresh(site, oddsAll, id);
   if (is20) setupShutuba20(site);
   if (is20) setupTopping(site);   // 102-spec: トッピング（データが無ければ何もしない）
   if (is20) setupUpset20();
