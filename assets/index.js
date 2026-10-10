@@ -252,6 +252,23 @@ function isDoneRace(race, now) {
   return !!race.post_time && race.post_time <= now.hm;
 }
 
+// 発走の瞬間（ミリ秒）。post_time は日本時間の HH:MM
+function postAtMs(race) {
+  if (!race.date || !/^\d{1,2}:\d{2}$/.test(race.post_time || '')) return null;
+  const t = Date.parse(`${race.date}T${race.post_time.padStart(5, '0')}:00+09:00`);
+  return Number.isFinite(t) ? t : null;
+}
+
+// 残り時間の文字。1時間以上は「1時間05分12秒」、それ未満は「12分34秒」
+function countdownText(ms) {
+  const sec = Math.max(0, Math.ceil(ms / 1000));
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = sec % 60;
+  const pad = (n) => String(n).padStart(2, '0');
+  return h > 0 ? `${h}時間${pad(m)}分${pad(s)}秒` : `${m}分${pad(s)}秒`;
+}
+
 function renderRaceRow(race, ctx) {
   const done = isDoneRace(race, ctx.now);
   const isNext = ctx.nextId === race.race_id;
@@ -264,7 +281,14 @@ function renderRaceRow(race, ctx) {
   const bchip = isBuyRace(race.race_id) ? '<span class="brtag">買い</span>' : '';
   const hotTab = hot
     ? `<span class="hot26">${FLAME_SVG}激アツ<b>${race.bigpay.pct.toFixed(1)}<small>%</small></b><i>100万超え</i></span>` : '';
-  const nextTab = isNext ? `<span class="next26">次<b>${escapeHtml(race.post_time || '')}</b><i>発走</i></span>` : '';
+  // 2026-10-10 ユーザー「次14:00発走じゃなくて、発走まで残り何分何秒か出して、カウントダウン式に」。
+  // 残りの文字は tickCountdown が1秒ごとに書き換える（発走時刻は札の左にもう出ている）
+  const postAt = postAtMs(race);
+  const nextTab = isNext
+    ? (postAt != null
+      ? `<span class="next26"><i>発走まで</i><b class="cd26" data-post-at="${postAt}">${countdownText(postAt - Date.now())}</b></span>`
+      : '<span class="next26">次のレース</span>')
+    : '';
   const cls = ['rc26', done ? 'done' : '', hot ? 'hot' : '', isNext ? 'next' : ''].filter(Boolean).join(' ');
   return `
     <a class="${cls}" href="race.html?id=${race.race_id}">
@@ -331,6 +355,16 @@ async function main() {
   rerender();
   // 136-spec: 次のレース・終わったレースは時刻で動くので、1分ごとに一覧だけ描き直す
   setInterval(() => renderRaceList(state, races), 60000);
+  // 「次」の札の残り時間は1秒ごと。0になったら一覧を描き直して、札を次のレースへ移す
+  setInterval(() => {
+    let passed = false;
+    document.querySelectorAll('.cd26[data-post-at]').forEach((el) => {
+      const left = Number(el.dataset.postAt) - Date.now();
+      el.textContent = countdownText(left);
+      if (left <= 0) passed = true;
+    });
+    if (passed) renderRaceList(state, races);
+  }, 1000);
 }
 
 main();
