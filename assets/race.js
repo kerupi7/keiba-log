@@ -3418,7 +3418,7 @@ function setupOddsRefresh(site, oddsAll, id) {
     }
     btn.classList.remove('spin');
     label.textContent = msg;
-    setTimeout(() => { label.textContent = '更新'; busy = false; }, 1500);
+    setTimeout(() => { label.textContent = 'オッズ'; busy = false; }, 1500);
   });
 }
 
@@ -3534,14 +3534,15 @@ function paintOdds(site) {
 // 既定は「印を付ける」（2026-08-06 ユーザー決定）。従来の札は .shlist 側を off で始める
 function mmList(site) {
   const rows = [...site.horses].sort((a, b) => a.number - b.number).map(mmRow).join('');
-  // 発走前だけ「更新」ボタンを見出しの下に置く（2026-10-10 ユーザー「netkeibaみたいに更新ボタンを押したら更新される」）
+  // 発走前だけ、見出しの「オッズ」を更新ボタンにする（2026-10-10 ユーザー「netkeibaみたいに更新ボタンを押したら更新される」。
+  //   はじめは「オッズ」の下に「↻ 更新」を置いた2行だったが、同日「左のアイコンは残して、更新の部分をオッズにして1行に」）
   const rf = site.status === 'prediction'
-    ? '<button type="button" class="od-rf" aria-label="オッズを更新"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9"/><path d="M12.4 1.6v2.9H9.5"/></svg><span>更新</span></button>'
+    ? '<button type="button" class="od-rf" aria-label="オッズを更新"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9"/><path d="M12.4 1.6v2.9H9.5"/></svg><span>オッズ</span></button>'
     : '';
   return `<div class="mm-list">
       <div class="mm-hd"><span class="h-my">自分</span><span class="h-ai">AI</span>
         <span class="h-c"><span class="h-nm">馬</span><span class="h-tot">評価</span>
-          <span class="h-od${rf ? ' has-rf' : ''}"><span>オッズ</span>${rf}</span></span></div>
+          <span class="h-od${rf ? ' has-rf' : ''}">${rf || 'オッズ'}</span></span></div>
       ${rows}
     </div>`;
 }
