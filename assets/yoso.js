@@ -2205,7 +2205,7 @@
     const dots = pages.map((_, i) => `<i class="${i <= S.page ? 'on' : ''}"></i>`).join('');
     // カード上の見出し（段階・「残す？ 消す？」・やめる）も外した（同日ユーザー指示）。この画面から抜ける手段は今は無い
     // 1頭だけ見るとき（S.view）は、右側を「N / M頭」から馬番・馬名に替える（2026-09-21）。
-    //   閉じるボタンは外した。下に払うと「閉じますか？」を出す（2026-10-09 ユーザー指示）。
+    //   閉じるボタンは外した。下に払うとすぐ閉じる（2026-10-09 ユーザー指示・10-10 確認の「閉じますか？」をなくした）。
     //   ✓／消の札と色は CSS（.yf-deck.view）で隠すだけにして、動きの側のコードは分けない
     const right = S.view
       ? `<span class="yf-vw">${umaBox(h.number, h.gate, 'sm')}<b>${esc(h.name)}</b></span>`
@@ -3561,8 +3561,13 @@
       }
       if (vdrag) {
         if (dy > 120 || vy > 0.9) {
-          // 1頭だけ見るときは「閉じますか？」、予想のときは「やめますか？」を出す（2026-10-09）。
-          //   札は少し下げたまま待たせ、キャンセルで元に戻す
+          // 1頭だけ見るときは聞かずにすぐ閉じる。札を下へ落としてから閉じる（2026-10-10 ユーザー「閉じますかをなくして」）
+          if (S.view) {
+            card.classList.add('spring'); card.style.transform = `translateY(${window.innerHeight}px)`;
+            setTimeout(() => close(false), 220);
+            return;
+          }
+          // 予想のときは「やめますか？」を出す（2026-10-09）。札は少し下げたまま待たせ、キャンセルで元に戻す
           card.classList.add('spring'); card.style.transform = 'translateY(40px) scale(.97)';
           quitSheet(() => springHome());
         } else springHome();

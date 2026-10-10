@@ -4949,8 +4949,11 @@ function renderHead26(site) {
   }
 
   // 予想を出した時刻は、レース名のすぐ下（2026-10-07 ユーザー「これは上のどこかに入れてほしい」。前はカードの下）
+  //   オッズを取った時刻も並べる。発走10〜2分前は1分ごとに変わる（2026-10-10 ユーザー「最新オッズ更新時間も載せて」・139-spec）
+  const oddsAt = p.odds_fetched_at ? String(p.odds_fetched_at).split(/[T ]/)[1] : '';
+  const oddsAtHtml = oddsAt ? ` ・ オッズ <span class="r27-num">${escapeHtml(oddsAt.slice(0, 5))}</span> 更新` : '';
   const pt = p.predicted_at
-    ? `<div class="r27-pt">予想 <span class="r27-num">${fmtDateTimeShort(p.predicted_at)}</span>（${escapeHtml(p.odds_basis || '')}基準）</div>` : '';
+    ? `<div class="r27-pt">予想 <span class="r27-num">${fmtDateTimeShort(p.predicted_at)}</span>（${escapeHtml(p.odds_basis || '')}基準）${oddsAtHtml}</div>` : '';
   const seg = `<div class="r27-seg" role="tablist"><button type="button" data-view="mark" class="on">印</button>`
     + `${site.shinba ? '' : '<button type="button" data-view="baken">馬券</button>'}</div>`;
   return `<section class="r27">${R27_DEFS}
