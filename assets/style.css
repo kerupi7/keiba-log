@@ -4846,3 +4846,22 @@ body:has(.container.st26){background:#F2F2F7}
 .race20 .mm-list .mm-c .od.od-fl-dn::before{background:rgba(235,20,0,.10)}
 .race20 .mm-list .mm-c .od.od-fl-up::before{background:rgba(0,104,188,.10)}
 @keyframes od-fl{0%{opacity:0;transform:scale(.9)}18%{opacity:1;transform:none}55%{opacity:1}100%{opacity:0}}
+/* 馬券の表（simulator.js）の見出しにも同じボタン（2026-10-10 ユーザー「ここにもオッズ更新ボタンを入れたい」・142-spec §6）。
+   オッズの列は46px（券種が2列以上なら40px）でボタンより細いので、右に寄せて左の「馬名・騎手」の側へはみ出させる。
+   待つ間の光・届いた時の帯・赤青の灯りは出馬表と同じ。帯はオッズの列の上を通るよう、右の「選ぶ」の列の分だけ左へ寄せる */
+.race20 .sim-lh .r.has-rf{display:flex;justify-content:flex-end;min-width:0}
+.race20 .sim-lh:has(.has-rf){height:auto;min-height:24px;padding-top:2px;padding-bottom:4px}   /* ボタンが24pxより高いので、出馬表の見出しと同じく行の方を伸ばす */
+.race20 .sim-list{position:relative}
+.race20 .sim-list .od-scan{right:calc(9px + var(--sim-n) * 34px - 6px)}
+.race20 .sim-list.multi .od-scan{right:calc(7px + var(--sim-n) * 28px - 6px)}
+.race20 .sim-list .sim-od{position:relative;isolation:isolate}
+.race20 .sim-list .sim-od b,.race20 .sim-list .sim-od small{--od-c:currentColor;--od-hl:#E5E5EA}
+.race20 .sim-list .sim-od b.hot{--od-hl:#FFD3CC}
+.race20 .sim-list.od-wait .sim-od b,.race20 .sim-list.od-wait .sim-od small{
+  -webkit-text-fill-color:transparent;-webkit-background-clip:text;background-clip:text;
+  background-image:linear-gradient(105deg,var(--od-c) 0%,var(--od-c) 34%,var(--od-hl) 50%,var(--od-c) 66%,var(--od-c) 100%);
+  background-size:200% 100%;animation:od-shim 1.25s cubic-bezier(.45,0,.55,1) infinite;animation-delay:calc(var(--od-i, 0) * 55ms)}
+.race20 .sim-list .sim-od.od-fl-dn::before,.race20 .sim-list .sim-od.od-fl-up::before{content:"";position:absolute;inset:-5px -6px -5px -8px;
+  border-radius:9px;z-index:-1;pointer-events:none;animation:od-fl 1.5s ease-out both}
+.race20 .sim-list .sim-od.od-fl-dn::before{background:rgba(235,20,0,.10)}
+.race20 .sim-list .sim-od.od-fl-up::before{background:rgba(0,104,188,.10)}

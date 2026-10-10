@@ -690,7 +690,10 @@
     var g = greenSet(state, site, probs, heads, oddsAll);
     var horses = site.horses.slice().sort(function (a, b) { return a.number - b.number; });
     var myMarks = loadMyMarks(site);   // 描画のたびに読み直す（出馬表で付け替えて戻る動きに追いつく）
-    var head = '<div class="sim-lh"><span class="c">印</span><span></span><span>馬名・騎手</span><span class="r">オッズ</span>'
+    // 発走前は race.js が更新ボタン（opts.oddsBtn）を渡すので、見出しの「オッズ」をそれに替える（2026-10-10・142-spec §6）
+    var rf = (opts && opts.oddsBtn) || '';
+    var head = '<div class="sim-lh"><span class="c">印</span><span></span><span>馬名・騎手</span>'
+      + (rf ? '<span class="r has-rf">' + rf + '</span>' : '<span class="r">オッズ</span>')
       + cols.map(function (c) { return '<span class="c">' + escapeHtml(wide ? c.label : '選ぶ') + '</span>'; }).join('') + '</div>';
     var body = horses.map(function (h) {
       var id = t.frame ? h.gate : h.number;

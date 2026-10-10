@@ -1484,7 +1484,9 @@ function setupOddsMasterPanel(site, oddsAll) {
 
   function rerender() {
     // markBadge20 は race.js のIIFEの中にあってグローバルに出ていないので、ここで渡す
-    body.innerHTML = Simulator.renderBlockB(site, probs, heads, oddsAll, state, { aiMark: markBadge20 });
+    // 発走前は、馬券の表の見出しの「オッズ」も出馬表と同じ更新ボタンにする（2026-10-10 ユーザー「ここにもオッズ更新ボタンを入れたい」）
+    const oddsBtn = site.status === 'prediction' && body.closest('.race20') ? oddsRfHtml() : '';
+    body.innerHTML = Simulator.renderBlockB(site, probs, heads, oddsAll, state, { aiMark: markBadge20, oddsBtn });
   }
 
   body.addEventListener('click', (ev) => {
@@ -3391,24 +3393,32 @@ function mmBar(site) {
 const ODDS_WORKER = 'https://ans-odds.ans-odds.workers.dev';
 const ODDS_WORKER_WAIT_MS = 15000;   // 返事を待つ上限。Cloudflare から JRA への取得は 0.7秒（2026-10-10 実測）
 
+// 更新ボタンの中身。出馬表の印の一覧と、馬券の表（simulator.js が描く）の見出しの2か所で使う
+function oddsRfHtml() {
+  return '<button type="button" class="od-rf" aria-label="オッズを更新"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9"/><path d="M12.4 1.6v2.9H9.5"/></svg><span class="od-lb">オッズ</span><span class="glow" aria-hidden="true"></span></button>';
+}
+
+// ボタンは出馬表と馬券の表の2つ。馬券の表は選ぶたびに描き直されてボタンも作り直されるので、押されたのは .race20 で受ける。
+//   どちらを押しても同じ取り方で、両方の表を新しいオッズにする。取っている間はもう片方を押しても何もしない
 function setupOddsRefresh(site, oddsAll, id) {
-  const btn = document.querySelector('.race20 .od-rf');
-  if (!btn) return;
-  const label = btn.querySelector('.od-lb');
-  const list = btn.closest('.mm-list');
+  const root = document.querySelector('.race20');
+  if (!root || site.status !== 'prediction') return;
   let busy = false;
-  btn.addEventListener('click', async () => {
-    if (busy) return;
+  root.addEventListener('click', async (ev) => {
+    let btn = ev.target.closest('.od-rf');
+    if (!btn || busy) return;
     busy = true;
     // mockup-286 案B（2026-10-10 ユーザー「Bで本番に入れて」）：待つ間はボタンの縁が回り、一覧のオッズの文字の上を光が流れる。
     //   動きを減らす設定の端末では、前と同じく矢印を回すだけにする
     const motion = !ODDS_REDUCE && typeof btn.animate === 'function';
+    const list = btn.closest('.mm-list, .sim-list');
+    const inSim = !!(list && list.classList.contains('sim-list'));
     const prev = {};
     site.horses.forEach((h) => { prev[h.number] = [h.odds, h.popularity]; });
     if (motion) {
       btn.classList.add('glowing');
       if (list) {
-        list.querySelectorAll('.mm-row').forEach((r, i) => r.style.setProperty('--od-i', i));
+        list.querySelectorAll('.mm-row, .sim-r').forEach((r, i) => r.style.setProperty('--od-i', i));
         list.classList.add('od-wait');
       }
     } else btn.classList.add('spin');
@@ -3424,7 +3434,14 @@ function setupOddsRefresh(site, oddsAll, id) {
         else closed = await oddsFromSite(site, oddsAll, id);
         if (list) list.classList.remove('od-wait');
         paintOdds(site, motion ? prev : null);
+        const simWas = inSim && motion ? simOddsTexts(list) : null;
         if (simRefresh) simRefresh();
+        // 馬券の表は描き直しでボタンごと作り直される。字の入れ替えは新しいボタンで行う
+        if (inSim) {
+          const nb = document.querySelector('#om-panel-body .od-rf');
+          if (nb) btn = nb;
+          if (simWas) simOddsSweep(simWas);
+        }
         const after = (site.prediction || {}).odds_fetched_at || '';
         msg = closed || (after && after !== before ? '更新済' : '最新');
       }
@@ -3436,8 +3453,55 @@ function setupOddsRefresh(site, oddsAll, id) {
     if (motion && msg === '失敗') {
       btn.animate([0, -6, 5, -4, 3, -1.5, 0].map((x) => ({ transform: `translateX(${x}px)` })), { duration: 420, easing: 'ease-out' });
     }
+    const label = btn.querySelector('.od-lb');
     await oddsLabel(btn, label, msg, motion);
     setTimeout(async () => { await oddsLabel(btn, label, 'オッズ', motion); busy = false; }, 1500);
+  });
+}
+
+// 馬券の表のオッズと人気の字を、上の行から順に覚える（描き直す前に呼ぶ）
+function simOddsTexts(list) {
+  return [...list.querySelectorAll('.sim-r .sim-od')].map((od) => {
+    const b = od.querySelector('b'), sm = od.querySelector('small');
+    return { b: b ? b.textContent : '', hot: !!(b && b.classList.contains('hot')), sm: sm ? sm.textContent : '' };
+  });
+}
+
+// 描き直した馬券の表に光の帯を通す。変わった行は帯が通るまで前の字を見せ、通った所で新しい数字にピントを合わせる
+//   （出馬表の paintOdds と同じ見え方）。行の並びは馬番順で、描き直しの前後で変わらない
+function simOddsSweep(was) {
+  const list = document.querySelector('#om-panel-body .sim-list');
+  const sweep = list ? oddsSweep(list, '.sim-r') : null;
+  if (!sweep) return;
+  list.querySelectorAll('.sim-r').forEach((row, i) => {
+    const od = row.querySelector('.sim-od');
+    const b = od && od.querySelector('b');
+    const w = was[i];
+    if (!b || !w) return;
+    const sm = od.querySelector('small');
+    const now = { b: b.textContent, hot: b.classList.contains('hot'), sm: sm ? sm.textContent : '' };
+    const moved = now.b !== w.b || now.sm !== w.sm;
+    const show = (v) => {
+      b.textContent = v.b;
+      b.classList.toggle('hot', v.hot);
+      if (sm) sm.textContent = v.sm;
+    };
+    if (moved) show(w);
+    setTimeout(() => {
+      if (!b.isConnected) return;
+      if (!moved) {
+        b.animate([{ opacity: 1 }, { opacity: 0.55 }, { opacity: 1 }], { duration: 380, easing: 'ease-in-out' });
+        return;
+      }
+      show(now);
+      b.animate([{ filter: 'blur(7px)', opacity: 0.1, transform: 'scale(.86)' }, { filter: 'blur(0)', opacity: 1, transform: 'none' }], ODDS_SOFT);
+      const a = parseFloat(w.b), z = parseFloat(now.b);
+      if (!isNaN(a) && !isNaN(z) && a !== z) {
+        const cls = z < a ? 'od-fl-dn' : 'od-fl-up';
+        od.classList.add(cls);
+        setTimeout(() => od.classList.remove(cls), 1600);
+      }
+    }, sweep(row));
   });
 }
 
@@ -3473,11 +3537,11 @@ async function oddsLabel(btn, lb, text, motion) {
   out.cancel();
 }
 
-// 光の帯を一覧の上から下へ1回通す。戻り値は「その行を帯が通る時刻（ミリ秒）」を返す関数。一覧が見えていなければ null
-function oddsSweep() {
-  const list = document.querySelector('.race20 .od-rf') && document.querySelector('.race20 .od-rf').closest('.mm-list');
+// 光の帯を一覧（出馬表の印の一覧か馬券の表）の上から下へ1回通す。
+//   戻り値は「その行を帯が通る時刻（ミリ秒）」を返す関数。一覧が見えていなければ null
+function oddsSweep(list, rowSel) {
   if (!list || list.classList.contains('off') || !list.offsetParent) return null;
-  const rows = list.querySelectorAll('.mm-row');
+  const rows = list.querySelectorAll(rowSel);
   if (!rows.length) return null;
   let scan = list.querySelector('.od-scan');
   if (!scan) {
@@ -3585,7 +3649,7 @@ function replaceOddsAll(oddsAll, fresh) {
 //   prev（押す前の {馬番: [オッズ, 人気]}）を渡すと、印の一覧は光の帯が通った行から新しい数字にピントを合わせ、
 //   下がった馬に薄い赤・上がった馬に薄い青を一瞬灯す（mockup-286 案B）。新聞・札はその場で書き換えてぼかしから戻すだけ
 function paintOdds(site, prev) {
-  const sweep = prev ? oddsSweep() : null;
+  const sweep = prev ? oddsSweep(document.querySelector('.race20 .mm-list'), '.mm-row') : null;
   site.horses.forEach((h) => {
     if (h.scratched) return;
     const was = prev && prev[h.number];
@@ -3641,9 +3705,7 @@ function mmList(site) {
   const rows = [...site.horses].sort((a, b) => a.number - b.number).map(mmRow).join('');
   // 発走前だけ、見出しの「オッズ」を更新ボタンにする（2026-10-10 ユーザー「netkeibaみたいに更新ボタンを押したら更新される」。
   //   はじめは「オッズ」の下に「↻ 更新」を置いた2行だったが、同日「左のアイコンは残して、更新の部分をオッズにして1行に」）
-  const rf = site.status === 'prediction'
-    ? '<button type="button" class="od-rf" aria-label="オッズを更新"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9"/><path d="M12.4 1.6v2.9H9.5"/></svg><span class="od-lb">オッズ</span><span class="glow" aria-hidden="true"></span></button>'
-    : '';
+  const rf = site.status === 'prediction' ? oddsRfHtml() : '';
   return `<div class="mm-list">
       <div class="mm-hd"><span class="h-my">自分</span><span class="h-ai">AI</span>
         <span class="h-c"><span class="h-nm">馬</span><span class="h-tot">評価</span>
