@@ -3305,10 +3305,11 @@
     fillBack();
   }
   // 1頭だけ見る画面を、開いた元の行へ縮めて戻す（2026-10-10 ユーザー「Bで本番に入れて」・mockup-285 の B）。
-  //   動かすのは札の位置・倍率と、白い幕・背景の透明度だけ（どれも描き直しの要らない動き）。
-  //   はじめは札を別の場所へ移して行の形に切り抜いていたが、移した瞬間の描き直しと毎コマの切り抜きで
-  //   iPhone でカクついた（同日ユーザー「少しカクツクし重さを感じる」）。札の中身は縮み始めてすぐ白い幕で隠し、
-  //   縦横の倍率を別々にして行の形へ寄せる。指を離した速さをバネの初速に引き継ぐ（行が上なら、少し下へ流れてから戻る）。
+  //   札は縦横同じ倍率のまま行の幅まで縮め、見える高さだけを行の高さまで閉じていく（札の入れ物 .yf-deck を窓にして
+  //   切り抜く）。中身は潰れずに見えたまま行へ重なり、最後に行へ溶ける。札の上の段（馬番・馬名）が行の位置に来る。
+  //   動かすのは位置・倍率・透明度だけ（描き直しの要らない動き）。札を別の場所へ移したり毎コマ切り抜き直したりすると
+  //   iPhone でカクついた（同日ユーザー「少しカクツクし重さを感じる」）。白い幕で隠して潰す形は「もっとセクシーに」で外した。
+  //   指を離した速さをバネの初速に引き継ぐ（行が上なら、少し下へ流れてから戻る）。
   //   行が画面の外・見つからないときは、その場で縮めて薄くする
   function zoomBack(card, vy) {
     if (!root || root.classList.contains('yf-zoom')) return;
@@ -3316,6 +3317,7 @@
     let src = viewSrc && viewSrc.isConnected ? viewSrc : null;
     if (!src && num != null) src = document.querySelector(`.race20 .mm-row [data-pop="${num}"]`);
     const row = src ? (src.closest('.mm-row, .acard') || src) : null;
+    const deck = card.parentElement;
     const vis = card.getBoundingClientRect();
     // 指で動かした分を外した札の位置（描き直しは起きない。同じコマで次の形を入れる）
     card.classList.remove('spring', 'press');
@@ -3323,51 +3325,67 @@
     const keep = card.style.transform;
     card.style.transform = 'none';
     const L = card.getBoundingClientRect();
+    const D = deck.getBoundingClientRect();
     card.style.transform = keep;
     // 後ろのページは open() で開く前の高さにずらしてあるので、行の位置はそのまま使える
     let rr = row ? row.getBoundingClientRect() : null;
     if (rr && (rr.bottom < 0 || rr.top > window.innerHeight || rr.width < 10)) rr = null;
-    const s0 = vis.width / L.width;
-    const from = { x: vis.left - L.left, y: vis.top - L.top, sx: s0, sy: s0, op: 1, bd: 1 };
-    const to = rr
-      ? { x: rr.left - L.left, y: rr.top - L.top, sx: rr.width / L.width, sy: rr.height / L.height, op: 1, bd: 0 }
-      : { x: from.x + vis.width * 0.075, y: from.y + 60 + vis.height * 0.075, sx: s0 * 0.85, sy: s0 * 0.85, op: 0, bd: 0 };
-    const veil = document.createElement('div');
-    veil.className = 'yf-zoom-veil';
-    card.appendChild(veil);
     const bd = document.createElement('div');
     bd.className = 'yf-zoom-bd';
     root.insertBefore(bd, root.firstChild);
     root.style.pointerEvents = 'none';
     root.classList.add('yf-zoom');
+    const u0 = vis.width / L.width;
+    // 窓（見える範囲）の左上・幅・高さと、札の倍率。窓の左上に札の左上を合わせる
+    const from = { x: vis.left, y: vis.top, u: u0, h: vis.height };
+    const to = rr
+      ? { x: rr.left, y: rr.top, u: rr.width / L.width, h: rr.height }
+      : { x: vis.left + vis.width * 0.075, y: vis.top + 60, u: u0 * 0.85, h: vis.height * 0.85 };
+    const ox = L.left - D.left, oy = L.top - D.top;   // 入れ物の中での札の位置（ふつうは0）
+    if (rr) {
+      deck.style.overflow = 'hidden';
+      deck.style.transformOrigin = '0 0';
+      deck.style.willChange = 'transform';
+    }
     card.style.transformOrigin = '0 0';
+    const ease = (x) => { const c = Math.max(0, Math.min(1, x)); return c * c * (3 - 2 * c); };
     const paint = (t) => {
       const x = from.x + (to.x - from.x) * t, y = from.y + (to.y - from.y) * t;
-      const sx = from.sx + (to.sx - from.sx) * t, sy = from.sy + (to.sy - from.sy) * t;
-      card.style.transform = `translate3d(${x.toFixed(2)}px, ${y.toFixed(2)}px, 0) scale(${Math.max(0.01, sx).toFixed(5)}, ${Math.max(0.01, sy).toFixed(5)})`;
-      if (!rr) card.style.opacity = Math.max(0, Math.min(1, 1 - t)).toFixed(3);
-      // 中身は縮み始めてすぐ白く隠す（縦横の倍率が違うので、字が潰れて見える前に）
-      veil.style.opacity = rr ? Math.max(0, Math.min(1, t / 0.28)).toFixed(3) : '0';
-      bd.style.opacity = Math.max(0, Math.min(1, 1 - t * 1.25)).toFixed(3);
+      const u = Math.max(0.05, from.u + (to.u - from.u) * t);
+      // 高さは少しだけ先に閉じる（札が行へ吸い込まれて見えるように）
+      const th = Math.min(1.08, t < 1 ? 1 - Math.pow(1 - Math.max(0, t), 1.35) : t);
+      const h = Math.max(4, from.h + (to.h - from.h) * th);
+      if (rr) {
+        const sy = h / D.height;
+        deck.style.transform = `translate3d(${(x - D.left - ox * u).toFixed(2)}px, ${(y - D.top - oy * sy).toFixed(2)}px, 0) scale(${u.toFixed(5)}, ${sy.toFixed(5)})`;
+        card.style.transform = `scale(1, ${(u / sy).toFixed(5)})`;
+        // 最後の半分で行へ溶ける
+        card.style.opacity = (1 - ease((t - 0.5) / 0.5)).toFixed(3);
+      } else {
+        card.style.transform = `translate3d(${(x - L.left).toFixed(2)}px, ${(y - L.top).toFixed(2)}px, 0) scale(${u.toFixed(5)})`;
+        card.style.opacity = Math.max(0, 1 - t).toFixed(3);
+      }
+      bd.style.opacity = (1 - ease(t * 1.15)).toFixed(3);
     };
     // 下向きの速さ（点／ミリ秒）を、形の進み具合の初速（1／秒）に直す。行が上なら逆向きの初速になる
     const dist = Math.max(60, Math.abs(to.y - from.y));
     const dir = to.y >= from.y ? 1 : -1;
     const v0 = Math.max(-5, Math.min(8, (Math.max(0, vy) * 1000 * dir) / dist));
-    // バネ（SwiftUI と同じ指定で response 0.36秒・dampingFraction 0.86。ほんの少しだけ弾む）
-    const k = Math.pow(2 * Math.PI / 0.36, 2), c = 4 * Math.PI * 0.86 / 0.36;
+    // バネ（SwiftUI と同じ指定で response 0.42秒・dampingFraction 0.88。ほんの少しだけ弾む）
+    const k = Math.pow(2 * Math.PI / 0.42, 2), c = 4 * Math.PI * 0.88 / 0.42;
     let t = 0, v = v0, last = performance.now();
     const step = (now) => {
       const dt = Math.min(0.034, (now - last) / 1000); last = now;
       for (let i = 0; i < 8; i++) { const acc = -k * (t - 1) - c * v; v += acc * dt / 8; t += v * dt / 8; }
       paint(t);
-      if (Math.abs(1 - t) < 0.002 && Math.abs(v) < 0.05) {
+      // 札は t=1 で消えきるので、そこに届いたらすぐ終える（弾みの残りは見えない。待つと行の光りが遅れて見えた）
+      if (t >= 0.985 || (Math.abs(1 - t) < 0.002 && Math.abs(v) < 0.05)) {
         paint(1);
         close(false);
-        // 戻った行を一瞬だけ光らせる
+        // 戻った行をうっすら光らせて、どの馬だったかを見せる
         if (rr && row && row.animate) {
-          row.animate([{ backgroundColor: 'rgba(11,61,110,.12)' }, { backgroundColor: 'rgba(11,61,110,0)' }],
-            { duration: 500, easing: 'ease-out' });
+          row.animate([{ backgroundColor: 'rgba(11,61,110,.08)' }, { backgroundColor: 'rgba(11,61,110,0)' }],
+            { duration: 700, easing: 'cubic-bezier(.25,.1,.25,1)' });
         }
         return;
       }
