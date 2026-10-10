@@ -34,6 +34,8 @@
     { k: '12', label: '1・2着' }, { k: '13', label: '1・3着' }, { k: '23', label: '2・3着' },
   ];
   var MAX_CONFIRM_ROWS = 200;
+  // 確かめる欄の目盛りの右端（EV）。買いライン（EV 1）は棒の 2/3 の所に来る（mockup-287 案C）
+  var CONFIRM_GAUGE_MAX = 1.5;
 
   function typeOf(betType) {
     for (var i = 0; i < TYPES.length; i++) if (TYPES[i].type === betType) return TYPES[i];
@@ -758,12 +760,17 @@
     var rows = items.map(function (item) { return rowDataFor(state, item, probs, heads, oddsAll, groups); }).filter(Boolean);
     sortRows(rows);
 
-    var selCount = 0;
-    Object.keys(state.cols).forEach(function (k) { selCount += (state.cols[k] || []).length; });
-    var summary = '<div class="sim-summary">組み合わせ：<b>' + rows.length + '</b>点　／　選択済：<b>' + selCount + '</b>件</div>';
+    // 2026-10-10（mockup-287 案C・ユーザー決定「元のCで本番実装して」）: 確かめる欄を馬の表と同じ
+    // 「灰の地に1点ずつの白い帯」にした。真ん中は目盛り＝今のオッズが買いラインのどこまで来たか
+    // （棒は EV 0〜CONFIRM_GAUGE_MAX。黒い線が EV 1＝買いライン。越えたら緑）。
+    // 上にあった「組み合わせ：N点 ／ 選択済：N件」の行はやめ、点数は色の帯へ、選んだ数は列の見出しへ移した。
+    // 選んだ数は「件」（列ごとの延べ数）ではなく、重ならない馬（枠連は枠）の数にした
+    var picked = {};
+    Object.keys(state.cols).forEach(function (k) { (state.cols[k] || []).forEach(function (n) { picked[n] = true; }); });
+    var selCount = Object.keys(picked).length;
 
     if (!rows.length) {
-      return summary + '<div class="sim-confirm"><div class="om-empty">ポジションに馬を選ぶと、ここに買い目・買いライン・EVが出ます</div></div>';
+      return '<div class="sim-cf-empty">ポジションに馬を選ぶと、ここに買い目・買いライン・EVが出ます</div>';
     }
 
     var shown = rows.slice(0, MAX_CONFIRM_ROWS);
@@ -772,35 +779,51 @@
     var bodyHtml = shown.map(function (r) {
       var ids = r.frame || r.ids;
       var seq = ids.map(function (n, i) {
-        var sep = i > 0 ? '<span class="cbsep">' + (t.ordered ? '→' : '-') + '</span>' : '';
+        var sep = i > 0 ? '<span class="sim-cf-sep">' + (t.ordered ? '→' : '-') + '</span>' : '';
         if (r.frame) return sep + wakuBox(n);
         var h = byNumber[n];
-        return sep + umaBox(n, h ? h.gate : undefined) + '<span class="abbr">' + escapeHtml(h ? h.name.slice(0, 3) : '') + '</span>';
+        return sep + umaBox(n, h ? h.gate : undefined);
       }).join('');
-      var buyLineTxt = (r.buyLine !== null && r.buyLine !== undefined) ? r.buyLine.toFixed(1) + '倍' : '—';
-      var oddsTxt = (r.odds !== null && r.odds !== undefined) ? r.odds.toFixed(1) + '倍' : '—';
+      // 1頭なら馬名を全部。2頭以上は馬の表の「馬名／騎手」と同じ2段で、下に頭の数文字（2頭は4文字・3頭は3文字）
+      var who = '<div class="sim-cf-seq">' + seq;
+      if (r.frame) {
+        who += '</div>';
+      } else if (ids.length === 1) {
+        who += '<span class="sim-cf-nm">' + escapeHtml(byNumber[ids[0]] ? byNumber[ids[0]].name : '') + '</span></div>';
+      } else {
+        var len = ids.length > 2 ? 3 : 4;
+        who += '</div><span class="sim-cf-sub">' + ids.map(function (n) {
+          return escapeHtml(byNumber[n] ? byNumber[n].name.slice(0, len) : '');
+        }).join('・') + '</span>';
+      }
       var hasEv = r.ev !== null && r.ev !== undefined;
       var isBuy = hasEv && r.ev > 1.0;
-      var evTxt = hasEv ? r.ev.toFixed(2) : '—';
-      var lowChip = r.lowP ? ' <span class="chip lowp">低確率</span>' : '';
-      return '<div class="sim-combo' + (isBuy ? ' buy' : '') + '"><div class="seq">' + seq + '</div>'
-        + '<div class="nums"><span>買いライン <b>' + buyLineTxt + '</b></span>'
-        + '<span>現在 <b>' + oddsTxt + '</b></span>'
-        + '<span>EV <b class="' + (isBuy ? 'om-ev-plus' : '') + '">' + evTxt + '</b></span>' + lowChip + '</div></div>';
+      var w = hasEv ? Math.min(r.ev, CONFIRM_GAUGE_MAX) / CONFIRM_GAUGE_MAX * 100 : 0;
+      var oddsTxt = (r.odds !== null && r.odds !== undefined) ? r.odds.toFixed(1) : '—';
+      var buyLineTxt = (r.buyLine !== null && r.buyLine !== undefined) ? r.buyLine.toFixed(1) + '倍' : '—';
+      return '<div class="sim-cf-r"><div class="sim-cf-who">' + who + '</div>'
+        + '<div class="sim-cf-g"><div class="sim-cf-trk"><div class="sim-cf-fill' + (isBuy ? ' sim-cf-up' : '') + '" style="width:' + w.toFixed(1) + '%"></div>'
+        + '<div class="sim-cf-tick" style="left:calc(' + (100 / CONFIRM_GAUGE_MAX).toFixed(1) + '% - 1px)"></div></div>'
+        + '<div class="sim-cf-txt"><span class="sim-cf-od">' + oddsTxt + '</span><span>' + buyLineTxt + '</span></div></div>'
+        + '<div class="sim-cf-ev"><b' + (isBuy ? ' class="sim-cf-up"' : '') + '>' + (hasEv ? r.ev.toFixed(2) : '—') + '</b>'
+        + (r.lowP ? '<span class="sim-cf-low">低確率</span>' : '') + '</div></div>';
     }).join('');
 
     var withOdds = rows.filter(function (r) { return r.odds !== null && r.odds !== undefined; }).map(function (r) { return r.odds; });
-    var range = withOdds.length
-      ? Math.min.apply(null, withOdds).toFixed(1) + '倍 〜 ' + Math.max.apply(null, withOdds).toFixed(1) + '倍'
-      : '';
+    var lo = withOdds.length ? Math.min.apply(null, withOdds) : null;
+    var hi = withOdds.length ? Math.max.apply(null, withOdds) : null;
+    var range = lo === null ? '' : (lo === hi ? lo.toFixed(1) + '倍' : lo.toFixed(1) + '〜' + hi.toFixed(1) + '倍');
     var moreLine = restCount > 0 ? '<div class="sim-more">…他' + restCount + '点</div>' : '';
 
     // 128-spec: 組んだものをシートに残す。押した時の state を betsheet.js が写し取る
     var addBtn = '<button type="button" class="sim-add" data-sim-add>シートに入れる</button>';
 
-    return summary
-      + '<div class="sim-confirm"><div class="ch"><span>' + escapeHtml(bandLabel(state) + ' ' + methodLabel(state) + ' ' + rows.length + '点') + '</span>'
-      + '<span class="rng">' + range + '</span></div>' + bodyHtml + '</div>' + moreLine + addBtn;
+    var name = (bandLabel(state) + ' ' + methodLabel(state)).trim();
+    return '<div class="sim-band sim-cf-band ' + t.band + '"><span class="sim-cf-l">' + escapeHtml(name)
+      + ' <span class="sim-cf-n">' + rows.length + '<i>点</i></span></span><span class="sim-cf-rng">' + range + '</span></div>'
+      + '<div class="sim-cf"><div class="sim-cf-lh"><span>買い目（' + selCount + (t.frame ? '枠' : '頭') + 'から）</span>'
+      + '<span class="sim-cf-lg"><span>オッズ</span><span>| 買いライン</span></span><span class="sim-cf-lr">EV</span></div>'
+      + '<div class="sim-cf-rows">' + bodyHtml + '</div></div>' + moreLine + addBtn;
   }
 
   // opts = { aiMark: 馬 → AIの印のHTML }（race.js の markBadge20。無ければAI印は「—」）

@@ -710,20 +710,45 @@ span.sim-nm{display:block;cursor:default}
 .sim-pick.on:not(.lbl)::after{content:"✓";font-family:system-ui,sans-serif;font-size:13px;font-weight:700}
 .sim-pick:disabled{opacity:.35;cursor:not-allowed}
 
-.sim-summary{display:flex;justify-content:center;gap:12px;font-size:13px;font-weight:700;padding:10px 0 4px}
-.sim-summary b{color:var(--cta)}
-.sim-confirm{border:1px solid var(--rule);border-radius:8px;margin-top:6px;overflow:hidden}
-.sim-confirm .ch{background:var(--sub-bg);font-size:12px;font-weight:700;padding:7px 9px;
-  border-bottom:1px solid var(--rule);display:flex;justify-content:space-between}
-.sim-confirm .ch .rng{color:var(--cap);font-weight:600}
-.sim-combo{display:flex;flex-direction:column;gap:3px;padding:8px 9px;border-bottom:1px solid var(--rule)}
-.sim-combo:last-child{border-bottom:none}
-.sim-combo.buy{background:var(--green-row)}
-.sim-combo .seq{display:flex;align-items:center;gap:2px;flex-wrap:wrap}
-.sim-combo .seq .hn{margin-right:1px}
-.sim-combo .abbr{font-size:10px;color:var(--cap);margin-right:2px}
-.sim-combo .nums{display:flex;gap:12px;font-size:11px;color:var(--cap);flex-wrap:wrap}
-.sim-combo .nums b{color:var(--text);font-variant-numeric:tabular-nums}
+/* 2026-10-10（mockup-287 案C・ユーザー決定）: 確かめる欄も馬の表と同じ「色の帯＋灰の地に1点ずつの白い帯」。
+   列は 買い目｜目盛り（112px）｜EV。目盛りは今のオッズが買いラインのどこまで来たか（EV 0〜1.5）。
+   黒い線が買いライン（EV 1）で、越えたら棒が緑。棒の下は左が今のオッズ・右が買いライン */
+.sim-cf-band{display:flex;align-items:center;justify-content:space-between;gap:8px;
+  min-height:36px;margin-top:14px;padding:5px 10px;border-radius:8px 8px 0 0}
+.sim-cf-l{display:flex;align-items:baseline;gap:6px;min-width:0}
+.sim-cf-n,.sim-cf-od,.sim-cf-ev b,.sim-cf-seq .hn{font-family:Futura,Jost,'Century Gothic',system-ui,sans-serif;
+  font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:.01em}
+.sim-cf-n{font-size:17px}
+.sim-cf-n i{font-style:normal;font-family:system-ui,-apple-system,"Hiragino Sans",sans-serif;
+  font-weight:700;font-size:.78em;margin-left:1px}
+.sim-cf-rng{font-size:12px;font-weight:600;opacity:.9;white-space:nowrap}
+.sim-cf{background:#F2F2F5;border-radius:0 0 10px 10px;padding:0 3px 3px}
+.sim-cf-lh,.sim-cf-r{display:grid;align-items:center;column-gap:10px;padding:0 10px 0 8px;
+  grid-template-columns:minmax(0,1fr) 112px 40px}
+.sim-cf-lh{height:26px;font-size:10px;font-weight:700;color:#8E8E89;white-space:nowrap}
+.sim-cf-lg{display:flex;justify-content:space-between}
+.sim-cf-lr{text-align:right}
+.sim-cf-rows{display:flex;flex-direction:column;gap:4px}
+.sim-cf-r{min-height:56px;background:#fff;border-radius:11px}
+.sim-cf-who{min-width:0;display:flex;flex-direction:column;gap:4px}
+.sim-cf-seq{display:flex;align-items:center;gap:3px;min-width:0}
+.sim-cf-seq .hn{font-size:12.5px;border-radius:5px}
+.sim-cf-sep{font-size:10px;color:#AEAEB2;font-weight:700}
+.sim-cf-nm{margin-left:6px;font-size:13.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sim-cf-sub{font-size:10.5px;color:#5E5E5A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sim-cf-g{display:flex;flex-direction:column;gap:5px}
+.sim-cf-trk{position:relative;height:6px;border-radius:3px;background:#EDEDF0}
+.sim-cf-fill{position:absolute;left:0;top:0;bottom:0;border-radius:3px;background:#B7C6D3}
+.sim-cf-fill.sim-cf-up{background:var(--hit)}
+.sim-cf-tick{position:absolute;top:-3px;bottom:-3px;width:2px;border-radius:1px;background:#333}
+.sim-cf-txt{display:flex;justify-content:space-between;font-size:9.5px;color:#8E8E89;font-weight:600;white-space:nowrap}
+.sim-cf-od{color:#333;font-size:11px}
+.sim-cf-ev{text-align:right;line-height:1}
+.sim-cf-ev b{display:block;font-size:16px}
+.sim-cf-ev b.sim-cf-up{color:var(--hit)}
+.sim-cf-low{display:block;margin-top:3px;font-size:9px;font-weight:700;color:#A9A9A4;white-space:nowrap}
+.sim-cf-empty{margin-top:14px;padding:16px 12px;background:#F2F2F5;border-radius:10px;
+  font-size:12.5px;color:var(--cap);text-align:center;line-height:1.6}
 .sim-more{font-size:12px;color:var(--cap);margin-top:6px;padding:0 2px}
 .om-table{margin-top:4px;font-size:12px}
 .om-table th,.om-table td{padding:6px 3px}
