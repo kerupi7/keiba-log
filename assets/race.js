@@ -4119,7 +4119,7 @@ function setupPopups20(root, site) {
       if (/^\d+$/.test(nb.dataset.pop) && window.YosoView) {
         backTo = null;
         closePopup();
-        if (window.YosoView.open(nb.dataset.pop)) return;
+        if (window.YosoView.open(nb.dataset.pop, nb)) return;
       }
       // コースの中から馬番を押したときだけ、戻り先としてコースを覚える
       // 2026-09-03: 枠のポップアップからも同じように戻り先を覚える
