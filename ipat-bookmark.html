@@ -37,8 +37,9 @@
   <h2>最初に1回だけ（iPhone の Safari）</h2>
   <div class="box"><ol>
     <li>下の「ブックマークの中身をコピー」を押す</li>
-    <li>このページで ⬆︎ →「ブックマークを追加」。名前を <b>Ans.の買い目</b> にして保存</li>
-    <li>📖 →「編集」→「Ans.の買い目」を開き、アドレスの欄を全部消して、1でコピーした中身を貼る →「完了」</li>
+    <li>このページで、下のバーの「≡」（古い iPhone は ⬆︎）→「ブックマークの追加先…」。名前を <b>Ans.の買い目</b> にして「保存」</li>
+    <li>「≡」→「ブックマーク」→「Ans.の買い目」を長押し →「編集」。アドレスの欄を全部消して、1でコピーした中身を貼る →「完了」</li>
+    <li>貼ったアドレスが <b>javascript:(function</b> で始まっていれば成功。途中で別のものをコピーしたら、1からやり直す</li>
   </ol>
   <button type="button" class="copy" id="copy">ブックマークの中身をコピー</button>
   <p class="ok" id="ok"></p>
@@ -49,7 +50,7 @@
   <div class="box"><ol>
     <li>Ans. の買い目シートで「IPAT投票」を押す（買い目がコピーされ、即PAT が開く）</li>
     <li>即PAT でログインし、トップメニューの「通常投票」を押す</li>
-    <li>📖 →「Ans.の買い目」を押し、上に出る「ペースト」を押す</li>
+    <li>「≡」→「ブックマーク」→「Ans.の買い目」を押し、上に出る「ペースト」を押す</li>
     <li>即PAT の「合計金額入力」で中身を確かめ、合計金額を入れて「投票」を押す</li>
   </ol></div>
   <p class="ver">「ペースト」が出ない時は、貼り付け欄が出ます。長押し →「ペースト」→ OK。</p>
@@ -76,7 +77,7 @@
     // % と改行だけを置き換える（全部を符号にすると和文で2倍近く長くなる）
     var url = 'javascript:' + code.replace(/%/g, '%25').replace(/\n/g, '%0A');
     document.getElementById('code').value = url;
-    document.getElementById('ver').textContent = '2026-10-10 版（' + url.length.toLocaleString() + '文字）。版が変わったら、3の貼り替えだけやり直す';
+    document.getElementById('ver').textContent = '2026-10-10 版（' + url.length.toLocaleString() + '文字）。版が変わったら、1と3（貼り替え）だけやり直す';
     document.getElementById('copy').addEventListener('click', function () {
       var ta = document.getElementById('code');
       var done = function () { document.getElementById('ok').textContent = 'コピーしました。2と3へ進んでください'; };
