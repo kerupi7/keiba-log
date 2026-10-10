@@ -256,6 +256,7 @@
     if (rootRO) { rootRO.disconnect(); rootRO = null; }
     clearInterval(rootPoll); rootPoll = null;
     root.remove(); root = null; viewSrc = null;
+    document.body.style.top = '';   // 下に払って閉じたときに zoomBack がずらした分を戻す
     document.body.style.overflow = '';
     document.body.classList.remove('yf-open');
     window.scrollTo(0, pageY);   // 開く前に見ていた高さへ戻す（2026-09-21）
@@ -3304,10 +3305,12 @@
     const vis = card.getBoundingClientRect();
     const W0 = card.offsetWidth, H0 = card.offsetHeight;
     const s0 = vis.width / W0;
-    // 開いている間はページ（body）を先頭で止めている（yoso.css の body.yf-open）。閉じると pageY の高さへ
-    //   戻すので、行の位置もその高さで見た位置に直す
+    // 開いている間はページ（body）を先頭で止めている（yoso.css の body.yf-open）。背景を溶かすと後ろに
+    //   ページの先頭が見えてしまうので、開く前に見ていた高さまでずらしておく（2026-10-10 ユーザー
+    //   「そのページの一番上がスワイプ後に出てくるから変」）。閉じるとき close() が元に戻す
+    document.body.style.top = `-${pageY}px`;
     let rr = null;
-    if (row) { const b = row.getBoundingClientRect(); rr = { left: b.left, top: b.top - pageY, width: b.width, height: b.height }; }
+    if (row) { const b = row.getBoundingClientRect(); rr = { left: b.left, top: b.top, width: b.width, height: b.height }; }
     if (rr && (rr.top + rr.height < 0 || rr.top > window.innerHeight || rr.width < 10)) rr = null;
     // 札を重ねる画面の直下へ出し、左上を原点に「位置＋倍率＋切り抜き」で形を表す
     root.classList.add('yf-zoom');
