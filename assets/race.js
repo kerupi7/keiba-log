@@ -2046,16 +2046,44 @@ function axDiff(c, basep) {
   return d;
 }
 
-// opts.zones=true のときだけ、内・中・外の輪の段を足す（1頭だけ見る画面の基本ページ用・handoff_2026-09-28_waku-chokyo.md）。
-//   opts.field＝今回の出走頭数（取消を除く）。今日がどこかを馬番÷頭数で決めるのに使う
+// ===== 見出しの絵（2026-10-13・mockup-306。yoso.js の印を決める画面の IC_* と同じ絵） =====
+//   コース＝競馬場の楕円／距離＝旗／回り＝楕円に矢印（今日の向き）／馬場＝太陽か しずく（今日の馬場）／
+//   枠＝縦の棒3本（今日の位置だけ濃い）／レースの型＝速さのメーター（針＝今日の本命の展開のペース）
+const AX_IC_ = (body) => `<svg viewBox="0 0 24 24" class="ax2-ic" aria-hidden="true">${body}</svg>`;
+const AX_IC = {
+  track: AX_IC_('<ellipse cx="12" cy="12" rx="9.5" ry="6" fill="none" stroke="currentColor" stroke-width="2.4"/><ellipse cx="12" cy="12" rx="5" ry="2.4" fill="none" stroke="currentColor" stroke-width="1.2" opacity=".5"/>'),
+  flag: AX_IC_('<path d="M6 21V3" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M6.5 4h11l-3 4 3 4h-11z" fill="currentColor"/>'),
+  sun: AX_IC_('<circle cx="12" cy="12" r="4.5" fill="#F58700"/>' + [0, 45, 90, 135, 180, 225, 270, 315].map((d) => {
+    const t = (d * Math.PI) / 180;
+    return `<line x1="${(12 + Math.cos(t) * 7.3).toFixed(1)}" y1="${(12 + Math.sin(t) * 7.3).toFixed(1)}" x2="${(12 + Math.cos(t) * 10).toFixed(1)}" y2="${(12 + Math.sin(t) * 10).toFixed(1)}" stroke="#F58700" stroke-width="2" stroke-linecap="round"/>`;
+  }).join('')),
+  rain: AX_IC_('<path d="M12 2.5C12 2.5 5.5 10 5.5 14a6.5 6.5 0 0 0 13 0c0-4-6.5-11.5-6.5-11.5z" fill="#3AA3DC"/>'),
+  turn: (right) => AX_IC_(`<rect x="2.5" y="6" width="19" height="12" rx="6" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="${right ? 'M13 3.5l3.5 2.5L13 8.5' : 'M11 3.5L7.5 6 11 8.5'}" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>`),
+  gate: (z) => AX_IC_(['内', '中', '外'].map((k, i) => `<rect x="${2 + i * 7.3}" y="5" width="5.6" height="14" rx="1.5" fill="currentColor" opacity="${k === z ? 1 : 0.22}"/>`).join('')),
+  pace: (code) => {
+    const ang = { S: -60, M: 0, H: 60 }[code] ?? 0, t = ((ang - 90) * Math.PI) / 180;
+    // 今日の展開の見立てが無いレースは針を出さない（真上＝平均と読めてしまうため）
+    const needle = code ? `<line x1="12" y1="17" x2="${(12 + Math.cos(t) * 7).toFixed(1)}" y2="${(17 + Math.sin(t) * 7).toFixed(1)}" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>` : '';
+    return AX_IC_(`<path d="M3.5 17a8.5 8.5 0 0 1 17 0" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>${needle}<circle cx="12" cy="17" r="1.8" fill="currentColor"/>`);
+  },
+};
+
+// ===== コース適性（2026-10-13 作り替え・mockup-300 の B1／306 の見出しの絵。ユーザー決定）=====
+//   輪9つをやめて、全部を同じ形のマスにした。色の地は「今日の条件」のマスだけ（今日でないマスは白地に字の色）。
+//   段は コース（今日のコース・競馬場・今日の距離）／距離の傾向（山）／回り・馬場・枠の位置。
+//   好走の数え方・色の決まり（axDiff・AX_*）は前の輪のときと同じ。
+//   距離の山を押すと3つ目のマスがその距離に替わる（.ax-hit → .ax-dw。押す処理と aptResetCards はそのまま）。
+//   金の枠（yoso.js）は、マスの data-txt（「左回り 50% 6/12」のように名前が先）で何のマスかを見分ける。
+// opts.zones=true のときだけ枠の位置（内・中・外）を出す。opts.field＝今回の出走頭数（取消を除く）。今日の位置は馬番÷頭数
+// opts.head=false のときは「コース適性」の見出しを出さない（基本のページは見出しなしで1枚のカードに入れる）
 function aptCardHtml(h, race, bare, opts) {
   const a = (h.course_record || {}).apt;
   if (!a || !a.base || !a.base.n) return '';
   const R = race || {};
+  const O = opts || {};
   const basep = axPct(a.base);
   if (basep == null) return '';
   const ds = (a.dist || []).filter((c) => c.n);
-  const scale = AX_SCALE[R.surface] || AX_SCALE['芝'];
   const used = AX_USED[R.surface] || AX_USED['芝'];
   // 横軸は実在する距離を等間隔に並べる（実寸だと芝の3000m以上が右の23%を占めるため）
   const at = (m) => {
@@ -2075,179 +2103,105 @@ function aptCardHtml(h, race, bare, opts) {
     const tgt = d > 0 ? [31, 122, 69] : [200, 53, 44];
     return `rgb(${GREY.map((g, i) => Math.round(g + (tgt[i] - g) * t)).join(',')})`;
   };
-  // 山の形（高さ＝走った数）と色（＝普段との差）を作る。
-  //   色は一番近い距離だけで決めず、全部の距離を重ねて混ぜる。そうしないと距離の
-  //   真ん中で緑と赤が一瞬で入れ替わり、そこが境目に見える（2026-09-24 実機で確認）
-  const STEPS = 260, SIG = 150;
-  const lo = Math.min(...ds.map((c) => c.m), R.distance) - 250;
-  const hi = Math.max(...ds.map((c) => c.m), R.distance) + 250;
-  const pts = [];
-  let maxW = 0.001;
-  for (let i = 0; i <= STEPS; i++) {
-    const x = lo + ((hi - lo) * i) / STEPS;
-    let w = 0, cw = 0, cd = 0;
-    ds.forEach((c) => {
-      w += c.n * Math.exp(-((x - c.m) * (x - c.m)) / (2 * SIG * SIG));
-      const dd = axDiff(c, basep);
-      if (dd == null) return;
-      const k = Math.exp(-((x - c.m) * (x - c.m)) / (2 * AX_SIG * AX_SIG));
-      if (k < 0.002) return;
-      cw += k; cd += k * dd;
-    });
-    maxW = Math.max(maxW, w);
-    pts.push({ w, d: cw > 0.02 ? Math.max(-AX_CAP, Math.min(AX_CAP, cd / cw)) : null,
-               f: Math.min(1, cw), pos: at(x) });
-  }
-  const W = 300, Ht = 62;
-  const uid = `ax${Math.random().toString(36).slice(2, 8)}`;
-  const path = pts.map((q) => `${((q.pos / 100) * W).toFixed(2)},${(Ht - (q.w / maxW) * (Ht - 6)).toFixed(2)}`).join(' L');
-  const stops = pts.map((q) => `<stop offset="${q.pos.toFixed(2)}%" stop-color="${col(q.d, q.f)}"/>`).join('');
-  // 押す帯は隣との真ん中まで。印は帯の真ん中ではなく実際の距離の位置に置く
-  const hits = ds.map((c, i) => {
-    const prev = i ? at((c.m + ds[i - 1].m) / 2) : 0;
-    const next = i < ds.length - 1 ? at((c.m + ds[i + 1].m) / 2) : 100;
-    const off = ((at(c.m) - prev) / (next - prev)) * 100;
-    return `<b class="ax-hit" data-k="${i}" style="left:${prev}%;width:${next - prev}%;--mk:${off}%"></b>`;
-  }).join('');
-  // ===== 上段：今日のコース・競馬場・山で押した距離を、同じ大きさの輪で並べる（2026-09-24 決定・mockup-176） =====
-  //   輪の1切れ＝1走、塗った切れ＝好走。3つ目の輪は山を押すと切り替わる（押す処理は .ax-dw の on を付け替える）。
-  //   札は数字でなく言葉で出す。「▼9」のような割り引いた差は読めなかった（2026-09-24 ユーザー指摘）
   const judge = (c) => {
     const d = axDiff(c, basep);
     return d == null ? 'na' : d >= AX_PT ? 'up' : d <= -AX_PT ? 'dn' : 'eq';
   };
-  const RCOL = { up: '#0F7A3D', dn: '#C8352C', eq: '#8E8E93', na: '#8E8E93' };
-  const ringSvg = (c, size, color) => {
-    const sw = size * 0.13, r = (size - sw) / 2, cx = size / 2, C = 2 * Math.PI * r;
-    if (!c.n) return `<svg width="${size}" height="${size}"><circle cx="${cx}" cy="${cx}" r="${r}" fill="none"
-      stroke="#E5E5EA" stroke-width="${sw}" stroke-dasharray="3 4"/></svg>`;
-    const gap = c.n > 1 ? Math.min(4, (C / c.n) * 0.18) : 0, seg = C / c.n - gap;
-    let s = '';
-    for (let i = 0; i < c.n; i++) {
-      s += `<circle cx="${cx}" cy="${cx}" r="${r}" fill="none" stroke="${i < c.good ? color : '#E8E8ED'}"
-        stroke-width="${sw}" stroke-dasharray="${seg} ${C - seg}" stroke-dashoffset="${-(i * (C / c.n)) + C / 4 - gap / 2}"/>`;
-    }
-    return `<svg width="${size}" height="${size}">${s}</svg>`;
-  };
-  // 名前の中の数字（1800m）だけ数字の書体にする
-  const dg = (t) => escapeHtml(t).replace(/(\d+m?)/g, '<span class="ax-dg">$1</span>');
-  // 得意・苦手の札（▲得意／▼苦手／ふつう／1走だけ）は出さない。％の数字の色（緑・赤・灰）で分かる
-  //   （2026-09-24 ユーザー指示）
-  const runs = (c) => `<span class="ax-un"><b class="ax-dg">${c.good}</b>/<span class="ax-dg">${c.n}</span>走</span>`;
-  const unit = (label, c, cls, k) => {
+  // マス1つ。today＝今日の条件（色の地を付ける）。k を渡すと距離の山で切り替わるマス（.ax-dw）になる
+  const cell = (label, c, o = {}) => {
     c = c || { n: 0, good: 0 };
-    const j = c.n ? judge(c) : 'na';
-    return `<div class="ax-u ${j}${cls ? ' ' + cls : ''}"${k != null ? ` data-k="${k}"` : ''}>
-      <div class="ax-rw">${ringSvg(c, 72, RCOL[j])}
-        <div class="ax-rc">${c.n ? `<b class="ax-dg">${axPct(c)}<small>%</small></b>` : '<span class="ax-first">初</span>'}</div></div>
-      <span class="ax-ul">${dg(label)}</span>
-      ${c.n ? `${runs(c)}` : '<span class="ax-un">走っていない</span>'}</div>`;
+    const today = Boolean(o.today);
+    const dot = o.dot != null ? o.dot : today;
+    const kAttr = o.k != null ? ` data-k="${o.k}"` : '';
+    const cls = `ax-u ax2-c${o.cls ? ' ' + o.cls : ''}`;
+    const nm = `<span class="ax2-k${dot ? ' td' : ''}">${escapeHtml(label)}</span>`;
+    if (!c.n) {
+      return `<div class="${cls} first"${kAttr} data-txt="${escapeHtml(`${o.txt || label} 初`)}"><span class="ax2-f">初</span>${nm}</div>`;
+    }
+    const j = judge(c);
+    const p = axPct(c);
+    return `<div class="${cls} ${j}${today ? ' t' : ''}"${kAttr} data-txt="${escapeHtml(`${o.txt || label} ${p}% ${c.good}/${c.n}`)}">
+      <b class="ax2-v ax-dg">${p}<small>%</small></b><span class="ax2-n ax-dg">${c.good}/${c.n}</span>${nm}</div>`;
   };
-  // 3つ目の輪は、最初は今日の距離。今日の距離を走っていない馬は「全場○○m・初」を出す
-  //   （走った距離の先頭に落ちて、芝2200mの日に1600mが出ていた・2026-09-24 ユーザー指摘）。
-  //   その輪は山に押す場所が無いので data-k="t"。開き直しの戻し（aptResetCards）も data-today で同じ輪へ戻る
+  const sec = (ic, title, right) => `<div class="ax2-sec"><span class="ax2-st">${ic}${title}</span>${right ? `<span class="ax2-sr">${right}</span>` : ''}</div>`;
+
+  // ----- コース：今日のコース・競馬場・今日の距離（距離の山を押すとその距離へ替わる） -----
   const ti = ds.findIndex((c) => c.today);
   const todayKey = ti >= 0 ? String(ti) : 't';
-  const todayUnit = ti >= 0 ? '' : unit(`全場${R.distance || ''}m`, { n: 0, good: 0 }, 'ax-dw on', 't');
-  const top = `<div class="ax-top${ds.length ? ' n3' : ''}" data-today="${todayKey}">
-    ${unit(`${R.track || ''}${R.surface || ''}${R.distance || ''}m`, a.course, 'today')}
-    ${unit(`${R.track || ''}${R.surface || ''}`, a.track)}
-    ${ds.length ? `<div class="ax-pick">${todayUnit}${ds.map((c, i) =>
-      unit(`全場${c.m}m`, c, 'ax-dw' + (String(i) === todayKey ? ' on' : ''), i)).join('')}</div>` : ''}</div>`;
-  // ===== 回り：競馬場の形（楕円）に回る向きの矢印。色＝得意・苦手、中に好走率（2026-09-24 決定） =====
-  const tby = {};
-  (a.turn || []).forEach((c) => { tby[c.label] = c; });
-  const turns = ['左回り', '右回り'].map((lb) => tby[lb] || { n: 0, good: 0, label: lb });
-  const oval = (c, j) => {
-    const col = c.n ? RCOL[j] : '#D1D1D6';
-    // 上の辺に矢印。右回り＝上を右へ進む（時計回り）、左回り＝上を左へ進む
-    const tip = c.label === '右回り' ? '59,6 45,-2 45,14' : '41,6 55,-2 55,14';
-    return `<svg width="100" height="62" viewBox="0 -2 100 62">
-      <rect x="6" y="6" width="88" height="48" rx="24" fill="none" stroke="${col}" stroke-width="5"
-        ${c.n ? '' : 'stroke-dasharray="3 4"'}/>
-      <polygon points="${tip}" fill="${col}" stroke="#fff" stroke-width="1.5"/></svg>`;
-  };
-  // 回りの見出し（回り（ダート））は出さない。楕円と矢印で回りだと分かる（2026-09-24 ユーザー指示）
-  const turnUnit = (c, tag) => {
-    const j = c.n ? judge(c) : 'na';
-    return `<div class="ax-o ${j}${c.today ? ' today' : ''}">
-      <div class="ax-ow">${oval(c, j)}<div class="ax-rc">${c.n ? `<b class="ax-dg">${axPct(c)}<small>%</small></b>`
-        : '<span class="ax-first">初</span>'}</div></div>
-      <span class="ax-ul">${c.label}${tag && c.today ? '<i class="ax-tday">今日</i>' : ''}</span>
-      ${c.n ? `${runs(c)}` : '<span class="ax-un">走っていない</span>'}</div>`;
-  };
-  // ===== 馬場：良（晴れのオレンジの太陽）／道悪（雨の水色のしずく）（2026-09-24 決定・mockup-178） =====
-  //   形の色は天気で固定。得意・苦手は中の数字の色と下の札で見せる。
-  //   今日がどちらかは公開データに入れず、ここで race.going から決める（馬場は当日に発表が変わるため）
-  const GOOD_SUN = '#F58700', WET_RAIN = '#3AA3DC';
+  const todayDist = ti >= 0 ? '' : cell(`全場${R.distance || ''}m`, { n: 0, good: 0 }, { today: true, cls: 'ax-dw on', k: 't' });
+  const top = `<div class="ax-top n3 ax2-g3" data-today="${todayKey}">
+    ${cell(`${R.track || ''}${R.surface || ''}${R.distance || ''}m`, a.course, { today: true })}
+    ${cell(`${R.track || ''}${R.surface || ''}`, a.track, { today: true })}
+    <div class="ax-pick">${todayDist}${ds.map((c, i) => cell(`全場${c.m}m`, c,
+      { today: Boolean(c.today), dot: Boolean(c.today), cls: 'ax-dw' + (String(i) === todayKey ? ' on' : ''), k: i })).join('')}</div></div>`;
+
+  // ----- 距離の傾向：山の形（高さ＝走った数）と色（＝普段との差）。作り方は前と同じで、高さだけ低くした -----
+  let mount = '<div class="ax-none">この面では走っていない</div>';
+  if (ds.length) {
+    //   色は一番近い距離だけで決めず、全部の距離を重ねて混ぜる。そうしないと距離の
+    //   真ん中で緑と赤が一瞬で入れ替わり、そこが境目に見える（2026-09-24 実機で確認）
+    const STEPS = 260, SIG = 150;
+    const lo = Math.min(...ds.map((c) => c.m), R.distance) - 250;
+    const hi = Math.max(...ds.map((c) => c.m), R.distance) + 250;
+    const pts = [];
+    let maxW = 0.001;
+    for (let i = 0; i <= STEPS; i++) {
+      const x = lo + ((hi - lo) * i) / STEPS;
+      let w = 0, cw = 0, cd = 0;
+      ds.forEach((c) => {
+        w += c.n * Math.exp(-((x - c.m) * (x - c.m)) / (2 * SIG * SIG));
+        const dd = axDiff(c, basep);
+        if (dd == null) return;
+        const k = Math.exp(-((x - c.m) * (x - c.m)) / (2 * AX_SIG * AX_SIG));
+        if (k < 0.002) return;
+        cw += k; cd += k * dd;
+      });
+      maxW = Math.max(maxW, w);
+      pts.push({ w, d: cw > 0.02 ? Math.max(-AX_CAP, Math.min(AX_CAP, cd / cw)) : null,
+                 f: Math.min(1, cw), pos: at(x) });
+    }
+    const W = 300, Ht = 34;
+    const uid = `ax${Math.random().toString(36).slice(2, 8)}`;
+    const path = pts.map((q) => `${((q.pos / 100) * W).toFixed(2)},${(Ht - (q.w / maxW) * (Ht - 4)).toFixed(2)}`).join(' L');
+    const stops = pts.map((q) => `<stop offset="${q.pos.toFixed(2)}%" stop-color="${col(q.d, q.f)}"/>`).join('');
+    // 押す帯は隣との真ん中まで。印は帯の真ん中ではなく実際の距離の位置に置く
+    const hits = ds.map((c, i) => {
+      const prev = i ? at((c.m + ds[i - 1].m) / 2) : 0;
+      const next = i < ds.length - 1 ? at((c.m + ds[i + 1].m) / 2) : 100;
+      const off = ((at(c.m) - prev) / (next - prev)) * 100;
+      return `<b class="ax-hit" data-k="${i}" style="left:${prev}%;width:${next - prev}%;--mk:${off}%"></b>`;
+    }).join('');
+    mount = `<div class="ax-mt ax2-mt">
+        <svg viewBox="0 0 ${W} ${Ht}" preserveAspectRatio="none">
+          <defs><linearGradient id="${uid}" x1="0" y1="0" x2="1" y2="0">${stops}</linearGradient></defs>
+          <path d="M0,${Ht} L${path} L${W},${Ht} Z" fill="url(#${uid})"/>
+        </svg>
+        <span class="ax-now" style="left:${at(R.distance)}%"></span>
+        <span class="ax-hits">${hits}</span>
+        <div class="ax-scale">${used.map((m) => {
+          const k = m === R.distance ? ' now' : ds.some((c) => c.m === m) ? ' run' : '';
+          return `<span class="bt-num${k}" style="left:${at(m)}%">${(m / 100).toFixed(1).replace(/\.0$/, '')}</span>`;
+        }).join('')}</div>
+      </div>`;
+  }
+
+  // ----- 回り・馬場・枠の位置：今日の分だけを1段に並べる -----
+  //   回りが分からない（直線）レースは回りを出さない。馬場の発表前（今日が分からない）は良・道悪の2つを今日の印なしで出す
+  const tTurn = (a.turn || []).find((c) => c.today);
   const gRaw = String(R.going || '');
   const todayGoing = !gRaw ? null : gRaw.startsWith('良') ? '良' : /^(稍|重|不)/.test(gRaw) ? '道悪' : null;
-  const goings = (Array.isArray(a.going) ? a.going : []).map((c) => ({ ...c, today: c.label === todayGoing }));
-  const sunSvg = (dash) => `<svg width="100" height="62" viewBox="0 0 100 62" overflow="visible">
-      <circle cx="50" cy="31" r="23" fill="none" stroke="${GOOD_SUN}" stroke-width="4.5" ${dash}/>
-      ${[0, 45, 90, 135, 180, 225, 270, 315].map((deg) => { const t = (deg * Math.PI) / 180;
-        return `<line x1="${(50 + Math.cos(t) * 28).toFixed(1)}" y1="${(31 + Math.sin(t) * 28).toFixed(1)}"
-          x2="${(50 + Math.cos(t) * 32).toFixed(1)}" y2="${(31 + Math.sin(t) * 32).toFixed(1)}"
-          stroke="${GOOD_SUN}" stroke-width="3.5" stroke-linecap="round"/>`; }).join('')}</svg>`;
-  const dropSvg = (dash) => `<svg width="100" height="62" viewBox="0 0 100 62">
-      <path d="M50 2 C50 2 25 27 25 38 A25 25 0 0 0 75 38 C75 27 50 2 50 2 Z" fill="none" stroke="${WET_RAIN}"
-        stroke-width="5" stroke-linejoin="round" ${dash}/></svg>`;
-  const goingUnit = (c, tag) => {
-    const j = c.n ? judge(c) : 'na';
-    const dash = c.n ? '' : 'stroke-dasharray="3 4"';
-    return `<div class="ax-o ${j}${c.today ? ' today' : ''}">
-      <div class="ax-ow">${c.label === '良' ? sunSvg(dash) : dropSvg(dash)}
-        <div class="ax-rc${c.label === '良' ? '' : ' ax-rc-drop'}">${c.n ? `<b class="ax-dg">${axPct(c)}<small>%</small></b>`
-          : '<span class="ax-first">初</span>'}</div></div>
-      <span class="ax-ul">${c.label}${tag && c.today ? '<i class="ax-tday">今日</i>' : ''}</span>
-      ${c.n ? `${runs(c)}` : '<span class="ax-un">走っていない</span>'}</div>`;
-  };
-  // 回りと馬場は、今日の分だけを1段に並べる（左＝回り・右＝馬場。2026-09-24 ユーザー決定）。
-  //   どちらも今日の分しか出さないので「今日」の札は付けない。
-  //   今日の回りか馬場が分からないレース（直線・馬場の発表前）は、2つずつの段に戻し、
-  //   今日ではない方を薄い灰色にする（今日が分からない段はどちらも薄くしない）
-  const tTurn = turns.find((c) => c.today);
-  const tGoing = goings.find((c) => c.today);
-  const pair = (units, cls, dim) => `<div class="ax-g ax-turn${cls}">
-    <div class="ax-ov${dim ? ' has-today' : ''}">${units}</div></div>`;
-  let turnBlock = '';
-  if (tTurn && tGoing && (tTurn.n || tGoing.n)) {
-    turnBlock = pair(turnUnit(tTurn, false) + goingUnit(tGoing, false), ' ax-today1', false);
-  } else {
-    if (turns.some((c) => c.n)) turnBlock += pair(turns.map((c) => turnUnit(c, true)).join(''), '', turns.some((c) => c.today));
-    if (goings.some((c) => c.n)) turnBlock += pair(goings.map((c) => goingUnit(c, true)).join(''), ' ax-going', goings.some((c) => c.today));
+  const goings = Array.isArray(a.going) ? a.going : [];
+  const tGoing = goings.find((c) => c.label === todayGoing);
+  const groups = [];
+  if (tTurn) {
+    groups.push({ n: 1, head: `${AX_IC.turn(tTurn.label === '右回り')}回り`, body: cell(tTurn.label, tTurn, { today: true }) });
   }
-  // 見出しの右の説明は出さない（2026-09-24 ユーザー指示）
-  const head = bare
-    ? `<div class="ax-hd"><span class="ax-ht">コース適性</span></div>`
-    : `<div class="h-top"><span class="h-t">コース適性</span></div>`;
-  return `<div class="${bare ? 'ax ax-bare' : 'h-card b-crd ax'}">
-    ${head}
-    ${top}
-    ${!ds.length ? '<div class="ax-none">この面では走っていない</div>' : `
-    <div class="ax-g">
-      <div class="ax-mt">
-        <svg viewBox="0 0 ${W} ${Ht}" preserveAspectRatio="none">
-          <defs><linearGradient id="${uid}" x1="0" y1="0" x2="1" y2="0">${stops}</linearGradient>
-            <linearGradient id="${uid}v" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color="#fff" stop-opacity=".55"/>
-              <stop offset="55%" stop-color="#fff" stop-opacity=".10"/>
-              <stop offset="100%" stop-color="#fff" stop-opacity="0"/></linearGradient>
-            <clipPath id="${uid}c"><path d="M0,${Ht} L${path} L${W},${Ht} Z"/></clipPath></defs>
-          <path d="M0,${Ht} L${path} L${W},${Ht} Z" fill="url(#${uid})"/>
-          <rect x="0" y="0" width="${W}" height="${Ht}" fill="url(#${uid}v)" clip-path="url(#${uid}c)"/>
-        </svg>
-        <span class="ax-now" style="left:${at(R.distance)}%"><i>今日</i></span>
-        <span class="ax-hits">${hits}</span>
-        <div class="ax-scale">${used.map((m) =>
-          `<span class="bt-num${m === R.distance ? ' now' : ''}" style="left:${at(m)}%">${(m / 100).toFixed(1).replace(/\.0$/, '')}</span>`).join('')}</div>
-      </div></div>`}
-    ${turnBlock}${opts && opts.zones ? zoneBlock(opts.field) : ''}</div>`;
-
-  // ===== 内・中・外：過去走の馬番÷頭数で3等分した位置ごとの好走率（2026-09-28 決定・mockup-222 案C） =====
-  //   数えるのは publish（keiba_shutuba_columns.build_apt の zone）。好走の数え方・中央の全走・色の決まり（judge）は
-  //   すぐ上のコース適性の輪と同じ。ここでは今日の位置（馬番÷今回の頭数）に「今日」の札を付けるだけ
-  function zoneBlock(field) {
+  if (tGoing) {
+    groups.push({ n: 1, head: `${tGoing.label === '良' ? AX_IC.sun : AX_IC.rain}馬場`, body: cell(tGoing.label, tGoing, { today: true }) });
+  } else if (goings.some((c) => c.n)) {
+    groups.push({ n: 2, head: `${AX_IC.sun}馬場`, body: goings.map((c) => cell(c.label, c)).join('') });
+  }
+  if (O.zones) {
     const zoneOf = (n, f) => {
       n = Number(n); f = Number(f);
       if (!n || !f || f < 2) return null;
@@ -2256,20 +2210,26 @@ function aptCardHtml(h, race, bare, opts) {
     };
     const z = {};
     (Array.isArray(a.zone) ? a.zone : []).forEach((c) => { z[c.label] = c; });
-    ['内', '中', '外'].forEach((k) => { z[k] = z[k] || { n: 0, good: 0 }; });
-    if (!z.内.n && !z.中.n && !z.外.n) return '';
-    const tz = zoneOf(h.number, field);
-    const zu = (k) => {
-      const c = z[k];
-      const j = c.n ? judge(c) : 'na';
-      return `<div class="ax-u ax-zu ${j}">
-      <div class="ax-rw">${ringSvg(c, 72, RCOL[j])}
-        <div class="ax-rc">${c.n ? `<b class="ax-dg">${axPct(c)}<small>%</small></b>` : '<span class="ax-first">初</span>'}</div></div>
-      <span class="ax-ul">${k}${k === tz ? '<i class="ax-tday">今日</i>' : ''}</span>
-      ${c.n ? `${runs(c)}` : '<span class="ax-un">走っていない</span>'}</div>`;
-    };
-    return `<div class="ax-g ax-zone"><div class="ax-top n3">${['内', '中', '外'].map(zu).join('')}</div></div>`;
+    if (['内', '中', '外'].some((k) => z[k] && z[k].n)) {
+      const tz = zoneOf(h.number, O.field);
+      // 今日の位置のマスの名前は「内今日」（金の枠が今日の枠を見分ける印・yoso.js tbGoldCard）
+      groups.push({ n: 3, zone: true, head: `${AX_IC.gate(tz)}枠の位置`,
+        body: ['内', '中', '外'].map((k) => cell(k, z[k], { today: k === tz, txt: k === tz ? `${k}今日` : k })).join('') });
+    }
   }
+  const row = groups.length ? `<div class="ax2-row">${groups.map((g) => `<div class="ax2-grp${g.zone ? ' zone' : ''}" style="flex:${g.n}">
+      <div class="ax2-gh">${g.head}</div><div class="ax2-gc" style="grid-template-columns:repeat(${g.n},minmax(0,1fr))">${g.body}</div></div>`).join('')}</div>` : '';
+
+  const head = O.head === false ? ''
+    : bare ? `<div class="ax-hd"><span class="ax-ht">コース適性</span></div>`
+    : `<div class="h-top"><span class="h-t">コース適性</span></div>`;
+  return `<div class="${bare ? 'ax ax2 ax-bare' : 'h-card b-crd ax ax2'}" data-gold-head="コース適性">
+    ${head}
+    ${sec(AX_IC.track, 'コース', '好走率・走数')}
+    ${top}
+    ${sec(AX_IC.flag, '距離の傾向', '赤いほど苦手')}
+    ${mount}
+    ${row}</div>`;
 }
 
 // 開き直したときに、押して出した距離を今日の距離へ戻す（2026-09-24 ユーザー指摘）。
@@ -2390,61 +2350,101 @@ function levelRecordTable(h) {
 // **確率は目安で「この展開になります」の断定ではない**（展開タブの注記と同じ扱い）。
 // scenario_grid ではなく scenario を見るのは、6マス表示より前に公開したページにも
 // main/sub/other は入っているため（公開済み285レースを見て grid が無いのは1レース）。
-// ===== レースの型べつ成績のカード（2026-09-24 作り替え・mockup-177 の案T＋表①カード）=====
-//   1頭だけ見る画面（yoso.js）と馬名の札（下の popupBody）の両方がここを呼ぶ。2つに書き分けると
-//   決まりがズレるので、正本はこの関数だけ（2026-09-24 ユーザー「小窓の方も同じ形にそろえて」）。
-//   上に見る2つ：今日の本命の展開とその戦績／この馬が最も好走している展開。下にペース×決着の6マス。
+// ===== レースの型べつ成績のカード（2026-10-13 作り替え・mockup-301 の H2「にじむ地図」。ユーザー決定）=====
+//   1頭だけ見る画面（yoso.js）と馬名の札（下の popupBody）の両方がここを呼ぶ。正本はこの関数だけ。
+//   縦＝ペース（スロー・平均・ハイ）、横＝決着（前残り・差し追込）の地図に、6つの型の色を走数の重みでにじませる。
+//   色＝そのマスの3着内率 − この馬の平常（publish の delta_pt と同じ）。25pt 離れると一番濃い（コース適性の AX_CAP と同じ線）。
+//   1走だけの型は色を混ぜない（0%か100%にしかならないため。前の6マスの「n<2 は色なし」と同じ）。走っていない型は重さ0。
+//   前の「本命」「最も好走」の箱は6マスと同じ数字を2回出していたので外し、地図の中に印（今日の札・★）で出す。
 //   最も好走＝2走以上ある型のうち3着内率が一番高い型（同じ率なら走数の多い方）。
-//   1走の型は0%か100%にしかならないので、最も好走に選ばず、色も付けない。
-//   得意・苦手の色の線は平常比 ±5pt（データ側の shade と同じ線）。札の言葉は出さず、数字と地の色で見せる
+//   地図は組み立ての時に小さな絵（RT_MAP_W×RT_MAP_H）を描いて埋め込む。画面に入れた後で描く形にすると、
+//   開くたび・1画面に縮めるたびに描き直しが要るため。絵が作れない環境では色なしの地のまま出る。
 const RT_PACE_NAME = [['S', 'スロー'], ['M', '平均'], ['H', 'ハイ']];
 const RT_SIDE_NAME = [['前残り', '前残り'], ['差し・追込', '差し追込']];
+const RT_X = { '前残り': 0.27, '差し・追込': 0.73 };
+const RT_Y = { S: 0.2, M: 0.5, H: 0.8 };
+const RT_MAP_W = 132, RT_MAP_H = 84;
+const RT_NEU = [243, 243, 246], RT_UP = [15, 122, 61], RT_DN = [200, 53, 44];
+const rtMix = (d) => {
+  if (d == null) return RT_NEU;
+  const t = Math.min(1, Math.abs(d) / AX_CAP), g = d > 0 ? RT_UP : RT_DN;
+  return RT_NEU.map((v, i) => Math.round(v + (g[i] - v) * t));
+};
+function rtMapImage(cells) {
+  try {
+    const cv = document.createElement('canvas');
+    cv.width = RT_MAP_W; cv.height = RT_MAP_H;
+    const ctx = cv.getContext('2d');
+    if (!ctx) return '';
+    const img = ctx.createImageData(RT_MAP_W, RT_MAP_H);
+    const SX = 0.2, SY = 0.17;
+    for (let j = 0; j < RT_MAP_H; j++) {
+      for (let i = 0; i < RT_MAP_W; i++) {
+        const x = i / RT_MAP_W, y = j / RT_MAP_H;
+        let ws = 0, dsum = 0;
+        cells.forEach((c) => {
+          if (!c.n) return;
+          const w = Math.exp(-((x - RT_X[c.side]) ** 2) / (2 * SX * SX) - ((y - RT_Y[c.pace]) ** 2) / (2 * SY * SY)) * Math.sqrt(c.n);
+          ws += w; dsum += w * (c.d == null ? 0 : c.d);
+        });
+        const d = ws > 0 ? dsum / ws : 0, conf = Math.min(1, ws / 0.9), col = rtMix(d), o = (j * RT_MAP_W + i) * 4;
+        for (let q = 0; q < 3; q++) img.data[o + q] = Math.round(250 + (col[q] - 250) * conf * 0.85);
+        img.data[o + 3] = 255;
+      }
+    }
+    ctx.putImageData(img, 0, 0);
+    return cv.toDataURL('image/png');
+  } catch (e) {
+    return '';
+  }
+}
 
 function raceTypeCardHtml(h, site, bare) {
   const rt = (h || {}).race_type_record || {};
   const byCode = {};
   (rt.rows || []).forEach((r) => { byCode[r.code] = r; });
   const sc = (((site || {}).prediction) || {}).scenario || {};
-  const pn = Object.fromEntries(RT_PACE_NAME);
-  const sn = Object.fromEntries(RT_SIDE_NAME);
-  const cellOf = (pc, sd) => {
-    const r = byCode[`${pc}_${sd}`] || { counts: [0, 0, 0, 0], n: 0, top3_pct: null, delta_pt: null };
-    const good = (r.counts || [0, 0, 0, 0]).slice(0, 3).reduce((a, b) => a + b, 0);
-    const d = r.delta_pt;
-    const j = !r.n ? 'none' : r.n < 2 ? 'na' : d >= 5 ? 'up' : d <= -5 ? 'dn' : 'eq';
-    return { code: `${pc}_${sd}`, n: r.n, good, p: r.n ? Math.round(r.top3_pct) : null, j, name: `${pn[pc]}・${sn[sd]}` };
-  };
-  const all = [];
-  RT_PACE_NAME.forEach(([pc]) => RT_SIDE_NAME.forEach(([sd]) => all.push(cellOf(pc, sd))));
   const mc = sc.main && sc.main.code && sc.main.side
     ? `${sc.main.code}_${sc.main.side === '前' ? '前残り' : '差し・追込'}` : null;
-  const main = mc ? all.find((c) => c.code === mc) : null;
-  const best = all.filter((c) => c.n >= 2).sort((a, b) => (b.p - a.p) || (b.n - a.n))[0] || null;
-  const runs = (c) => `<span class="rt-run"><b class="rt-dg">${c.good}</b>/<span class="rt-dg">${c.n}</span>走</span>`;
-  const big = (c) => (c.n ? `<div class="rt-tv"><b class="rt-dg">${c.p}<small>%</small></b>${runs(c)}</div>`
-    : '<div class="rt-tv"><span class="rt-tz">走っていない</span></div>');
-  const bestTag = '<i class="rt-cue best">★ 最も好走</i>';
-  const ansA = main
-    ? `<div class="rt-ta ${main.j}"><i class="rt-cue main">本命<b class="rt-dg">${Math.round((sc.main.prob || 0) * 100)}%</b></i>
-        <span class="rt-tn">${main.name}</span>${big(main)}</div>`
-    : '<div class="rt-ta none"><i class="rt-cue main">本命</i><span class="rt-tz">見立てなし</span></div>';
-  const ansB = best && main && best.code === main.code
-    ? `<div class="rt-ta same">${bestTag}<span class="rt-tsame">本命と同じ展開</span></div>`
-    : best ? `<div class="rt-ta ${best.j}">${bestTag}<span class="rt-tn">${best.name}</span>${big(best)}</div>`
-    : `<div class="rt-ta none">${bestTag}<span class="rt-tz">2走以上の展開がない</span></div>`;
-  const mini = (c) => {
-    const isM = main && c.code === main.code, isB = best && c.code === best.code;
-    return `<div class="rt-m ${c.j}${isM ? ' is-main' : ''}${isB ? ' is-best' : ''}">
-      ${isM ? '<i class="rt-mk main">本命</i>' : ''}${isB ? '<i class="rt-mk best">★</i>' : ''}
-      ${c.n ? `<b class="rt-dg">${c.p}<small>%</small></b><span class="rt-dg rt-mn">${c.good}/${c.n}</span>` : '<span class="rt-m0">—</span>'}</div>`;
+  const pn = Object.fromEntries(RT_PACE_NAME);
+  const sn = Object.fromEntries(RT_SIDE_NAME);
+  const cells = [];
+  RT_PACE_NAME.forEach(([pace]) => RT_SIDE_NAME.forEach(([side]) => {
+    const r = byCode[`${pace}_${side}`] || { counts: [0, 0, 0, 0], n: 0, delta_pt: null };
+    const good = (r.counts || [0, 0, 0, 0]).slice(0, 3).reduce((a, b) => a + b, 0);
+    const n = r.n || 0;
+    cells.push({ pace, side, code: `${pace}_${side}`, n, good, p: n ? Math.round((100 * good) / n) : null,
+      d: n >= 2 && r.delta_pt != null ? r.delta_pt : null, name: `${pn[pace]}×${sn[side]}` });
+  }));
+  const tot = cells.reduce((a, c) => a + c.n, 0);
+  const ov = rt.overall || {};
+  const basePct = ov.top3_pct != null ? Math.round(ov.top3_pct) : null;
+  const best = cells.filter((c) => c.n >= 2).sort((a, b) => (b.p - a.p) || (b.n - a.n))[0] || null;
+  const mainProb = sc.main ? Math.round((sc.main.prob || 0) * 100) : null;
+  const head = `<div class="ax2-sec"><span class="ax2-st">${AX_IC.pace(sc.main && sc.main.code)}レースの型</span><span class="ax2-sr">3着内の率・走数</span></div>`;
+  const wrap = (body) => `<div class="${bare ? 'rtT rt2 ax-bare' : 'h-card b-rtd rtT rt2'}" data-gold-head="レースの型べつ成績">${head}${body}</div>`;
+  if (!tot) return wrap('<div class="ax-none">型の付いた走が無い</div>');
+  const src = rtMapImage(cells);
+  const lab = (c) => {
+    const isM = c.code === mc, isB = best && c.code === best.code;
+    const cls = c.d == null ? '' : c.d >= AX_PT ? ' up' : c.d <= -AX_PT ? ' dn' : ' eq';
+    const txt = `${c.name} ${c.n ? `${c.p}% ${c.good}/${c.n}` : '走っていない'}${isM ? ' 本命' : ''}${isB ? ' 最も好走' : ''}`;
+    return `<div class="rt2-lb${c.n ? (c.n < 2 ? ' thin' : '') : ' zero'}${isM ? ' today' : ''}${cls}" style="left:${RT_X[c.side] * 100}%;top:${RT_Y[c.pace] * 100}%" data-txt="${escapeHtml(txt)}">
+      ${isM ? `<i class="rt2-tg">今日 ${mainProb}%</i>` : ''}${isB ? '<i class="rt2-st">★</i>' : ''}
+      ${c.n ? `<b class="ax-dg">${c.p}<small>%</small></b><span class="ax-dg">${c.good}/${c.n}</span>` : '<b class="ax-dg">—</b>'}</div>`;
   };
-  const grid = `<div class="rt-mg"><span></span>${RT_SIDE_NAME.map(([, lb]) => `<span class="rt-ch">${lb}</span>`).join('')}
-    ${RT_PACE_NAME.map(([pc, lb]) => `<span class="rt-rh">${lb}</span>${RT_SIDE_NAME.map(([sd]) => mini(all.find((c) => c.code === `${pc}_${sd}`))).join('')}`).join('')}</div>`;
-  const head = bare
-    ? '<div class="ax-hd"><span class="ax-ht">レースの型べつ成績</span></div>'
-    : '<div class="h-top"><span class="h-t">レースの型べつ成績</span></div>';
-  return `<div class="${bare ? 'rtT ax-bare' : 'h-card b-rtd rtT'}">${head}
-    <div class="rt-tt">${ansA}${ansB}</div>${grid}</div>`;
+  const bar = `linear-gradient(90deg,rgb(${RT_DN}),rgb(${rtMix(-12)}),rgb(${RT_NEU}),rgb(${rtMix(12)}),rgb(${RT_UP}))`;
+  return wrap(`
+    <div class="rt2-map">
+      <div class="rt2-xh">${RT_SIDE_NAME.map(([, lb]) => `<span>${lb}</span>`).join('')}</div>
+      <div class="rt2-body">
+        <div class="rt2-yh">${RT_PACE_NAME.map(([pace, lb]) => `<span style="top:${RT_Y[pace] * 100}%">${lb}</span>`).join('')}</div>
+        <div class="rt2-plot">${src ? `<img src="${src}" alt="">` : ''}<i class="rt2-mid"></i>${cells.map(lab).join('')}</div>
+      </div>
+    </div>
+    <div class="rt2-scale"><span class="dn">苦手</span><span class="rt2-bar" style="background:${bar}"></span><span class="up">得意</span>
+      <span class="rt2-mid-l">まん中＝この馬の平常${basePct != null ? ` ${basePct}%` : ''}（${ov.n || tot}走）</span></div>
+    <div class="rt2-keys"><span><i class="rt2-pin"></i>今日の本命の展開</span><span><b class="rt2-star">★</b>最も好走</span><span><b class="rt2-thin">灰色の数字</b>＝1走だけ（色を混ぜない）</span></div>`);
 }
 
 // 126-spec §5: 札と新聞の面に出すコース適性。見出しは自分で出す（表は bare で取る）
@@ -3067,6 +3067,14 @@ function aptitudeGrid(h, site) {
   `;
 }
 
+// 今日の脚質の札（2026-10-13・mockup-304）。publish の running_style（自前の脚質判定で出した今日の脚質・逃/先/差/追）。
+//   色は展開のページの脚質の色（逃げ赤・先行黄・差し水色・追込青＝yoso.css の st-*）と同じ
+const STYLE_CHIP = { 逃: ['逃げ', 'nige'], 先: ['先行', 'sen'], 差: ['差し', 'sashi'], 追: ['追込', 'oi'] };
+function styleChip(h) {
+  const s = STYLE_CHIP[String(h.running_style || '').charAt(0)];
+  return s ? `<span class="stchip st-${s[1]}">${s[0]}</span>` : '';
+}
+
 function popupBody(h, site) {
   const kg = h.weight_carried != null ? String(h.weight_carried).replace(/\.0$/, '') : '—';
   // 札の見出しと同じ赤オッズにする（片方だけ黒だと不具合に見えるため）
@@ -3074,18 +3082,19 @@ function popupBody(h, site) {
     ? `<span class="od${oddsHotClass(h.odds)}">${h.odds.toFixed(1)}倍</span>` : '—倍';
   return `
     <div class="phead">${markBadge20(h)}${umaBox(h.number, h.gate, 'sm')}
-      <span class="pname">${escapeHtml(h.name)}</span>
+      <span class="pname">${escapeHtml(h.name)}</span>${styleChip(h)}
       <span class="pmeta">${escapeHtml(h.sex_age ?? '')} ${escapeHtml(kg)}kg ${escapeHtml(h.jockey ?? '')}／${oddsTxt} ${escapeHtml(h.popularity ?? '—')}人気</span>
     </div>
     <div class="pbody">
       ${mmInline(h)}
-      <div class="pcareer">${careerLine(h)}</div>
+      ${'' /* 通算（1-1-1-7）の行は外した。代わりに見出しの馬名の右に今日の脚質の札（2026-10-13 ユーザー「通算いらない」） */}
       ${markWhyBlock(h)}
       ${panelButtons(h, site)}
       ${'' /* 入れ替わるのは3つの表だけ。印・通算・地雷の理由・レース戦績は
              どちらの面でも出したまま（2026-09-03 ユーザー指示） */}
       <div class="pmain">
-        ${aptCardHtml(h, (site || {}).race, true) || courseRecordTable(h)}
+        ${aptCardHtml(h, (site || {}).race, true,
+          { zones: true, field: ((site || {}).horses || []).filter((x) => !x.scratched).length }) || courseRecordTable(h)}
         ${raceTypeCardHtml(h, site, true)}
         ${levelRecordTable(h)}
       </div>

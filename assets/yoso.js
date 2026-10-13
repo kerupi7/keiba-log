@@ -392,8 +392,9 @@
   //   押せる単位（GOLD_UNIT）は輪1つ・マス1つ・過去走の1行などの小さいまとまり。コース適性の山（.ax-hit）は除く
   const GOLD_KEY = `gold:${raceId}`;
   const GOLD_UNIT = [
-    // 基本：オッズ・人気／通算成績／コース適性の輪／右回り・道悪／型べつ成績の上の2つと6マス
-    '.b-od', '.b-car', '.ax-u', '.ax-o', '.rt-ta', '.rt-m',
+    // 基本：オッズ・人気・調教・今日の脚質／コース適性のマス／レースの型の地図の6つの札（2026-10-13 作り替え）
+    //   （.b-car・.ax-o・.rt-ta・.rt-m は前の形の部品。前の形で公開したページのために残す）
+    '.b-od', '.b-car', '.ax-u', '.ax-o', '.rt-ta', '.rt-m', '.rt2-lb',
     // コース：点数のまとめ／表彰台の1段／前走コース・騎手・種牡馬・調教師・母父の各行
     '.e5s', '.e5-ps', '.e5-row',
     // 展開：上の3つ（馬場・勝ちタイム・逃げ）／ペース・脚質・内外の各行／枠の行／脚質の列（下の札）
@@ -502,6 +503,9 @@
   }
   // そのページの見出し（例：コース適性・レースの型べつ成績）。見つからなければ空
   function goldHead(el) {
+    //   コース適性とレースの型は1枚のカードに入っているので、かたまりごとの名前（data-gold-head）を先に見る（2026-10-13）
+    const gh = el.closest('[data-gold-head]');
+    if (gh) return gh.dataset.goldHead;
     const card = el.closest('.h-card, .card, section');
     const h = card && card.querySelector('.h-t, h2, h3, h4');
     return h && h !== el && !el.contains(h) ? goldText(h).slice(0, 20) : '';
@@ -1602,8 +1606,9 @@
   // コース適性のカード（好走率の版）。**中身は race.js の aptCardHtml が正本。**
   //   2つに書き分けると決まりの数字がズレるので、ここでは呼ぶだけにする（2026-09-24）。
   //   基本ページだけ、内・中・外の輪の段を足す（zones・handoff_2026-09-28_waku-chokyo.md）。今日の位置は取消を除いた頭数で決める
-  const aptCard = (h) => (window.AptCard ? window.AptCard(h, site.race, false,
-    { zones: true, field: (site.horses || []).filter((x) => !x.scratched).length }) : '');
+  //   2026-10-13 から見出しなし（head:false）で取り、レースの型と1枚のカードに入れる
+  const aptCard = (h) => (window.AptCard ? window.AptCard(h, site.race, true,
+    { zones: true, head: false, field: (site.horses || []).filter((x) => !x.scratched).length }) : '');
   // 今回の調教のランク（S〜D）。見出しの「オッズ・人気」の右に文字1つだけ出す（2026-09-28 ユーザー「調教はランクだけでいいな」）。
   //   色は展開タブの脚質のランク（TK_GC）と同じ。publish の training_rank が無いレース・馬は「—」
   const TR_GC = { S: '#0B5E2E', A: '#1F6B3A', B: '#4E5862', C: '#8E4A36', D: '#A32B1F' };
@@ -1611,6 +1616,15 @@
     const g = (h.training_rank || {}).grade;
     return `<div class="b-od b-tr"><i>調教</i>${g && TR_GC[g]
       ? `<b class="b-trg" style="background:${TR_GC[g]}">${esc(g)}</b>` : '<b class="b-trg none">—</b>'}</div>`;
+  };
+
+  // 今日の脚質（2026-10-13・mockup-304）。publish の running_style＝自前の脚質判定で出した今日の脚質（逃/先/差/追）。
+  //   色の札は展開のページの脚質の色（st-*）。下の4マスの◀は出馬表の脚質の印（race.js legBar）と同じ並び（左から逃・先・差・追）
+  const ST_CELL = { 逃: ['逃げ', 'st-nige', 0], 先: ['先行', 'st-sen', 1], 差: ['差し', 'st-sashi', 2], 追: ['追込', 'st-oi', 3] };
+  const stCell = (h) => {
+    const s = ST_CELL[String(h.running_style || '').charAt(0)];
+    return `<div class="b-od b-st"><i>今日の脚質</i>${s ? `<b class="b-stp ${s[1]}">${s[0]}</b>` : '<b class="b-stp none">—</b>'}
+      <span class="b-lc">${[0, 1, 2, 3].map((i) => `<i class="${s && s[2] === i ? `on ${s[1]}` : ''}">${s && s[2] === i ? '◀' : ''}</i>`).join('')}</span></div>`;
   };
 
   function basicPage(h) {
@@ -1635,8 +1649,8 @@
         <div class="b-od"><i>オッズ</i><b class="bt-num">${h.odds != null ? h.odds.toFixed(1) : '—'}<small>倍</small></b></div>
         <div class="b-od"><i>人気</i><b class="bt-num">${esc(h.popularity ?? '—')}<small>番</small></b></div>
         ${trCell(h)}
-        ${'' /* 「通算N戦」と「3着内N%」は出さない。着順の数字（1-1-1-7）だけ残す（2026-09-24 ユーザー指示） */}
-        <div class="b-car">${car ? recHtml(car) : '—'}</div>
+        ${'' /* 通算（1-1-1-7）は外し、今日の脚質に替えた（2026-10-13 ユーザー「通算いらない／今日の予想される脚質を表示したい」・mockup-304） */}
+        ${stCell(h)}
       </div>
       ${P0.why ? `<div class="b-why">${P0.why}</div>` : ''}
     </div>`;
@@ -1667,11 +1681,14 @@
         <span class="b-bar"><i style="width:${pct ?? 0}%"></i></span><span class="b-crp bt-num">${pct == null ? '' : `${pct}%`}</span></div>`;
     }).join('');
     // 好走率の版（2026-09-24 決定）。publish が apt を載せていないレースだけ、下の着別度数の表に落ちる
-    const crCard = aptCard(h) || `<div class="h-card b-crd"><div class="h-top"><span class="h-t">コース適性</span><span class="h-r">中央のみ・全走　右は3着内率</span></div>${crRows ||
+    const aptIn = aptCard(h);
+    const crCard = `<div class="h-card b-crd"><div class="h-top"><span class="h-t">コース適性</span><span class="h-r">中央のみ・全走　右は3着内率</span></div>${crRows ||
       '<div class="b-none">記録なし</div>'}</div>`;
-    // レースの型べつ成績のカード。**中身は race.js の raceTypeCardHtml が正本**（馬名の札と同じ形・2026-09-24）
-    const rtCard = window.RtCard ? window.RtCard(h, site) : '';
-    return `<div class="race20 rvC c3 mx hd-r3 b-page">${hdr}${crCard}${rtCard}</div>`;
+    // レースの型べつ成績。**中身は race.js の raceTypeCardHtml が正本**（馬名の札と同じ形・2026-09-24）
+    //   2026-10-13 から、コース適性とレースの型を1枚のカードに入れる（mockup-306。間は線1本）
+    const rt = window.RtCard ? window.RtCard(h, site, true) : '';
+    const one = aptIn ? `<div class="h-card b-crd b-apt2">${aptIn}${rt}</div>` : `${crCard}${rt ? `<div class="h-card b-crd b-apt2">${rt}</div>` : ''}`;
+    return `<div class="race20 rvC c3 mx hd-r3 b-page">${hdr}${one}</div>`;
   }
 
 

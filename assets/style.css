@@ -4327,6 +4327,75 @@ body.bs-locked{overflow:hidden}
 .ax-bare{background:#fff}
 
 /* ============================================================
+   2026-10-13 コース適性（マス）とレースの型（にじむ地図）の作り替え（mockup-300 B1・301 H2・306 見出しの絵。ユーザー決定）
+   race.js の aptCardHtml（.ax2）と raceTypeCardHtml（.rt2）。1頭だけ見る画面の基本のページと馬名の小窓の両方で使う
+   ============================================================ */
+.ax2-ic{width:16px;height:16px;flex:none;color:#3A3A3C}
+.ax2-sec{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:14px 0 6px}
+.ax2 .ax-hd + .ax2-sec,.ax2>.ax2-sec:first-child,.rt2>.ax2-sec:first-child{margin-top:4px}
+.ax2-st{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:var(--text)}
+.ax2-sr{font-size:10.5px;color:#8E8E93;white-space:nowrap}
+.ax2 .ax-top.ax2-g3{gap:6px;margin:0}
+.ax .ax-u.ax2-c{position:relative;height:66px;border-radius:10px;justify-content:center;gap:0;background:#fff;box-shadow:inset 0 0 0 1px #ECECF0}
+.ax .ax-u.ax2-c.ax-dw{display:none}
+.ax .ax-u.ax2-c.ax-dw.on{display:flex}
+.ax .ax-u.ax2-c.t{box-shadow:none;background:#F3F3F6}
+.ax .ax-u.ax2-c.t.up{background:#E9F5EE}
+.ax .ax-u.ax2-c.t.dn{background:#FCEDEB}
+.ax .ax-pick>.ax2-c{height:66px}
+.ax2-v{font-size:20px;line-height:1;color:#1d1d1f}
+.ax2-v small{font-size:10px;margin-left:1px}
+.ax2-c.up .ax2-v{color:#0F7A3D}.ax2-c.dn .ax2-v{color:#C8352C}.ax2-c.na .ax2-v{color:#8E8E93}
+.ax2-n{font-size:10px;color:#6E6E73;margin-top:3px}
+.ax2-f{font-size:12px;font-weight:700;color:#AEAEB2}
+.ax2-k{font-size:10.5px;font-weight:700;color:#6E6E73;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.ax2-k.td::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--navy);margin-right:4px;vertical-align:1px}
+.ax2 .ax-mt.ax2-mt{margin-top:0}
+.ax2 .ax-mt.ax2-mt svg{height:34px}
+.ax2 .ax-mt.ax2-mt .ax-now{top:0;height:34px}
+.ax2 .ax-mt.ax2-mt .ax-hits{height:34px}
+.ax2 .ax-scale span{font-size:9.5px;font-weight:600;font-family:Futura,Jost,'Century Gothic',system-ui,sans-serif}
+.ax2 .ax-scale span.run{color:#6E6E73}
+.ax2-row{display:flex;gap:6px;margin-top:12px;align-items:flex-end}
+.ax2-grp{min-width:0}
+.ax2-grp.zone{margin-left:4px}
+.ax2-gh{display:flex;align-items:center;gap:4px;height:18px;margin:0 0 4px 2px;font-size:11px;font-weight:700;color:var(--text);white-space:nowrap}
+.ax2-gh .ax2-ic{width:15px;height:15px}
+.ax2-gc{display:grid;gap:6px}
+/* レースの型：にじむ地図 */
+.ax2 + .rt2{margin-top:14px;padding-top:2px;border-top:1px solid #ECECF0}
+.rt2-xh{display:flex;margin:0 0 4px 38px}
+.rt2-xh span{flex:1;text-align:center;font-size:10px;font-weight:700;color:#6E6E73}
+.rt2-body{position:relative;display:grid;grid-template-columns:38px 1fr}
+.rt2-yh{position:relative}
+.rt2-yh span{position:absolute;left:0;transform:translateY(-50%);font-size:10.5px;font-weight:700;color:#6E6E73;white-space:nowrap}
+.rt2-plot{position:relative;height:180px;border-radius:12px;overflow:hidden;background:#FAFAFC}
+.rt2-plot img{position:absolute;inset:0;width:100%;height:100%;display:block}
+.rt2-mid{position:absolute;left:50%;top:8%;bottom:8%;width:1px;background:rgba(0,0,0,.05)}
+.rt2-lb{position:absolute;transform:translate(-50%,-50%);text-align:center;line-height:1;white-space:nowrap}
+.rt2-lb b{font-size:17px;color:#1d1d1f}.rt2-lb b small{font-size:9px}
+.rt2-lb span{display:block;font-size:10px;color:#6E6E73;margin-top:2px}
+.rt2-lb.up b{color:#0F7A3D}.rt2-lb.dn b{color:#C8352C}
+.rt2-lb.thin b,.rt2-lb.thin span{color:#AEAEB2}
+.rt2-lb.zero b{color:#D1D1D6;font-size:14px}
+.rt2-lb.today{background:rgba(255,255,255,.85);border-radius:10px;padding:5px 8px;box-shadow:0 0 0 2px var(--navy)}
+.rt2-tg{position:absolute;top:-8px;left:50%;transform:translateX(-50%);font-style:normal;font-size:9px;font-weight:700;color:#fff;background:var(--navy);border-radius:4px;padding:0 4px;white-space:nowrap;line-height:13px}
+.rt2-st{position:absolute;top:-6px;right:-10px;font-style:normal;font-size:11px;color:#B8860B}
+.rt2-scale{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:8px;margin-top:12px;font-size:10.5px;font-weight:700}
+.rt2-scale .dn{color:#C8352C}.rt2-scale .up{color:#0F7A3D}
+.rt2-bar{position:relative;height:8px;border-radius:4px}
+.rt2-bar::after{content:"";position:absolute;left:50%;top:-3px;bottom:-3px;border-left:1.5px solid #fff}
+.rt2-mid-l{grid-column:2;text-align:center;font-size:10px;color:#6E6E73;font-weight:500;margin-top:-4px}
+.rt2-keys{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:10.5px;color:#6E6E73;margin-top:8px}
+.rt2-keys>span{white-space:nowrap;display:inline-flex;align-items:center;gap:4px}
+.rt2-pin{display:inline-block;width:12px;height:12px;border-radius:3px;box-shadow:inset 0 0 0 2px var(--navy)}
+.rt2-star{color:#B8860B}
+.rt2-thin{color:#AEAEB2}
+/* 今日の脚質の札（馬名の小窓の見出し）。色は yoso.css の st-* と同じ */
+.stchip{display:inline-flex;align-items:center;height:20px;padding:0 7px;border-radius:5px;color:#fff;font-size:11.5px;font-weight:800;letter-spacing:.04em;flex:none}
+.stchip.st-nige{background:#D8342C}.stchip.st-sen{background:#C99A00}.stchip.st-sashi{background:#2A8FD0}.stchip.st-oi{background:#1F4CA8}
+
+/* ============================================================
    2026-09-29 レースページの作り直し（ユーザー決定。race.js の renderHead26 / renderBetFold26 / setupKaiko26）
    試作：Kelpie.Inc 部署/競馬部/仕様/予測サイト/ mockup-230・233（出馬表）／235（買い目）／239（回顧）
    ・地は薄い灰（#F2F2F7）にして、塊ごとに白い角丸カードを置く（1頭の詳細と同じ作り）
