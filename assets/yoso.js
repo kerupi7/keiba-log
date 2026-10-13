@@ -2217,7 +2217,9 @@
     if (!r.surface || !r.distance) return '';
     const sf = String(r.surface).startsWith('ダ') ? 'sf-dt' : String(r.surface).startsWith('芝') ? 'sf-tf' : '';
     // 「今回」と「芝／ダート」の文字は出さない。芝とダートは札の色（緑・茶）で分かる（2026-09-24 ユーザー指示・馬名が切れるため）
-    return `<em class="yf-today ${sf}">${clsBadge(raceClass(r.grade, r.race_name))}<b class="bt-num">${esc(r.distance)}</b>m</em>`;
+    // 特別レース（恵那特別など）は名前にクラスが入らないので、race.class（「１勝クラス」・全角数字）も見る（2026-10-13）
+    const cls = raceClass(r.grade, r.race_name) || raceClass(null, String(r.class || '').replace(/[０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xFEE0)));
+    return `<em class="yf-today ${sf}">${clsBadge(cls)}<b class="bt-num">${esc(r.distance)}</b>m</em>`;
   })();
   function vSwipe() {
     const h = Q[S.idx];
