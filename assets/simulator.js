@@ -892,8 +892,16 @@
     };
   }
 
+  // 1点の名前（買い目シートで外した点を覚えるのに使う）。enumerate の1件・rowsFor の1行のどちらからでも同じ名前になる。
+  //   並びは enumerate の出したまま（rowsFor の ids は enumerate の1件そのもの）。シート・即PAT・分析の3か所がこれを呼ぶ
+  function itemKey(item) {
+    if (item && item.frame) return 'f' + item.frame.join('-');
+    return (item && item.ids ? item.ids : item).join('-');
+  }
+
   var Simulator = {
     initialState: initialState,
+    itemKey: itemKey,
     renderBlockB: renderBlockB,
     rowsFor: rowsFor,
     describe: describe,

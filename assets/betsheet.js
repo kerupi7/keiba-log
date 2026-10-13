@@ -66,11 +66,28 @@
     save(raceId, lines);
   }
   function clear(raceId) { save(raceId, []); }
+  // 展開した表で1点だけ外す（2026-10-13 ユーザー「個別に買い目を消せるようにしたい」）。
+  //   買い方（フォーメーション等）はそのまま残し、外した点の名前を skip に足す。全部外れたらその1本ごと消す
+  function skipItem(raceId, id, k, site) {
+    var lines = load(raceId), gone = false;
+    lines.forEach(function (l) {
+      if (l.id !== id) return;
+      l.skip = (l.skip || []).filter(function (x) { return x !== k; }).concat([k]);
+      var left = Simulator._internal.enumerate(l.state, site).filter(function (it) { return keep(l, it); });
+      if (!left.length) gone = true;
+    });
+    if (gone) lines = lines.filter(function (l) { return l.id !== id; });
+    save(raceId, lines);
+  }
+  function keep(line, item) {
+    return !line.skip || line.skip.indexOf(Simulator.itemKey(item)) === -1;
+  }
 
   // ── 集計（描くたびに今のオッズで組み直す） ──────────────
   // 返り値の rows は Simulator.rowsFor() のもの。ここでは点数と金額を足すだけ。
   function measure(line, site, probs, heads, oddsAll) {
-    var rows = Simulator.rowsFor(line.state, site, probs, heads, oddsAll);
+    var rows = Simulator.rowsFor(line.state, site, probs, heads, oddsAll)
+      .filter(function (r) { return keep(line, r); });
     var withOdds = rows.filter(function (r) { return r.odds !== null && r.odds !== undefined; })
       .map(function (r) { return r.odds; });
     return {
@@ -126,12 +143,14 @@
 
     var tbl = '';
     if (open) {
-      tbl = '<div class="bs-tbl"><div class="bs-thead"><span>組み合わせ</span><span>オッズ</span></div>'
+      tbl = '<div class="bs-tbl"><div class="bs-thead"><span>組み合わせ</span><span>オッズ</span><span></span></div>'
         + m.rows.map(function (r) {
           var ids = r.frame || r.ids;
           return '<div class="bs-trow"><span class="cmb">'
             + (r.frame ? ids.map(wakuBox).join('<span class="bs-sep">-</span>') : seq(ids, d.ordered, byNumber))
-            + '</span><span class="od n">' + odds1(r.odds) + '<i>倍</i></span></div>';
+            + '</span><span class="od n">' + odds1(r.odds) + '<i>倍</i></span>'
+            + '<button type="button" class="bs-xrow" data-bs-skip="' + Simulator.itemKey(r) + '" data-id="' + line.id
+            + '" aria-label="この組み合わせを消す">✕</button></div>';
         }).join('') + '</div>';
     }
 
@@ -180,7 +199,7 @@
   var BetSheet = {
     UNITS: UNITS,
     MAX_LINES: MAX_LINES,
-    load: load, add: add, remove: remove, stepUnit: stepUnit, clear: clear,
+    load: load, add: add, remove: remove, stepUnit: stepUnit, clear: clear, skipItem: skipItem, keep: keep,
     totals: totals, measure: measure,
     renderList: renderList, renderBar: renderBar,
   };

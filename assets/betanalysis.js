@@ -130,7 +130,9 @@
     var S = Sim();
     var site = { horses: race.h.map(function (x) { return { number: x[0], gate: x[1], scratched: false }; }) };
     var bt = kindOf(line.state);
-    var items = S._internal.enumerate(line.state, site, race.h.length);
+    var skip = line.skip || [];   // シートで外した点（betsheet.js の skipItem）は買っていないので数えない
+    var items = S._internal.enumerate(line.state, site, race.h.length)
+      .filter(function (it) { return skip.indexOf(S.itemKey(it)) === -1; });
     var out = {}, fin = {}, gateOf = {}, frameAllOut = {};
     race.h.forEach(function (x) {
       fin[x[0]] = x[2]; gateOf[x[0]] = x[1];

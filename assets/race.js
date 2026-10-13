@@ -911,6 +911,8 @@ function setupBetSheet(site, oddsAll) {
     if (e.target.closest('[data-bs-close]')) { bsClose(); return; }
     const del = e.target.closest('[data-bs-del]');
     if (del) { BetSheet.remove(BS.raceId, del.dataset.bsDel); bsPaintList(); bsPaintBar(); return; }
+    const skip = e.target.closest('[data-bs-skip]');
+    if (skip) { BetSheet.skipItem(BS.raceId, skip.dataset.id, skip.dataset.bsSkip, BS.site); bsPaintList(); bsPaintBar(); return; }
     const step = e.target.closest('[data-bs-step]');
     if (step) {
       BetSheet.stepUnit(BS.raceId, step.dataset.id, Number(step.dataset.bsStep));
