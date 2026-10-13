@@ -2733,6 +2733,12 @@
   //   力を出す所に炎・太さが変わる矢印・時計・足あとの歩幅・馬群と自分の位置）
   const tbStyleIc = (st) => `<svg viewBox="0 0 64 28" class="tb-pack"><rect x="17" y="2" width="30" height="24" rx="7" fill="currentColor"/>`
     + `<text x="32" y="19.5" text-anchor="middle" font-size="15" font-weight="700" fill="#fff" font-family="-apple-system,'Hiragino Sans',sans-serif">${esc(st || '—')}</text></svg>`;
+  // 前走コース組の札（key「阪神ダート2000」→「阪神ダ2000組」）。初出走などで key が無い馬は札を出さない
+  const tbGrp = (key) => {
+    const m = String(key || '').match(/^(.+?)(芝|ダート)(\d+)$/);
+    if (!m) return '';
+    return `<span class="tb-grp ${m[2] === '芝' ? 'sf-tf' : 'sf-dt'}">${esc(m[1])}${m[2] === '芝' ? '芝' : 'ダ'}<b>${m[3]}</b><em>組</em></span>`;
+  };
   // 1頭・1枚ぶんの絵と数字
   function tbArt(h, k, win) {
     const c = ((h.rankcard || {}).cards || {})[k] || {};
@@ -2761,8 +2767,11 @@
     else if (k === '脚質') ic = tbStyleIc(String(c.val || '').charAt(0));
     else if (k === '調教') ic = IC_WATCH;
     else if (k === '直近5走') ic = m225Spark((h.past_runs || []).slice(0, 5));
+    // 前走コース組は、着順の丸でなく「阪神ダ2000組」の札を絵の位置に置く（2026-10-13 ユーザー「3とか5の意味がわからない」→ mockup-294 C 案）。
+    //   9/29 に作った時は前走の着順の行で、10/10 に組の割合へ変えた時に丸だけ残っていた。色は上の距離札と同じ（ダート＝茶・芝＝緑）
+    else if (k === '前走コース') ic = tbGrp(c.key);
     else {
-      const i = k === '前走コース' ? 0 : RUN_LABEL.indexOf(k);
+      const i = RUN_LABEL.indexOf(k);
       const r = i >= 0 ? (h.past_runs || [])[i] : null;
       const fn = r ? finN(r.finish) : null;
       ic = `<i class="m225-fin tb-fin${fn && fn <= 3 ? ` f${fn}` : ''}">${fn ?? '—'}</i>`;
@@ -2784,10 +2793,10 @@
       sub = `${k === '脚質' ? `${esc(who)}・` : ''}平均${avg != null ? Math.round(avg) : '—'}%`;
     }
     // 前走コース組も「倍」でなく、その組がこのコースで3着以内に来た割合と、このコースの全馬の平均で出す（2026-10-10 ユーザー「倍表記だとわかりづらい」）。
-    //   一覧の札（m225 の「前走◯◯組 32%・平均26%」）と同じ数字。行が1行で切れるので、平均を先に・組の名前は「ダート」を「ダ」に縮めて後ろへ
+    //   一覧の札（m225 の「前走◯◯組 32%・平均26%」）と同じ数字。組の名前は上の札に出したので、下は何走中何回と平均の2行（2026-10-13 mockup-294 C 案）
     if (k === '前走コース' && c.rate != null && c.course_rate != null) {
       big = `${Math.round(c.rate)}<small>%</small>`;
-      sub = `平均${Math.round(c.course_rate)}%・${esc(String(c.key || '').replace('ダート', 'ダ'))}組`;
+      sub = `3着以内 <b>${c.good}</b>/${c.n}走<span class="tb-avg">平均${Math.round(c.course_rate)}%</span>`;
     }
     // 直近5走の（C・A・S・B・S）は元の文字が前走→5走前の順。線（左が古い）と向きをそろえて古い順に並べ直す（2026-09-29 ユーザー）
     if (k === '直近5走' && Array.isArray(c.runs) && c.runs.length) {
