@@ -5290,10 +5290,16 @@ function renderHead26(site) {
     ? `<div class="r27-pt">予想 <span class="r27-num">${fmtDateTimeShort(p.predicted_at)}</span>（${escapeHtml(p.odds_basis || '')}基準）${oddsAtHtml}</div>` : '';
   const seg = `<div class="r27-seg" role="tablist"><button type="button" data-view="mark" class="on">印</button>`
     + `${site.shinba ? '' : '<button type="button" data-view="baken">馬券</button>'}</div>`;
+  // WIN5の対象なら、レース名の右に一覧と同じ「WIN3」の画像の札、その下に「WIN5のNレース目」（2026-10-13 ユーザー決定・mockup-293 案A）。
+  //   何レース目かは race.win5.leg（対象外のレースには無い）。画像が読めないときは alt の「WIN3」が出る
+  const w5leg = r.win5 && Number(r.win5.leg);
+  const w5 = w5leg >= 1 && w5leg <= 5
+    ? `<img class="r27-w5" src="assets/win5-${w5leg}.png" alt="WIN${w5leg}" title="WIN5の${w5leg}レース目" width="188" height="74">`
+      + `<span class="r27-w5c">WIN5の${w5leg}レース目</span>` : '';
   return `<section class="r27">${R27_DEFS}
     <div class="r27-card">
       <div class="r27-eye">${eye}${buyBtn}</div>
-      <h1 class="r27-ttl">${escapeHtml(r.race_name || '')}${r.grade ? `<span class="r27-gb">${escapeHtml(r.grade)}</span>` : ''}</h1>
+      <h1 class="r27-ttl">${escapeHtml(r.race_name || '')}${r.grade ? `<span class="r27-gb">${escapeHtml(r.grade)}</span>` : ''}${w5}</h1>
       ${pt}
       ${spec}
       <div class="r26-mit r27-mit">${hot}${upHtml}${rowHtml}${wkHtml}</div>
