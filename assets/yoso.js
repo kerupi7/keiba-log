@@ -3095,11 +3095,18 @@
       // それでも切れるときは「勝ち」「2着」の文字を外して、名前を優先する（例：ビービークローサー＋最高成績）
       if (wn.scrollWidth > wn.clientWidth) r.classList.add('nolab');
     });
+    // 印を決める画面の上の馬名：1行に入るまで0.5pxずつ小さくする（下限11px）。
+    //   2026-10-13 ユーザー「サンライズケヴィン」が「ン」だけ2行目に割れた（iPhone の幅・17px）。毎回もとの大きさから測り直す
+    document.querySelectorAll('.ap-tn b').forEach((b) => {
+      b.style.fontSize = '';
+      let f = parseFloat(getComputedStyle(b).fontSize) || 17;
+      while (b.scrollWidth > b.clientWidth && f > 11) { f -= 0.5; b.style.fontSize = `${f}px`; }
+    });
   }
   //   描画の合図（requestAnimationFrame）は画面が裏にあると止まるので、短い待ち時間でまとめて動かす
   let fitT = null;
   const fitSoon = () => { clearTimeout(fitT); fitT = setTimeout(fitWin, 60); };
-  new MutationObserver(() => { if (document.querySelector('.ap-r5')) fitSoon(); })
+  new MutationObserver(() => { if (document.querySelector('.ap-r5, .ap-tn')) fitSoon(); })
     .observe(document.documentElement, { childList: true, subtree: true });
   window.addEventListener('resize', fitSoon);
   // 上の2列が画面から出たら、2頭の名前の帯を上に出す（Apple の比較ページと同じ）

@@ -1041,7 +1041,10 @@ html.rc-frame .mx .mg-close .mg-tag{background:#5E7185}
 .ap-top{display:flex;flex-direction:column;gap:6px;min-width:0}
 .ap-tn{display:flex;align-items:center;gap:6px;min-width:0;max-width:100%}
 /* 馬名は切らずに折り返す（2026-09-27 ユーザー「馬名きれないようにしてほしい」。9文字のミスターキャンベラが375px幅で「ミスターキャン…」になっていた） */
-.ap-tn b{font-size:19px;font-weight:700;letter-spacing:-.01em;line-height:1.25;min-width:0;overflow-wrap:anywhere;cursor:pointer}
+.ap-tn b{font-size:19px;font-weight:700;letter-spacing:-.01em;line-height:1.25;min-width:0;cursor:pointer}
+/* 馬名は折り返さない（2026-10-13 ユーザー「サンライズケヴィ／ン」が2行に割れた）。入らない分は字を小さくする（下の fitWin）。
+   それでも入らないときだけ末尾を「…」にする */
+.ap-tn b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ap-ts{font-size:12px;color:#6e6e73}
 /* スクロールしても2頭の名前を上に残す（上の2列が隠れてから出す） */
 .ap-stk{position:sticky;top:0;z-index:2;display:grid;grid-template-columns:1fr 1fr;gap:18px;margin:0 -16px;padding:8px 16px;
