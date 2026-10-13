@@ -217,6 +217,7 @@
     if (first === 'view') Q = [horse];
     S = { screen: first === 'view' ? 'view' : 'swipe', idx: 0, page: 0, my: {}, step: 0,
           t: null, busy: false, view: first === 'view' };
+    UNDO = [];
     // 重ねている間は後ろのページを止める。閉じたときは、開く前に見ていた高さへ戻す
     //   （2026-09-21：閉じるとページの先頭に戻るという指摘。overflow:hidden だけでは位置が
     //    残らないので、本番の lockPageScroll と同じ「位置を覚えて戻す」に合わせた）
@@ -296,8 +297,91 @@
       bindCard();
       // 次の後ろの札は、切り替えが済んでから描く（1頭だけ見るときは後ろが無い）
       if (S.screen === 'swipe') fillBack();
-    }
+    } else bindPull(col.querySelector('.ap') || col);
   }
+
+  // ---------- 戻る（2026-10-13 ユーザー「絞り込みと印について、ミスった場合の戻る機能を実装したい」→ mockup-295 の案A） ----------
+  //   1手（1頭払う／印で1頭選ぶ）ごとに、その手の前の形を丸ごと積む。戻るは1つ取り出して、その画面を描き直す。続けて押せば何手でも戻る。
+  //   保存（mymark）は1手ごとに書いているので、手の前の保存の中身も一緒に積み、戻すときに書き戻す。
+  //   印の1回目で戻ると、絞り込みの最後の1頭に戻る（「絞り込みが終わりました」「◎が決まりました」は手ではないので飛ばす）。
+  //   積むのは開いている間だけ。閉じて開き直した後は、前の回の手には戻れない。自分の激アツ（上に払う）は積まない（別の保存）。
+  let UNDO = [];
+  function pushUndo(label) {
+    UNDO.push({ s: JSON.parse(JSON.stringify({ ...S, busy: false })), q: Q.slice(), marks: loadMarks(), label });
+  }
+  //   on＝後ろの札に描くとき。後ろの札は1頭払った後に前へ出る（作り直さない）ので、その時にはもう戻れる
+  const undoBtn = (on = false) => (S && !S.view
+    ? `<button type="button" class="yf-undo" data-act="undo"${on || UNDO.length ? '' : ' disabled'}><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5 L2.5 7 L6 10.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 7 H10 A3.5 3.5 0 0 1 10 14 H8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>戻る</button>`
+    : '');
+  function undo() {
+    if (!UNDO.length || (S && S.busy)) return;
+    const u = UNDO.pop();
+    const n = u.s.screen === 'swipe' ? u.q[u.s.idx].number : null;
+    const dir = n != null && S.my[n] === '✓' ? 1 : -1;   // 払った向き（残す＝右・消す＝左）から札を戻す
+    const fromSwipe = S.screen === 'swipe';
+    S = u.s; Q = u.q; S.promote = false;
+    saveMarks(u.marks); SAVED = true;
+    document.querySelectorAll('.yf-card.later').forEach((x) => x.remove());   // 先に作っておいた札は、戻した後の並びで作り直す
+    haptic();
+    go(S.screen);
+    if (S.screen === 'swipe' && fromSwipe && !apReduce()) {
+      const c = document.getElementById('yf-card');
+      if (c) c.animate([{ transform: `translateX(${dir * window.innerWidth * 1.1}px) rotate(${dir * 14}deg)`, opacity: 0.4 }, { transform: 'none', opacity: 1 }],
+        { duration: 380, easing: EASE_IOS });
+    }
+    toast(`戻しました：${u.label}`);
+  }
+
+  // ---------- 下に払ってやめる（印の画面・見出しの画面。2026-10-13 mockup-295） ----------
+  //   絞り込みの札と同じく、120px か速く払うと少し下げたまま「予想をやめますか？」。キャンセルで元へ戻す。
+  //   比べる表（縦に動かす画面）は、いちばん上まで動かした状態でさらに下へ引いた時だけ払う（iPhone の下から出る画面と同じ）。
+  //   指は touch、マウスは pointer で受ける（指で縦に動かす画面では pointer が途中で取り消されるため）
+  function bindPull(el) {
+    if (!el) return;
+    const sc = el.querySelector('#ap-body');
+    let y0 = null, x0 = 0, dy = 0, t0 = 0, axis = '', moved = false, tl = [];
+    const start = (x, y, target) => {
+      if (document.querySelector('.yf-sheet-bg') || (S && S.busy)) return;
+      if (sc && sc.contains(target) && sc.scrollTop > 0) return;
+      y0 = y; x0 = x; dy = 0; t0 = performance.now(); axis = ''; moved = false; tl = [];
+    };
+    const move = (x, y, ev) => {
+      if (y0 == null) return;
+      const ddx = x - x0, ddy = y - y0;
+      if (!axis && Math.hypot(ddx, ddy) > 8) axis = Math.abs(ddy) > Math.abs(ddx) && ddy > 0 && !(sc && sc.scrollTop > 0) ? 'y' : 'x';
+      if (axis !== 'y') return;
+      if (ev && ev.cancelable) ev.preventDefault();
+      if (!moved) { el.classList.remove('enter'); el.style.transition = 'none'; }
+      moved = true; dy = Math.max(0, ddy);
+      tl.push([performance.now(), dy]); if (tl.length > 5) tl.shift();
+      el.style.transform = `translateY(${dy.toFixed(1)}px)`;
+    };
+    const end = () => {
+      if (y0 == null) return;
+      y0 = null;
+      if (axis !== 'y' || !moved) return;
+      PULL_AT = performance.now(); PULL_EL = el;
+      const a = tl[0], b = tl[tl.length - 1];
+      const vy = a && b && b[0] > a[0] ? (b[1] - a[1]) / (b[0] - a[0]) : 0;
+      el.style.transition = 'transform .36s cubic-bezier(.32,.72,0,1)';
+      const home = () => { el.style.transform = ''; };
+      if (dy > 120 || vy > 0.9) { el.style.transform = 'translateY(40px) scale(.97)'; quitSheet(home); } else home();
+    };
+    el.addEventListener('touchstart', (e) => { const t = e.touches[0]; if (e.touches.length === 1) start(t.clientX, t.clientY, e.target); else y0 = null; }, { passive: true });
+    el.addEventListener('touchmove', (e) => { const t = e.touches[0]; move(t.clientX, t.clientY, e); }, { passive: false });
+    el.addEventListener('touchend', end);
+    el.addEventListener('touchcancel', end);
+    el.addEventListener('pointerdown', (e) => { if (e.pointerType === 'mouse' && e.button === 0) start(e.clientX, e.clientY, e.target); });
+    el.addEventListener('pointermove', (e) => { if (e.pointerType === 'mouse') move(e.clientX, e.clientY, null); });
+    el.addEventListener('pointerup', (e) => { if (e.pointerType === 'mouse') end(); });
+  }
+  // 払った指を離した時の click（下の「この馬を選ぶ」・段の行・馬名など）は飲み込む。
+  //   天秤の「選ぶ」などは document で先に受けているので、それより先（ここ）に置いた document の受け口で止める
+  //   飲み込むのは払った画面の中だけ。すぐ出る「やめますか？」の「続ける」は飲み込まない
+  let PULL_AT = 0, PULL_EL = null;
+  document.addEventListener('click', (e) => {
+    if (performance.now() - PULL_AT < 500 && PULL_EL && PULL_EL.contains(e.target)) { e.stopImmediatePropagation(); e.preventDefault(); }
+  }, true);
 
   // 1ページを画面の高さに収める（2026-09-17 ユーザー「縦スクロールせずに1画面に収めたい」）。
   //   中身が札より長いときは、中身ごと縮めて収める（字の大きさの比は変えない）。全戦績は縮めずに、入るだけの行でページを分ける（2026-09-25 から。前は全戦績だけ縦に動かして見ていた＝同日決定・案B）
@@ -1140,9 +1224,11 @@
   // 比べる画面も縦に動かさず、2頭ぶんを画面の高さに収める（最小 0.6 倍）
 
 
+  // 「やめる」ボタンは外し、下に払ってやめる形にした（2026-10-13 ユーザー「やめるのボタンじゃなくて下で払うことでやめる仕組みにしたい」・mockup-295）。
+  //   右上には代わりに「戻る」を置く（undoBtn）
   function head(step, title, pct) {
     return `<div class="yf-head"><div><div class="st">${step}</div><div class="tt">${title}</div></div>
-      <button type="button" class="x" data-act="quit">やめる</button></div>
+      ${undoBtn()}</div>
       <div class="yf-bar"><i style="width:${pct}%"></i></div>`;
   }
 
@@ -2205,7 +2291,7 @@
   }
 
   // 説明文と下のボタン列（✕消・ひとつ戻る・✓残す）は外した（2026-09-17 ユーザー指示）。決めるのは払う動きだけ。
-  // 払い間違えを戻す機能は置かない（同日ユーザー決定）
+  // 払い間違えを戻す機能は置かない（同日ユーザー決定）→ 2026-10-13 に「戻る」を置いた（ユーザー「ミスった場合の戻る機能を実装したい」・mockup-295。下の pushUndo／undo）
   // 基本・コース・展開・直近5走の見出しの横に、今回の芝・ダートと距離を出す（2026-09-17 ユーザー指示。コースは 2026-09-24 に足した）。
   //   過去走と見比べるときの基準なので、距離の色は過去走と同じ（芝＝緑・ダート＝橙）
   //   2026-09-21：距離の左にクラスの札も出す（ユーザー指示）。過去走の札と同じ分け方・同じ色
@@ -2232,7 +2318,7 @@
     //   ✓／消の札と色は CSS（.yf-deck.view）で隠すだけにして、動きの側のコードは分けない
     const right = S.view
       ? `<span class="yf-vw">${umaBox(h.number, h.gate, 'sm')}<b>${esc(h.name)}</b></span>`
-      : `<span>${H.length - Q.length + S.idx + 1} / ${H.length}頭</span>`;
+      : `<span class="yf-cnt2">${undoBtn()}${H.length - Q.length + S.idx + 1} / ${H.length}頭</span>`;
     return `<div class="yf-deck top apple${S.view ? ' view' : ''}" id="yf-deck">
         <div class="yf-card" id="yf-card">
           <div class="yf-tint" id="yf-tint"></div>
@@ -2254,7 +2340,7 @@
     const h = Q[i];
     const pages = pagesOf(h);
     return `<div class="yf-dots">${pages.map((_, k) => `<i class="${k === 0 ? 'on' : ''}"></i>`).join('')}</div>
-      <div class="yf-plab"><span class="yf-pl"><b>${esc(pages[0].label)}</b>${todayTag}</span><span>${H.length - Q.length + i + 1} / ${H.length}頭</span></div>
+      <div class="yf-plab"><span class="yf-pl"><b>${esc(pages[0].label)}</b>${todayTag}</span><span class="yf-cnt2">${undoBtn(true)}${H.length - Q.length + i + 1} / ${H.length}頭</span></div>
       <div class="yf-page">${pageHtml(h, pages[0])}</div>
       <div class="yf-shade"></div>`;
   }
@@ -2523,6 +2609,7 @@
     });
   }
   function cmpPick(n, btn) {
+    pushUndo(`${MARKS3[S.step]}で ${n}番 ${byNum(n).name} を選んだこと`);
     const t = S.t;
     const side = t.left === n ? 0 : 1;
     const lose = 1 - side;
@@ -2694,8 +2781,7 @@
     const rows = V.map((x) => `<button type="button" class="tb-row" data-tbgrp="${x.g}">
         ${cell(x.a, true, x)}<span class="tb-mid">${tbScale(x.side, x.steps)}<b>${x.g}</b></span>${cell(x.b, false, x)}</button>`).join('');
     return `<div class="ap tb">
-        <div class="ap-bar"><div><small>2 / 2　印を決める</small><b>${mk} を決めよう</b></div><span class="ap-left">あと${t.total - t.done}回</span>
-          <button type="button" class="ap-quit" data-act="quit">やめる</button></div>
+        <div class="ap-bar"><div><small>2 / 2　印を決める</small><b>${mk} を決めよう</b></div>${undoBtn()}<span class="ap-left">あと${t.total - t.done}回</span></div>
         <div class="ap-body tb-body" id="ap-body">
           <div class="ap-tops">${top}</div>
           <div class="tb-rows">${rows}</div>
@@ -2910,6 +2996,7 @@
     return { ap, tops, rows, side: (i) => [tops[i], ...rows.map((r) => r.children[i === 0 ? 0 : 2])], mids: rows.map((r) => r.children[1]) };
   }
   function tbPick(n, btn) {
+    pushUndo(`${MARKS3[S.step]}で ${n}番 ${byNum(n).name} を選んだこと`);
     const t = S.t;
     const win = t.left === n ? 0 : 1, lose = 1 - win;
     const reduce = tbReduce();
@@ -3091,8 +3178,7 @@
     }
     const recent = cmpSec('直近5走', rRows);
     return `<div class="ap">
-        <div class="ap-bar"><div><small>2 / 2　印を決める</small><b>${mk} を決めよう</b></div><span class="ap-left">あと${t.total - t.done}回</span>
-          <button type="button" class="ap-quit" data-act="quit">やめる</button></div>
+        <div class="ap-bar"><div><small>2 / 2　印を決める</small><b>${mk} を決めよう</b></div>${undoBtn()}<span class="ap-left">あと${t.total - t.done}回</span></div>
         <div class="ap-body" id="ap-body">
           <div class="ap-tops">${top}</div>
           <div class="ap-stk">${HS.map((h) => `<div data-hist="${h.number}">${umaBox(h.number, h.gate, 'sm')}<b>${esc(h.name)}</b><i class="ap-chev">›</i></div>`).join('')}</div>
@@ -3295,6 +3381,7 @@
     card.style.opacity = '.4';
     setTimeout(() => card.remove(), t * 1000 + 30);
     haptic();
+    pushUndo(`${Q[S.idx].number}番 ${Q[S.idx].name} を${mark === '✓' ? '残した' : '消した'}こと`);
     S.my[Q[S.idx].number] = mark;
     persist();   // 1頭払うごとに保存（途中でやめても次はこの馬の続きから）
     S.idx += 1; S.page = 0;
@@ -3438,7 +3525,8 @@
       ? `<div class="yf-sheet"><div class="grp"><div class="t only">閉じますか？</div>
       <button type="button" data-q="quit">閉じる</button></div>
       <button type="button" class="cancel" data-q="keep">キャンセル</button></div>`
-      : `<div class="yf-sheet"><div class="grp"><div class="t">予想をやめますか？</div><div class="s">ここまでの「残す」「消す」は残ります。次は続きから</div>
+      : `<div class="yf-sheet"><div class="grp"><div class="t">予想をやめますか？</div><div class="s">${S.screen === 'duel' || S.screen === 'marked'
+        ? '決まった印は残ります（比べている途中の分は消えます）' : 'ここまでの「残す」「消す」は残ります。次は続きから'}</div>
       <button type="button" class="danger" data-q="quit">やめる</button></div>
       <button type="button" class="cancel" data-q="keep">続ける</button></div>`;
     root.appendChild(bg);
@@ -3849,7 +3937,8 @@
     switch (a.dataset.act) {
       case 'mark0': S.beat = {}; startMark(0); break;
       case 'next': startMark(nextStep(S.step + 1)); break;   // 前の印で答えた組（S.beat）は持ち越す
-      case 'restart': Q = H; S.idx = 0; S.page = 0; S.my = {}; S.beat = {}; go('swipe'); break;
+      case 'restart': Q = H; S.idx = 0; S.page = 0; S.my = {}; S.beat = {}; UNDO = []; go('swipe'); break;
+      case 'undo': undo(); break;
       case 'done': close(true); break;
       case 'close': close(false); break;   // 1頭だけ見るときの「閉じる」（2026-09-21）
       case 'quit':
