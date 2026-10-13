@@ -1678,6 +1678,13 @@
   //   左の列：着順（杯）・着差の札・人気。上がりの順位の文字と前半の通過タイムは出さない（ユーザー指示）
   const smIc = (k) => `<i class="sv-ic">${R_ICON[k]}</i>`;
   const SM_CROWN = '<svg viewBox="0 0 20 16" class="sx-crown"><path d="M2 12 L3.5 4 L7.5 8 L10 2.5 L12.5 8 L16.5 4 L18 12 Z" fill="#E0A800"/><rect x="2" y="12.6" width="16" height="2.6" rx="1" fill="#E0A800"/></svg>';
+  // 馬場（2026-10-13 ユーザー決定・試作 mockup-292 の「A1 良は字だけ」×「灰の濃淡」）。
+  //   良は札にせず字だけ。稍・重・不は札にして、濡れるほど灰を濃くする（稍＝薄い灰／重＝灰／不＝黒に近い灰）。
+  //   値は 良・稍・重・不 の1文字（past_runs.condition）。それ以外が来たら今までどおり字だけ出す
+  function smGoing(g) {
+    const n = ['良', '稍', '重', '不'].indexOf(String(g || ''));
+    return n === -1 ? `<span>${esc(g || '')}</span>` : `<span class="sva-gd k${n}">${esc(g)}</span>`;
+  }
   function smCardA(d) {
     const r = d.raw;
     const bg = d.band ? `bd-${d.band}` : '';
@@ -1686,7 +1693,7 @@
       <span class="sv-mg bt-num ${d.band}">${d.mgPlain}<small>秒</small></span>
       <span class="sv-pop">${smIc('pop')}<b class="bt-num">${esc(d.pop)}</b>人気</span></div>`;
     const meta = `<div class="sva-meta"><span class="bt-num">${esc(d.date)}</span><span>${esc(d.track)}</span>
-      <b class="sva-sf ${d.sf}">${esc(d.sfTxt)}<b class="bt-num">${esc(d.dist)}</b></b><span>${esc(d.going)}</span>
+      <b class="sva-sf ${d.sf}">${esc(d.sfTxt)}<b class="bt-num">${esc(d.dist)}</b></b>${smGoing(d.going)}
       ${ub ? `<span class="sw1">${umaBox(ub, wk, 'sm')}<small>番</small></span>` : '<span></span>'}
       <span class="sv-fp">${smIc('field')}<b class="bt-num">${d.field}</b>頭</span></div>`;
     const title = `<div class="s1-title">${d.clsHtml}<b style="font-size:${d.rnFs + 2}px">${esc(d.rn)}</b><span class="s1-sp"></span>${d.lv}</div>`;
