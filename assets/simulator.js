@@ -61,10 +61,18 @@
     state.tanFuku = 'tansho';
     state.axisPos = '1';
     state.multi = false;
+    state.axisN = null;
     state.cols = {};
   }
   function resetCols(state) {
     state.cols = {};
+  }
+  // 3連複ながしの軸の数（1 か 2）。2026-10-13 ユーザー「軸2頭か1頭か選択できるようにしたい」→ mockup-296 の B で、
+  //   買い方の段を「軸1頭ながし・軸2頭ながし」に分けた。state.axisN に持つ。
+  //   この日より前に保存した買い目（axisN が無い）は、軸2が入っていれば2頭・空なら1頭（前の数え方と同じ）
+  function spkHeads(state) {
+    if (state.axisN === 1 || state.axisN === 2) return state.axisN;
+    return (state.cols && state.cols.axis2 && state.cols.axis2.length) ? 2 : 1;
   }
 
   // ===== 88-akinator-spec.md T9: 買い目アキネーターの推奨(本線)をstateに流し込む =====
@@ -84,8 +92,8 @@
     utannag2: function (axis, p) { return { betType: 'umatan', method: 'normal', cols: { c0: p.slice(), c1: [axis[0]] } }; },
     utanmul: function (axis, p) { return { betType: 'umatan', method: 'nagashi', cols: { axis: [axis[0]], partners: p.slice() }, multi: true }; },
     utanbox: function (axis, p) { return { betType: 'umatan', method: 'box', cols: { box: p.slice() } }; },
-    spkax1: function (axis, p) { return { betType: 'sanrenpuku', method: 'nagashi', cols: { axis1: [axis[0]], axis2: [], partners: p.slice() } }; },
-    spkax2: function (axis, p) { return { betType: 'sanrenpuku', method: 'nagashi', cols: { axis1: [axis[0]], axis2: [axis[1]], partners: p.slice() } }; },
+    spkax1: function (axis, p) { return { betType: 'sanrenpuku', method: 'nagashi', axisN: 1, cols: { axis1: [axis[0]], axis2: [], partners: p.slice() } }; },
+    spkax2: function (axis, p) { return { betType: 'sanrenpuku', method: 'nagashi', axisN: 2, cols: { axis1: [axis[0]], axis2: [axis[1]], partners: p.slice() } }; },
     spkbox: function (axis, p) { return { betType: 'sanrenpuku', method: 'box', cols: { box: p.slice() } }; },
     stnax1: function (axis, p) { return { betType: 'sanrentan', method: 'nagashi', axisPos: '1', cols: { p1: [axis[0]], partners: p.slice() }, multi: false }; },
     stnax2: function (axis, p) { return { betType: 'sanrentan', method: 'nagashi', axisPos: '2', cols: { p2: [axis[0]], partners: p.slice() }, multi: false }; },
@@ -106,11 +114,20 @@
     state.tanFuku = out.tanFuku || 'tansho';
     state.axisPos = out.axisPos || '1';
     state.multi = !!out.multi;
+    state.axisN = out.axisN || null;
     state.cols = out.cols || {};
     return state;
   }
 
   function methodsFor(t) {
+    if (t.type === 'sanrenpuku') {
+      return [
+        { m: 'normal', label: '通常・フォーメーション' },
+        { m: 'box', label: 'ボックス' },
+        { m: 'nagashi1', label: '軸1頭ながし' },
+        { m: 'nagashi2', label: '軸2頭ながし' },
+      ];
+    }
     return [
       { m: 'normal', label: '通常・フォーメーション' },
       { m: 'box', label: 'ボックス' },
@@ -125,6 +142,12 @@
     if (state.method === 'box') return [{ key: 'box', label: '選択', type: 'chk' }];
     if (state.method === 'nagashi') {
       if (t.type === 'sanrenpuku') {
+        if (spkHeads(state) === 1) {
+          return [
+            { key: 'axis1', label: '軸', type: 'radio' },
+            { key: 'partners', label: '相手', type: 'chk' },
+          ];
+        }
         return [
           { key: 'axis1', label: '軸1', type: 'radio' },
           { key: 'axis2', label: '軸2', type: 'radio' },
@@ -285,11 +308,12 @@
       }
       if (t.type === 'sanrenpuku') {
         var a1 = C.axis1 || [], a2 = C.axis2 || [], partnersS = C.partners || [];
-        if (a1.length && a2.length) {
+        var nAx = spkHeads(state);
+        if (nAx === 2 && a1.length && a2.length) {
           partnersS.forEach(function (p) {
             if (new Set([a1[0], a2[0], p]).size === 3) add([a1[0], a2[0], p]);
           });
-        } else if (a1.length) {
+        } else if (nAx === 1 && a1.length) {
           combosOf(partnersS.filter(function (p) { return p !== a1[0]; }), 2).forEach(function (pr) {
             add([a1[0], pr[0], pr[1]]);
           });
@@ -419,7 +443,7 @@
   function anchorScenarios(state, t) {
     if (state.method === 'nagashi') {
       var combined;
-      if (t.type === 'sanrenpuku') combined = (state.cols.axis1 || []).concat(state.cols.axis2 || []);
+      if (t.type === 'sanrenpuku') combined = (state.cols.axis1 || []).concat(spkHeads(state) === 2 ? (state.cols.axis2 || []) : []);
       else if (t.type === 'sanrentan') combined = (state.cols.p1 || []).concat(state.cols.p2 || []).concat(state.cols.p3 || []);
       else combined = state.cols.axis || [];
       return combined.length ? [combined] : [];
@@ -588,9 +612,13 @@
   function renderMethods(state) {
     var t = typeOf(state.betType);
     if (t.arity === 1) return '';
-    return methodsFor(t).map(function (m) {
-      var active = state.method === m.m ? ' active' : '';
-      return '<button type="button" class="sim-method' + active + '" data-sim-method="' + m.m + '">' + m.label + '</button>';
+    var ms = methodsFor(t);
+    var cur = (t.type === 'sanrenpuku' && state.method === 'nagashi') ? 'nagashi' + spkHeads(state) : state.method;
+    // 4つ並ぶ（3連複）ときは今の字の大きさだと右にはみ出すので、字を小さくする（.n4・mockup-296 で確かめた）
+    var n4 = ms.length > 3 ? ' n4' : '';
+    return ms.map(function (m) {
+      var active = cur === m.m ? ' active' : '';
+      return '<button type="button" class="sim-method' + n4 + active + '" data-sim-method="' + m.m + '">' + m.label + '</button>';
     }).join('');
   }
 
@@ -741,6 +769,7 @@
     if (t.arity === 1) return '';
     if (state.method === 'box') return 'ボックス';
     if (state.method === 'nagashi') {
+      if (t.type === 'sanrenpuku') return '軸' + spkHeads(state) + '頭ながし';
       if (t.type === 'sanrentan') {
         var a = AXISPOS.filter(function (x) { return x.k === state.axisPos; })[0];
         return (a ? a.label : '') + 'ながし' + (state.multi ? 'マルチ' : '');
@@ -844,7 +873,19 @@
     el = target.closest('[data-sim-tf]');
     if (el) { state.tanFuku = el.dataset.simTf; return true; }
     el = target.closest('[data-sim-method]');
-    if (el) { if (el.disabled) return true; state.method = el.dataset.simMethod; resetCols(state); return true; }
+    if (el) {
+      if (el.disabled) return true;
+      var nm = el.dataset.simMethod.match(/^nagashi([12])$/);
+      if (nm) {
+        var was = state.method === 'nagashi';
+        state.method = 'nagashi';
+        state.axisN = Number(nm[1]);
+        if (!was) resetCols(state);
+        else if (state.axisN === 1) state.cols.axis2 = [];
+        return true;
+      }
+      state.method = el.dataset.simMethod; resetCols(state); return true;
+    }
     el = target.closest('[data-sim-axispos]');
     if (el) { state.axisPos = el.dataset.simAxispos; resetCols(state); return true; }
     el = target.closest('[data-sim-pick]');
@@ -888,7 +929,7 @@
     Object.keys(state.cols).forEach(function (k) { cols[k] = (state.cols[k] || []).slice(); });
     return {
       betType: state.betType, tanFuku: state.tanFuku, method: state.method,
-      axisPos: state.axisPos, multi: !!state.multi, cols: cols,
+      axisPos: state.axisPos, multi: !!state.multi, axisN: state.axisN || null, cols: cols,
     };
   }
 
