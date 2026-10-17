@@ -341,7 +341,8 @@
     const sc = el.querySelector('#ap-body');
     let y0 = null, x0 = 0, dy = 0, t0 = 0, axis = '', moved = false, tl = [];
     const start = (x, y, target) => {
-      if (document.querySelector('.yf-sheet-bg') || (S && S.busy)) return;
+      // 天秤の段を押して出た比べるシート（.tb-sheet-bg）が開いている間は、払うとシートだけ閉じる（2026-10-17 ユーザー指示）
+      if (document.querySelector('.yf-sheet-bg, .tb-sheet-bg') || (S && S.busy)) return;
       if (sc && sc.contains(target) && sc.scrollTop > 0) return;
       y0 = y; x0 = x; dy = 0; t0 = performance.now(); axis = ''; moved = false; tl = [];
     };
