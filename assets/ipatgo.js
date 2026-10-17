@@ -130,8 +130,13 @@
     document.body.appendChild(el);
 
     var form = el.querySelector('form'), err = el.querySelector('.ipl-err'), btn = el.querySelector('.ipl-go');
-    var remembered = false;
-    function fail(t) { err.textContent = t; err.hidden = false; btn.disabled = false; btn.textContent = 'IPAT投票へすすむ'; }
+    var remembered = false, linked = false;   // linked: 中継役の返事を受け取れた
+    // 2回目以降につながらない件（2026-10-17）: ブラウザを閉じずに押し直せるよう、つながっていない間はボタンを「もう一度つなぐ」にする。
+    // 何で失敗したか（Load failed・時間切れ・HTTP番号）を小さく添える
+    function fail(t, e) {
+      err.textContent = t + (e ? '（' + why(e) + '）' : ''); err.hidden = false; btn.disabled = false;
+      btn.textContent = linked ? 'IPAT投票へすすむ' : 'もう一度つなぐ';
+    }
     el.addEventListener('click', function (e) { if (e.target.closest('[data-ipl-close]')) el.remove(); });
     // 右上の ✕ は外した。下に払うと閉じる（2026-10-10 ユーザー指示）。背景を押しても閉じる
     if (typeof swipeToClose === 'function') swipeToClose(el, '.ipl-panel', function () { el.remove(); }, function () { return el.querySelector('.ipl-scrim'); });
@@ -147,37 +152,46 @@
         return new Promise(function (ok) { setTimeout(ok, 2500); }).then(function () { return pingRetry(n - 1); });
       });
     }
-    pingRetry(4)
-      .then(function (j) {
-        var w = el.querySelector('.ipl-wait'); if (w) w.remove();
-        if (!j.ok) { fail(j.error || '中継役に断られました'); return; }
-        remembered = !!j.remembered;
-        if (remembered) el.querySelectorAll('[data-ipl-full]').forEach(function (f) { f.hidden = true; });
-        var first = el.querySelector(remembered ? 'input[name=pin]' : 'input[name=userid]');
-        if (first) first.focus();
-      })
-      .catch(function () { var w = el.querySelector('.ipl-wait'); if (w) w.remove(); fail(RELAY_DOWN); });
+    function connect(n) {
+      cfg = relay() || cfg;   // 登録をやり直した時も、閉じずにそのまま使う
+      err.hidden = true; btn.disabled = true; btn.textContent = 'つないでいます…';
+      return pingRetry(n)
+        .then(function (j) {
+          var w = el.querySelector('.ipl-wait'); if (w) w.remove();
+          if (!j.ok) { fail(j.error || '中継役に断られました'); return; }
+          linked = true;
+          btn.disabled = false; btn.textContent = 'IPAT投票へすすむ';
+          remembered = !!j.remembered;
+          el.querySelectorAll('[data-ipl-full]').forEach(function (f) { f.hidden = remembered; });
+          var first = el.querySelector(remembered ? 'input[name=pin]' : 'input[name=userid]');
+          if (first) first.focus();
+        })
+        .catch(function (e) { var w = el.querySelector('.ipl-wait'); if (w) w.remove(); fail(RELAY_DOWN, e); });
+    }
+    connect(4);
 
     form.addEventListener('submit', function (e) {
       e.preventDefault();
+      if (!linked) { connect(2); return; }
       err.hidden = true;
       var f = form.elements;
       var body = { race_id: String(raceId), pin: f.pin.value.trim(),
         bets: ex.bets.map(function (b) { return { siki: b[0], nums: b[1], units: b[2] }; }) };
       if (!remembered) { body.userid = f.userid.value.trim(); body.pars = f.pars.value.trim(); body.remember = f.remember.checked; }
       btn.disabled = true; btn.textContent = '即PATにつないでいます…';
-      fetch(cfg.url + '/ipat/handoff', {
+      relayFetch(cfg, '/ipat/handoff', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-Relay-Token': cfg.token },
         body: JSON.stringify(body),
-      })
-        .then(function (r) { return r.json(); })
+      }, 60000)   // 中継役が即PATにログインする分、長めに待つ
         .then(function (j) {
           if (!j.ok) { fail(j.error || '中継役で止まりました'); return; }
           f.pin.value = '';
-          location.href = cfg.url + j.go;   // 中継役の受け渡しページ → 即PAT の合計金額入力
+          // 中継役の受け渡しページ → 即PAT の合計金額入力。replace にして履歴に残さない
+          // （即PATから「戻る」で、もう開けない受け渡しページに戻らず、このレースの画面に戻る）
+          location.replace(cfg.url + j.go);
         })
-        .catch(function () { fail(RELAY_DOWN); });
+        .catch(function (e) { linked = false; fail(RELAY_DOWN, e); });
     });
   }
 
@@ -194,7 +208,23 @@
     return cfg;
   }
   function ping(cfg) {
-    return fetch(cfg.url + '/ipat/ping', { headers: { 'X-Relay-Token': cfg.token } }).then(function (r) { return r.json(); });
+    return relayFetch(cfg, '/ipat/ping', { headers: { 'X-Relay-Token': cfg.token } }, 6000);
+  }
+  // 中継役への呼び出し。キャッシュを使わず、返事が来なければ ms で打ち切る（固まった接続で待ち続けない）
+  function relayFetch(cfg, path, opts, ms) {
+    var ac = typeof AbortController === 'function' ? new AbortController() : null;
+    var timer = ac ? setTimeout(function () { ac.abort(); }, ms) : null;
+    var o = Object.assign({ cache: 'no-store', credentials: 'omit' }, opts, ac ? { signal: ac.signal } : {});
+    return fetch(cfg.url + path, o)
+      .then(function (r) {
+        return r.json().catch(function () { var e = new Error('HTTP ' + r.status); e.name = 'HTTP'; throw e; });
+      })
+      .finally(function () { if (timer) clearTimeout(timer); });
+  }
+  function why(e) {
+    if (!e) return '';
+    if (e.name === 'AbortError') return '時間切れ';
+    return (e.name && e.name !== 'Error' ? e.name + ': ' : '') + (e.message || String(e));
   }
 
   takeSetup();
