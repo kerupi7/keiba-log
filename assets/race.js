@@ -3845,7 +3845,7 @@ const MF_GAP_SMALL = 10;   // 差の点の境目（stats.js の RG_BIG・RG_SMAL
 const MF_T3_MAX = 50;      // 成績の表の 3着内率の棒の物差し（0〜50%）
 const MF_ICON = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 3h12M4.5 8h7M7 13h2" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>';
 const MF = { s: null, quick: [], site: null, sheet: null, shade: null, draft: null, edit: false,
-  ranks: null, rec: null, open: { 馬の力: true }, dt: {} };
+  ranks: null, rec: null, open: {}, dt: {} };   // 段は最初は全部閉じる（2026-10-19 ユーザー「馬の力はデフォルトで閉じておいて」）
 
 const mfEmpty = () => ({ th: {}, rs: [], ai: false, mine: false, nox: false });
 const mfClone = (s) => JSON.parse(JSON.stringify(s));
@@ -4002,6 +4002,8 @@ function mfOpenSheet() {
 }
 function mfCloseSheet() {
   if (!MF.sheet.classList.contains('on')) return;
+  MF.sheet.style.transform = '';
+  MF.sheet.style.transition = '';
   MF.sheet.classList.remove('on');
   MF.shade.classList.remove('on');
   unlockPageScroll();
@@ -4139,6 +4141,39 @@ function mfSliderChange(e) {
   mfDrawSheet();
 }
 
+// 下へスワイプして閉じる（2026-10-19 ユーザー「閉じるは下スワイプで閉じるようにしてほしい」）。閉じるときは「完了」と同じく選んだ条件をかける。
+//   シートが一番上までスクロールしている時だけ、下への指の動きでシートごと下げる。スライダーの上では動かさない（つまみを動かすため）。
+//   90px 以上下げるか、速く払ったら閉じる。足りなければ元へ戻す
+const MF_SWIPE_CLOSE = 90;
+function mfSwipeInit() {
+  const sh = MF.sheet;
+  let y0 = null; let dy = 0; let t0 = 0; let drag = false;
+  sh.addEventListener('touchstart', (e) => {
+    if (e.touches.length !== 1 || e.target.closest('input[type="range"]')) { y0 = null; return; }
+    y0 = e.touches[0].clientY; dy = 0; t0 = Date.now(); drag = false;
+  }, { passive: true });
+  sh.addEventListener('touchmove', (e) => {
+    if (y0 == null) return;
+    const d = e.touches[0].clientY - y0;
+    if (!drag) {
+      if (d > 6 && sh.scrollTop <= 0) { drag = true; sh.style.transition = 'none'; } else if (d < -6 || sh.scrollTop > 0) { y0 = null; return; } else return;
+    }
+    dy = Math.max(0, d);
+    sh.style.transform = `translateY(${dy}px)`;
+    e.preventDefault();
+  }, { passive: false });
+  const end = () => {
+    if (y0 == null) return;
+    y0 = null;
+    if (!drag) return;
+    sh.style.transition = '';
+    const fast = dy > 40 && dy / Math.max(1, Date.now() - t0) > 0.6;
+    if (dy >= MF_SWIPE_CLOSE || fast) { mfCloseSheet(); mfSetState(MF.draft); } else sh.style.transform = '';
+  };
+  sh.addEventListener('touchend', end);
+  sh.addEventListener('touchcancel', end);
+}
+
 // ランク（yoso.js）は race.js より後に読み込まれ、データを読み終えてから届く。届いたら並べ直す
 function mfRanksReady() {
   if (!window.YosoRanks) return;
@@ -4165,6 +4200,7 @@ function mfInit(site) {
   MF.sheet.addEventListener('click', mfSheetClick);
   MF.sheet.addEventListener('input', mfSliderInput);
   MF.sheet.addEventListener('change', mfSliderChange);
+  mfSwipeInit();
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') mfCloseSheet(); });
   list.querySelector('.mf-bar').addEventListener('click', (e) => {
     const x = e.target.closest('[data-mfx]');
