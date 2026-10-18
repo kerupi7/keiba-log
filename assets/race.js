@@ -3843,9 +3843,10 @@ const MF_SHORT = { 直近5走: '直近', '2走前': '2走', '3走前': '3走', '
 const MF_GAP_BIG = 25;
 const MF_GAP_SMALL = 10;   // 差の点の境目（stats.js の RG_BIG・RG_SMALL と同じ）
 const MF_T3_MAX = 50;      // 成績の表の 3着内率の棒の物差し（0〜50%）
+const MF_STAR = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.6l1.9 4 4.4.5-3.3 3 .9 4.3L8 11.3 4.1 13.4l.9-4.3-3.3-3 4.4-.5z" fill="#fff"/></svg>';
 const MF_ICON = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 3h12M4.5 8h7M7 13h2" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>';
 const MF = { s: null, quick: [], site: null, sheet: null, shade: null, draft: null, edit: false,
-  ranks: null, rec: null, open: {}, dt: {} };   // 段は最初は全部閉じる（2026-10-19 ユーザー「馬の力はデフォルトで閉じておいて」）
+  ranks: null, rec: null, open: {}, dt: {}, menu: false };   // 段は最初は全部閉じる（2026-10-19 ユーザー「馬の力はデフォルトで閉じておいて」）
 
 const mfEmpty = () => ({ th: {}, rs: [], ai: false, mine: false, nox: false });
 const mfClone = (s) => JSON.parse(JSON.stringify(s));
@@ -3995,6 +3996,7 @@ function mfOpenSheet() {
   if (!MF.sheet.classList.contains('on')) lockPageScroll();
   MF.draft = mfClone(MF.s);
   MF.edit = false;
+  MF.menu = false;
   mfDrawSheet();
   MF.sheet.scrollTop = 0;
   MF.sheet.classList.add('on');
@@ -4061,12 +4063,19 @@ function mfDrawSheet() {
   const n = mfCount(d);
   const empty = mfIsEmpty(d);
   const dup = MF.quick.some((q) => mfSame(q.s, d));
-  const favs = MF.quick.length ? `<div class="mf-hd">よく使う<button type="button" class="mf-edit" data-mfedit>${MF.edit ? '完了' : '編集'}</button></div>
-    <div class="mf-favs">${MF.quick.map((q, i) => `<button type="button" class="mf-fav${!MF.edit && mfSame(q.s, MF.s) ? ' on' : ''}" data-mfq="${i}">`
-      + `<b>${escapeHtml(mfTags(q.s).map((t) => t[1]).join('・'))}</b><small>${mfCount(q.s)}頭</small>`
-      + `${MF.edit ? `<i class="mf-qx" data-mfqdel="${i}" role="button" aria-label="消す">✕</i>` : ''}</button>`).join('')}</div>` : '';
-  const legend = MF.rec ? `<div class="mf-ft">S の馬と D の馬で、3着以内に来る数の差が
-      <span class="r2"><i class="mf-dot big"></i>大きい札</span><span class="r2"><i class="mf-dot lo"></i>小さい札</span></div>` : '';
+  // よく使う（mockup-320 案B・2026-10-19 ユーザー決定）：1行にたたみ、押すと iPhone のメニュー（ぼかしの浮いた箱）で選ぶ。
+  //   行の右は、いまかけている条件と同じ「よく使う」があればその中身、無ければ登録の数。メニューの中で足す・編集（✕で消す）もできる
+  const qText = (s) => mfTags(s).map((x) => x[1]).join('・');
+  const curQ = MF.quick.find((q) => mfSame(q.s, MF.s));
+  const favRow = `<button type="button" class="mf-cell" data-mfmenu><span class="ic">${MF_STAR}</span><span class="lb"><span>よく使う</span></span>`
+    + `<span class="cur">${escapeHtml(curQ ? qText(curQ.s) : MF.quick.length ? `${MF.quick.length}つ` : 'なし')}</span><span class="chev">›</span></button>`;
+  const menu = MF.menu ? `<div class="mf-menu">${MF.quick.map((q, i) => `<button type="button" class="mi${mfCount(q.s) ? '' : ' zero'}" data-mfq="${i}">`
+      + `${MF.edit ? `<i class="del" data-mfqdel="${i}" role="button" aria-label="消す">−</i>` : ''}<span>${escapeHtml(qText(q.s))}</span><em>${mfCount(q.s)}頭</em></button>`).join('')}
+      ${MF.quick.length ? '<div class="gap"></div>' : ''}<button type="button" class="mi add" data-mfsave${empty || dup ? ' disabled' : ''}><span>いまの組み合わせを足す</span><b>＋</b></button>
+      ${MF.quick.length ? `<button type="button" class="mi" data-mfedit><span>${MF.edit ? '編集を終える' : '編集'}</span></button>` : ''}</div>` : '';
+  const favs = `<div class="mf-favrow${MF.menu ? ' on' : ''}"><div class="mf-box">${favRow}</div>${menu}</div>`;
+  // 凡例は箱の下の注記1行（案B）
+  const legend = MF.rec ? `<div class="mf-ft r1"><span><i class="mf-dot big"></i>S と D の差が大きい札</span><span><i class="mf-dot lo"></i>小さい札</span></div>` : '';
   const noRank = MF.ranks ? '' : '<div class="mf-ft">このレースにはランクがありません。ランクで絞っても全部の馬が残ります</div>';
   const groups = MF_GROUPS.map(([g, c, cs]) => {
     const op = MF.open[g];
@@ -4080,8 +4089,8 @@ function mfDrawSheet() {
     .map(([k, l]) => `<button type="button" class="mf-cell" data-mffl="${k}"><span class="lb"><span>${l}</span></span><span class="mf-sw${d[k] ? ' on' : ''}"></span></button>`).join('');
   MF.sheet.innerHTML = `<div class="mf-top"><div class="grip"></div>
       <div class="mf-nav"><button type="button" data-mfclr${empty ? ' disabled' : ''}>全部外す</button><b>絞り込み</b><button type="button" class="r" data-mfapply>完了</button></div></div>
-    <div class="mf-body">${favs}${legend}${noRank}
-      <div class="mf-hd">ランク<span>ⓘ を押すと成績</span></div><div class="mf-box">${groups}</div>
+    <div class="mf-body">${favs}${noRank}
+      <div class="mf-hd">ランク</div><div class="mf-box">${groups}</div>${legend}
       <div class="mf-hd">脚質</div><div class="mf-pills">${rs}</div>
       <div class="mf-hd">印</div><div class="mf-box">${fl}</div></div>
     <div class="mf-foot"><button type="button" class="mf-apply" data-mfapply>${empty ? '閉じる' : `${n}頭を上に出す`}</button>
@@ -4093,9 +4102,12 @@ function mfSheetClick(e) {
   const d = MF.draft;
   const t = (sel) => e.target.closest(sel);
   let b;
+  if (t('[data-mfmenu]')) { MF.menu = !MF.menu; if (!MF.menu) MF.edit = false; mfDrawSheet(); return; }
+  // メニューが開いている時に外を押したら、閉じるだけ（押した所は動かさない。iPhone のメニューと同じ）
+  if (MF.menu && !t('.mf-menu')) { MF.menu = false; MF.edit = false; mfDrawSheet(); return; }
   if ((b = t('[data-mfqdel]'))) {
     MF.quick.splice(Number(b.dataset.mfqdel), 1);
-    if (!MF.quick.length) MF.edit = false;
+    if (!MF.quick.length) { MF.edit = false; MF.menu = false; }
     mfSave();
     mfDrawSheet();
     return;
@@ -4104,6 +4116,7 @@ function mfSheetClick(e) {
     if (MF.edit) return;   // 編集中は押しても絞らない（消すのは ✕）
     const q = MF.quick[Number(b.dataset.mfq)];
     if (!q) return;
+    MF.menu = false;
     mfCloseSheet();
     mfSetState(mfClone(q.s));
     return;

@@ -4857,7 +4857,6 @@ body:has(.container.top){background:#F2F2F7}
 .mf-sheet .mf-hd{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:800;color:#6E6E73;margin:20px 4px 7px}
 .mf-sheet .mf-hd span{margin-left:auto;font-size:11.5px;font-weight:600}
 .mf-sheet .mf-ft{font-size:12px;font-weight:600;color:#6E6E73;line-height:1.5;margin:10px 4px 0}
-.mf-sheet .mf-ft .r2{display:flex;align-items:center;gap:8px;margin-top:3px}
 .mf-sheet .mf-box{background:#fff;border-radius:12px;overflow:hidden}
 .mf-sheet .mf-cell{position:relative;display:flex;align-items:center;gap:10px;width:100%;min-height:44px;padding:0 14px 0 16px;
   border:0;background:none;font:inherit;color:var(--text);text-align:left;cursor:pointer}
@@ -4914,16 +4913,29 @@ body:has(.container.top){background:#F2F2F7}
   box-shadow:0 3px 8px rgba(0,0,0,.15),0 3px 1px rgba(0,0,0,.06);transition:left .2s}
 .mf-sheet .mf-sw.on{background:#34C759}
 .mf-sheet .mf-sw.on::after{left:22px}
-/* 自分で足した「よく使う」（⑥⑬） */
-.mf-sheet .mf-edit{margin-left:auto;border:0;background:none;color:var(--navy);font:inherit;font-size:13px;font-weight:800;cursor:pointer;padding:0}
-.mf-sheet .mf-favs{display:flex;gap:8px;overflow-x:auto;padding:6px 2px 2px;scrollbar-width:none}
-.mf-sheet .mf-favs::-webkit-scrollbar{display:none}
-.mf-sheet .mf-fav{position:relative;flex:none;border:0;background:#fff;border-radius:12px;padding:9px 12px;font:inherit;text-align:left;cursor:pointer;color:var(--text);max-width:220px}
-.mf-sheet .mf-fav b{display:block;font-size:14px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.mf-sheet .mf-fav small{font:600 12px var(--mf-num);color:var(--mf-sub)}
-.mf-sheet .mf-fav.on{background:var(--navy);color:#fff}
-.mf-sheet .mf-fav.on small{color:#C7D6E6}
-.mf-sheet .mf-qx{position:absolute;top:-5px;right:-5px;width:20px;height:20px;border-radius:50%;background:#8E8E93;color:#fff;font-size:12px;font-style:normal;display:grid;place-items:center}
+/* 自分で足した「よく使う」（⑥⑬）。mockup-320 案B：1行にたたみ、押すとぼかしの浮いたメニュー（iPhone のメニューと同じ形） */
+.mf-sheet .mf-favrow{position:relative;margin-top:14px}
+.mf-sheet .mf-favrow .ic{width:28px;height:28px;border-radius:7px;background:var(--navy);display:grid;place-items:center;flex:none}
+.mf-sheet .mf-favrow .ic svg{width:15px;height:15px}
+.mf-sheet .mf-favrow .cur{font-size:14px;font-weight:700;color:var(--mf-sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:46%}
+.mf-sheet .mf-favrow.on .chev{transform:rotate(90deg)}
+.mf-sheet .mf-menu{position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:5;background:rgba(250,250,252,.9);
+  -webkit-backdrop-filter:blur(22px) saturate(1.6);backdrop-filter:blur(22px) saturate(1.6);border-radius:14px;
+  box-shadow:0 10px 40px rgba(0,0,0,.18),0 0 0 .5px rgba(0,0,0,.06);overflow:hidden;transform-origin:top center;animation:mfPop .18s ease-out}
+@keyframes mfPop{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:none}}
+.mf-sheet .mf-menu .mi{position:relative;display:flex;align-items:center;gap:10px;width:100%;min-height:46px;padding:0 16px;border:0;background:none;
+  font:inherit;font-size:15px;font-weight:700;color:var(--text);text-align:left;cursor:pointer}
+.mf-sheet .mf-menu .mi + .mi::before{content:"";position:absolute;top:0;left:0;right:0;height:.5px;background:var(--mf-sep)}
+.mf-sheet .mf-menu .mi span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mf-sheet .mf-menu .mi em{font:600 14px var(--mf-num);font-style:normal;color:var(--mf-sub)}
+.mf-sheet .mf-menu .mi.zero{color:#AEAEB2}
+.mf-sheet .mf-menu .mi.add{color:var(--navy)}
+.mf-sheet .mf-menu .mi.add b{font-size:18px;font-weight:600}
+.mf-sheet .mf-menu .mi:disabled{color:#C7C7CC;cursor:default}
+.mf-sheet .mf-menu .gap{height:7px;background:rgba(0,0,0,.05)}
+.mf-sheet .mf-menu .del{flex:none;width:22px;height:22px;border-radius:50%;background:#FF3B30;color:#fff;font-style:normal;font-size:16px;font-weight:700;line-height:1;display:grid;place-items:center}
+.mf-sheet .mf-ft.r1{display:flex;flex-wrap:wrap;gap:4px 14px;margin:8px 16px 0}
+.mf-sheet .mf-ft.r1 span{display:inline-flex;align-items:center;gap:5px}
 .mf-sheet .mf-foot{position:sticky;bottom:0;z-index:2;padding:10px 16px calc(12px + env(safe-area-inset-bottom));background:rgba(242,242,247,.94);
   -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border-top:.5px solid var(--mf-sep)}
 .mf-sheet .mf-apply{display:block;width:100%;border:0;background:var(--navy);color:#fff;border-radius:14px;padding:14px 0;font:inherit;font-size:15px;font-weight:800;cursor:pointer}
