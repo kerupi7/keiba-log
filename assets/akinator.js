@@ -112,7 +112,7 @@
         S.partners.forEach(function (p) { var f = BY[p].gate; if (set.indexOf(f) === -1) set.push(f); });
         return set.map(function (f) { return [g, f]; });
       },
-      memo: '枠連オッズは未取得のため払戻を出せない' },
+      memo: '枠連はこの欄の推奨に入れていない（オッズは馬券の表の「枠連」で見る）' },
     { id: 'utannag', fam: 'mid', type: 'umatan', name: '馬単 1着軸ながし', axisN: 1, axisReq: ['W'], slots: ['R'], ord: 'yes',
       build: function (S) { return S.partners.map(function (p) { return [S.axis[0], p]; }); },
       memo: '◎1着固定→印3頭 2点で0.853。印ベースで2番目に良い行' },
@@ -249,7 +249,7 @@
   }
   //  成立しない理由を返す（成立するなら null）。W ⊆ R ⊆ P なので入れ子のホール条件で足りる
   function infeasibleReason(ctx, S, c) {
-    if (c.type === 'wakuren') return 'オッズ未取得のため候補外';
+    if (c.type === 'wakuren') return 'この欄では候補外（馬券の表の「枠連」で見る）';
     if (S.axisMode === null) return 'まだ査定の途中です';
     if (c.axisN !== S.axis.length) {
       return c.axisN === 0 ? '軸を決めた買い方ではありません'
@@ -1224,7 +1224,7 @@
         + '上の点数のうち、自分では要らないと思う組が混じっていないか確認してください。</div>';
     }
     if (c.type === 'wakuren') {
-      return '<div class="warn">枠連のオッズは未取得のため払戻が出せません。'
+      return '<div class="warn">この欄では枠連の払戻を出していません（オッズと期待値は馬券の表の「枠連」で見られます）。'
         + '<b>同じ枠に2頭入る馬連を買うときは、枠連のオッズも見て高い方で買ってください</b>（実測 +5.0%。66本の研究で唯一残った利益）。</div>';
     }
     if (pl.pRecover != null && pl.pHit != null && pl.pRecover < pl.pHit * 0.999) {
@@ -1270,7 +1270,7 @@
     return '<div class="note" style="background:#FFF8E8"><b>枠連も見てください。</b>'
       + umaBox(S.axis[0], g, 'sm') + same.map(function (n) { return umaBox(n, ctx.BY[n].gate, 'sm'); }).join('')
       + 'は同じ' + g + '枠です。この組を馬連で買うときは<b>枠連のオッズも確認し、高い方で買ってください</b>（実測 +5.0%）。'
-      + '当サイトは枠連のオッズを取得していないため、上の推奨には含めていません。</div>';
+      + '上の推奨には枠連を含めていません（枠連のオッズは馬券の表の「枠連」で見られます）。</div>';
   }
 
   function renderResults(ctx, S) {

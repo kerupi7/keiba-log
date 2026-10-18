@@ -382,7 +382,7 @@
       var buyLine = Harville.buyLine(p);
       var odds = null, ev = null;
       var oa = oddsForType(oddsAll, 'wakuren');
-      // B7（枠連オッズ取得）未実施の間は常にnull。実装後もodds_all-1.x互換のまま拾える設計（45-spec §2.6）
+      // B7（枠連オッズ取得）は 2026-10-19 に入れた（keiba_fetch_odds_all.py・odds_worker）。キーは枠番どうし "3-4"（45-spec §2.6）
       if (oa && oa.odds && oa.odds.wakuren) {
         var key = Math.min(item.frame[0], item.frame[1]) + '-' + Math.max(item.frame[0], item.frame[1]);
         var raw = oa.odds.wakuren[key];
