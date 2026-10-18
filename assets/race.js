@@ -3824,7 +3824,9 @@ document.addEventListener('gekiatsu-change', gekiPaint);
 //   ・札と段に、成績の「ランクの見どころ」と同じ S と D の差の点（差25以上＝緑・10未満＝赤）。札の名前（ⓘ）を押すとその札の成績の表
 const MF_KEY = 'mmfilter';
 const MF_QUICK_KEY = 'mmfilter-quick';   // 自分で足した「よく使う」（⑥）
-const MF_LV = ['S', 'A', 'B', 'C'];      // 条件の値は 0〜3（0＝S・2＝B以上）
+const MF_LV = ['S', 'A', 'B', 'C', 'D']; // 条件の値はランクの字の位置 0〜4（0＝S・2＝B）。向き（dir）が以上なら B以上、以下なら B以下
+// 以上と以下は全部の札で1つの向き（mockup-321 案B・2026-10-19 ユーザー「A以上で探したい時と、C以下で探したい時がある」）。
+//   以上で使えるのは S〜C（0〜3）、以下で使えるのは A〜D（1〜4）。S以下・D以上は全部の馬なので置かない
 const MF_PT = { S: 5, A: 4, B: 3, C: 2, D: 1 };
 const MF_RC = { S: '#0B5E2E', A: '#1F6B3A', B: '#4E5862', C: '#8E4A36', D: '#A32B1F' };   // yoso.css .m225 .r-S〜.r-D と同じ
 const MF_RS = ['逃', '先', '差', '追'];
@@ -3848,15 +3850,17 @@ const MF_ICON = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 3h12M4.
 const MF = { s: null, quick: [], site: null, sheet: null, shade: null, draft: null, edit: false,
   ranks: null, rec: null, open: {}, dt: {}, menu: false };   // 段は最初は全部閉じる（2026-10-19 ユーザー「馬の力はデフォルトで閉じておいて」）
 
-const mfEmpty = () => ({ th: {}, rs: [], ai: false, mine: false, nox: false });
+const mfEmpty = () => ({ dir: 'up', th: {}, rs: [], ai: false, mine: false, nox: false });
+const mfOk = (i, dir) => Number.isInteger(i) && (dir === 'dn' ? i >= 1 && i <= 4 : i >= 0 && i <= 3);
 const mfClone = (s) => JSON.parse(JSON.stringify(s));
 // 保存された値は形をそろえてから使う（古い形・壊れた値は捨てて空にする）。
 //   2026-10-18 の形（調教 tr: ['S','A'] など）は、S から続く調教のランクだけ「〜以上」に直す。人気・評価は捨てる
 function mfNorm(o) {
   const e = mfEmpty();
   if (!o || typeof o !== 'object') return e;
+  e.dir = o.dir === 'dn' ? 'dn' : 'up';   // 向きの無い前の保存は「以上」
   if (o.th && typeof o.th === 'object') {
-    MF_KEYS.forEach((k) => { const i = o.th[k]; if (Number.isInteger(i) && i >= 0 && i <= 3) e.th[k] = i; });
+    MF_KEYS.forEach((k) => { const i = o.th[k]; if (mfOk(i, e.dir)) e.th[k] = i; });
   } else if (Array.isArray(o.tr) && o.tr.length) {
     let i = -1;
     while (i < 4 && o.tr.includes(['S', 'A', 'B', 'C', 'D'][i + 1])) i += 1;
@@ -3881,8 +3885,9 @@ function mfSave() {
   } catch (e) { /* 保存しないだけ */ }
 }
 const mfIsEmpty = (s) => !Object.keys(s.th).length && !s.rs.length && !s.ai && !s.mine && !s.nox;
-const mfSame = (a, b) => JSON.stringify(mfNorm(a)) === JSON.stringify(mfNorm(b));
-const mfLv = (i) => (i === 0 ? 'S' : `${MF_LV[i]}以上`);
+const mfKey = (s) => { const n = mfNorm(s); if (!Object.keys(n.th).length) n.dir = 'up'; return JSON.stringify(n); };
+const mfSame = (a, b) => mfKey(a) === mfKey(b);
+const mfLv = (i, dir) => (dir === 'dn' ? (i === 4 ? 'D' : `${MF_LV[i]}以下`) : (i === 0 ? 'S' : `${MF_LV[i]}以上`));
 // 札の名前はランクのページと同じ言い方（コース＝新潟芝1000m など）
 function mfLabel(k) {
   const n = k.slice(2);
@@ -3902,7 +3907,7 @@ function mfMatch(h, s) {
   if (MF.ranks) {
     for (const [k, i] of Object.entries(s.th)) {
       const g = mfRank(h, k);
-      if (g && g !== '初' && MF_PT[g] < 5 - i) return false;
+      if (g && g !== '初' && (s.dir === 'dn' ? MF_PT[g] > 5 - i : MF_PT[g] < 5 - i)) return false;
     }
   }
   if (s.rs.length && !s.rs.includes(String(h.running_style || '').trim().charAt(0))) return false;
@@ -3916,7 +3921,7 @@ function mfMatch(h, s) {
 const mfCount = (s) => MF.site.horses.filter((h) => mfMatch(h, s)).length;
 
 function mfTags(s) {
-  const t = MF_KEYS.filter((k) => s.th[k] !== undefined).map((k) => [k, `${mfLabel(k)}${k.startsWith('g:') ? '（段）' : ''} ${mfLv(s.th[k])}`]);
+  const t = MF_KEYS.filter((k) => s.th[k] !== undefined).map((k) => [k, `${mfLabel(k)}${k.startsWith('g:') ? '（段）' : ''} ${mfLv(s.th[k], s.dir)}`]);
   if (s.rs.length) t.push(['rs', MF_RS.filter((x) => s.rs.includes(x)).join('・')]);
   if (s.ai) t.push(['ai', 'AIの印あり']);
   if (s.mine) t.push(['mine', '自分の印あり']);
@@ -4030,7 +4035,7 @@ function mfDetail(k) {
   const cur = MF.draft.th[k];
   const rows = ['S', 'A', 'B', 'C', 'D', '初'].filter((r) => g[r]).map((r) => {
     const [n, w, r2, t3] = g[r];
-    const sel = cur !== undefined && r !== '初' && 'SABCD'.indexOf(r) <= cur;
+    const sel = cur !== undefined && r !== '初' && (MF.draft.dir === 'dn' ? 'SABCD'.indexOf(r) >= cur : 'SABCD'.indexOf(r) <= cur);
     const col = r === '初' ? '#C7C7CC' : MF_RC[r];
     return `<tr class="${sel ? 'sel' : ''}"><td><span class="rk${r === '初' ? ' N' : ''}" style="background:${col}">${r}</span></td>`
       + `<td class="n">${n.toLocaleString('ja-JP')}</td><td>${w.toFixed(1)}%</td><td>${r2.toFixed(1)}%</td>`
@@ -4044,15 +4049,18 @@ function mfDetail(k) {
   return `<div class="mf-dt"><div class="cap"><span>これまでの成績</span><span>${per}</span></div>
     <table><tr><th>ランク</th><th>頭数</th><th>勝率</th><th>連対率</th><th>3着内率</th></tr>${rows}</table></div>`;
 }
-// スライダー：なし → C以上 → B以上 → A以上 → S（右へ行くほど厳しい）
-const mfSl = (k) => (MF.draft.th[k] === undefined ? 0 : 4 - MF.draft.th[k]);
+// スライダー：以上は なし → C以上 → B以上 → A以上 → S、以下は なし → A以下 → B以下 → C以下 → D（どちらも右へ行くほど厳しい）
+const MF_TK = { up: ['なし', 'C', 'B', 'A', 'S'], dn: ['なし', 'A', 'B', 'C', 'D'] };
+const mfSl = (k) => (MF.draft.th[k] === undefined ? 0 : MF.draft.dir === 'dn' ? MF.draft.th[k] : 4 - MF.draft.th[k]);
+const mfFromSl = (v) => (MF.draft.dir === 'dn' ? v : 4 - v);
+const mfSlText = (v) => (v ? mfLv(mfFromSl(v), MF.draft.dir) : 'なし');
 function mfSlider(k, label) {
   const v = mfSl(k);
   const tier = mfTier(k);
-  const tk = ['なし', 'C', 'B', 'A', 'S'].map((t, j) => `<span class="${j === v && v ? 'on' : ''}">${t}</span>`).join('');
+  const tk = MF_TK[MF.draft.dir].map((t, j) => `<span class="${j === v && v ? 'on' : ''}">${t}</span>`).join('');
   return `<div class="mf-cell sl3"><button type="button" class="lb${MF.dt[k] ? ' on' : ''}" data-mfdt="${k}">`
     + `${tier ? `<i class="mf-dot ${tier}"></i>` : ''}<span>${escapeHtml(label)}</span><span class="info">i</span></button>`
-    + `<span class="val${v ? ' on' : ''}" data-mfvl>${v ? mfLv(4 - v) : 'なし'}</span>`
+    + `<span class="val${v ? ' on' : ''}" data-mfvl>${mfSlText(v)}</span>`
     + `<div class="sl"><input type="range" min="0" max="4" step="1" value="${v}" data-mfsl="${k}" style="--p:${v * 25}%" aria-label="${escapeHtml(label)}のランク">`
     + `<div class="ticks">${tk}</div></div>${MF.dt[k] ? mfDetail(k) : ''}</div>`;
 }
@@ -4090,7 +4098,9 @@ function mfDrawSheet() {
   MF.sheet.innerHTML = `<div class="mf-top"><div class="grip"></div>
       <div class="mf-nav"><button type="button" data-mfclr${empty ? ' disabled' : ''}>全部外す</button><b>絞り込み</b><button type="button" class="r" data-mfapply>完了</button></div></div>
     <div class="mf-body">${favs}${noRank}
-      <div class="mf-hd">ランク</div><div class="mf-box">${groups}</div>${legend}
+      <div class="mf-hd">ランク</div>
+      <div class="mf-dir">${[['up', '以上で探す'], ['dn', '以下で探す']].map(([v, l]) => `<button type="button" data-mfdir="${v}" class="${d.dir === v ? 'on' : ''}">${l}</button>`).join('')}</div>
+      <div class="mf-box">${groups}</div>${legend}
       <div class="mf-hd">脚質</div><div class="mf-pills">${rs}</div>
       <div class="mf-hd">印</div><div class="mf-box">${fl}</div></div>
     <div class="mf-foot"><button type="button" class="mf-apply" data-mfapply>${empty ? '閉じる' : `${n}頭を上に出す`}</button>
@@ -4122,7 +4132,15 @@ function mfSheetClick(e) {
     return;
   }
   if (t('[data-mfedit]')) { MF.edit = !MF.edit; mfDrawSheet(); return; }
-  if (t('[data-mfclr]')) { MF.draft = mfEmpty(); mfDrawSheet(); return; }
+  if (t('[data-mfclr]')) { MF.draft = { ...mfEmpty(), dir: d.dir }; mfDrawSheet(); return; }   // 向きは残す
+  if ((b = t('[data-mfdir]'))) {
+    const v = b.dataset.mfdir;
+    if (d.dir === v) return;
+    d.dir = v;
+    for (const k of Object.keys(d.th)) if (!mfOk(d.th[k], v)) delete d.th[k];
+    mfDrawSheet();
+    return;
+  }
   if (t('[data-mfapply]')) { mfCloseSheet(); mfSetState(d); return; }
   if (t('[data-mfsave]')) {
     if (mfIsEmpty(d) || MF.quick.some((q) => mfSame(q.s, d))) return;
@@ -4143,14 +4161,14 @@ function mfSliderInput(e) {
   const v = Number(el.value);
   el.style.setProperty('--p', `${v * 25}%`);
   const vl = el.closest('.mf-cell').querySelector('[data-mfvl]');
-  vl.textContent = v ? mfLv(4 - v) : 'なし';
+  vl.textContent = mfSlText(v);
   vl.classList.toggle('on', v > 0);
 }
 function mfSliderChange(e) {
   const el = e.target.closest('[data-mfsl]');
   if (!el) return;
   const v = Number(el.value);
-  if (v) MF.draft.th[el.dataset.mfsl] = 4 - v; else delete MF.draft.th[el.dataset.mfsl];
+  if (v) MF.draft.th[el.dataset.mfsl] = mfFromSl(v); else delete MF.draft.th[el.dataset.mfsl];
   mfDrawSheet();
 }
 
