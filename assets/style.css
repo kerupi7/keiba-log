@@ -4781,10 +4781,15 @@ body:has(.container.top){background:#F2F2F7}
 .race20.r26 .mm-list .mm-ai .mkb.m-oku{color:#1C1C1E}
 /* 馬番・馬名・2行目・評価・オッズ */
 .race20.r26 .mm-list .mm-c{gap:6px;padding:0}
-.race20.r26 .mm-list .mm-c > .hn{width:22px;height:22px;border-radius:6px;font-family:var(--num27);font-weight:600;font-size:13px;flex:none}
+.race20.r26 .mm-list .mm-c > .hn,.race20.r26 .mm-list .mm-hnleg > .hn{width:22px;height:22px;border-radius:6px;font-family:var(--num27);font-weight:600;font-size:13px;flex:none}
 .race20.r26 .mm-list .mm-c .nm{font-size:15px;font-weight:700;line-height:1.25;gap:2px}
 .race20.r26 .mm-list .mm-c .nm .apop{font-size:15px;font-weight:600;color:#C7C7CC;opacity:1}
 .race20.r26 .mm-list .mm-sub{gap:3px;font-size:10.5px;color:#8E8E93;letter-spacing:-.01em;margin-top:2px}
+/* 今日の脚質（legCells）は馬番の札の下に置く（2026-10-18）。2行目に置くと馬体重が出た後に字が縮む・折り返すため。
+   4マスの幅は馬番の札（22px）と同じにして、列を広げない（広げると375px幅で2行目の字が縮む・実測） */
+.race20.r26 .mm-list .mm-hnleg{flex:none;display:flex;flex-direction:column;align-items:center;gap:4px}
+.race20.r26 .mm-list .mm-hnleg .legcells{border-radius:2px}
+.race20.r26 .mm-list .mm-hnleg .legcells i{width:5px;height:9px;line-height:9px;font-size:6px}
 .race20.r26 .mm-list .mm-c .tot{width:38px;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-family:var(--num27);
   font-weight:600;font-size:15px;line-height:1;color:var(--text)}
 .race20.r26 .mm-list .mm-c .tot .grade{display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:18px;padding:0 5px;

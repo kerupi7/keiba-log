@@ -1956,13 +1956,20 @@ function stripClassSuffix(name) {
 // 脚質バー。4マスの該当位置に ◀ を置き、右に文字を出す（netkeiba と同じ形）。
 function legBar(style) {
   const s = String(style || '').trim().slice(0, 1);
-  const idx = LEG_ORDER.indexOf(s);
-  const cells = [0, 1, 2, 3]
-    .map((i) => `<i class="${idx === i ? 'on' : ''}">${idx === i ? '◀' : ''}</i>`).join('');
-  const label = idx >= 0
+  const label = LEG_ORDER.includes(s)
     ? `<span class="lbl">${escapeHtml(s)}</span>`
     : '<span class="lbl mut">—</span>';
-  return `<span class="legbar"><span class="legcells">${cells}</span>${label}</span>`;
+  return `<span class="legbar">${legCells(style)}${label}</span>`;
+}
+// 4マスだけ（文字なし）。出馬表の一覧で馬番の札の下に置く（2026-10-18 ユーザー「今日の脚質を追加したい」・mockup-308 の3案）。
+//   左から 逃・先・差・追 で、◀ は1つだけ。
+//   はじめは2行目の頭に置いたが、馬体重が出た後に2行目の字が縮む・折り返す（375px幅で18頭中14頭）ので、
+//   同日ユーザー「縮む、折り畳まないようにしてほしい」で馬番の下へ移した。馬番の札と同じ幅に収め、列を広げない
+function legCells(style) {
+  const idx = LEG_ORDER.indexOf(String(style || '').trim().slice(0, 1));
+  const cells = [0, 1, 2, 3]
+    .map((i) => `<i class="${idx === i ? 'on' : ''}">${idx === i ? '◀' : ''}</i>`).join('');
+  return `<span class="legcells">${cells}</span>`;
 }
 
 // 104-spec §5.1: 当日馬体重（発走の約50分前に発表）。null のときは<span>ごと出さない
@@ -3342,7 +3349,7 @@ function mmRow(h) {
   }
   return `<div class="mm-row${h.ability_mark ? ' pred' : ''}" data-n="${h.number}">${mmCell(h)}
     <span class="mm-ai">${markBadge20(h) || '<span class="none">—</span>'}</span>
-    <span class="mm-c">${umaBox(h.number, h.gate, 'sm')}<span class="mm-nmwrap"><button type="button" class="nm" data-pop="${h.number}"><span class="t">${escapeHtml(h.name)}</span><i class="apop">›</i></button>${mmSub(h)}</span>
+    <span class="mm-c"><span class="mm-hnleg">${umaBox(h.number, h.gate, 'sm')}${legCells(h.running_style)}</span><span class="mm-nmwrap"><button type="button" class="nm" data-pop="${h.number}"><span class="t">${escapeHtml(h.name)}</span><i class="apop">›</i></button>${mmSub(h)}</span>
       <span class="tot">${fmtNum(dispScore(h), 1)}<i class="grade ${gradeClass(dispGrade(h))}">${gradeDisp(dispGrade(h))}</i></span>
       <span class="od${oddsHotClass(h.odds)}"><span class="ov">${h.odds != null ? h.odds.toFixed(1) : '—'}</span><i>倍</i>
         <span class="pp">${h.popularity ?? '—'}人気</span></span></span></div>`;
