@@ -3739,7 +3739,9 @@ function mmList(site) {
   // 発走前だけ、見出しの「オッズ」を更新ボタンにする（2026-10-10 ユーザー「netkeibaみたいに更新ボタンを押したら更新される」。
   //   はじめは「オッズ」の下に「↻ 更新」を置いた2行だったが、同日「左のアイコンは残して、更新の部分をオッズにして1行に」）
   const rf = site.status === 'prediction' ? oddsRfHtml() : '';
+  // .mf-bar は絞り込みの帯（143-spec）。中身は setupMyMarks の後に mfApply が書く
   return `<div class="mm-list">
+      <div class="mf-bar"></div>
       <div class="mm-hd"><span class="h-my">自分</span><span class="h-ai">AI</span>
         <span class="h-c"><span class="h-nm">馬</span><span class="h-tot">評価</span>
           <span class="h-od${rf ? ' has-rf' : ''}">${rf || 'オッズ'}</span></span></div>
@@ -3802,6 +3804,267 @@ function gekiPaint() {
 // 絞り込みで押した・外したとき（絞り込みを閉じてもページを読み直さない時があるので、その場で描き直す）
 document.addEventListener('gekiatsu-change', gekiPaint);
 
+// ---------- 出馬表の絞り込み（143-spec・2026-10-18 ユーザー決定・mockup-309 融合2） ----------
+// 一覧の上に「かけている条件の札（✕で外す）＋絞り込みボタン」。シートの上段は1タップの「よく使う」、
+// 下段で細かく選ぶ（同じ段は「どれか」、段どうしは「全部そろう」）。
+// 合う馬を上に集め、外れた馬は**消さずに薄くして下へ沈める**（沈んだ馬にも印は付けられる）。
+// 並びと濃さを変えるだけで、自分の印・AIの印・買い目シート・馬券の面には触らない（⑨）。
+// 条件は端末に1つだけ保存し、次に開いたどのレースにもそのままかける（⑩ ユーザー「残す」）。
+const MF_KEY = 'mmfilter';
+const MF_QUICK_KEY = 'mmfilter-quick';   // 自分で足した「よく使う」（⑥）
+const MF_TR = ['S', 'A', 'B', 'C', 'D'];
+const MF_GR = ['A', 'B', 'C', 'D', 'E'];
+const MF_RS = ['逃', '先', '差', '追'];
+const MF_PP = [[null, '指定なし'], ['1-3', '1〜3番'], ['1-5', '1〜5番'], ['6-99', '6番〜']];
+// 最初からある「よく使う」。この5つは編集でも消せない（⑬）
+const MF_BASE_QUICK = [
+  ['調教A以上', { tr: ['S', 'A'] }],
+  ['AIの印', { ai: true }],
+  ['自分の印あり', { mine: true }],
+  ['1〜5番人気', { pp: '1-5' }],
+  ['消を除く', { nox: true }],
+];
+const MF_ICON = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 3h12M4.5 8h7M7 13h2" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>';
+const MF = { s: null, quick: [], site: null, sheet: null, shade: null, draft: null, edit: false };
+
+const mfEmpty = () => ({ tr: [], gr: [], pp: null, rs: [], ai: false, mine: false, nox: false });
+const mfClone = (s) => JSON.parse(JSON.stringify(s));
+// 保存された値は形をそろえてから使う（古い形・壊れた値は捨てて空にする）
+function mfNorm(o) {
+  const e = mfEmpty();
+  if (!o || typeof o !== 'object') return e;
+  const pick = (v, ok) => (Array.isArray(v) ? v.filter((x) => ok.includes(x)) : []);
+  e.tr = pick(o.tr, MF_TR);
+  e.gr = pick(o.gr, MF_GR);
+  e.rs = pick(o.rs, MF_RS);
+  e.pp = MF_PP.some(([v]) => v && v === o.pp) ? o.pp : null;
+  e.ai = o.ai === true; e.mine = o.mine === true; e.nox = o.nox === true;
+  return e;
+}
+function mfLoad() {
+  try { MF.s = mfNorm(JSON.parse(localStorage.getItem(MF_KEY))); } catch (e) { MF.s = mfEmpty(); }
+  try {
+    const q = JSON.parse(localStorage.getItem(MF_QUICK_KEY));
+    MF.quick = Array.isArray(q) ? q.filter((x) => x && typeof x.label === 'string').map((x) => ({ label: x.label, s: mfNorm(x.s) })) : [];
+  } catch (e) { MF.quick = []; }
+}
+// localStorage が使えない環境でも絞り込みは効く。保存されないだけ（印と同じ）
+function mfSave() {
+  try {
+    localStorage.setItem(MF_KEY, JSON.stringify(MF.s));
+    localStorage.setItem(MF_QUICK_KEY, JSON.stringify(MF.quick));
+  } catch (e) { /* 保存しないだけ */ }
+}
+const mfIsEmpty = (s) => !s.tr.length && !s.gr.length && !s.pp && !s.rs.length && !s.ai && !s.mine && !s.nox;
+const mfSame = (a, b) => JSON.stringify(mfNorm(a)) === JSON.stringify(mfNorm(b));
+const mfTrGrade = (h) => (h.training_rank && h.training_rank.grade) || null;
+
+function mfMatch(h, s) {
+  if (h.scratched) return false;
+  // 調教のランクが無い馬（新馬・取得に失敗した馬）は外さずに残す（⑪）
+  if (s.tr.length) { const g = mfTrGrade(h); if (g && !s.tr.includes(g)) return false; }
+  // 評価は一覧に出している評価（dispGrade）で見る。A＋ は A に含める
+  if (s.gr.length) { const g = dispGrade(h); if (!g || !s.gr.includes(String(g).charAt(0))) return false; }
+  if (s.pp) {
+    const [lo, hi] = s.pp.split('-').map(Number);
+    if (h.popularity == null || h.popularity < lo || h.popularity > hi) return false;
+  }
+  if (s.rs.length && !s.rs.includes(String(h.running_style || '').trim().charAt(0))) return false;
+  if (s.ai && !h.ability_mark) return false;
+  const mk = MM.marks[String(h.number)];
+  // 自分の印あり＝◎○▲△☆✓のどれか。消は含めない（⑭）
+  if (s.mine && !(mk && mk !== '消')) return false;
+  if (s.nox && mk === '消') return false;
+  return true;
+}
+const mfCount = (s) => MF.site.horses.filter((h) => mfMatch(h, s)).length;
+
+function mfTags(s) {
+  const t = [];
+  if (s.tr.length) t.push(['tr', '調教 ' + MF_TR.filter((x) => s.tr.includes(x)).join('・')]);
+  if (s.gr.length) t.push(['gr', '評価 ' + MF_GR.filter((x) => s.gr.includes(x)).join('・')]);
+  if (s.pp) t.push(['pp', s.pp === '6-99' ? '6番人気〜' : `${s.pp.replace('-', '〜')}番人気`]);
+  if (s.rs.length) t.push(['rs', MF_RS.filter((x) => s.rs.includes(x)).join('・')]);
+  if (s.ai) t.push(['ai', 'AIの印あり']);
+  if (s.mine) t.push(['mine', '自分の印あり']);
+  if (s.nox) t.push(['nox', '自分の消を除く']);
+  return t;
+}
+function mfClearKey(s, k) {
+  if (k === 'pp') s.pp = null;
+  else if (Array.isArray(s[k])) s[k] = [];
+  else s[k] = false;
+}
+
+function mfBarHtml() {
+  const t = mfTags(MF.s);
+  const live = MF.site.horses.filter((h) => !h.scratched).length;
+  const sum = t.length
+    ? t.map(([k, l]) => `<span class="mf-tag">${escapeHtml(l)}<button type="button" data-mfx="${k}" aria-label="${escapeHtml(l)}を外す">✕</button></span>`).join('')
+    : `<span class="mf-tag none">条件なし（${live}頭）</span>`;
+  return `<div class="mf-row"><div class="mf-sum">${sum}</div>
+      <button type="button" class="mf-btn" data-mfopen>${MF_ICON}絞り込み${t.length ? `<span class="n">${t.length}</span>` : ''}</button></div>`
+    + (t.length ? `<div class="mf-cnt"><b>${mfCount(MF.s)}頭</b>が条件に合う（上に出しています）</div>` : '');
+}
+
+// 一覧の並びを、いまの条件で組み直す。行（.mm-row）は作り直さず並べ替えるだけ
+// （印のマス・オッズの塗り・字の縮め具合はそのまま残る）
+function mfApply() {
+  const list = document.querySelector('.race20 .mm-list');
+  if (!list || !MF.site) return;
+  const bar = list.querySelector('.mf-bar');
+  if (bar) bar.innerHTML = mfBarHtml();
+  const hd = list.querySelector('.mm-hd');
+  if (!hd) return;
+  list.querySelectorAll('.mf-div').forEach((d) => d.remove());
+  const by = {};
+  MF.site.horses.forEach((h) => { by[h.number] = h; });
+  const num = (r) => Number(r.dataset.n);
+  const rows = [...list.querySelectorAll('.mm-row')].sort((a, b) => num(a) - num(b));
+  const on = !mfIsEmpty(MF.s);
+  const hit = on ? rows.filter((r) => by[num(r)] && mfMatch(by[num(r)], MF.s)) : rows;
+  const miss = on ? rows.filter((r) => !hit.includes(r)) : [];
+  rows.forEach((r) => r.classList.remove('mf-out', 'mf-last'));
+  const frag = document.createDocumentFragment();
+  hit.forEach((r) => frag.appendChild(r));
+  if (miss.length) {
+    if (hit.length) hit[hit.length - 1].classList.add('mf-last');
+    const d = document.createElement('div');
+    d.className = 'mf-div';
+    d.innerHTML = `<span>条件の外 ${miss.length}頭</span><small>印はこのまま付けられます</small>`;
+    frag.appendChild(d);
+    miss.forEach((r) => { r.classList.add('mf-out'); frag.appendChild(r); });
+  }
+  hd.after(frag);
+  // 調教で絞っている間だけ、評価の列（点数・評価の下）に調教のランクの札を出す（⑧）。ランクが無い馬は灰色の「調教—」（⑪）
+  //   143-spec ⑧ は「2行目の頭」だったが、375px幅で入れると2行目が18頭中13頭で折り返した（2026-10-18 新潟11R で実測。
+  //   札が無ければ折り返し0頭）。評価の列は幅38pxで札（30px）が入り、2行目を押さないのでここへ置いた
+  const showTr = on && MF.s.tr.length > 0;
+  rows.forEach((r) => {
+    const tot = r.querySelector('.mm-c .tot');
+    if (!tot) return;
+    const old = tot.querySelector('.mf-trk');
+    if (old) old.remove();
+    if (showTr && !r.classList.contains('scr')) {
+      const g = mfTrGrade(by[num(r)]);
+      tot.insertAdjacentHTML('beforeend', `<span class="mf-trk ${g ? `t-${g}` : 't-none'}">調教${g || '—'}</span>`);
+    }
+  });
+}
+
+function mfSetState(s) {
+  MF.s = mfNorm(s);
+  mfSave();
+  mfApply();
+}
+
+function mfOpenSheet() {
+  if (!MF.sheet.classList.contains('on')) lockPageScroll();
+  MF.draft = mfClone(MF.s);
+  MF.edit = false;
+  mfDrawSheet();
+  MF.sheet.classList.add('on');
+  MF.shade.classList.add('on');
+}
+function mfCloseSheet() {
+  if (!MF.sheet.classList.contains('on')) return;
+  MF.sheet.classList.remove('on');
+  MF.shade.classList.remove('on');
+  unlockPageScroll();
+}
+
+function mfDrawSheet() {
+  const d = MF.draft;
+  const quick = MF_BASE_QUICK.map(([label, p]) => ({ label, s: Object.assign(mfEmpty(), p), base: true }))
+    .concat(MF.quick.map((q, i) => ({ label: q.label, s: q.s, base: false, i })));
+  const qHtml = quick.map((q, k) => {
+    const on = !MF.edit && mfSame(q.s, MF.s);
+    const x = MF.edit && !q.base ? `<i class="mf-qx" data-mfqdel="${q.i}" role="button" aria-label="${escapeHtml(q.label)}を消す">✕</i>` : '';
+    return `<button type="button" class="mf-q${on ? ' on' : ''}${q.base ? '' : ' mine'}${MF.edit && q.base ? ' fixed' : ''}" data-mfq="${k}">`
+      + `<b>${escapeHtml(q.label)}</b><small>${mfCount(q.s)}頭</small>${x}</button>`;
+  }).join('');
+  const ob = (v, l, on) => `<button type="button" data-v="${v}" class="${on ? 'on' : ''}">${l}</button>`;
+  const multi = (k, vals) => `<div class="mf-opts">${vals.map((v) => ob(v, v, d[k].includes(v))).join('')}</div>`;
+  const n = mfCount(d);
+  const dup = MF.quick.some((q) => mfSame(q.s, d)) || MF_BASE_QUICK.some(([, p]) => mfSame(Object.assign(mfEmpty(), p), d));
+  MF.sheet.innerHTML = `<div class="grip"></div>
+    <div class="mf-qhd"><b>よく使う</b><span>押すとすぐ一覧に戻ります</span>
+      <button type="button" class="mf-edit" data-mfedit${MF.quick.length ? '' : ' disabled'}>${MF.edit ? '完了' : '編集'}</button></div>
+    <div class="mf-quick">${qHtml}</div>
+    <div class="mf-hr">細かく選ぶ</div>
+    <div class="mf-sec" data-s="tr"><div class="lb">調教のランク<small>S〜D・今回の調教の中身から</small></div>${multi('tr', MF_TR)}</div>
+    <div class="mf-sec" data-s="gr"><div class="lb">評価<small>＋は同じ文字に含める</small></div>${multi('gr', MF_GR)}</div>
+    <div class="mf-sec" data-s="pp"><div class="lb">人気</div><div class="mf-opts">${MF_PP.map(([v, l]) => ob(v, l, d.pp === v)).join('')}</div></div>
+    <div class="mf-sec" data-s="rs"><div class="lb">脚質</div>${multi('rs', MF_RS)}</div>
+    <div class="mf-sec" data-s="fl"><div class="lb">印</div><div class="mf-opts">${ob('ai', 'AIの印あり', d.ai)}${ob('mine', '自分の印あり', d.mine)}${ob('nox', '自分の消を除く', d.nox)}</div></div>
+    <div class="mf-foot"><button type="button" class="mf-clr" data-mfclr>全部外す</button>
+      <button type="button" class="mf-apply" data-mfapply>${mfIsEmpty(d) ? '条件なしにする' : `${n}頭を上に出す`}</button></div>
+    <button type="button" class="mf-save" data-mfsave${mfIsEmpty(d) || dup ? ' disabled' : ''}>＋ いまの組み合わせを「よく使う」に足す</button>`;
+}
+
+function mfSheetClick(e) {
+  const d = MF.draft;
+  const del = e.target.closest('[data-mfqdel]');
+  if (del) {
+    MF.quick.splice(Number(del.dataset.mfqdel), 1);
+    if (!MF.quick.length) MF.edit = false;
+    mfSave();
+    mfDrawSheet();
+    return;
+  }
+  const q = e.target.closest('[data-mfq]');
+  if (q) {
+    if (MF.edit) return;   // 編集中は押しても絞らない（消すのは ✕）
+    const k = Number(q.dataset.mfq);
+    const s = k < MF_BASE_QUICK.length ? Object.assign(mfEmpty(), MF_BASE_QUICK[k][1]) : MF.quick[k - MF_BASE_QUICK.length].s;
+    mfCloseSheet();
+    mfSetState(mfClone(s));
+    return;
+  }
+  if (e.target.closest('[data-mfedit]')) { MF.edit = !MF.edit; mfDrawSheet(); return; }
+  if (e.target.closest('[data-mfclr]')) { MF.draft = mfEmpty(); mfDrawSheet(); return; }
+  if (e.target.closest('[data-mfapply]')) { mfCloseSheet(); mfSetState(d); return; }
+  if (e.target.closest('[data-mfsave]')) {
+    MF.quick.push({ label: mfTags(d).map((t) => t[1]).join('＋'), s: mfClone(d) });
+    mfSave();
+    mfDrawSheet();
+    return;
+  }
+  const b = e.target.closest('.mf-sec button');
+  if (!b) return;
+  const k = b.closest('.mf-sec').dataset.s;
+  const v = b.dataset.v;
+  if (k === 'pp') d.pp = v === 'null' ? null : v;
+  else if (k === 'fl') d[v] = !d[v];
+  else d[k] = d[k].includes(v) ? d[k].filter((x) => x !== v) : d[k].concat(v);
+  mfDrawSheet();
+}
+
+function mfInit(site) {
+  const list = document.querySelector('.race20 .mm-list');
+  if (!list || !list.querySelector('.mf-bar')) return;
+  MF.site = site;
+  mfLoad();
+  // シートは印のシートと同じく body 直下に置く（position:fixed を親の影響から切り離すため）
+  MF.shade = document.createElement('div');
+  MF.shade.className = 'mf-shade';
+  MF.sheet = document.createElement('div');
+  MF.sheet.className = 'mf-sheet';
+  document.body.appendChild(MF.shade);
+  document.body.appendChild(MF.sheet);
+  MF.shade.addEventListener('click', mfCloseSheet);
+  MF.sheet.addEventListener('click', mfSheetClick);
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') mfCloseSheet(); });
+  list.querySelector('.mf-bar').addEventListener('click', (e) => {
+    const x = e.target.closest('[data-mfx]');
+    if (x) { const s = mfClone(MF.s); mfClearKey(s, x.dataset.mfx); mfSetState(s); return; }
+    if (e.target.closest('[data-mfopen]')) mfOpenSheet();
+  });
+  // オッズを読み直して人気が変わったら、その場で並びを組み直す（⑫ 馬が上下に動いてよい）
+  window.addEventListener('ans:odds', () => { if (MF.s.pp) mfApply(); });
+  mfApply();
+}
+
 function mmOpenSheet(n) {
   const h = MM.by[n];
   if (!h || h.scratched) return;
@@ -3834,6 +4097,8 @@ function mmChanged() {
   // 予算の入力欄へフォーカスが飛んで読んでいる位置がずれる
   const ak = document.getElementById('ak-panel-body');
   if (akRefresh && ak && !ak.hidden) akRefresh();
+  // 絞り込みが自分の印を見ている時だけ、合う・合わないを数え直す（143-spec）
+  if (MF.site && (MF.s.mine || MF.s.nox)) mfApply();
 }
 
 // 一覧の2行目が欄に入らない馬（例 牡2 Ｍ．デムーロ 56kg 484(-12)）は、2行に折らずに字を小さくする
@@ -3873,6 +4138,7 @@ function setupMyMarks(site) {
 
   site.horses.forEach((h) => { MM.by[String(h.number)] = h; });
   mmLoad(site.race.race_id);
+  mfInit(site);   // 143-spec: 絞り込み（自分の印を読むので mmLoad の後）
 
   const shade = document.createElement('div');
   shade.className = 'mm-shade';

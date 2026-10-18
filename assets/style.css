@@ -4800,6 +4800,74 @@ body:has(.container.top){background:#F2F2F7}
 .race20.r26 .mm-list .mm-c .od.hot,.race20.r26 .mm-list .mm-c .od.hot i{color:var(--live)}
 .race20.r26 .mm-list .mm-row.scr .tot{font-family:var(--font);font-size:11px;font-weight:400;color:#AEAEB2;width:auto}
 
+/* ---- 出馬表の絞り込み（143-spec・2026-10-18・mockup-309 融合2） ----
+   一覧の上：かけている条件の札（✕で外す）＋「絞り込み」ボタン。合う馬を上に、外れた馬は薄くして区切りの下へ */
+.race20 .mf-bar{padding:0 0 10px}
+.race20 .mf-row{display:flex;align-items:center;gap:6px}
+.race20 .mf-sum{flex:1;min-width:0;display:flex;gap:5px;overflow-x:auto;scrollbar-width:none}
+.race20 .mf-sum::-webkit-scrollbar{display:none}
+.race20 .mf-tag{flex:none;display:inline-flex;align-items:center;gap:5px;background:#E8F0F8;color:var(--navy);border-radius:8px;
+  padding:5px 8px;font-size:12px;font-weight:700;white-space:nowrap}
+.race20 .mf-tag button{border:0;background:none;color:var(--navy);font-size:12px;padding:0 0 0 2px;cursor:pointer;line-height:1}
+.race20 .mf-tag.none{background:none;color:#8E8E93;font-weight:600;padding-left:2px}
+.race20 .mf-btn{flex:none;display:inline-flex;align-items:center;gap:5px;border:1.5px solid var(--navy);background:#fff;color:var(--navy);
+  border-radius:10px;padding:6px 10px;font:inherit;font-size:12.5px;font-weight:800;cursor:pointer}
+.race20 .mf-btn svg{width:14px;height:14px}
+.race20 .mf-btn .n{background:var(--navy);color:#fff;border-radius:9px;min-width:17px;height:17px;display:grid;place-items:center;font-size:10.5px}
+.race20 .mf-cnt{font-size:11.5px;color:#8E8E93;padding:8px 2px 0}
+.race20 .mf-cnt b{color:var(--text);font-size:13px;margin-right:2px}
+/* 区切り：白い表を2つに割る。合う側の最後の行（.mf-last）と区切りの次の行を角丸にする */
+.race20 .mf-div{display:flex;justify-content:space-between;align-items:baseline;padding:14px 4px 7px;font-size:11.5px;font-weight:700;color:#8E8E93}
+.race20 .mf-div small{font-size:10.5px;font-weight:600}
+.race20.r26 .mm-row.mf-last{border-radius:0 0 16px 16px}
+.race20.r26 .mm-hd + .mm-row.mf-last{border-radius:16px}
+.race20.r26 .mf-div + .mm-row{border-radius:16px 16px 0 0}
+.race20.r26 .mf-div + .mm-row:last-child{border-radius:16px}
+.race20 .mm-row.mf-out{opacity:.42}
+/* 調教で絞っている間だけ、評価の列（点数・評価の下）に出す調教のランク。2行目に置くと375px幅で折り返すため */
+.race20 .mm-c .tot .mf-trk{flex:none;display:inline-block;font-family:var(--font);font-size:9px;font-weight:800;border-radius:4px;
+  padding:0 3px;line-height:14px;letter-spacing:-.02em;white-space:nowrap}
+.race20 .mf-trk.t-S{background:#0B5E2E;color:#fff}.race20 .mf-trk.t-A{background:#2F8F4E;color:#fff}
+.race20 .mf-trk.t-B{background:#E4EEF6;color:#3D6A8F}.race20 .mf-trk.t-C{background:#ECECEF;color:#6E6E73}
+.race20 .mf-trk.t-D{background:#F6EADB;color:#9A6A35}.race20 .mf-trk.t-none{background:#F2F2F5;color:#AEAEB2}
+/* シート（body 直下・印のシートと同じ重なり） */
+.mf-shade{position:fixed;inset:0;background:rgba(0,0,0,.3);opacity:0;pointer-events:none;transition:opacity .16s;z-index:60}
+.mf-shade.on{opacity:1;pointer-events:auto}
+.mf-sheet{position:fixed;left:0;right:0;bottom:0;z-index:61;background:#fff;border-radius:18px 18px 0 0;
+  box-shadow:0 -4px 18px rgba(0,0,0,.2);padding:8px 16px calc(16px + env(safe-area-inset-bottom));max-height:88vh;overflow-y:auto;
+  transform:translateY(105%);transition:transform .2s ease-out;max-width:760px;margin:0 auto;color:var(--text);font-family:var(--font)}
+.mf-sheet.on{transform:translateY(0)}
+.mf-sheet .grip{width:38px;height:5px;border-radius:3px;background:#D1D1D6;margin:0 auto 10px}
+.mf-sheet .mf-qhd{display:flex;align-items:baseline;gap:8px}
+.mf-sheet .mf-qhd b{font-size:15px}
+.mf-sheet .mf-qhd span{font-size:11px;color:#8E8E93}
+.mf-sheet .mf-edit{margin-left:auto;border:0;background:none;color:var(--navy);font:inherit;font-size:13px;font-weight:800;cursor:pointer;padding:2px 0}
+.mf-sheet .mf-edit:disabled{color:#C7C7CC;cursor:default}
+.mf-sheet .mf-quick{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
+.mf-sheet .mf-q{position:relative;border:0;background:#F2F2F7;border-radius:12px;padding:10px 4px 8px;font:inherit;color:var(--text);cursor:pointer;text-align:center;min-width:0}
+.mf-sheet .mf-q b{display:block;font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mf-sheet .mf-q small{display:block;font-size:10.5px;color:#8E8E93;font-weight:600;margin-top:2px}
+.mf-sheet .mf-q.mine{background:#E8F0F8}
+.mf-sheet .mf-q.on{background:var(--navy);color:#fff}
+.mf-sheet .mf-q.on small{color:#C7D6E6}
+.mf-sheet .mf-q.fixed{opacity:.45;cursor:default}
+.mf-sheet .mf-qx{position:absolute;top:-6px;right:-4px;width:22px;height:22px;border-radius:50%;background:#C8352C;color:#fff;
+  font-style:normal;font-size:11px;font-weight:800;display:grid;place-items:center;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.mf-sheet .mf-hr{display:flex;align-items:center;gap:8px;font-size:11px;color:#8E8E93;font-weight:700;margin:16px 0 0}
+.mf-sheet .mf-hr::before,.mf-sheet .mf-hr::after{content:"";flex:1;height:1px;background:#ECECF0}
+.mf-sheet .mf-sec{margin:11px 0 0}
+.mf-sheet .mf-sec .lb{font-size:12px;font-weight:800;margin-bottom:6px;display:flex;align-items:baseline;gap:6px}
+.mf-sheet .mf-sec .lb small{font-weight:600;color:#8E8E93;font-size:10.5px}
+.mf-sheet .mf-opts{display:flex;flex-wrap:wrap;gap:6px}
+.mf-sheet .mf-opts button{flex:1 1 0;min-width:52px;border:1.5px solid #D6D6DC;background:#fff;border-radius:10px;padding:8px 0;
+  font:inherit;font-weight:700;font-size:13px;color:var(--text);cursor:pointer}
+.mf-sheet .mf-opts button.on{border-color:var(--navy);background:#E8F0F8;color:var(--navy)}
+.mf-sheet .mf-foot{display:flex;gap:8px;margin-top:16px}
+.mf-sheet .mf-clr{flex:none;border:1.5px solid #D6D6DC;background:#fff;border-radius:14px;padding:0 16px;font:inherit;font-weight:700;font-size:13px;color:var(--text);cursor:pointer}
+.mf-sheet .mf-apply{flex:1;border:0;background:var(--navy);color:#fff;font:inherit;font-weight:800;font-size:15px;border-radius:14px;padding:13px 0;cursor:pointer}
+.mf-sheet .mf-save{display:block;width:100%;margin-top:8px;border:0;background:none;color:var(--navy);font:inherit;font-weight:800;font-size:12.5px;cursor:pointer;padding:6px 0}
+.mf-sheet .mf-save:disabled{color:#C7C7CC;cursor:default}
+
 /* ---- 荒れ度の札（#pop-upset）。上の札・一覧と同じ部品に寄せた（2026-10-07 ユーザー「ここも他と同じデザインに寄せてほしい」） ----
    白い角丸・灰のタイル・数字は Futura。荒れ方の色は上の札と同じ（堅い＝緑・中荒れ＝紫・大荒れ＝赤紫）。
    予想した形（.hit）だけ帯を濃く、他は薄く。押して見ている形（.viewing）は白い札で浮かせる */
