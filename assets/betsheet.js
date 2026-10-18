@@ -128,8 +128,9 @@
     var open = openIds.indexOf(line.id) !== -1;
 
     // ポジション行（馬1 ▸ 14 / 馬2 ▸ 6 10）。空の列は出さない
+    // 馬番は選んだ順でなく小さい順に並べる（2026-10-18 ユーザー「相手のところが馬番の順番になるように」）
     var pos = d.cols.filter(function (c) { return c.ids.length; }).map(function (c) {
-      var chips = c.ids.map(function (n) {
+      var chips = c.ids.slice().sort(function (a, b) { return Number(a) - Number(b); }).map(function (n) {
         return d.frame ? wakuBox(n) : umaBox(n, byNumber[n] ? byNumber[n].gate : undefined);
       }).join('');
       return '<div class="bs-pos"><span class="lb">' + escapeHtml(c.label) + '</span>' + chips + '</div>';
