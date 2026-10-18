@@ -111,6 +111,95 @@ function render(doc, ref) {
   `;
 }
 
+// 144-spec「ランクの見どころ」（2026-10-18・見た目は mockup-314）。データは data/rank_record.json（keiba_rank_record.py が夜の settle で作る）。
+// ランクのページの札と総合について、S と D で100頭あたり何頭が3着以内に来たかを背比べで出す。押すと S〜D ごとの表が開く。
+// 数えた期間は全レース。調教が入るもの（調教の札・状態の段・総合の順位）だけ、調教の表を作った日より後のレース（rec.train）。
+const RG_GROUPS = [['馬の力', 'g4'], ['条件', 'g1'], ['状態', 'g5'], ['人と血統', 'g2'], ['コースの傾向', 'g3']];   // yoso.js の M225_GROUPS・M225_GC
+const RG_BIG = 25;
+const RG_SMALL = 10;   // 差（100頭あたり・丸めた後）の段の境目
+const RG_H_MAX = 60;   // 柱の物差し（0〜60頭）。全部の札で同じ
+let rgOpen = null;
+
+function rgDate(iso, withYear) {
+  const [y, m, d] = String(iso).split('-');
+  return withYear ? `${y}/${+m}/${+d}` : `${+m}/${+d}`;
+}
+
+function rgItems(rec) {
+  const r0 = Math.round;
+  const top3 = (g, k) => (g[k] ? g[k][3] : 0);
+  const mk = (x) => { const s = top3(x.g, 'S'); const d = top3(x.g, 'D'); return { name: x.name, g: x.g, s, d, dif: r0(s) - r0(d), none: !x.g.S || !x.g.D }; };
+  const total = rec.rows.find((x) => x.kind === '総合');
+  const T = { name: '総合', label: '総合の順位', g: total.g, s: top3(total.g, '1位'), d: top3(total.g, '7位以下'), isTotal: true };
+  T.dif = r0(T.s) - r0(T.d);
+  T.none = !total.g['1位'] || !total.g['7位以下'];
+  const secs = RG_GROUPS.map(([name, gc]) => {
+    const i = rec.rows.findIndex((x) => x.kind === '段' && x.name === name);
+    const cards = [];
+    for (let j = i + 1; j < rec.rows.length && rec.rows[j].kind === '札'; j += 1) cards.push(mk(rec.rows[j]));
+    return { name, gc, grp: mk(rec.rows[i]), cards };
+  });
+  return { T, secs };
+}
+
+// S か D の馬がまだいない札（調教の表を作り直した直後など）は差を出さず「—」で薄く
+const rgTier = (it) => (it.none ? 'small' : it.dif < 0 ? 'rev' : it.dif >= RG_BIG ? 'big' : it.dif < RG_SMALL ? 'small' : '');
+const rgDifTxt = (it) => (it.none ? '—' : it.dif < 0 ? '逆' : `+${it.dif}`);
+
+function rgDetail(it) {
+  const keys = it.isTotal ? ['1位', '2位', '3位', '4〜6位', '7位以下'] : ['S', 'A', 'B', 'C', 'D', '初'];
+  const rows = keys.filter((k) => it.g[k]).map((k) => {
+    const v = it.g[k];
+    const lab = it.isTotal ? `<span class="pl">${k}</span>` : `<span class="rk ${k === '初' ? 'N' : k}">${k}</span>`;
+    return `<tr><td>${lab}</td><td class="n">${v[0].toLocaleString('ja-JP')}</td><td>${v[1].toFixed(1)}%</td><td>${v[2].toFixed(1)}%</td><td>${v[3].toFixed(1)}%</td></tr>`;
+  }).join('');
+  return `<div class="det"><div class="dh">${escapeHtml(it.label || it.name)}<small>×</small></div>
+    <table class="rt"><thead><tr><th>${it.isTotal ? '順位' : 'ランク'}</th><th>頭数</th><th>勝率<small>1着</small></th><th>連対率<small>2着以内</small></th><th>3着内率<small>3着以内</small></th></tr></thead>
+    <tbody>${rows}</tbody></table></div>`;
+}
+
+// S と D の柱。D の柱の上に、S の高さまでの点線の箱（＝差）。逆の札は S の柱の上に D までの箱
+function rgCols(it) {
+  const hs = Math.min(it.s, RG_H_MAX) / RG_H_MAX * 100;
+  const hd = Math.min(it.d, RG_H_MAX) / RG_H_MAX * 100;
+  const lo = Math.min(hs, hd);
+  const hi = Math.max(hs, hd);
+  const gapOn = it.dif < 0 ? 's' : 'd';
+  const gap = `<i class="gap" style="bottom:${lo}%;height:${hi - lo}%"></i>`;
+  return `<div class="cols">
+    <span class="c s">${gapOn === 's' ? gap : ''}<em>${Math.round(it.s)}</em><i class="b" style="height:${hs}%"></i></span>
+    <span class="c d">${gapOn === 'd' ? gap : ''}<em>${Math.round(it.d)}</em><i class="b" style="height:${hd}%"></i></span></div>`;
+}
+
+// 4枚並びの段では、押した札の段（横の4枚）の後ろに表を開く
+function rgGrid(cards, n, cell) {
+  const oi = cards.findIndex((x) => x.name === rgOpen);
+  const after = oi < 0 ? -1 : Math.min(oi - (oi % n) + n - 1, cards.length - 1);
+  return cards.map((it, i) => cell(it) + (i === after ? rgDetail(cards[oi]) : '')).join('');
+}
+
+function rgDraw(el, rec) {
+  const { T, secs } = rgItems(rec);
+  const hero = `<div class="hero" data-n="総合"><div class="t">総合の順位<span class="dv">${rgDifTxt(T)}</span></div>
+    <div class="colsw">${rgCols(T)}<div class="lab"><span>1位</span><span>7位以下</span></div></div><span class="chev">${rgOpen === '総合' ? '×' : '›'}</span></div>`
+    + (rgOpen === '総合' ? rgDetail(T) : '');
+  const cell = (it) => `<div class="tw ${rgTier(it)}${rgOpen === it.name ? ' on' : ''}" data-n="${escapeHtml(it.name)}">
+    <span class="dv">${rgDifTxt(it)}</span>${rgCols(it)}<span class="nm">${escapeHtml(it.name)}</span></div>`;
+  const secHead = (s) => `<div class="sec-h ${s.gc}" data-n="${escapeHtml(s.name)}"><i class="bar"></i><b>${escapeHtml(s.name)}</b>
+    <span class="rt2"><span class="pill ${rgTier(s.grp)}">${rgDifTxt(s.grp)}</span><span class="chev">${rgOpen === s.name ? '×' : '›'}</span></span></div>`
+    + (rgOpen === s.name ? rgDetail({ ...s.grp, label: `${s.name}（段のランク）` }) : '');
+  const tr = rec.train || {};
+  el.innerHTML =
+    `<div class="top"><span class="ttl">ランクの見どころ</span><span class="meta">${rgDate(rec.from, true)}〜${rgDate(rec.to)}・${rec.horses.toLocaleString('ja-JP')}頭</span></div>
+    ${tr.from ? `<div class="per">調教・状態・総合は ${rgDate(tr.from)}〜・${tr.horses.toLocaleString('ja-JP')}頭</div>` : ''}
+    <div class="key"><span><i style="background:var(--rS)"></i>S</span><span><i style="background:var(--rD)"></i>D</span><span><i class="gp"></i>差</span><span>100頭あたり3着以内</span></div>`
+    + hero + secs.map((s) => `<div class="sec">${secHead(s)}<div class="tgrid">${rgGrid(s.cards, 4, cell)}</div></div>`).join('');
+  el.querySelectorAll('[data-n]').forEach((c) => c.addEventListener('click', () => {
+    rgOpen = rgOpen === c.dataset.n ? null : c.dataset.n;
+    rgDraw(el, rec);
+  }));
+}
+
 async function main() {
   renderHeader('stats');
   let doc;
@@ -129,6 +218,18 @@ async function main() {
     ref = null;
   }
   render(doc, ref);
+  // ランクの見どころは今のカードの下（144-spec 決め残し イ は仮置き）。表が無い・読めない日はカードごと出さない
+  try {
+    const rec = await getData('data/rank_record.json');
+    if (rec && rec.rows && rec.rows.length) {
+      const sec = document.createElement('section');
+      sec.className = 'st26c rg26';
+      document.getElementById('stats-content').appendChild(sec);
+      rgDraw(sec, rec);
+    }
+  } catch (e) {
+    // 無い日は出さないだけ
+  }
 }
 
 main();

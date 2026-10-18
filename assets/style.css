@@ -5065,3 +5065,85 @@ body:has(.container.st26){background:#F2F2F7}
 .race20 .sim-list .sim-od.od-fl-up::before{background:rgba(0,104,188,.10)}
 /* 3連複の買い方は4つ（軸1頭ながし・軸2頭ながしに分けた・2026-10-13 mockup-296 の B）。今の字の大きさだと右にはみ出すので小さくする */
 .sim-method.n4{font-size:11px;padding:0 3px;letter-spacing:-.02em}
+
+/* 144-spec「ランクの見どころ」（成績ページ・2026-10-18・見た目は 部署/競馬部/仕様/予測サイト/mockup-314-rank-guide-gap.html）。
+   mockup の <style> を .rg26 の中に閉じて移した（.card・.top などの名前が他の画面とぶつからないように） */
+.rg26{--text:#1d1d1f;--sub:#6e6e73;--faint:#aeaeb2;--bg:#F2F2F7;--card:#fff;--line:#ececf0; --navy:#003E70;--rS:#0B5E2E;--rA:#1F6B3A;--rB:#4E5862;--rC:#8E4A36;--rD:#A32B1F;--upBg:#E3F2E8;--dnBg:#F9E4E1; --g1:#2F7FD1;--g2:#C9961A;--g3:#34A853;--g4:#8E5BC4;--g5:#D9557A}
+.rg26 .top{display:flex;align-items:baseline;justify-content:space-between;padding:0 2px}
+.rg26 .ttl{font-size:16px;font-weight:800}
+.rg26 .meta{font-size:10.5px;color:var(--faint)}
+.rg26 .key{display:flex;gap:12px;align-items:center;font-size:10.5px;color:var(--sub);margin:8px 2px 0;flex-wrap:wrap}
+.rg26 .key span{display:inline-flex;align-items:center;gap:4px}
+.rg26 .key i{display:inline-block;width:10px;height:10px;border-radius:2px}
+.rg26 .key i.gp{border:1.5px dashed var(--rS);background:transparent;width:10px;height:10px}
+.rg26 .rk{display:inline-grid;place-items:center;width:16px;height:16px;border-radius:4px;color:#fff;font:700 10px Futura,Jost,sans-serif;flex:none}
+.rg26 .rk.S{background:var(--rS)}
+.rg26 .rk.A{background:var(--rA)}
+.rg26 .rk.B{background:var(--rB)}
+.rg26 .rk.C{background:var(--rC)}
+.rg26 .rk.D{background:var(--rD)}
+.rg26 .rk.N{background:#d1d1d6;font:600 9px "Hiragino Sans",sans-serif}
+.rg26 .cols{position:relative;display:flex;align-items:flex-end;justify-content:center;gap:5px;height:70px;border-bottom:1px solid #D8D8DD;width:100%}
+.rg26 .cols .c{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;width:18px}
+.rg26 .cols .c i.b{width:100%;border-radius:3px 3px 0 0}
+.rg26 .cols .c.s i.b{background:var(--rS)}
+.rg26 .cols .c.d i.b{background:var(--rD)}
+.rg26 .cols .c em{font-style:normal;font:600 9.5px Futura,Jost,sans-serif;line-height:1;margin-bottom:2px;color:var(--sub)}
+.rg26 .cols .c.s em{color:var(--rS)}
+.rg26 .cols .c.d em{color:var(--rD)}
+.rg26 .cols .gap{position:absolute;width:100%;border:1.5px dashed var(--rS);border-bottom:0;border-radius:3px 3px 0 0;background:rgba(11,94,46,.06)}
+.rg26 .cols .c.d em.over{position:absolute}
+.rg26 .tgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.rg26 .tw{display:flex;flex-direction:column;align-items:center;gap:3px;background:#FAFAFA;border-radius:12px;padding:6px 6px 7px;cursor:pointer;border:1.5px solid transparent}
+.rg26 .tw .dv{font:600 15px Futura,Jost,sans-serif;line-height:1;color:var(--text);height:17px;display:flex;align-items:baseline;gap:1px}
+.rg26 .tw .dv small{font-size:9px;color:var(--sub);font-family:"Hiragino Sans",sans-serif;font-weight:700}
+.rg26 .tw .nm{font-size:11.5px;font-weight:700;white-space:nowrap}
+.rg26 .tw.big{background:var(--upBg);border-color:var(--rS)}
+.rg26 .tw.big .dv{color:var(--rS);font-size:19px;height:19px}
+.rg26 .tw.small{opacity:.5}
+.rg26 .tw.rev{background:var(--dnBg)}
+.rg26 .tw.rev .dv{color:var(--rD);font:800 13px "Hiragino Sans",sans-serif}
+.rg26 .tw.rev .gap{border-color:var(--rD);background:rgba(163,43,31,.06)}
+.rg26 .tw.on{box-shadow:0 0 0 2px var(--navy)}
+.rg26 .tgrid .det{grid-column:1/-1;margin:0}
+.rg26 .hero{background:#FAFAFA;border-radius:14px;padding:12px;margin:12px 0 2px;cursor:pointer;display:flex;align-items:center;gap:14px}
+.rg26 .hero .t{font-size:12px;font-weight:800;color:var(--sub);display:flex;flex-direction:column;gap:6px}
+.rg26 .hero .dv{font:600 34px Futura,Jost,sans-serif;color:var(--rS);line-height:1}
+.rg26 .hero .dv small{font-size:12px;color:var(--sub);font-family:"Hiragino Sans",sans-serif}
+.rg26 .hero .colsw{margin-left:auto;width:150px}
+.rg26 .hero .cols{height:96px;gap:12px}
+.rg26 .hero .cols .c{width:44px}
+.rg26 .hero .cols .c em{font-size:15px}
+.rg26 .hero .lab{display:flex;justify-content:center;gap:12px;font-size:10px;color:var(--sub);margin-top:3px}
+.rg26 .hero .lab span{width:44px;text-align:center;white-space:nowrap}
+.rg26 .hero .chev{font-size:13px;color:var(--faint);align-self:flex-start}
+.rg26 .sec{margin-top:18px}
+.rg26 .sec-h{display:flex;align-items:center;gap:7px;padding:0 2px 6px;border-bottom:1px solid var(--line);margin-bottom:8px;cursor:pointer}
+.rg26 .sec-h .bar{width:4px;height:18px;border-radius:2px;background:var(--gc);flex:none}
+.rg26 .sec-h b{font-size:14px;font-weight:800}
+.rg26 .sec-h .rt2{margin-left:auto;display:flex;align-items:center;gap:6px}
+.rg26 .sec-h .pill{font:600 12px Futura,Jost,sans-serif;border-radius:999px;padding:1px 8px;background:#F2F2F5;color:var(--sub)}
+.rg26 .sec-h .pill.big{background:var(--upBg);color:var(--rS)}
+.rg26 .sec-h .pill.rev{background:var(--dnBg);color:var(--rD);font-family:"Hiragino Sans",sans-serif;font-weight:800;font-size:11px}
+.rg26 .sec-h .chev{font-size:13px;color:var(--faint)}
+.rg26 .g1{--gc:var(--g1)}
+.rg26 .g2{--gc:var(--g2)}
+.rg26 .g3{--gc:var(--g3)}
+.rg26 .g4{--gc:var(--g4)}
+.rg26 .g5{--gc:var(--g5)}
+.rg26 .det{background:#F7F7F9;border-radius:12px;padding:10px 12px 9px;margin:6px 0 4px}
+.rg26 .det .dh{display:flex;align-items:baseline;justify-content:space-between;font-size:12.5px;font-weight:800;margin-bottom:6px}
+.rg26 .det .dh small{font-size:12px;color:var(--faint)}
+.rg26 table.rt{width:100%;border-collapse:collapse}
+.rg26 .rt th{font-size:10px;color:var(--sub);font-weight:600;padding:0 2px 5px;text-align:right;border-bottom:1px solid #d1d1d6;line-height:1.25}
+.rg26 .rt th small{display:block;font-size:8.5px;font-weight:600;color:var(--faint)}
+.rg26 .rt th:first-child,.rg26 .rt td:first-child{text-align:left}
+.rg26 .rt td{padding:6px 2px;text-align:right;border-bottom:1px solid #ececf0;font:600 13px Futura,Jost,sans-serif;font-variant-numeric:tabular-nums}
+.rg26 .rt tr:last-child td{border-bottom:0}
+.rg26 .rt td.n{font-weight:500;font-size:11.5px;color:var(--sub)}
+.rg26 .rt td .pl{font:700 11.5px "Hiragino Sans",sans-serif;color:var(--text)}
+.rg26 *{box-sizing:border-box}
+.rg26{color:var(--text)}
+/* 数えた期間：全部の札と、調教が入るもの（調教・状態・総合）は区切りが違う（144-spec 決め残し ア・ウ） */
+.rg26 .per{font-size:10.5px;color:var(--faint);text-align:right;padding:2px 2px 0}
+.rg26 .top .meta{white-space:nowrap}
