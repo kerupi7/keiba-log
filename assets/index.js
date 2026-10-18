@@ -182,6 +182,33 @@ function renderTracks(state, rerender) {
   });
 }
 
+// 一覧を横に払うと場が替わる（2026-10-18 ユーザー「横にスワイプしたら開催場が変わるように」）。
+// 左へ払う＝右隣の場、右へ払う＝左隣の場。端の場では止まる（日付は替えない）。
+// 縦のスクロールと取り違えないよう、横の動きが縦の1.5倍以上・50px以上のときだけ替える
+function attachTrackSwipe(state, rerender) {
+  const host = document.getElementById('races-section');
+  let sx = null;
+  let sy = 0;
+  host.addEventListener('touchstart', (e) => {
+    if (e.touches.length !== 1) { sx = null; return; }
+    sx = e.touches[0].clientX;
+    sy = e.touches[0].clientY;
+  }, { passive: true });
+  host.addEventListener('touchend', (e) => {
+    if (sx === null) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - sx;
+    const dy = t.clientY - sy;
+    sx = null;
+    if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    const tracks = state.tracksForDate(state.activeDate);
+    const i = tracks.indexOf(state.activeTrack) + (dx < 0 ? 1 : -1);
+    if (i < 0 || i >= tracks.length) return;
+    state.activeTrack = tracks[i];
+    rerender();
+  }, { passive: true });
+}
+
 // 136-spec: 凡例（発走前＝紺／終了＝赤の箱）はやめた。R番号の色の箱を無くし、
 // 終わったレースはカードを沈めて見分けるようにしたため。#legend は空にしておく
 function renderLegend() {
@@ -358,6 +385,7 @@ async function main() {
     renderRaceList(state, races);
   };
   rerender();
+  attachTrackSwipe(state, rerender);
   // 136-spec: 次のレース・終わったレースは時刻で動くので、1分ごとに一覧だけ描き直す
   setInterval(() => renderRaceList(state, races), 60000);
   // 「次」の札の残り時間は1秒ごと。0になったら一覧を描き直して、札を次のレースへ移す
