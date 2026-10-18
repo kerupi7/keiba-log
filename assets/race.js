@@ -1961,15 +1961,23 @@ function legBar(style) {
     : '<span class="lbl mut">—</span>';
   return `<span class="legbar">${legCells(style)}${label}</span>`;
 }
-// 4マスだけ（文字なし）。出馬表の一覧で馬番の札の下に置く（2026-10-18 ユーザー「今日の脚質を追加したい」・mockup-308 の3案）。
-//   左から 逃・先・差・追 で、◀ は1つだけ。
-//   はじめは2行目の頭に置いたが、馬体重が出た後に2行目の字が縮む・折り返す（375px幅で18頭中14頭）ので、
-//   同日ユーザー「縮む、折り畳まないようにしてほしい」で馬番の下へ移した。馬番の札と同じ幅に収め、列を広げない
+// 4マスだけ（文字なし）。legBar の中身
 function legCells(style) {
   const idx = LEG_ORDER.indexOf(String(style || '').trim().slice(0, 1));
   const cells = [0, 1, 2, 3]
     .map((i) => `<i class="${idx === i ? 'on' : ''}">${idx === i ? '◀' : ''}</i>`).join('');
   return `<span class="legcells">${cells}</span>`;
+}
+
+// 出馬表の一覧で馬番の札の下に置く今日の脚質（2026-10-18 ユーザー「今日の脚質を追加したい」）。
+//   左から 逃・先・差・追 の4か所に灰の点を置き、今日の場所だけ脚質の色の ◀ にする（mockup-309 の D・色は mockup-310 の1）。
+//   はじめは2行目の頭に4マスを置いたが、馬体重が出た後に2行目の字が縮む・折り返したので馬番の下へ移した。
+//   4マス（塗り・5px）は「小さくて見づらい」「塗りつぶしは見づらい」で、点と ◀ に替えた。◀ は字ではなく図形で描く（端末で形が変わらない）。
+//   色は 逃＝赤・先＝青緑・差＝緑・追＝紺。先行ははじめ黄土にしたが、小さい ◀ だと逃げの赤と同じに見えた（ユーザー指摘）ので青緑にした
+function legDots(style) {
+  const idx = LEG_ORDER.indexOf(String(style || '').trim().slice(0, 1));
+  return `<span class="legdots${idx >= 0 ? ` k${idx + 1}` : ''}">`
+    + [0, 1, 2, 3].map((i) => `<i${idx === i ? ' class="on"' : ''}></i>`).join('') + '</span>';
 }
 
 // 104-spec §5.1: 当日馬体重（発走の約50分前に発表）。null のときは<span>ごと出さない
@@ -3349,7 +3357,7 @@ function mmRow(h) {
   }
   return `<div class="mm-row${h.ability_mark ? ' pred' : ''}" data-n="${h.number}">${mmCell(h)}
     <span class="mm-ai">${markBadge20(h) || '<span class="none">—</span>'}</span>
-    <span class="mm-c"><span class="mm-hnleg">${umaBox(h.number, h.gate, 'sm')}${legCells(h.running_style)}</span><span class="mm-nmwrap"><button type="button" class="nm" data-pop="${h.number}"><span class="t">${escapeHtml(h.name)}</span><i class="apop">›</i></button>${mmSub(h)}</span>
+    <span class="mm-c"><span class="mm-hnleg">${umaBox(h.number, h.gate, 'sm')}${legDots(h.running_style)}</span><span class="mm-nmwrap"><button type="button" class="nm" data-pop="${h.number}"><span class="t">${escapeHtml(h.name)}</span><i class="apop">›</i></button>${mmSub(h)}</span>
       <span class="tot">${fmtNum(dispScore(h), 1)}<i class="grade ${gradeClass(dispGrade(h))}">${gradeDisp(dispGrade(h))}</i></span>
       <span class="od${oddsHotClass(h.odds)}"><span class="ov">${h.odds != null ? h.odds.toFixed(1) : '—'}</span><i>倍</i>
         <span class="pp">${h.popularity ?? '—'}人気</span></span></span></div>`;

@@ -4785,11 +4785,17 @@ body:has(.container.top){background:#F2F2F7}
 .race20.r26 .mm-list .mm-c .nm{font-size:15px;font-weight:700;line-height:1.25;gap:2px}
 .race20.r26 .mm-list .mm-c .nm .apop{font-size:15px;font-weight:600;color:#C7C7CC;opacity:1}
 .race20.r26 .mm-list .mm-sub{gap:3px;font-size:10.5px;color:#8E8E93;letter-spacing:-.01em;margin-top:2px}
-/* 今日の脚質（legCells）は馬番の札の下に置く（2026-10-18）。2行目に置くと馬体重が出た後に字が縮む・折り返すため。
-   4マスの幅は馬番の札（22px）と同じにして、列を広げない（広げると375px幅で2行目の字が縮む・実測） */
-.race20.r26 .mm-list .mm-hnleg{flex:none;display:flex;flex-direction:column;align-items:center;gap:4px}
-.race20.r26 .mm-list .mm-hnleg .legcells{border-radius:2px}
-.race20.r26 .mm-list .mm-hnleg .legcells i{width:5px;height:9px;line-height:9px;font-size:6px}
+/* 今日の脚質（legDots）は馬番の札の下に置く（2026-10-18）。2行目に置くと馬体重が出た後に字が縮む・折り返すため。
+   列の幅は馬番の札と同じ22pxのまま（広げると375px幅で2行目の字が縮む・実測）。印（28px）だけ左右へ3pxずつはみ出す。
+   灰の点（4px）が4か所、今日の場所だけ脚質の色の ◀（横7px×縦9pxの三角・clip-path で描く）。行の高さは56pxのまま */
+.race20.r26 .mm-list .mm-hnleg{flex:none;width:22px;display:flex;flex-direction:column;align-items:center;gap:3px}
+.race20.r26 .mm-list .legdots{flex:none;width:28px;height:10px;display:flex;align-items:center;justify-content:space-between;padding:0 1px}
+.race20.r26 .mm-list .legdots i{width:4px;height:4px;border-radius:50%;background:#D1D1D6}
+.race20.r26 .mm-list .legdots i.on{width:7px;height:9px;margin:0 -1.5px;border-radius:0;background:var(--lk);
+  clip-path:polygon(100% 0,0 50%,100% 100%)}
+/* 逃＝赤・先＝青緑・差＝緑・追＝紺（mockup-310 の1。白地との明るさの比 4.8／3.7／3.3／10.4） */
+.race20.r26 .mm-list .legdots.k1{--lk:#DC2626}.race20.r26 .mm-list .legdots.k2{--lk:#0891B2}
+.race20.r26 .mm-list .legdots.k3{--lk:#16A34A}.race20.r26 .mm-list .legdots.k4{--lk:#1E3A8A}
 .race20.r26 .mm-list .mm-c .tot{width:38px;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-family:var(--num27);
   font-weight:600;font-size:15px;line-height:1;color:var(--text)}
 .race20.r26 .mm-list .mm-c .tot .grade{display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:18px;padding:0 5px;
