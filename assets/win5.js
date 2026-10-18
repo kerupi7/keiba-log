@@ -52,7 +52,7 @@ function w5DayHtml(day) {
   const n = day.legs.reduce(
     (a, lg) => a + (lg.bands || []).reduce((b, x) => b + x.picks.length, 0), 0);
   return `<div class="w5box"><div class="w5t">${escapeHtml(day.date)}`
-    + `<span class="w5d">締切 ${escapeHtml(day.deadline || '—')}（1鞍目の発走）`
+    + `<span class="w5d">締切 ${escapeHtml(day.deadline || '—')}（1鞍目の発走の5分前）`
     + ` ・ おすすめ計${n}頭</span></div>`
     + day.legs.map(w5LegHtml).join('') + '</div>';
 }
