@@ -16,7 +16,32 @@
   'use strict';
 
   var SCHEMA = 1;
-  var UNITS = [100, 200, 300, 500, 1000];   // ＋／− が刻む金額。IPATの最小単位が100円
+  var UNITS = [100, 200, 300, 500, 1000];   // 前の刻み。外から読まれる名前なので残す（今は ＋／− は100円ずつ）
+  // 1点あたりの金額は100円単位（IPATの最小単位）。＋／− は100円ずつ動き、数字を押せば直接入れられる
+  //   （2026-10-18 ユーザー「100円単位で上下できるかつ入力できるようにしてほしい」）。
+  //   上限は6桁に収まる999,900円（1点あたり。入力欄が6桁で切れないように）
+  var STEP = 100;
+  var MAX_UNIT = 999900;
+  function normUnit(v) {
+    // 端数は切り捨てる（入れた額より多く買わないように。1,250円 → 1,200円）
+    var n = Math.floor(Number(v) / STEP) * STEP;
+    if (!isFinite(n) || n < STEP) return null;
+    return Math.min(MAX_UNIT, n);
+  }
+  // 券種の並び（2026-10-18 ユーザー「券種順に上から表示されるようにしてほしい」）。
+  //   券種を選ぶボタンと同じ並び。同じ券種どうしは入れた順のまま
+  var TYPE_ORDER = ['tansho', 'fukusho', 'wakuren', 'umaren', 'wide', 'umatan', 'sanrenpuku', 'sanrentan'];
+  function typeRank(line) {
+    var st = line.state || {};
+    var t = st.betType === 'tansho' && st.tanFuku === 'fukusho' ? 'fukusho' : st.betType;
+    var i = TYPE_ORDER.indexOf(t);
+    return i === -1 ? TYPE_ORDER.length : i;
+  }
+  function byType(lines) {
+    return lines.map(function (l, i) { return { l: l, i: i }; })
+      .sort(function (a, b) { return (typeRank(a.l) - typeRank(b.l)) || (a.i - b.i); })
+      .map(function (x) { return x.l; });
+  }
   var MAX_LINES = 20;                        // 1レースに残せる本数。これ以上は画面で読めない
 
   function key(raceId) { return 'bets:' + raceId; }
@@ -47,7 +72,7 @@
     lines.push({
       id: 'b' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
       state: Simulator.snapshot(state),
-      unit: (UNITS.indexOf(unit) !== -1) ? unit : UNITS[0],
+      unit: normUnit(unit) || STEP,
     });
     save(raceId, lines);
     return { ok: true };
@@ -59,11 +84,20 @@
     var lines = load(raceId);
     lines.forEach(function (l) {
       if (l.id !== id) return;
-      var i = UNITS.indexOf(l.unit);
-      if (i === -1) i = 0;
-      l.unit = UNITS[Math.min(UNITS.length - 1, Math.max(0, i + dir))];
+      l.unit = normUnit((normUnit(l.unit) || STEP) + dir * STEP) || STEP;
     });
     save(raceId, lines);
+  }
+  // 数字を直接入れたとき。100円単位に切り捨て、100円未満・数字でないものは入れない（前の金額のまま）
+  function setUnit(raceId, id, v) {
+    // 日本語のキーボードで入れた全角の数字（８００）も読む。カンマ・円などの数字以外は捨てる
+    var half = String(v).replace(/[０-９]/g, function (c) { return String.fromCharCode(c.charCodeAt(0) - 0xFEE0); });
+    var u = normUnit(half.replace(/[^\d]/g, ''));
+    if (u === null) return false;
+    var lines = load(raceId);
+    lines.forEach(function (l) { if (l.id === id) l.unit = u; });
+    save(raceId, lines);
+    return true;
   }
   function clear(raceId) { save(raceId, []); }
   // 展開した表で1点だけ外す（2026-10-13 ユーザー「個別に買い目を消せるようにしたい」）。
@@ -162,7 +196,8 @@
       + '<div class="bs-body"><div class="bs-left">' + pos + rng + '</div>'
       + '<div class="bs-amt"><div class="bs-stepper">'
       + '<button type="button" data-bs-step="-1" data-id="' + line.id + '" aria-label="金額を下げる">−</button>'
-      + '<span class="v n">' + line.unit + '</span>'
+      + '<input class="v n" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6" enterkeyhint="done"'
+      + ' value="' + line.unit + '" data-bs-amt="' + line.id + '" aria-label="1点あたりの金額（100円単位）">'
       + '<button type="button" data-bs-step="1" data-id="' + line.id + '" aria-label="金額を上げる">＋</button></div>'
       + '<div class="bs-unit">円 ×<span class="n">' + m.points + '</span>点</div>'
       + '<div class="bs-buy n">' + yen(m.buy) + '<i>円</i></div></div></div>'
@@ -180,7 +215,7 @@
     }
     var t = totals(lines, site, probs, heads, oddsAll);
     return '<div class="bs-list">'
-      + lines.map(function (l) { return card(l, site, probs, heads, oddsAll, openIds); }).join('')
+      + byType(lines).map(function (l) { return card(l, site, probs, heads, oddsAll, openIds); }).join('')
       + '</div>'
       + '<div class="bs-foot"><span>' + t.lines + '本 <span class="n">' + t.points + '</span>点</span>'
       + '<button type="button" class="bs-clear" data-bs-clear>すべて消す</button></div>';
@@ -200,7 +235,8 @@
   var BetSheet = {
     UNITS: UNITS,
     MAX_LINES: MAX_LINES,
-    load: load, add: add, remove: remove, stepUnit: stepUnit, clear: clear, skipItem: skipItem, keep: keep,
+    STEP: STEP, MAX_UNIT: MAX_UNIT,
+    load: load, add: add, remove: remove, stepUnit: stepUnit, setUnit: setUnit, clear: clear, skipItem: skipItem, keep: keep,
     totals: totals, measure: measure,
     renderList: renderList, renderBar: renderBar,
   };

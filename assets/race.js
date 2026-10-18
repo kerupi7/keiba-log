@@ -933,7 +933,22 @@ function setupBetSheet(site, oddsAll) {
       }
     }
   });
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') bsClose(); });
+  // 金額を直接入れる（2026-10-18）。確定（キーボードの完了・欄の外を押す）で保存して描き直す。
+  //   入れられない値（空・100円未満）は前の金額に戻す
+  document.addEventListener('change', (e) => {
+    const amt = e.target.closest('[data-bs-amt]');
+    if (!amt) return;
+    BetSheet.setUnit(BS.raceId, amt.dataset.bsAmt, amt.value);
+    bsPaintList(); bsPaintBar();
+  });
+  document.addEventListener('focusin', (e) => {
+    const amt = e.target.closest('[data-bs-amt]');
+    if (amt) amt.select();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') bsClose();
+    if (e.key === 'Enter' && e.target.closest('[data-bs-amt]')) e.target.blur();
+  });
 
   bsPaintBar();
 }
