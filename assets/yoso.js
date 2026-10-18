@@ -1752,6 +1752,13 @@
       winLab: fin === 1 ? '2着' : '勝ち', winner: r.winner || '—',
       bpHtml: bp ? `<span class="sm-bp">${clsBadge(bp.cls)}<b class="${md(bp.fin)}">${bp.fin}着</b></span>` : '',
       lv: r.level_grade ? `<span class="lv lv-${esc(String(r.level_grade).toLowerCase())}"><i>Lv</i>${esc(r.level_grade)}</span>` : '',
+      // その走のこの馬の調教ランク（S〜D）。直近5走の札でレースレベルの代わりに出す（2026-10-18 ユーザー「レースレベルじゃなくて、その馬の調教ランクを載せてほしい」）。
+      //   色は今回の調教の札（TR_GC）と同じ。publish の training_rank が無い走（地方・調教の記録なし・この日より前に公開したレース）は「—」
+      tr: (() => {
+        const g = (r.training_rank || {}).grade;
+        const c = g && TR_GC[g] ? TR_GC[g] : '#8E8E93';
+        return `<span class="lv sv-tr" style="color:${c}"><i>調教</i>${esc(g && TR_GC[g] ? g : '—')}</span>`;
+      })(),
       time: r.time || '—', tg: { f1: 'md1', f2: 'md2', f3: 'md3' }[r.time_grade] || '',
       corners: String(r.corners || '').split('-').filter(Boolean),
       up: r.last_3f || '—', rk: r.last3f_rank != null ? Number(r.last3f_rank) : null,
@@ -1800,7 +1807,7 @@
       <b class="sva-sf ${d.sf}">${esc(d.sfTxt)}<b class="bt-num">${esc(d.dist)}</b></b>${smGoing(d.going)}
       ${ub ? `<span class="sw1">${umaBox(ub, wk, 'sm')}<small>番</small></span>` : '<span></span>'}
       <span class="sv-fp">${smIc('field')}<b class="bt-num">${d.field}</b>頭</span></div>`;
-    const title = `<div class="s1-title">${d.clsHtml}<b style="font-size:${d.rnFs + 2}px">${esc(d.rn)}</b><span class="s1-sp"></span>${d.lv}</div>`;
+    const title = `<div class="s1-title">${d.clsHtml}<b style="font-size:${d.rnFs + 2}px">${esc(d.rn)}</b><span class="s1-sp"></span>${d.tr}</div>`;
     const win = `<div class="s1-win sva-win"><i>${d.winLab}</i><span>${esc(d.winner)}</span>${d.bpHtml}<span class="s1-sp"></span>${smStyle(d)}</div>`;
     const tm = `<span class="sv-tm">${d.tg ? e5Cup({ md1: 1, md2: 2, md3: 3 }[d.tg], 15) : smIc('time')}<b class="bt-num ${d.tg}">${esc(d.time)}</b></span>`;
     const up = `<span class="sv-up">${smIc('up')}<b class="bt-num ${d.rkMd}">${esc(d.up)}</b>${d.rk != null && d.rk <= 3 ? e5Cup(d.rk, 13) : ''}</span>`;
