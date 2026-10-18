@@ -4830,48 +4830,103 @@ body:has(.container.top){background:#F2F2F7}
 .race20.r26 .mf-div + .mm-row{border-radius:16px 16px 0 0}
 .race20.r26 .mf-div + .mm-row:last-child{border-radius:16px}
 .race20 .mm-row.mf-out{opacity:.42}
-/* 調教で絞っている間だけ、評価の列（点数・評価の下）に出す調教のランク。2行目に置くと375px幅で折り返すため */
+/* ランクで絞っている間だけ、評価の列（点数・評価の下）に出すその馬のランク（かけた順に2つまで）。2行目に置くと375px幅で折り返すため */
 .race20 .mm-c .tot .mf-trk{flex:none;display:inline-block;font-family:var(--font);font-size:9px;font-weight:800;border-radius:4px;
   padding:0 3px;line-height:14px;letter-spacing:-.02em;white-space:nowrap}
 .race20 .mf-trk.t-S{background:#0B5E2E;color:#fff}.race20 .mf-trk.t-A{background:#2F8F4E;color:#fff}
 .race20 .mf-trk.t-B{background:#E4EEF6;color:#3D6A8F}.race20 .mf-trk.t-C{background:#ECECEF;color:#6E6E73}
 .race20 .mf-trk.t-D{background:#F6EADB;color:#9A6A35}.race20 .mf-trk.t-none{background:#F2F2F5;color:#AEAEB2}
-/* シート（body 直下・印のシートと同じ重なり） */
+/* シート（body 直下・印のシートと同じ重なり）。2026-10-19 見直しで iPhone の設定アプリの形に（mockup-318）：
+   灰色の地に白い角丸の箱・行44px・区切り線は左を空ける・色は紺（選んだもの）と差の点（緑・赤）だけ */
 .mf-shade{position:fixed;inset:0;background:rgba(0,0,0,.3);opacity:0;pointer-events:none;transition:opacity .16s;z-index:60}
 .mf-shade.on{opacity:1;pointer-events:auto}
-.mf-sheet{position:fixed;left:0;right:0;bottom:0;z-index:61;background:#fff;border-radius:18px 18px 0 0;
-  box-shadow:0 -4px 18px rgba(0,0,0,.2);padding:8px 16px calc(16px + env(safe-area-inset-bottom));max-height:88vh;overflow-y:auto;
-  transform:translateY(105%);transition:transform .2s ease-out;max-width:760px;margin:0 auto;color:var(--text);font-family:var(--font)}
+.mf-sheet{position:fixed;left:0;right:0;bottom:0;z-index:61;background:#F2F2F7;border-radius:14px 14px 0 0;
+  box-shadow:0 -4px 18px rgba(0,0,0,.2);max-height:90vh;overflow-y:auto;overscroll-behavior:contain;
+  transform:translateY(105%);transition:transform .25s cubic-bezier(.2,.8,.2,1);max-width:760px;margin:0 auto;color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,var(--font);--mf-sep:rgba(60,60,67,.18);--mf-sub:#8E8E93}
 .mf-sheet.on{transform:translateY(0)}
-.mf-sheet .grip{width:38px;height:5px;border-radius:3px;background:#D1D1D6;margin:0 auto 10px}
-.mf-sheet .mf-qhd{display:flex;align-items:baseline;gap:8px}
-.mf-sheet .mf-qhd b{font-size:15px}
-.mf-sheet .mf-qhd span{font-size:11px;color:#8E8E93}
-.mf-sheet .mf-edit{margin-left:auto;border:0;background:none;color:var(--navy);font:inherit;font-size:13px;font-weight:800;cursor:pointer;padding:2px 0}
-.mf-sheet .mf-edit:disabled{color:#C7C7CC;cursor:default}
-.mf-sheet .mf-quick{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
-.mf-sheet .mf-q{position:relative;border:0;background:#F2F2F7;border-radius:12px;padding:10px 4px 8px;font:inherit;color:var(--text);cursor:pointer;text-align:center;min-width:0}
-.mf-sheet .mf-q b{display:block;font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.mf-sheet .mf-q small{display:block;font-size:10.5px;color:#8E8E93;font-weight:600;margin-top:2px}
-.mf-sheet .mf-q.mine{background:#E8F0F8}
-.mf-sheet .mf-q.on{background:var(--navy);color:#fff}
-.mf-sheet .mf-q.on small{color:#C7D6E6}
-.mf-sheet .mf-q.fixed{opacity:.45;cursor:default}
-.mf-sheet .mf-qx{position:absolute;top:-6px;right:-4px;width:22px;height:22px;border-radius:50%;background:#C8352C;color:#fff;
-  font-style:normal;font-size:11px;font-weight:800;display:grid;place-items:center;box-shadow:0 1px 3px rgba(0,0,0,.25)}
-.mf-sheet .mf-hr{display:flex;align-items:center;gap:8px;font-size:11px;color:#8E8E93;font-weight:700;margin:16px 0 0}
-.mf-sheet .mf-hr::before,.mf-sheet .mf-hr::after{content:"";flex:1;height:1px;background:#ECECF0}
-.mf-sheet .mf-sec{margin:11px 0 0}
-.mf-sheet .mf-sec .lb{font-size:12px;font-weight:800;margin-bottom:6px;display:flex;align-items:baseline;gap:6px}
-.mf-sheet .mf-sec .lb small{font-weight:600;color:#8E8E93;font-size:10.5px}
-.mf-sheet .mf-opts{display:flex;flex-wrap:wrap;gap:6px}
-.mf-sheet .mf-opts button{flex:1 1 0;min-width:52px;border:1.5px solid #D6D6DC;background:#fff;border-radius:10px;padding:8px 0;
-  font:inherit;font-weight:700;font-size:13px;color:var(--text);cursor:pointer}
-.mf-sheet .mf-opts button.on{border-color:var(--navy);background:#E8F0F8;color:var(--navy)}
-.mf-sheet .mf-foot{display:flex;gap:8px;margin-top:16px}
-.mf-sheet .mf-clr{flex:none;border:1.5px solid #D6D6DC;background:#fff;border-radius:14px;padding:0 16px;font:inherit;font-weight:700;font-size:13px;color:var(--text);cursor:pointer}
-.mf-sheet .mf-apply{flex:1;border:0;background:var(--navy);color:#fff;font:inherit;font-weight:800;font-size:15px;border-radius:14px;padding:13px 0;cursor:pointer}
-.mf-sheet .mf-save{display:block;width:100%;margin-top:8px;border:0;background:none;color:var(--navy);font:inherit;font-weight:800;font-size:12.5px;cursor:pointer;padding:6px 0}
+.mf-sheet .mf-top{position:sticky;top:0;z-index:2;background:rgba(242,242,247,.94);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+.mf-sheet .grip{width:36px;height:5px;border-radius:3px;background:rgba(60,60,67,.3);margin:0 auto;position:relative;top:6px}
+.mf-sheet .mf-nav{display:flex;align-items:center;padding:14px 16px 8px}
+.mf-sheet .mf-nav b{flex:1;text-align:center;font-size:17px;font-weight:600}
+.mf-sheet .mf-nav button{border:0;background:none;font:inherit;font-size:16px;color:var(--navy);cursor:pointer;padding:0;min-width:72px;text-align:left}
+.mf-sheet .mf-nav button.r{text-align:right;font-weight:600}
+.mf-sheet .mf-nav button:disabled{color:#C7C7CC;cursor:default}
+.mf-sheet .mf-body{padding:0 16px 14px}
+.mf-sheet .mf-hd{display:flex;align-items:center;gap:6px;font-size:13px;color:#6E6E73;margin:20px 4px 7px}
+.mf-sheet .mf-hd span{margin-left:auto;font-size:12px}
+.mf-sheet .mf-ft{font-size:12.5px;color:#6E6E73;line-height:1.5;margin:10px 4px 0}
+.mf-sheet .mf-ft .r2{display:flex;align-items:center;gap:8px;margin-top:3px}
+.mf-sheet .mf-box{background:#fff;border-radius:12px;overflow:hidden}
+.mf-sheet .mf-cell{position:relative;display:flex;align-items:center;gap:10px;width:100%;min-height:44px;padding:0 14px 0 16px;
+  border:0;background:none;font:inherit;color:var(--text);text-align:left;cursor:pointer}
+.mf-sheet .mf-cell + .mf-cell::before,.mf-sheet .mf-sub + .mf-cell::before,.mf-sheet .mf-sub .mf-cell:first-child::before{
+  content:"";position:absolute;top:0;left:16px;right:0;height:.5px;background:var(--mf-sep)}
+.mf-sheet .mf-cell .lb{flex:1;min-width:0;display:flex;align-items:center;gap:7px;font-size:16px;white-space:nowrap;overflow:hidden;
+  border:0;background:none;font-family:inherit;color:inherit;padding:0;text-align:left;cursor:pointer}
+.mf-sheet .mf-cell .lb > span{overflow:hidden;text-overflow:ellipsis}
+.mf-sheet .mf-cell .val{font-size:15px;color:var(--mf-sub);white-space:nowrap}
+.mf-sheet .mf-cell .val.on{color:var(--navy);font-weight:600}
+.mf-sheet .mf-cell .chev{color:#C4C4C7;font-size:15px;font-weight:600;width:9px;transition:transform .2s}
+.mf-sheet .mf-cell.op .chev{transform:rotate(90deg)}
+.mf-sheet .mf-cell .bar{display:inline-block;width:3px;height:16px;border-radius:2px;flex:none}
+.mf-sheet .mf-sub{background:#FAFAFC}
+/* 差の点：緑＝S と D の差が大きい札（25以上）・赤＝小さい札（10未満）。色は D と成績の「逆」と同じ赤 */
+.mf-sheet .mf-dot{display:inline-block;width:8px;height:8px;border-radius:50%;flex:none}
+.mf-sheet .mf-dot.big{background:#30A14E}
+.mf-sheet .mf-dot.lo{background:#A32B1F}
+/* スライダーの行 */
+.mf-sheet .mf-cell.sl3{flex-wrap:wrap;padding-top:10px;padding-bottom:6px;cursor:default}
+.mf-sheet .info{display:inline-grid;place-items:center;width:17px;height:17px;border-radius:50%;border:1.3px solid var(--navy);color:var(--navy);
+  font:italic 700 11px Georgia,"Times New Roman",serif;line-height:1;flex:none}
+.mf-sheet .lb.on .info{background:var(--navy);color:#fff}
+.mf-sheet .sl{width:100%;padding:6px 0 0}
+.mf-sheet .sl input{-webkit-appearance:none;appearance:none;width:100%;height:28px;background:transparent;margin:0;cursor:pointer;display:block}
+.mf-sheet .sl input::-webkit-slider-runnable-track{height:4px;border-radius:2px;background:linear-gradient(to right,var(--navy) 0 var(--p),rgba(120,120,128,.2) var(--p) 100%)}
+.mf-sheet .sl input::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;border-radius:50%;background:#fff;margin-top:-11px;
+  box-shadow:0 .5px 4px rgba(0,0,0,.12),0 6px 13px rgba(0,0,0,.12),0 0 0 .5px rgba(0,0,0,.04)}
+.mf-sheet .sl input::-moz-range-track{height:4px;border-radius:2px;background:rgba(120,120,128,.2)}
+.mf-sheet .sl input::-moz-range-progress{height:4px;border-radius:2px;background:var(--navy)}
+.mf-sheet .sl input::-moz-range-thumb{width:26px;height:26px;border-radius:50%;background:#fff;border:0;box-shadow:0 .5px 4px rgba(0,0,0,.12),0 6px 13px rgba(0,0,0,.12)}
+.mf-sheet .ticks{display:flex;justify-content:space-between;font-size:11px;color:#AEAEB2;padding:0 6px;margin-top:-2px}
+.mf-sheet .ticks span{width:26px;text-align:center}
+.mf-sheet .ticks span.on{color:var(--navy);font-weight:600}
+/* 札の名前を押すと開く成績の表（列は成績の「ランクの見どころ」と同じ）。いま選んでいるランクの行は紺の地 */
+.mf-sheet .mf-dt{width:100%;margin:4px 0 6px;background:#F2F2F7;border-radius:10px;padding:8px 10px 6px}
+.mf-sheet .mf-dt .cap{font-size:11px;color:var(--mf-sub);margin:0 0 4px;display:flex;justify-content:space-between;gap:8px}
+.mf-sheet .mf-dt table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+.mf-sheet .mf-dt th{font-size:10.5px;color:var(--mf-sub);font-weight:500;text-align:right;padding:2px 2px 4px}
+.mf-sheet .mf-dt th:first-child,.mf-sheet .mf-dt td:first-child{text-align:left}
+.mf-sheet .mf-dt td{font-size:13px;text-align:right;padding:4px 2px;border-top:.5px solid var(--mf-sep)}
+.mf-sheet .mf-dt td.n{color:var(--mf-sub);font-size:12px}
+.mf-sheet .mf-dt td.t3{font-weight:600;width:78px}
+.mf-sheet .mf-dt td.t3 i{display:block;height:3px;border-radius:2px;margin:3px 0 0 auto}
+.mf-sheet .mf-dt tr.sel td{background:rgba(0,62,112,.08)}
+.mf-sheet .mf-dt .rk{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:5px;color:#fff;font:600 11.5px Futura,Jost,"Avenir Next",sans-serif}
+.mf-sheet .mf-dt .rk.N{font:600 10px var(--font)}
+/* 脚質（押すと紺）・印（スイッチ） */
+.mf-sheet .mf-pills{display:flex;gap:8px}
+.mf-sheet .mf-pills button{flex:1;border:0;background:#fff;border-radius:10px;padding:11px 0;font:inherit;font-size:16px;color:var(--text);cursor:pointer}
+.mf-sheet .mf-pills button.on{background:var(--navy);color:#fff;font-weight:600}
+.mf-sheet .mf-sw{position:relative;width:51px;height:31px;border-radius:16px;background:rgba(120,120,128,.16);flex:none;transition:background .2s}
+.mf-sheet .mf-sw::after{content:"";position:absolute;top:2px;left:2px;width:27px;height:27px;border-radius:50%;background:#fff;
+  box-shadow:0 3px 8px rgba(0,0,0,.15),0 3px 1px rgba(0,0,0,.06);transition:left .2s}
+.mf-sheet .mf-sw.on{background:#34C759}
+.mf-sheet .mf-sw.on::after{left:22px}
+/* 自分で足した「よく使う」（⑥⑬） */
+.mf-sheet .mf-edit{margin-left:auto;border:0;background:none;color:var(--navy);font:inherit;font-size:13px;cursor:pointer;padding:0}
+.mf-sheet .mf-favs{display:flex;gap:8px;overflow-x:auto;padding:6px 2px 2px;scrollbar-width:none}
+.mf-sheet .mf-favs::-webkit-scrollbar{display:none}
+.mf-sheet .mf-fav{position:relative;flex:none;border:0;background:#fff;border-radius:12px;padding:9px 12px;font:inherit;text-align:left;cursor:pointer;color:var(--text);max-width:220px}
+.mf-sheet .mf-fav b{display:block;font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mf-sheet .mf-fav small{font-size:12px;color:var(--mf-sub)}
+.mf-sheet .mf-fav.on{background:var(--navy);color:#fff}
+.mf-sheet .mf-fav.on small{color:#C7D6E6}
+.mf-sheet .mf-qx{position:absolute;top:-5px;right:-5px;width:20px;height:20px;border-radius:50%;background:#8E8E93;color:#fff;font-size:12px;font-style:normal;display:grid;place-items:center}
+.mf-sheet .mf-foot{position:sticky;bottom:0;z-index:2;padding:10px 16px calc(12px + env(safe-area-inset-bottom));background:rgba(242,242,247,.94);
+  -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border-top:.5px solid var(--mf-sep)}
+.mf-sheet .mf-apply{display:block;width:100%;border:0;background:var(--navy);color:#fff;border-radius:14px;padding:14px 0;font:inherit;font-size:17px;font-weight:600;cursor:pointer}
+.mf-sheet .mf-save{display:block;width:100%;border:0;background:none;font:inherit;font-size:14px;color:var(--navy);padding:10px 0 0;cursor:pointer}
 .mf-sheet .mf-save:disabled{color:#C7C7CC;cursor:default}
 
 /* ---- 荒れ度の札（#pop-upset）。上の札・一覧と同じ部品に寄せた（2026-10-07 ユーザー「ここも他と同じデザインに寄せてほしい」） ----

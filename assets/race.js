@@ -3812,40 +3812,56 @@ function gekiPaint() {
 // 絞り込みで押した・外したとき（絞り込みを閉じてもページを読み直さない時があるので、その場で描き直す）
 document.addEventListener('gekiatsu-change', gekiPaint);
 
-// ---------- 出馬表の絞り込み（143-spec・2026-10-18 ユーザー決定・mockup-309 融合2） ----------
-// 一覧の上に「かけている条件の札（✕で外す）＋絞り込みボタン」。シートの上段は1タップの「よく使う」、
-// 下段で細かく選ぶ（同じ段は「どれか」、段どうしは「全部そろう」）。
-// 合う馬を上に集め、外れた馬は**消さずに薄くして下へ沈める**（沈んだ馬にも印は付けられる）。
+// ---------- 出馬表の絞り込み（143-spec・2026-10-18 ユーザー決定。2026-10-19 見直し＝mockup-318） ----------
+// 一覧の上に「かけている条件の札（✕で外す）＋絞り込みボタン」。シートで条件を選び、合う馬を上に集め、
+// 外れた馬は**消さずに薄くして下へ沈める**（沈んだ馬にも印は付けられる）。段どうしは「全部そろう」、脚質の中は「どれか」。
 // 並びと濃さを変えるだけで、自分の印・AIの印・買い目シート・馬券の面には触らない（⑨）。
 // 条件は端末に1つだけ保存し、次に開いたどのレースにもそのままかける（⑩ ユーザー「残す」）。
+// 2026-10-19 見直し（ユーザー「デフォルトの絞り込み条件がいらない／人気もいらない／直近5走とか全て入れて／何ランク以上にして」ほか）：
+//   ・ランクのページの札22枚と段5つを、ランクのページと同じ値（yoso.js の YosoRanks）で「〜以上」に絞る。D以上は全部なので置かない
+//   ・最初からある「よく使う」5つ・人気・評価を外した。「よく使う」は自分で足した組み合わせだけ
+//   ・見た目は iPhone の設定アプリに寄せた（灰色の地に白い角丸の箱・スライダー）
+//   ・札と段に、成績の「ランクの見どころ」と同じ S と D の差の点（差25以上＝緑・10未満＝赤）。札の名前（ⓘ）を押すとその札の成績の表
 const MF_KEY = 'mmfilter';
 const MF_QUICK_KEY = 'mmfilter-quick';   // 自分で足した「よく使う」（⑥）
-const MF_TR = ['S', 'A', 'B', 'C', 'D'];
-const MF_GR = ['A', 'B', 'C', 'D', 'E'];
+const MF_LV = ['S', 'A', 'B', 'C'];      // 条件の値は 0〜3（0＝S・2＝B以上）
+const MF_PT = { S: 5, A: 4, B: 3, C: 2, D: 1 };
+const MF_RC = { S: '#0B5E2E', A: '#1F6B3A', B: '#4E5862', C: '#8E4A36', D: '#A32B1F' };   // yoso.css .m225 .r-S〜.r-D と同じ
 const MF_RS = ['逃', '先', '差', '追'];
-const MF_PP = [[null, '指定なし'], ['1-3', '1〜3番'], ['1-5', '1〜5番'], ['6-99', '6番〜']];
-// 最初からある「よく使う」。この5つは編集でも消せない（⑬）
-const MF_BASE_QUICK = [
-  ['調教A以上', { tr: ['S', 'A'] }],
-  ['AIの印', { ai: true }],
-  ['自分の印あり', { mine: true }],
-  ['1〜5番人気', { pp: '1-5' }],
-  ['消を除く', { nox: true }],
+// 段と札の並び・段の色はランクのページ（yoso.js M225_GROUPS・yoso.css .m225 .g1〜.g5）と同じ
+const MF_GROUPS = [
+  ['馬の力', '#8E5BC4', ['直近5走', '前走', '2走前', '3走前', '4走前', '5走前']],
+  ['条件', '#2F7FD1', ['コース', '場', '距離', '回り', '馬場', '内外', '頭数', '流れ']],
+  ['状態', '#D9557A', ['調教']],
+  ['人と血統', '#C9961A', ['騎手', '種牡馬', '調教師', '母父']],
+  ['コースの傾向', '#34A853', ['枠', '脚質', '前走コース']],
 ];
+const MF_KEYS = MF_GROUPS.flatMap(([g, , cs]) => [`g:${g}`, ...cs.map((c) => `c:${c}`)]);
+// 一覧の評価の列（幅38px）に出す札の短い名前
+const MF_SHORT = { 直近5走: '直近', '2走前': '2走', '3走前': '3走', '4走前': '4走', '5走前': '5走', 種牡馬: '父', 調教師: '厩舎', 前走コース: '前コ',
+  馬の力: '力', 人と血統: '人', コースの傾向: '傾向' };
+const MF_GAP_BIG = 25;
+const MF_GAP_SMALL = 10;   // 差の点の境目（stats.js の RG_BIG・RG_SMALL と同じ）
+const MF_T3_MAX = 50;      // 成績の表の 3着内率の棒の物差し（0〜50%）
 const MF_ICON = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 3h12M4.5 8h7M7 13h2" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>';
-const MF = { s: null, quick: [], site: null, sheet: null, shade: null, draft: null, edit: false };
+const MF = { s: null, quick: [], site: null, sheet: null, shade: null, draft: null, edit: false,
+  ranks: null, rec: null, open: { 馬の力: true }, dt: {} };
 
-const mfEmpty = () => ({ tr: [], gr: [], pp: null, rs: [], ai: false, mine: false, nox: false });
+const mfEmpty = () => ({ th: {}, rs: [], ai: false, mine: false, nox: false });
 const mfClone = (s) => JSON.parse(JSON.stringify(s));
-// 保存された値は形をそろえてから使う（古い形・壊れた値は捨てて空にする）
+// 保存された値は形をそろえてから使う（古い形・壊れた値は捨てて空にする）。
+//   2026-10-18 の形（調教 tr: ['S','A'] など）は、S から続く調教のランクだけ「〜以上」に直す。人気・評価は捨てる
 function mfNorm(o) {
   const e = mfEmpty();
   if (!o || typeof o !== 'object') return e;
-  const pick = (v, ok) => (Array.isArray(v) ? v.filter((x) => ok.includes(x)) : []);
-  e.tr = pick(o.tr, MF_TR);
-  e.gr = pick(o.gr, MF_GR);
-  e.rs = pick(o.rs, MF_RS);
-  e.pp = MF_PP.some(([v]) => v && v === o.pp) ? o.pp : null;
+  if (o.th && typeof o.th === 'object') {
+    MF_KEYS.forEach((k) => { const i = o.th[k]; if (Number.isInteger(i) && i >= 0 && i <= 3) e.th[k] = i; });
+  } else if (Array.isArray(o.tr) && o.tr.length) {
+    let i = -1;
+    while (i < 4 && o.tr.includes(['S', 'A', 'B', 'C', 'D'][i + 1])) i += 1;
+    if (i >= 0 && i <= 3) e.th['c:調教'] = i;
+  }
+  e.rs = Array.isArray(o.rs) ? o.rs.filter((x) => MF_RS.includes(x)) : [];
   e.ai = o.ai === true; e.mine = o.mine === true; e.nox = o.nox === true;
   return e;
 }
@@ -3853,29 +3869,40 @@ function mfLoad() {
   try { MF.s = mfNorm(JSON.parse(localStorage.getItem(MF_KEY))); } catch (e) { MF.s = mfEmpty(); }
   try {
     const q = JSON.parse(localStorage.getItem(MF_QUICK_KEY));
-    MF.quick = Array.isArray(q) ? q.filter((x) => x && typeof x.label === 'string').map((x) => ({ label: x.label, s: mfNorm(x.s) })) : [];
+    MF.quick = Array.isArray(q) ? q.filter((x) => x && typeof x.label === 'string').map((x) => ({ s: mfNorm(x.s) })).filter((x) => !mfIsEmpty(x.s)) : [];
   } catch (e) { MF.quick = []; }
 }
 // localStorage が使えない環境でも絞り込みは効く。保存されないだけ（印と同じ）
 function mfSave() {
   try {
     localStorage.setItem(MF_KEY, JSON.stringify(MF.s));
-    localStorage.setItem(MF_QUICK_KEY, JSON.stringify(MF.quick));
+    localStorage.setItem(MF_QUICK_KEY, JSON.stringify(MF.quick.map((q) => ({ label: mfTags(q.s).map((t) => t[1]).join('＋'), s: q.s }))));
   } catch (e) { /* 保存しないだけ */ }
 }
-const mfIsEmpty = (s) => !s.tr.length && !s.gr.length && !s.pp && !s.rs.length && !s.ai && !s.mine && !s.nox;
+const mfIsEmpty = (s) => !Object.keys(s.th).length && !s.rs.length && !s.ai && !s.mine && !s.nox;
 const mfSame = (a, b) => JSON.stringify(mfNorm(a)) === JSON.stringify(mfNorm(b));
-const mfTrGrade = (h) => (h.training_rank && h.training_rank.grade) || null;
+const mfLv = (i) => (i === 0 ? 'S' : `${MF_LV[i]}以上`);
+// 札の名前はランクのページと同じ言い方（コース＝新潟芝1000m など）
+function mfLabel(k) {
+  const n = k.slice(2);
+  if (k.startsWith('g:')) return n;
+  const R = (MF.site && MF.site.race) || {};
+  const sf = R.surface || '';
+  if (n === 'コース') return `${R.track || ''}${sf}${R.distance || ''}m`;
+  if (n === '場') return `${R.track || ''}${sf}`;
+  if (n === '距離') return `${sf}${R.distance || ''}m`;
+  return n;
+}
+const mfRank = (h, k) => ((MF.ranks || {})[h.number] || {})[k] || null;
 
 function mfMatch(h, s) {
   if (h.scratched) return false;
-  // 調教のランクが無い馬（新馬・取得に失敗した馬）は外さずに残す（⑪）
-  if (s.tr.length) { const g = mfTrGrade(h); if (g && !s.tr.includes(g)) return false; }
-  // 評価は一覧に出している評価（dispGrade）で見る。A＋ は A に含める
-  if (s.gr.length) { const g = dispGrade(h); if (!g || !s.gr.includes(String(g).charAt(0))) return false; }
-  if (s.pp) {
-    const [lo, hi] = s.pp.split('-').map(Number);
-    if (h.popularity == null || h.popularity < lo || h.popularity > hi) return false;
+  // ランクがまだ届いていない間（yoso.js の読み込み待ち）と、そのランクが無い馬・「初」の馬は外さずに残す（⑪と同じ）
+  if (MF.ranks) {
+    for (const [k, i] of Object.entries(s.th)) {
+      const g = mfRank(h, k);
+      if (g && g !== '初' && MF_PT[g] < 5 - i) return false;
+    }
   }
   if (s.rs.length && !s.rs.includes(String(h.running_style || '').trim().charAt(0))) return false;
   if (s.ai && !h.ability_mark) return false;
@@ -3888,10 +3915,7 @@ function mfMatch(h, s) {
 const mfCount = (s) => MF.site.horses.filter((h) => mfMatch(h, s)).length;
 
 function mfTags(s) {
-  const t = [];
-  if (s.tr.length) t.push(['tr', '調教 ' + MF_TR.filter((x) => s.tr.includes(x)).join('・')]);
-  if (s.gr.length) t.push(['gr', '評価 ' + MF_GR.filter((x) => s.gr.includes(x)).join('・')]);
-  if (s.pp) t.push(['pp', s.pp === '6-99' ? '6番人気〜' : `${s.pp.replace('-', '〜')}番人気`]);
+  const t = MF_KEYS.filter((k) => s.th[k] !== undefined).map((k) => [k, `${mfLabel(k)}${k.startsWith('g:') ? '（段）' : ''} ${mfLv(s.th[k])}`]);
   if (s.rs.length) t.push(['rs', MF_RS.filter((x) => s.rs.includes(x)).join('・')]);
   if (s.ai) t.push(['ai', 'AIの印あり']);
   if (s.mine) t.push(['mine', '自分の印あり']);
@@ -3899,7 +3923,7 @@ function mfTags(s) {
   return t;
 }
 function mfClearKey(s, k) {
-  if (k === 'pp') s.pp = null;
+  if (k.startsWith('c:') || k.startsWith('g:')) delete s.th[k];
   else if (Array.isArray(s[k])) s[k] = [];
   else s[k] = false;
 }
@@ -3908,7 +3932,7 @@ function mfBarHtml() {
   const t = mfTags(MF.s);
   const live = MF.site.horses.filter((h) => !h.scratched).length;
   const sum = t.length
-    ? t.map(([k, l]) => `<span class="mf-tag">${escapeHtml(l)}<button type="button" data-mfx="${k}" aria-label="${escapeHtml(l)}を外す">✕</button></span>`).join('')
+    ? t.map(([k, l]) => `<span class="mf-tag">${escapeHtml(l)}<button type="button" data-mfx="${escapeHtml(k)}" aria-label="${escapeHtml(l)}を外す">✕</button></span>`).join('')
     : `<span class="mf-tag none">条件なし（${live}頭）</span>`;
   return `<div class="mf-row"><div class="mf-sum">${sum}</div>
       <button type="button" class="mf-btn" data-mfopen>${MF_ICON}絞り込み${t.length ? `<span class="n">${t.length}</span>` : ''}</button></div>`
@@ -3944,19 +3968,20 @@ function mfApply() {
     miss.forEach((r) => { r.classList.add('mf-out'); frag.appendChild(r); });
   }
   hd.after(frag);
-  // 調教で絞っている間だけ、評価の列（点数・評価の下）に調教のランクの札を出す（⑧）。ランクが無い馬は灰色の「調教—」（⑪）
-  //   143-spec ⑧ は「2行目の頭」だったが、375px幅で入れると2行目が18頭中13頭で折り返した（2026-10-18 新潟11R で実測。
-  //   札が無ければ折り返し0頭）。評価の列は幅38pxで札（30px）が入り、2行目を押さないのでここへ置いた
-  const showTr = on && MF.s.tr.length > 0;
+  // ランクで絞っている間だけ、評価の列（点数・評価の下）にその馬のランクの札を出す（⑧）。ランクが無い馬は灰色の「—」、初は「初」（⑪）。
+  //   列の幅が38pxなので、出すのはかけた順に2つまで（短い名前・例「直近A」）
+  const ks = Object.keys(MF.s.th).slice(0, 2);
   rows.forEach((r) => {
     const tot = r.querySelector('.mm-c .tot');
     if (!tot) return;
-    const old = tot.querySelector('.mf-trk');
-    if (old) old.remove();
-    if (showTr && !r.classList.contains('scr')) {
-      const g = mfTrGrade(by[num(r)]);
-      tot.insertAdjacentHTML('beforeend', `<span class="mf-trk ${g ? `t-${g}` : 't-none'}">調教${g || '—'}</span>`);
-    }
+    tot.querySelectorAll('.mf-trk').forEach((x) => x.remove());
+    if (!on || !MF.ranks || r.classList.contains('scr')) return;
+    ks.forEach((k) => {
+      const g = mfRank(by[num(r)], k);
+      const n = k.slice(2);
+      const nm = MF_SHORT[n] || n;
+      tot.insertAdjacentHTML('beforeend', `<span class="mf-trk ${g && g !== '初' ? `t-${g}` : 't-none'}">${escapeHtml(nm)}${g || '—'}</span>`);
+    });
   });
 }
 
@@ -3971,6 +3996,7 @@ function mfOpenSheet() {
   MF.draft = mfClone(MF.s);
   MF.edit = false;
   mfDrawSheet();
+  MF.sheet.scrollTop = 0;
   MF.sheet.classList.add('on');
   MF.shade.classList.add('on');
 }
@@ -3981,72 +4007,147 @@ function mfCloseSheet() {
   unlockPageScroll();
 }
 
+// 成績の「ランクの見どころ」と同じ数字（data/rank_record.json）。差は丸めた後の頭数どうしの引き算（144-spec ⑫）
+function mfRecRow(k) {
+  if (!MF.rec || !Array.isArray(MF.rec.rows)) return null;
+  const kind = k.startsWith('g:') ? '段' : '札';
+  const x = MF.rec.rows.find((r) => r.kind === kind && r.name === k.slice(2));
+  return x ? x.g : null;
+}
+function mfTier(k) {
+  const g = mfRecRow(k);
+  if (!g || !g.S || !g.D) return '';
+  const dif = Math.round(g.S[3]) - Math.round(g.D[3]);
+  return dif >= MF_GAP_BIG ? 'big' : dif < MF_GAP_SMALL ? 'lo' : '';
+}
+function mfDetail(k) {
+  const g = mfRecRow(k);
+  if (!g) return '<div class="mf-dt"><div class="cap"><span>成績はまだ数えていません</span></div></div>';
+  const cur = MF.draft.th[k];
+  const rows = ['S', 'A', 'B', 'C', 'D', '初'].filter((r) => g[r]).map((r) => {
+    const [n, w, r2, t3] = g[r];
+    const sel = cur !== undefined && r !== '初' && 'SABCD'.indexOf(r) <= cur;
+    const col = r === '初' ? '#C7C7CC' : MF_RC[r];
+    return `<tr class="${sel ? 'sel' : ''}"><td><span class="rk${r === '初' ? ' N' : ''}" style="background:${col}">${r}</span></td>`
+      + `<td class="n">${n.toLocaleString('ja-JP')}</td><td>${w.toFixed(1)}%</td><td>${r2.toFixed(1)}%</td>`
+      + `<td class="t3">${t3.toFixed(1)}%<i style="width:${(Math.min(t3, MF_T3_MAX) / MF_T3_MAX * 100).toFixed(1)}%;background:${col}"></i></td></tr>`;
+  }).join('');
+  // 調教（状態の段）だけ、調教の表を作り直した後のレースで数えている（144-spec 決め残し ア・ウ）
+  const tr = MF.rec.train || {};
+  const per = (k === 'c:調教' || k === 'g:状態') && tr.from
+    ? `${tr.from.slice(5).replace('-', '/')}〜・${(tr.races || 0).toLocaleString('ja-JP')}レース`
+    : `${String(MF.rec.from || '').slice(0, 4)}年〜・${(MF.rec.races || 0).toLocaleString('ja-JP')}レース`;
+  return `<div class="mf-dt"><div class="cap"><span>これまでの成績</span><span>${per}</span></div>
+    <table><tr><th>ランク</th><th>頭数</th><th>勝率</th><th>連対率</th><th>3着内率</th></tr>${rows}</table></div>`;
+}
+// スライダー：なし → C以上 → B以上 → A以上 → S（右へ行くほど厳しい）
+const mfSl = (k) => (MF.draft.th[k] === undefined ? 0 : 4 - MF.draft.th[k]);
+function mfSlider(k, label) {
+  const v = mfSl(k);
+  const tier = mfTier(k);
+  const tk = ['なし', 'C', 'B', 'A', 'S'].map((t, j) => `<span class="${j === v && v ? 'on' : ''}">${t}</span>`).join('');
+  return `<div class="mf-cell sl3"><button type="button" class="lb${MF.dt[k] ? ' on' : ''}" data-mfdt="${k}">`
+    + `${tier ? `<i class="mf-dot ${tier}"></i>` : ''}<span>${escapeHtml(label)}</span><span class="info">i</span></button>`
+    + `<span class="val${v ? ' on' : ''}" data-mfvl>${v ? mfLv(4 - v) : 'なし'}</span>`
+    + `<div class="sl"><input type="range" min="0" max="4" step="1" value="${v}" data-mfsl="${k}" style="--p:${v * 25}%" aria-label="${escapeHtml(label)}のランク">`
+    + `<div class="ticks">${tk}</div></div>${MF.dt[k] ? mfDetail(k) : ''}</div>`;
+}
+
 function mfDrawSheet() {
   const d = MF.draft;
-  const quick = MF_BASE_QUICK.map(([label, p]) => ({ label, s: Object.assign(mfEmpty(), p), base: true }))
-    .concat(MF.quick.map((q, i) => ({ label: q.label, s: q.s, base: false, i })));
-  const qHtml = quick.map((q, k) => {
-    const on = !MF.edit && mfSame(q.s, MF.s);
-    const x = MF.edit && !q.base ? `<i class="mf-qx" data-mfqdel="${q.i}" role="button" aria-label="${escapeHtml(q.label)}を消す">✕</i>` : '';
-    return `<button type="button" class="mf-q${on ? ' on' : ''}${q.base ? '' : ' mine'}${MF.edit && q.base ? ' fixed' : ''}" data-mfq="${k}">`
-      + `<b>${escapeHtml(q.label)}</b><small>${mfCount(q.s)}頭</small>${x}</button>`;
-  }).join('');
-  const ob = (v, l, on) => `<button type="button" data-v="${v}" class="${on ? 'on' : ''}">${l}</button>`;
-  const multi = (k, vals) => `<div class="mf-opts">${vals.map((v) => ob(v, v, d[k].includes(v))).join('')}</div>`;
+  const y = MF.sheet.scrollTop;
   const n = mfCount(d);
-  const dup = MF.quick.some((q) => mfSame(q.s, d)) || MF_BASE_QUICK.some(([, p]) => mfSame(Object.assign(mfEmpty(), p), d));
-  MF.sheet.innerHTML = `<div class="grip"></div>
-    <div class="mf-qhd"><b>よく使う</b><span>押すとすぐ一覧に戻ります</span>
-      <button type="button" class="mf-edit" data-mfedit${MF.quick.length ? '' : ' disabled'}>${MF.edit ? '完了' : '編集'}</button></div>
-    <div class="mf-quick">${qHtml}</div>
-    <div class="mf-hr">細かく選ぶ</div>
-    <div class="mf-sec" data-s="tr"><div class="lb">調教のランク<small>S〜D・今回の調教の中身から</small></div>${multi('tr', MF_TR)}</div>
-    <div class="mf-sec" data-s="gr"><div class="lb">評価<small>＋は同じ文字に含める</small></div>${multi('gr', MF_GR)}</div>
-    <div class="mf-sec" data-s="pp"><div class="lb">人気</div><div class="mf-opts">${MF_PP.map(([v, l]) => ob(v, l, d.pp === v)).join('')}</div></div>
-    <div class="mf-sec" data-s="rs"><div class="lb">脚質</div>${multi('rs', MF_RS)}</div>
-    <div class="mf-sec" data-s="fl"><div class="lb">印</div><div class="mf-opts">${ob('ai', 'AIの印あり', d.ai)}${ob('mine', '自分の印あり', d.mine)}${ob('nox', '自分の消を除く', d.nox)}</div></div>
-    <div class="mf-foot"><button type="button" class="mf-clr" data-mfclr>全部外す</button>
-      <button type="button" class="mf-apply" data-mfapply>${mfIsEmpty(d) ? '条件なしにする' : `${n}頭を上に出す`}</button></div>
-    <button type="button" class="mf-save" data-mfsave${mfIsEmpty(d) || dup ? ' disabled' : ''}>＋ いまの組み合わせを「よく使う」に足す</button>`;
+  const empty = mfIsEmpty(d);
+  const dup = MF.quick.some((q) => mfSame(q.s, d));
+  const favs = MF.quick.length ? `<div class="mf-hd">よく使う<button type="button" class="mf-edit" data-mfedit>${MF.edit ? '完了' : '編集'}</button></div>
+    <div class="mf-favs">${MF.quick.map((q, i) => `<button type="button" class="mf-fav${!MF.edit && mfSame(q.s, MF.s) ? ' on' : ''}" data-mfq="${i}">`
+      + `<b>${escapeHtml(mfTags(q.s).map((t) => t[1]).join('・'))}</b><small>${mfCount(q.s)}頭</small>`
+      + `${MF.edit ? `<i class="mf-qx" data-mfqdel="${i}" role="button" aria-label="消す">✕</i>` : ''}</button>`).join('')}</div>` : '';
+  const legend = MF.rec ? `<div class="mf-ft">S の馬と D の馬で、3着以内に来る数の差が
+      <span class="r2"><i class="mf-dot big"></i>大きい札</span><span class="r2"><i class="mf-dot lo"></i>小さい札</span></div>` : '';
+  const noRank = MF.ranks ? '' : '<div class="mf-ft">このレースにはランクがありません。ランクで絞っても全部の馬が残ります</div>';
+  const groups = MF_GROUPS.map(([g, c, cs]) => {
+    const op = MF.open[g];
+    const cnt = [`g:${g}`, ...cs.map((x) => `c:${x}`)].filter((k) => d.th[k] !== undefined).length;
+    return `<button type="button" class="mf-cell grp${op ? ' op' : ''}" data-mfg="${g}"><span class="lb"><i class="bar" style="background:${c}"></i><span>${g}</span></span>`
+      + `<span class="val${cnt ? ' on' : ''}">${cnt ? `${cnt}つ` : ''}</span><span class="chev">›</span></button>`
+      + (op ? `<div class="mf-sub">${mfSlider(`g:${g}`, '段のランク')}${cs.map((x) => mfSlider(`c:${x}`, mfLabel(`c:${x}`))).join('')}</div>` : '');
+  }).join('');
+  const rs = MF_RS.map((v) => `<button type="button" data-mfrs="${v}" class="${d.rs.includes(v) ? 'on' : ''}">${v}</button>`).join('');
+  const fl = [['ai', 'AIの印あり'], ['mine', '自分の印あり'], ['nox', '自分の消を除く']]
+    .map(([k, l]) => `<button type="button" class="mf-cell" data-mffl="${k}"><span class="lb"><span>${l}</span></span><span class="mf-sw${d[k] ? ' on' : ''}"></span></button>`).join('');
+  MF.sheet.innerHTML = `<div class="mf-top"><div class="grip"></div>
+      <div class="mf-nav"><button type="button" data-mfclr${empty ? ' disabled' : ''}>全部外す</button><b>絞り込み</b><button type="button" class="r" data-mfapply>完了</button></div></div>
+    <div class="mf-body">${favs}${legend}${noRank}
+      <div class="mf-hd">ランク<span>ⓘ を押すと成績</span></div><div class="mf-box">${groups}</div>
+      <div class="mf-hd">脚質</div><div class="mf-pills">${rs}</div>
+      <div class="mf-hd">印</div><div class="mf-box">${fl}</div></div>
+    <div class="mf-foot"><button type="button" class="mf-apply" data-mfapply>${empty ? '閉じる' : `${n}頭を上に出す`}</button>
+      <button type="button" class="mf-save" data-mfsave${empty || dup ? ' disabled' : ''}>いまの組み合わせを「よく使う」に足す</button></div>`;
+  MF.sheet.scrollTop = y;
 }
 
 function mfSheetClick(e) {
   const d = MF.draft;
-  const del = e.target.closest('[data-mfqdel]');
-  if (del) {
-    MF.quick.splice(Number(del.dataset.mfqdel), 1);
+  const t = (sel) => e.target.closest(sel);
+  let b;
+  if ((b = t('[data-mfqdel]'))) {
+    MF.quick.splice(Number(b.dataset.mfqdel), 1);
     if (!MF.quick.length) MF.edit = false;
     mfSave();
     mfDrawSheet();
     return;
   }
-  const q = e.target.closest('[data-mfq]');
-  if (q) {
+  if ((b = t('[data-mfq]'))) {
     if (MF.edit) return;   // 編集中は押しても絞らない（消すのは ✕）
-    const k = Number(q.dataset.mfq);
-    const s = k < MF_BASE_QUICK.length ? Object.assign(mfEmpty(), MF_BASE_QUICK[k][1]) : MF.quick[k - MF_BASE_QUICK.length].s;
+    const q = MF.quick[Number(b.dataset.mfq)];
+    if (!q) return;
     mfCloseSheet();
-    mfSetState(mfClone(s));
+    mfSetState(mfClone(q.s));
     return;
   }
-  if (e.target.closest('[data-mfedit]')) { MF.edit = !MF.edit; mfDrawSheet(); return; }
-  if (e.target.closest('[data-mfclr]')) { MF.draft = mfEmpty(); mfDrawSheet(); return; }
-  if (e.target.closest('[data-mfapply]')) { mfCloseSheet(); mfSetState(d); return; }
-  if (e.target.closest('[data-mfsave]')) {
-    MF.quick.push({ label: mfTags(d).map((t) => t[1]).join('＋'), s: mfClone(d) });
+  if (t('[data-mfedit]')) { MF.edit = !MF.edit; mfDrawSheet(); return; }
+  if (t('[data-mfclr]')) { MF.draft = mfEmpty(); mfDrawSheet(); return; }
+  if (t('[data-mfapply]')) { mfCloseSheet(); mfSetState(d); return; }
+  if (t('[data-mfsave]')) {
+    if (mfIsEmpty(d) || MF.quick.some((q) => mfSame(q.s, d))) return;
+    MF.quick.push({ s: mfClone(d) });
     mfSave();
     mfDrawSheet();
     return;
   }
-  const b = e.target.closest('.mf-sec button');
-  if (!b) return;
-  const k = b.closest('.mf-sec').dataset.s;
-  const v = b.dataset.v;
-  if (k === 'pp') d.pp = v === 'null' ? null : v;
-  else if (k === 'fl') d[v] = !d[v];
-  else d[k] = d[k].includes(v) ? d[k].filter((x) => x !== v) : d[k].concat(v);
+  if ((b = t('[data-mfg]'))) { MF.open[b.dataset.mfg] = !MF.open[b.dataset.mfg]; mfDrawSheet(); return; }
+  if ((b = t('[data-mfdt]'))) { const k = b.dataset.mfdt; MF.dt[k] = !MF.dt[k]; mfDrawSheet(); return; }
+  if ((b = t('[data-mfrs]'))) { const v = b.dataset.mfrs; d.rs = d.rs.includes(v) ? d.rs.filter((x) => x !== v) : d.rs.concat(v); mfDrawSheet(); return; }
+  if ((b = t('[data-mffl]'))) { const k = b.dataset.mffl; d[k] = !d[k]; mfDrawSheet(); }
+}
+// スライダーを動かしている間は字と色だけ変え、指を離したら（change）条件に入れて描き直す
+function mfSliderInput(e) {
+  const el = e.target.closest('[data-mfsl]');
+  if (!el) return;
+  const v = Number(el.value);
+  el.style.setProperty('--p', `${v * 25}%`);
+  const vl = el.closest('.mf-cell').querySelector('[data-mfvl]');
+  vl.textContent = v ? mfLv(4 - v) : 'なし';
+  vl.classList.toggle('on', v > 0);
+}
+function mfSliderChange(e) {
+  const el = e.target.closest('[data-mfsl]');
+  if (!el) return;
+  const v = Number(el.value);
+  if (v) MF.draft.th[el.dataset.mfsl] = 4 - v; else delete MF.draft.th[el.dataset.mfsl];
   mfDrawSheet();
 }
+
+// ランク（yoso.js）は race.js より後に読み込まれ、データを読み終えてから届く。届いたら並べ直す
+function mfRanksReady() {
+  if (!window.YosoRanks) return;
+  MF.ranks = window.YosoRanks.grades();
+  if (!MF.site) return;
+  mfApply();
+  if (MF.sheet && MF.sheet.classList.contains('on')) mfDrawSheet();
+}
+document.addEventListener('ans:ranks', mfRanksReady);
 
 function mfInit(site) {
   const list = document.querySelector('.race20 .mm-list');
@@ -4062,14 +4163,20 @@ function mfInit(site) {
   document.body.appendChild(MF.sheet);
   MF.shade.addEventListener('click', mfCloseSheet);
   MF.sheet.addEventListener('click', mfSheetClick);
+  MF.sheet.addEventListener('input', mfSliderInput);
+  MF.sheet.addEventListener('change', mfSliderChange);
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') mfCloseSheet(); });
   list.querySelector('.mf-bar').addEventListener('click', (e) => {
     const x = e.target.closest('[data-mfx]');
     if (x) { const s = mfClone(MF.s); mfClearKey(s, x.dataset.mfx); mfSetState(s); return; }
     if (e.target.closest('[data-mfopen]')) mfOpenSheet();
   });
-  // オッズを読み直して人気が変わったら、その場で並びを組み直す（⑫ 馬が上下に動いてよい）
-  window.addEventListener('ans:odds', () => { if (MF.s.pp) mfApply(); });
+  // 差の点と成績の表の数字（読めなければ点と表を出さないだけ）
+  getData('data/rank_record.json').then((r) => {
+    MF.rec = r;
+    if (MF.sheet.classList.contains('on')) mfDrawSheet();
+  }).catch(() => {});
+  mfRanksReady();
   mfApply();
 }
 

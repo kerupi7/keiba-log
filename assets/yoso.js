@@ -3991,6 +3991,25 @@
   // 出馬表・新聞・買い目などで馬名を押したときに、この画面を1頭だけ開く入口（2026-09-21 ユーザー指示）。
   //   本番の race.js が [data-pop]（馬番）でここを呼ぶ。開けたら true、その馬が居なければ false を返し、
   //   false のときは race.js が今までの札（#pop-N）を出す。
+  // 出馬表の絞り込み（race.js・143-spec の見直し・2026-10-19）が、ランクのページと同じ札・段のランクで絞れるように渡す。
+  //   返すのは馬番ごとに { 'c:札': ランク, 'g:段': ランク }（S〜D・初・null）。画面に出ない札は入れない。
+  //   枠・脚質は展開のページの値を写した後、段は画面で出し直した後の値（m225Items・m225AvgGrade と同じ）。rankcard が無いレースは null
+  window.YosoRanks = {
+    grades() {
+      if (!m225On()) return null;
+      const out = {};
+      H.forEach((h) => {
+        const items = m225Items(h);
+        const r = {};
+        items.forEach((it) => { r[`c:${it.key}`] = it.g || null; });
+        M225_GROUPS.forEach(([g]) => { r[`g:${g}`] = m225AvgGrade(h, g, items.filter((it) => it.grp === g).map((it) => it.g)); });
+        out[h.number] = r;
+      });
+      return out;
+    },
+  };
+  document.dispatchEvent(new Event('ans:ranks'));
+
   window.YosoView = {
     open(number, src) {
       if (root) return false;                      // すでに何か開いているときは邪魔しない
