@@ -5318,16 +5318,21 @@ body:has(.container.st26){background:#F2F2F7}
 .rg26 .per{font-size:10.5px;color:var(--faint);text-align:right;padding:2px 2px 0}
 .rg26 .top .meta{white-space:nowrap}
 /* 136-spec §9（2026-10-19 ユーザー決定・mockup-339 案A「指に吸いつく」）
-   その日の全部の場を横1列の帯（.strip26）に並べ、見える窓（.vp26）で切り取る。帯は index.js が指の量だけ動かす。
-   窓を左右14px（.container の余白）広げて、端のカードの影と激アツの黄色い縁が切れないようにする。
-   止まっている間は見ている場だけが高さを持つ（.off は高さ0）。 */
-.container.top .vp26{overflow:hidden;margin:0 -14px;padding:0 14px;touch-action:pan-y}
-.container.top .strip26{display:flex;align-items:flex-start;gap:28px;will-change:transform}
-.container.top .strip26 > .rl26{flex:none;width:100%}
-.container.top .strip26 > .rl26.off{height:0;padding:0;overflow:hidden;visibility:hidden}
-/* 白いつまみは1つの部品にして滑らせる（今までは選んだボタン自体を白くしていた） */
+   その日の全部の場を横に並べたページ（.pg26）を、ブラウザ自身の横スクロール（.vp26・scroll-snap）で送る。
+   2026-10-19 ユーザー「残像が残る感じ。もっとぬるぬるでProMotionみたいにしたい」で、JS で指を追う形からこの形にした。
+   窓を左右14px（.container の余白）広げ、ページの中に14pxの余白を取る。端のカードの影と激アツの黄色い縁が切れず、払う間は場と場の間が28px空く。
+   窓の高さは index.js が見ている場に合わせる（fitTrackHeight）。 */
+.container.top .vp26{display:flex;align-items:flex-start;margin:0 -14px;overflow-x:auto;overflow-y:hidden;
+  scroll-snap-type:x mandatory;overscroll-behavior-x:contain;scrollbar-width:none;-webkit-overflow-scrolling:touch;scroll-timeline:--trk26 x}
+.container.top .vp26::-webkit-scrollbar{display:none}
+.container.top .pg26{flex:0 0 100%;min-width:0;padding:0 14px;scroll-snap-align:start;scroll-snap-stop:always}
+/* 白いつまみは1つの部品（今までは選んだボタン自体を白くしていた）。幅は場の数（--n）で割る */
 .container.top .tracks.seg26{position:relative}
-.container.top .tracks.seg26 .pill26{position:absolute;top:2px;bottom:2px;left:2px;width:0;border-radius:7px;background:#fff;
-  box-shadow:0 3px 8px rgba(0,0,0,.12),0 3px 1px rgba(0,0,0,.04);will-change:transform;pointer-events:none}
+.container.top .tracks.seg26 .pill26{position:absolute;top:2px;bottom:2px;left:2px;width:calc((100% - 4px) / var(--n,1));border-radius:7px;background:#fff;
+  box-shadow:0 3px 8px rgba(0,0,0,.12),0 3px 1px rgba(0,0,0,.04);pointer-events:none}
 .container.top .tracks.seg26 .trk{position:relative;z-index:1}
 .container.top .tracks.seg26 .trk.on{background:transparent;box-shadow:none}
+/* 対応ブラウザでは、つまみをスクロール位置に CSS で直接つなぐ（JS を通らないので一覧とずれない） */
+.pill-sda .container.top #races-section{timeline-scope:--trk26}
+.pill-sda .container.top .tracks.seg26 .pill26{animation:pill26 linear both;animation-timeline:--trk26}
+@keyframes pill26{from{transform:translateX(0)}to{transform:translateX(calc((var(--n,1) - 1) * 100%))}}

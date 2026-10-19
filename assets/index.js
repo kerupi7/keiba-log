@@ -172,152 +172,77 @@ function renderDateTabs(state, rerender) {
 function renderTracks(state, rerender) {
   const el = document.getElementById('tracks');
   const tracks = state.tracksForDate(state.activeDate);
-  el.innerHTML = `<div class="tracks seg26"><i class="pill26"></i>${tracks
+  el.innerHTML = `<div class="tracks seg26" style="--n:${tracks.length}"><i class="pill26"></i>${tracks
     .map((t) => `<span class="trk ${t === state.activeTrack ? 'on' : ''}" data-track="${escapeHtml(t)}">${escapeHtml(t)}</span>`)
     .join('')}</div>`;
   el.querySelectorAll('.trk').forEach((trkEl, i) => {
     trkEl.addEventListener('click', () => {
-      if (i === tracks.indexOf(state.activeTrack) && !SWIPE.anim) return;
-      settleTrack(state, rerender, i, 0);
+      const sc = trackScroller();
+      if (sc) sc.scrollTo({ left: i * sc.clientWidth, behavior: REDUCE_MOTION ? 'auto' : 'smooth' });
     });
   });
 }
 
 // 一覧を横に払うと場が替わる（2026-10-18 ユーザー「横にスワイプしたら開催場が変わるように」）。
 // 136-spec §9（2026-10-19 ユーザー決定「A（指に吸いつく）で本番に入れて」・mockup-339 案A）:
-// その日の全部の場を横1列に並べた帯を、指と同じ量だけ動かす（隣の場がのぞく）。離した勢いでめくるか戻るかを決め、
-// ばねで止める。白いつまみも同じ割合で動く。端の場では引っぱるほど重くなる。1回で動くのは隣の場まで。
-// 縦のスクロールと取り違えないよう、最初の6pxで横の動きが縦の1.2倍を超えたときだけ横の操作にする。
-// 2026-10-19 ユーザー「なんかゆっくりでもっさりしてる」→ ばねを硬くし（揺れ1回 0.42→0.30秒）、速く払った判定を 300→200px/秒 に下げ、
-// 指の動きの受け取りを「待たせない」形（passive）に戻した（縦スクロールがこの処理を待っていた）
-const SWIPE = { p: 0, anim: null, busy: false };
-const SWIPE_GAP = 28; // 帯の場と場のすき間（.vp26 の左右の余白14pxの2倍。止まっているとき隣の場が見えない）
-const REDUCE_MOTION = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+// その日の全部の場を横1列に並べ、一覧が指と同じ量だけ動いて隣の場がのぞく。白いつまみも同じ割合で動く。
+// 2026-10-19 ユーザー「なんか残像が残る感じ。もっとぬるぬるでProMotionみたいにしたい」→ 指の動きを JS で追うのをやめ、
+// ブラウザ自身の横スクロール（scroll-snap）に任せた。iPhone の写真アプリのページ送りと同じ仕組みで、
+// 画面の描き換えの速さ（ProMotion なら120Hz）で動き、勢い・端のゴム・1場ずつ止まるのも本物の iOS の動きになる。
+// 白いつまみは、対応ブラウザ（Safari 26 以降など）では CSS がスクロール位置に直接つなぐ（scroll-driven animations）。
+// 対応しないブラウザは scroll イベントで動かす
+const SWIPE = { busy: false, timer: 0 };
+const REDUCE_MOTION = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+const PILL_BY_CSS = !!(window.CSS && CSS.supports('animation-timeline: --a') && CSS.supports('timeline-scope: --a'));
+if (PILL_BY_CSS) document.documentElement.classList.add('pill-sda');
 
-// ばね（response＝揺れ1回の秒数・damping＝1で揺れなし）。iOS の動きと同じ考え方。
-// 残り0.5px（o.eps）を切ったら止めたことにする（止まり際の見えない尻尾で、次の操作を待たせない）
-function spring(o) {
-  const k = Math.pow(2 * Math.PI / o.response, 2);
-  const c = 4 * Math.PI * o.damping / o.response;
-  let x = o.from, v = o.v || 0, last = performance.now(), stop = false;
-  function frame(now) {
-    if (stop) return;
-    const dt = Math.min(0.05, (now - last) / 1000); last = now;
-    const n = Math.max(1, Math.ceil(dt * 240));
-    const h = dt / n;
-    for (let i = 0; i < n; i++) { const a = -k * (x - o.to) - c * v; v += a * h; x += v * h; }
-    if (Math.abs(x - o.to) < o.eps && Math.abs(v) < o.eps * 20) { o.onUpdate(o.to); o.onDone(); return; }
-    o.onUpdate(x);
-    requestAnimationFrame(frame);
-  }
-  requestAnimationFrame(frame);
-  return { cancel() { stop = true; } };
-}
-// 端を越えて引っぱったときの重さ（iOS のゴムの式。d＝どこまで伸びるかの上限）
-const rubber = (o, d) => Math.sign(o) * (1 - 1 / (Math.abs(o) * 0.55 / d + 1)) * d;
+const trackScroller = () => document.querySelector('#races-list .vp26');
 
-// 位置 p（0＝左端の場。小数＝途中）で、帯とつまみを置く。止まっている時は見ている場だけ高さを持つ
-function applyTrackPos(p, dragging) {
-  const vp = document.querySelector('#races-list .vp26');
-  if (!vp) return;
-  const strip = vp.firstElementChild;
-  const lists = [...strip.children];
-  const n = lists.length;
-  // 1場ぶんの送り幅＝場の幅（vp の幅−左右の余白28px）＋すき間28px＝vp の幅
-  strip.style.transform = `translate3d(${-p * vp.clientWidth}px,0,0)`;
-  const q = Math.max(0, Math.min(n - 1, p));
-  const lo = Math.floor(q), hi = Math.ceil(q);
-  lists.forEach((el, i) => el.classList.toggle('off', dragging ? Math.abs(i - p) > 1.5 : !(i === lo || i === hi)));
-  const seg = document.querySelector('#tracks .seg26');
-  const pill = seg && seg.querySelector('.pill26');
-  if (pill && n) {
-    const u = (seg.clientWidth - 4) / n;
-    pill.style.width = `${u}px`;
-    pill.style.transform = `translate3d(${q * u}px,0,0)`;
-  }
+function placePill(sc) {
+  if (PILL_BY_CSS || !sc) return;
+  const pill = document.querySelector('#tracks .pill26');
+  if (!pill) return;
+  const n = sc.children.length;
+  const q = Math.max(0, Math.min(n - 1, sc.scrollLeft / Math.max(1, sc.clientWidth)));
+  pill.style.transform = `translate3d(${q * 100}%,0,0)`; // 100%＝つまみ1つぶんの幅
 }
 
-function stopTrackAnim() {
-  if (SWIPE.anim) SWIPE.anim.cancel();
-  SWIPE.anim = null;
-  SWIPE.busy = false;
+// 止まっている間は、見ている場の高さに窓を合わせる（場ごとにレース数が違うので、下に空白を作らない）。
+// 払い始めたら一番高い場に合わせ、隣の場の下の方が切れないようにする
+function fitTrackHeight(sc, moving) {
+  const pages = [...sc.children];
+  if (!pages.length) return;
+  const i = Math.max(0, Math.min(pages.length - 1, Math.round(sc.scrollLeft / Math.max(1, sc.clientWidth))));
+  const h = moving ? Math.max(...pages.map((pg) => pg.offsetHeight)) : pages[i].offsetHeight;
+  sc.style.height = `${h}px`;
 }
 
-// 場 target へばねで動かし、止まったら選んだ場として描き直す（描き直しても位置は同じなので見た目は変わらない）
-function settleTrack(state, rerender, target, v) {
-  const tracks = state.tracksForDate(state.activeDate);
-  if (SWIPE.anim) SWIPE.anim.cancel();
-  const done = () => {
-    SWIPE.anim = null;
+function attachTrackScroll(sc, state) {
+  const settled = () => {
+    clearTimeout(SWIPE.timer);
     SWIPE.busy = false;
-    SWIPE.p = target;
-    if (tracks[target] !== state.activeTrack) {
-      state.activeTrack = tracks[target];
-      rerender();
-    } else {
-      applyTrackPos(target);
+    const tracks = state.tracksForDate(state.activeDate);
+    const i = Math.max(0, Math.min(tracks.length - 1, Math.round(sc.scrollLeft / Math.max(1, sc.clientWidth))));
+    if (tracks[i] !== state.activeTrack) {
+      state.activeTrack = tracks[i];
+      document.querySelectorAll('#tracks .trk').forEach((el, k) => el.classList.toggle('on', k === i));
     }
+    fitTrackHeight(sc, false);
+    placePill(sc);
   };
-  if (REDUCE_MOTION) { done(); return; }
-  SWIPE.busy = true;
-  const vp = document.querySelector('#races-list .vp26');
-  const eps = 0.5 / Math.max(1, vp ? vp.clientWidth : 400); // 0.5px を場の幅で割った値
-  SWIPE.anim = spring({ from: SWIPE.p, to: target, v, response: 0.3, damping: 1, eps,
-    onUpdate: (x) => { SWIPE.p = x; applyTrackPos(x, true); }, onDone: done });
-}
-
-function attachTrackSwipe(state, rerender) {
-  const host = document.getElementById('races-list');
-  let st = null;
-  host.addEventListener('touchstart', (e) => {
-    if (e.touches.length !== 1 || !host.querySelector('.vp26')) { st = null; return; }
-    const t = e.touches[0];
-    st = { x: t.clientX, y: t.clientY, dir: null, p0: 0, s: [] };
+  const hasEnd = 'onscrollend' in window;
+  sc.addEventListener('scroll', () => {
+    if (!SWIPE.busy) { SWIPE.busy = true; fitTrackHeight(sc, true); }
+    placePill(sc);
+    // scrollend が無いブラウザは、スクロールが150ms止まったら止まったとみなす
+    if (!hasEnd) { clearTimeout(SWIPE.timer); SWIPE.timer = setTimeout(settled, 150); }
   }, { passive: true });
-  host.addEventListener('touchmove', (e) => {
-    if (!st) return;
-    const t = e.touches[0];
-    const dx = t.clientX - st.x;
-    const dy = t.clientY - st.y;
-    if (!st.dir) {
-      if (Math.abs(dx) > 6 && Math.abs(dx) > Math.abs(dy) * 1.2) {
-        st.dir = 'h';
-        st.x = t.clientX; // 判定までの6pxで跳ねないよう、ここを起点にする
-        if (SWIPE.anim) SWIPE.anim.cancel();
-        SWIPE.anim = null;
-        SWIPE.busy = true;
-        st.p0 = SWIPE.p;
-      } else if (Math.abs(dy) > 6) { st = null; return; } else return;
-    }
-    const n = state.tracksForDate(state.activeDate).length;
-    const W = host.querySelector('.vp26').clientWidth;
-    let q = st.p0 - (t.clientX - st.x) / W;
-    if (q < 0) q = rubber(q, 0.3); else if (q > n - 1) q = n - 1 + rubber(q - (n - 1), 0.3);
-    SWIPE.p = q;
-    applyTrackPos(q, true);
-    st.s.push([t.clientX, performance.now()]);
-    if (st.s.length > 6) st.s.shift();
-  }, { passive: true }); // 横の動きでページが横に流れないのは .vp26 の touch-action: pan-y が受け持つ
-  const end = () => {
-    if (!st) return;
-    const was = st.dir, s = st.s;
-    st = null;
-    if (was !== 'h') return;
-    const n = state.tracksForDate(state.activeDate).length;
-    const W = host.querySelector('.vp26').clientWidth;
-    const a = s[0], b = s[s.length - 1];
-    const vpx = a && b && b[1] > a[1] ? (b[0] - a[0]) / ((b[1] - a[1]) / 1000) : 0; // px/秒
-    const v = -vpx / W;            // 1秒あたり何場ぶん
-    // 速く払った（1秒あたり200px以上）なら払った向きの隣へ。ゆっくりなら半分を越えたかで決める
-    const lo = Math.max(0, Math.floor(SWIPE.p)), hi = Math.min(n - 1, Math.ceil(SWIPE.p));
-    const target = Math.abs(vpx) > 200 ? (vpx < 0 ? hi : lo) : Math.round(SWIPE.p);
-    settleTrack(state, rerender, Math.max(lo, Math.min(hi, target)), v);
-  };
-  host.addEventListener('touchend', end, { passive: true });
-  host.addEventListener('touchcancel', end, { passive: true });
-  // 横に払った直後の指離れでカードを開かない
-  host.addEventListener('click', (e) => { if (SWIPE.busy) { e.preventDefault(); e.stopPropagation(); } }, true);
-  window.addEventListener('resize', () => applyTrackPos(SWIPE.p, !!SWIPE.anim));
+  if (hasEnd) sc.addEventListener('scrollend', settled, { passive: true });
+  // 書体の読み込みなどで場の高さが変わったら、窓の高さを合わせ直す
+  if (window.ResizeObserver) {
+    const ro = new ResizeObserver(() => { if (!SWIPE.busy && sc.isConnected) fitTrackHeight(sc, false); });
+    [...sc.children].forEach((pg) => ro.observe(pg));
+  }
 }
 
 // 136-spec: 凡例（発走前＝紺／終了＝赤の箱）はやめた。R番号の色の箱を無くし、
@@ -463,9 +388,12 @@ function renderRaceList(state, races) {
     const ctx = { now, nextId: next ? next.race_id : null };
     return `<div class="rl26" data-track="${escapeHtml(track)}">${filtered.map((r) => renderRaceRow(r, ctx)).join('')}</div>`;
   });
-  el.innerHTML = `<div class="vp26"><div class="strip26">${lists.join('')}</div></div>`;
-  SWIPE.p = Math.max(0, tracks.indexOf(state.activeTrack));
-  applyTrackPos(SWIPE.p);
+  el.innerHTML = `<div class="vp26">${lists.map((l) => `<div class="pg26">${l}</div>`).join('')}</div>`;
+  const sc = trackScroller();
+  sc.scrollLeft = Math.max(0, tracks.indexOf(state.activeTrack)) * sc.clientWidth;
+  fitTrackHeight(sc, false);
+  placePill(sc);
+  attachTrackScroll(sc, state);
 }
 
 function renderEmpty() {
@@ -497,16 +425,15 @@ async function main() {
   if (window.location.hash) history.replaceState(null, '', window.location.pathname);
   const state = initState(races);
   const rerender = () => {
-    stopTrackAnim(); // 日付を替えたときなど、動いている途中なら止めてから描き直す
     renderDateTabs(state, rerender);
     renderTracks(state, rerender);
     renderLegend();
     renderRaceList(state, races);
   };
   rerender();
-  attachTrackSwipe(state, rerender);
+  window.addEventListener('resize', () => { const sc = trackScroller(); if (sc) { fitTrackHeight(sc, false); placePill(sc); } });
   // 136-spec: 次のレース・終わったレースは時刻で動くので、1分ごとに一覧だけ描き直す
-  // 払っている途中・ばねで動いている途中は描き直さない（帯が跳ぶため）
+  // 横にスクロールしている途中は描き直さない（位置が跳ぶため）
   setInterval(() => { if (!SWIPE.busy) renderRaceList(state, races); }, 60000);
   // 「次」の札の残り時間は1秒ごと。0になったら一覧を描き直して、札を次のレースへ移す
   setInterval(() => {
