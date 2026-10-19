@@ -4691,14 +4691,8 @@ body:has(.container.top){background:#F2F2F7}
 .race20.r26 .r27-up .bars i:nth-child(1){height:5px}.race20.r26 .r27-up .bars i:nth-child(2){height:8.5px}.race20.r26 .r27-up .bars i:nth-child(3){height:12px}
 .race20.r26 .r27-up .bars i.on{background:currentColor}
 .race20.r26 .r27-up.kata .vr{color:#185A4D}.race20.r26 .r27-up.naka .vr{color:#6A55C2}.race20.r26 .r27-up.dai .vr{color:#C8236A}
-.race20.r26 .r27-up .stk{display:flex;gap:2px;height:8px;border-radius:4px;overflow:hidden}
-.race20.r26 .r27-up .stk i{display:block;opacity:.25}.race20.r26 .r27-up .stk i.on{opacity:1}
-.race20.r26 .r27-up .stk i.kata{background:#2E8B7A}.race20.r26 .r27-up .stk i.naka{background:#6A55C2}.race20.r26 .r27-up .stk i.dai{background:#C8236A}
-.race20.r26 .r27-up .slb{display:grid;grid-template-columns:1fr 1fr 1fr;font-size:10.5px;color:#8E8E93}
-.race20.r26 .r27-up .slb span:nth-child(2){text-align:center}.race20.r26 .r27-up .slb span:nth-child(3){text-align:right}
-.race20.r26 .r27-up .slb .r27-num{margin-left:2px;font-weight:500}
-.race20.r26 .r27-up .slb .on{font-weight:700}
-.race20.r26 .r27-up .slb .on.kata{color:#185A4D}.race20.r26 .r27-up .slb .on.naka{color:#6A55C2}.race20.r26 .r27-up .slb .on.dai{color:#C8236A}
+/* 荒れ度はメインの1行だけ（2026-10-19・137-spec §15）。3つの割合の帯と字は外した */
+.race20.r26 .r27-up.one{padding:11px 12px}
 /* 100万超えとメンバー（同じ大きさ。片方だけの日は横いっぱい） */
 .race20.r26 .r27-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
 .race20.r26 .r27-row.one{grid-template-columns:1fr}
@@ -4707,16 +4701,78 @@ body:has(.container.top){background:#F2F2F7}
 .race20.r26 .r27-t .sb{font-size:10px;color:#8E8E93;white-space:nowrap}
 .race20.r26 .r27-t .vr .r27-num{font-size:21px}
 /* 今週の傾向 */
-.race20.r26 .r27-wk{margin-top:8px;background:#F5F5F8;border-radius:12px;padding:10px 11px 8px}
-.race20.r26 .r27-wk .wh{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px 6px}
-.race20.r26 .r27-wk .wg{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:7px}
-.race20.r26 .r27-wk .wg.n1{grid-template-columns:1fr}
-.race20.r26 .r27-wc{display:flex;flex-direction:column;gap:3px;min-width:0}
-.race20.r26 .r27-wc + .r27-wc{border-left:.5px solid rgba(60,60,67,.18);padding-left:10px}
-.race20.r26 .r27-wc .k{font-size:10.5px;color:#6D6D72;font-weight:700}
-.race20.r26 .r27-wc .w{font-size:15px;font-weight:700;color:var(--text)}
-.race20.r26 .r27-wc .w.em{color:var(--navy)}
-.race20.r26 .r27-wk .wg.n1 .r27-lanes,.race20.r26 .r27-wk .wg.n1 .r27-queue{max-width:180px}
+/* 今日の見立て＋今週の傾向の一覧（2026-10-19 ユーザー決定・mockup-331・137-spec §15）。
+   どの行も左に見出し・右に答えの1段。右の答えは16pxの太字で、偏りあり＝紺／速い＝緑／かかる＝赤／ふつう＝黒。押すと札が開く（右端の ›） */
+.race20.r26 .r27-tk{margin-top:8px;background:#F5F5F8;border-radius:12px;padding:4px 0 2px}
+.race20.r26 .r27-tk .gh{display:flex;align-items:center;justify-content:space-between;padding:7px 12px 3px;font-size:10.5px;color:#6D6D72;font-weight:700}
+.race20.r26 .r27-tk .gh .wsc{font-size:10px;color:#8E8E93;font-weight:600}.race20.r26 .r27-tk .gh .wsc .r27-num{color:#3C3C43}
+.race20.r26 .r27-tk .sp{height:6px}
+.race20.r26 .r27-tr{display:grid;grid-template-columns:26px minmax(0,1fr) auto 8px;align-items:center;gap:9px;min-height:44px;width:100%;
+  padding:5px 10px 5px 12px;position:relative;border:0;background:none;font:inherit;color:inherit;text-align:left;cursor:pointer}
+.race20.r26 .r27-tr:active{background:rgba(0,0,0,.05)}
+.race20.r26 .r27-tr::before{content:"";position:absolute;left:47px;right:0;top:0;border-top:.5px solid rgba(60,60,67,.18)}
+.race20.r26 .r27-tk .gh + .r27-tr::before{display:none}
+.race20.r26 .r27-tr .ic{width:26px;height:26px;border-radius:7px;display:flex;align-items:center;justify-content:center}
+.race20.r26 .r27-tr .ic svg{width:18px;height:18px;display:block}
+.race20.r26 .r27-tr .lb{display:flex;flex-direction:column;gap:3px;min-width:0}
+.race20.r26 .r27-tr .lb .t{font-size:13.5px;font-weight:500;white-space:nowrap;color:#3C3C43}
+.race20.r26 .r27-tr .lb .s{font-size:10.5px;color:#8E8E93;font-weight:600;white-space:nowrap}
+.race20.r26 .r27-tr .vl{display:flex;flex-direction:column;align-items:flex-end;gap:2px;text-align:right}
+.race20.r26 .r27-tr .vl b{font-size:16px;font-weight:800;white-space:nowrap;letter-spacing:-.01em}
+.race20.r26 .r27-tr .vl b .r27-num{font-size:19px}.race20.r26 .r27-tr .vl b small{font-size:.6em;margin-left:1px;font-weight:600}
+.race20.r26 .r27-tr .vl .s{font-size:10px;color:#8E8E93;font-weight:600;white-space:nowrap}
+.race20.r26 .r27-tr .s .r27-num{color:#3C3C43;font-weight:500}
+.race20.r26 .r27-tr .cv{font-style:normal;color:#C7C7CC;font-size:15px;font-weight:600;line-height:1}
+.race20.r26 .r27-tr .mini{display:flex;gap:2px;height:6px;width:100%;max-width:96px;border-radius:3px;overflow:hidden;margin-top:1px}
+.race20.r26 .r27-tr .mini i{display:block}
+.race20.r26 .r27-tr .em,.race20.r26 .r27p .em{color:var(--navy)}
+.race20.r26 .r27-tr .flat,.race20.r26 .r27p .flat{color:#3C3C43}
+.race20.r26 .r27-tr .fast,.race20.r26 .r27p .fast{color:#0F7A3D}
+.race20.r26 .r27-tr .slow,.race20.r26 .r27p .slow{color:#C8352C}
+/* 一覧の行を押すと開く札（mockup-332）。荒れ度の札（#pop-upset）と同じ形：白い角丸20・大きな見出し・中は灰のタイル */
+.race20.r26 .r27p{width:min(440px,92vw);border-radius:20px;box-shadow:0 18px 50px rgba(0,0,0,.25)}
+.race20.r26 .r27p .phead{background:#fff;border-bottom:0;padding:16px 16px 4px}
+.race20.r26 .r27p .pname{display:flex;flex-direction:column;gap:2px}
+.race20.r26 .r27p .pname small{font-size:11px;color:#6D6D72;font-weight:700}
+.race20.r26 .r27p .pname b{font-size:21px;font-weight:800;letter-spacing:-.01em}
+.race20.r26 .r27p .pname b .r27-num{font-size:24px}.race20.r26 .r27p .pname b small{font-size:13px;color:inherit;margin-left:1px}
+.race20.r26 .r27p .pbody{padding:8px 16px 18px;display:flex;flex-direction:column;gap:8px}
+.race20.r26 .r27p .lead{font-size:12.5px;color:#48484A;line-height:1.65;margin:0 0 2px}
+.race20.r26 .r27p .lead b{color:var(--text)}
+.race20.r26 .r27p .pt{background:#F5F5F8;border-radius:12px;padding:10px 12px}
+.race20.r26 .r27p .pt .cap{font-size:10.5px;color:#6D6D72;font-weight:700;margin-bottom:6px;display:flex;justify-content:space-between;gap:6px}
+.race20.r26 .r27p .pt .cap span{font-weight:600;color:#8E8E93}
+.race20.r26 .r27p .note{font-size:11px;color:#8E8E93;margin-top:6px;line-height:1.5}
+.race20.r26 .r27p .r27-num{font-family:var(--num27);font-weight:600}
+.race20.r26 .r27p .kv{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.race20.r26 .r27p .kv>div{display:flex;flex-direction:column;gap:1px;min-width:0}
+.race20.r26 .r27p .kv i{font-style:normal;font-size:10px;color:#8E8E93;font-weight:600;white-space:nowrap}
+.race20.r26 .r27p .kv b{font-size:13px;font-weight:700}.race20.r26 .r27p .kv b .r27-num{font-size:20px}
+.race20.r26 .r27p .scale{display:grid;gap:2px}
+.race20.r26 .r27p .scale i{font-style:normal;height:30px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#8E8E93;background:#E6E6EB;white-space:nowrap}
+.race20.r26 .r27p .scale i:first-child{border-radius:8px 0 0 8px}.race20.r26 .r27p .scale i:last-child{border-radius:0 8px 8px 0}
+.race20.r26 .r27p .scale i.on{background:var(--navy);color:#fff}
+.race20.r26 .r27p .scale i.on.slow{background:#C8352C;color:#fff}.race20.r26 .r27p .scale i.on.fast{background:#0F7A3D;color:#fff}.race20.r26 .r27p .scale i.on.flat{background:#636366;color:#fff}
+.race20.r26 .r27p .ln{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:12.5px;padding:5px 0}
+.race20.r26 .r27p .ln + .ln{border-top:.5px solid rgba(60,60,67,.18)}
+.race20.r26 .r27p .ln span{color:#48484A}.race20.r26 .r27p .ln b{font-weight:700;text-align:right}
+.race20.r26 .r27p .ln b .r27-num{font-size:15px}.race20.r26 .r27p .ln b small{font-size:11px;color:#8E8E93;font-weight:600}
+.race20.r26 .r27p .cmp{display:grid;grid-template-columns:62px 1fr 42px;gap:6px 8px;align-items:center;font-size:11.5px}
+.race20.r26 .r27p .cmp span{color:#48484A;font-weight:600}
+.race20.r26 .r27p .cmp .bar{height:12px;background:#E6E6EB;border-radius:6px;overflow:hidden}
+.race20.r26 .r27p .cmp .bar i{display:block;height:100%;border-radius:6px}
+.race20.r26 .r27p .cmp b{text-align:right}.race20.r26 .r27p .cmp b .r27-num{font-size:15px}
+.race20.r26 .r27p .g6{display:grid;grid-template-columns:44px 1fr 1fr;gap:4px}
+.race20.r26 .r27p .g6 .h{font-size:10.5px;color:#6D6D72;font-weight:700;text-align:center;padding:2px 0}
+.race20.r26 .r27p .g6 .r{font-size:12px;font-weight:700;display:flex;align-items:center}
+.race20.r26 .r27p .g6 .c{background:#fff;border-radius:8px;height:40px;display:flex;align-items:center;justify-content:center;position:relative;font-weight:700}
+.race20.r26 .r27p .g6 .c .r27-num{font-size:17px}.race20.r26 .r27p .g6 .c small{font-size:10px;margin-left:1px}
+.race20.r26 .r27p .g6 .c.on{background:var(--navy);color:#fff}
+.race20.r26 .r27p .g6 .c.on::after{content:"本命";position:absolute;top:-7px;right:4px;font-size:9px;font-weight:800;background:#FF9500;color:#fff;border-radius:4px;padding:0 4px;line-height:14px}
+.race20.r26 .r27p .hs{display:flex;flex-direction:column;gap:2px}
+.race20.r26 .r27p .hs .h1{display:flex;align-items:center;gap:8px;font:inherit;font-size:13px;font-weight:600;border:0;background:none;padding:4px 0;color:inherit;text-align:left;cursor:pointer}
+.race20.r26 .r27p .hs em{font-style:normal;margin-left:auto;font-size:10.5px;color:var(--navy);font-weight:700;background:#E4ECF5;border-radius:999px;padding:1px 8px}
+.race20.r26 .r27p .r27-lanes,.race20.r26 .r27p .r27-queue{max-width:260px;margin:2px auto 0}
 .race20.r26 .r27-lanes{width:100%;height:auto;display:block;margin-top:4px}
 .race20.r26 .r27-queue{width:100%;height:auto;display:block;margin-top:8px;overflow:visible}
 .race20.r26 .r27-lt{font-size:8.5px;font-weight:700;fill:#3C3C43}.race20.r26 .r27-lt.r27-ltw{fill:#fff}
@@ -4724,7 +4780,6 @@ body:has(.container.top){background:#F2F2F7}
 .race20.r26 .r27-qv{font-size:8.5px;font-weight:700;fill:#fff}.race20.r26 .r27-qv .n{font-size:11px}
 .race20.r26 .r27-ax{font-size:8px;font-weight:700;fill:#6D6D72}
 .race20.r26 .r27-scd{display:inline-flex;align-items:center;gap:8px;font-size:10px;color:#8E8E93;font-weight:600;white-space:nowrap}
-.race20.r26 .r27-scd .tt .r27-num{color:#3C3C43}
 .race20.r26 .r27-sg{display:inline-flex;align-items:center;gap:3px}
 .race20.r26 .r27-sg .r27-num{margin-left:1px;color:#3C3C43}
 .race20.r26 .r27-sg .sq{display:inline-flex;gap:1.5px}

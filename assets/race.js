@@ -4845,7 +4845,8 @@ function renderPopups20(site) {
       </div>`).join('');
   return site.horses.filter((h) => !h.scratched)
     .map((h) => `<div class="popup" id="pop-${h.number}">${popupBody(h, site)}</div>`).join('')
-    + (up ? up.popup : '') + crs + gates;
+    + (up ? up.popup : '') + crs + gates
+    + r27TenkaiPopups(site);   // 今日の見立て＋今週の傾向の行を押すと開く札（137-spec §15）
 }
 
 function setupShutuba20(site) {
@@ -5649,13 +5650,231 @@ function r27Queue(legs, flat) {
   return `<svg class="r27-queue" viewBox="0 0 150 61" role="img" aria-label="3着内の馬のうち前にいた割合 ${Math.round(f)}%（いつも${Math.round(base)}%）">${s}</svg>`;
 }
 
-// 何レースから出したか。灰の四角＝前日まで、紺の四角＝今日（2026-10-07「色ありと色なしの意味が伝わらない」→字を添える）
-function r27Scope(db, surf) {
-  const n = db.n_races || 0;
-  const prev = db.prev_races || 0;
-  const today = db.prev_races ? (db.today_races || 0) : n;
-  const grp = (k, cls, lab) => (k ? `<span class="r27-sg ${cls}"><span class="sq">${'<i></i>'.repeat(Math.min(k, 24))}</span>${lab}<b class="r27-num">${k}</b></span>` : '');
-  return `<span class="r27-scd"><span class="tt">${surf} <b class="r27-num">${n}</b>レース</span>${grp(prev, 'p', '前日まで')}${grp(today, 't', '今日')}</span>`;
+// ---------- 今日の見立て＋今週の傾向（2026-10-19 ユーザー決定・mockup-331 の一覧＋mockup-332 の札・137-spec §15） ----------
+// 予想のページの「展開」の上2枚（馬場・ペース・今週の結果）を、今週の傾向の場所に1枚の一覧で出す。
+// どの行も「左に見出し・右に答え」の1段。押すと荒れ度と同じ形の札（#pop-tk-*）が開き、外した数字と絵はそこに出す。
+// 値はどれも今あるもの（馬場＝baba_detail・display.baba、ペース＝scenario・scenario_grid、今週＝day_bias・time_trend）。
+// 言葉は段の切り方を変えずに替えた：いつも通り→ふつう、大きな偏りなし→互角（内と外）／ふつう（前と後ろ）
+const R27_LV = {
+  芝: { order: ['軟らかい', 'やや軟らかい', 'いつも通り', 'やや硬い', '硬い'], word: ['軟らかい', '軟らかめ', 'ふつう', '硬め', '硬い'] },
+  ダート: { order: ['乾いている', 'やや乾いている', 'いつも通り', 'やや湿っている', '湿っている'], word: ['乾いている', '乾きぎみ', 'ふつう', '湿りぎみ', '湿っている'] },
+};
+const R27_PN = { S: 'スロー', M: '平均', H: 'ハイ' };
+const R27_SN = { 前: '前残り', 後: '差し追込' };
+const R27_RED = '#C8352C';
+const R27_GREEN = '#0F7A3D';
+const r27S24 = (t) => `<svg viewBox="0 0 24 24" aria-hidden="true">${t}</svg>`;
+const R27_TIC = {
+  drop: r27S24('<path d="M12 2.5C12 2.5 5 11 5 15a7 7 0 0 0 14 0c0-4-7-12.5-7-12.5z" fill="#fff"/>'),
+  watch: r27S24('<circle cx="12" cy="13.5" r="7.5" fill="none" stroke="#fff" stroke-width="2.2"/><rect x="9.5" y="2.5" width="5" height="2.6" rx="1" fill="#fff"/><path d="M12 13.5V9" stroke="#fff" stroke-width="2" stroke-linecap="round"/>'),
+  eq: r27S24('<path d="M6 9.5h12M6 14.5h12" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>'),
+  aim: r27S24('<path d="M12 3v18M3 12h18" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/><circle cx="12" cy="12" r="6" fill="none" stroke="#fff" stroke-width="2.2"/>'),
+  pace: '<svg viewBox="0 0 28 28" aria-hidden="true"><path d="M4 20 A10 10 0 0 1 24 20" fill="none" stroke="#fff" stroke-width="3"/><line x1="14" y1="20" x2="20" y2="12" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/><circle cx="14" cy="20" r="2.5" fill="#fff"/></svg>',
+  legs: '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M5 26 C5 18 8 12 14 9 L16 4 L19 8 C23 8 27 12 28 16 C28.5 18 27 19.5 25 19 L21 17.5 C19 19 18 22 18 26 Z" fill="#fff"/></svg>',
+  gate: '<svg viewBox="0 0 32 32" aria-hidden="true"><rect x="1" y="7" width="14" height="18" rx="3" fill="#fff"/><text x="8" y="20" text-anchor="middle" font-size="11" font-weight="800" fill="#636366">内</text><rect x="17" y="7" width="14" height="18" rx="3" fill="rgba(255,255,255,.35)"/><text x="24" y="20" text-anchor="middle" font-size="11" font-weight="800" fill="#fff">外</text></svg>',
+};
+
+// 行と札の元になる値を1か所で組む（一覧と札で同じ値を使うため）
+function r27TenkaiData(site) {
+  const p = site.prediction || {};
+  const turf = String((site.race || {}).surface || '').startsWith('芝');
+  const surf = turf ? '芝' : 'ダート';
+  const out = { surf, turf };
+  // 芝の硬さ／ダートの湿り（今日の馬場の1本バーと同じ値・同じ条件で出す）
+  const bd = p.baba_detail || {};
+  const src = (turf ? bd.cushion_detail : bd.moisture_detail) || {};
+  const delta = turf ? (src.normal || {}).delta : src.normal_delta;
+  const lvIdx = src.level ? R27_LV[surf].order.indexOf(src.level.label) : -1;
+  if (lvIdx >= 0 && delta != null) out.baba = { src, delta, lvIdx, word: R27_LV[surf].word[lvIdx], rail: bd.rail };
+  // 勝ちタイム（babaOutlookCell と同じ ±0.05秒の線）
+  const disp = (p.display || {}).baba;
+  if (disp && disp.time != null) {
+    const v = Number(disp.time);
+    out.time = { v, k: Math.abs(v) < 0.05 ? 1 : v < 0 ? 0 : 2, trend: p.time_trend || null };
+  }
+  // 馬場の影響（babaAim20 の2つの日だけ言葉が出る）
+  if (out.baba) {
+    const on = turf ? delta < -0.3 : delta >= 3;
+    out.aim = on
+      ? (turf ? { word: '1番人気が弱い', sub: '勝率 34→30%' } : { word: '逃げが残る', sub: '3着内 29→33%' })
+      : { word: 'なし', sub: '' };
+  }
+  // ペース（本命＝scenario.main。予想のページの「本命」と同じ値）と通過タイム
+  const sc = p.scenario || {};
+  const m = sc.main || {};
+  if (m.code && m.side && m.prob != null) out.pace = { code: m.code, side: m.side, pct: Math.round(m.prob * 100), fav: m.favorites || [] };
+  const pass = {};
+  [sc.main, sc.sub, sc.other].forEach((s) => { if (s && s.code && s.pass_time && s.pass_time.sec != null && !pass[s.code]) pass[s.code] = s.pass_time; });
+  if (out.pace && pass[out.pace.code]) out.pass = { at: pass[out.pace.code].point_m, all: pass };
+  out.grid = p.scenario_grid || null;
+  // 今週の傾向
+  const wk = r26Week(site);
+  if (wk) {
+    out.db = p.day_bias || {};
+    if (wk.legs) {
+      const flat = !wk.legs.label || wk.legs.label === '大きな偏りなし';
+      out.legs = { ...wk.legs, flat, word: flat ? 'ふつう' : (R26_LEGW[wk.legs.label] || wk.legs.label) };
+    }
+    if (wk.io) {
+      const flat = wk.io.label === '大きな偏りなし';
+      out.io = { ...wk.io, flat, word: flat ? '互角' : String(wk.io.label).replace('傾向', '') };
+    }
+  }
+  return out;
+}
+
+function r27TenkaiRows(site) {
+  const T = r27TenkaiData(site);
+  const num = (v) => `<span class="r27-num">${escapeHtml(String(v))}</span>`;
+  const ic = (bg, svg) => `<span class="ic" style="background:${bg}">${svg}</span>`;
+  const row = (key, icon, t, val, cls, vsub, sub) => `<button type="button" class="r27-tr" data-pop="tk-${key}">${icon}`
+    + `<span class="lb"><span class="t">${t}</span>${sub || ''}</span>`
+    + `<span class="vl"><b class="${cls}">${val}</b>${vsub ? `<span class="s">${vsub}</span>` : ''}</span><i class="cv" aria-hidden="true">›</i></button>`;
+  const a = [];
+  if (T.baba) a.push(row('baba', ic('#2F7FC1', R27_TIC.drop), T.turf ? '芝の硬さ' : 'ダートの湿り', T.baba.word, T.baba.lvIdx === 2 ? 'flat' : 'em'));
+  if (T.time) {
+    const t = T.time;
+    a.push(row('time', ic([R27_GREEN, R27_GREY, R27_RED][t.k], R27_TIC.watch), '勝ちタイム', ['時計が速い', '時計はふつう', '時計がかかる'][t.k],
+      ['fast', 'flat', 'slow'][t.k], `${t.k === 1 ? '±0.0' : `${t.v < 0 ? '−' : '+'}${num(Math.abs(t.v).toFixed(2))}`}秒`));
+  }
+  if (T.aim) a.push(row('aim', ic(T.aim.sub ? R27_NAVY : '#C7C7CC', T.aim.sub ? R27_TIC.aim : R27_TIC.eq), '馬場の影響', T.aim.word, T.aim.sub ? 'em' : 'flat', escapeHtml(T.aim.sub)));
+  if (T.pace) a.push(row('pace', ic(R27_NAVY, R27_TIC.pace), 'ペース', `${R27_PN[T.pace.code]}・${R27_SN[T.pace.side]} ${num(T.pace.pct)}<small>%</small>`, 'em'));
+  if (T.pass) a.push(row('pass', ic(R27_NAVY, R27_TIC.watch), `${T.pass.at}m通過`, `${num(Number(T.pass.all[T.pace.code].sec).toFixed(1))}<small>秒</small>`, 'flat'));
+  const b = [];
+  if (T.legs) {
+    const L = T.legs;
+    const sub = L.total ? `<span class="mini"><i style="flex:${L.front};background:${L.flat ? R27_GREY : R27_NAVY}"></i><i style="flex:${L.rear};background:#D1D1D6"></i></span>`
+      + `<span class="s">先行 ${num(L.front)}頭・差し ${num(L.rear)}頭</span>` : '';
+    b.push(row('legs', ic('#636366', R27_TIC.legs), '前と後ろ', escapeHtml(L.word), L.flat ? 'flat' : 'em',
+      `前 ${num(Math.round(L.front_pct))}%（いつも ${num(Math.round(L.base_pct != null ? L.base_pct : 62.2))}%）`, sub));
+  }
+  if (T.io) b.push(row('io', ic('#636366', R27_TIC.gate), '内と外', escapeHtml(T.io.word), T.io.flat ? 'flat' : 'em', `内 ${num(Number(T.io.inner_pct).toFixed(1))}%・外 ${num(Number(T.io.outer_pct).toFixed(1))}%`));
+  if (!a.length && !b.length) return '';
+  const n = T.db ? (T.db.n_races || 0) : 0;
+  return '<div class="r27-tk">'
+    + (a.length ? `<div class="gh"><span>今日の見立て</span></div>${a.join('')}` : '')
+    + (b.length ? `${a.length ? '<div class="sp"></div>' : ''}<div class="gh"><span>今週の傾向</span><span class="wsc">${T.surf} ${num(n)}レース</span></div>${b.join('')}` : '')
+    + '</div>';
+}
+
+// 一覧の行を押すと開く札。荒れ度の札（#pop-upset）と同じ形（白い角丸・大きな見出し・灰のタイル）
+function r27TenkaiPopups(site) {
+  const T = r27TenkaiData(site);
+  const num = (v) => `<span class="r27-num">${escapeHtml(String(v))}</span>`;
+  const pop = (key, k, nm, cls, body) => `<div class="popup r27p" id="pop-tk-${key}"><div class="phead"><span class="pname">`
+    + `<small>${k}</small><b class="${cls}">${nm}</b></span></div><div class="pbody">${body}</div></div>`;
+  const tile = (cap, inner, note) => `<div class="pt">${cap ? `<div class="cap">${cap}</div>` : ''}${inner}${note ? `<div class="note">${note}</div>` : ''}</div>`;
+  const line = (l, v) => `<div class="ln"><span>${l}</span><b>${v}</b></div>`;
+  const scale = (words, on, cls) => `<div class="scale" style="grid-template-columns:repeat(${words.length},1fr)">`
+    + words.map((w, i) => `<i${i === on ? ` class="on ${cls || ''}"` : ''}>${w}</i>`).join('') + '</div>';
+  const scope = () => {
+    const db = T.db || {};
+    const prev = db.prev_races || 0;
+    const today = db.prev_races ? (db.today_races || 0) : (db.n_races || 0);
+    // 何レースから出したか。灰の四角＝前日まで、紺の四角＝今日（2026-10-07「色ありと色なしの意味が伝わらない」→字を添える）
+    const g = (k, c, lab) => (k ? `<span class="r27-sg ${c}"><span class="sq">${'<i></i>'.repeat(Math.min(k, 24))}</span>${lab}<b class="r27-num">${k}</b></span>` : '');
+    return `<span class="r27-scd">${g(prev, 'p', '前日まで')}${g(today, 't', '今日')}</span>`;
+  };
+  const out = [];
+  if (T.baba) {
+    const B = T.baba;
+    const s = B.src;
+    const words = R27_LV[T.surf].word;
+    let body;
+    if (T.turf) {
+      const nm = s.normal || {};
+      body = `<p class="lead">芝の硬さを、<b>この競馬場のこの時期のいつもの硬さ</b>と比べて5段で出しています。数字はクッション値（大きいほど硬い）。</p>`
+        + tile(`今日はここ${s.measured_label ? `<span>${escapeHtml(s.measured_label)}</span>` : ''}`, scale(words, B.lvIdx))
+        + tile('', `<div class="kv"><div><i>今日</i><b class="em">${num(s.value)}</b></div><div><i>${escapeHtml(nm.scope || '')}のいつも</i><b>${num(nm.mean)}</b></div>`
+          + `<div><i>いつもとの差</i><b class="em">${num(B.delta > 0 ? `+${B.delta}` : B.delta)}</b></div></div>`,
+          `いつもは${escapeHtml(nm.scope || '')}の${nm.n || '—'}日の平均。いつもとの差が0.3以上で「軟らかめ」「硬め」、0.8以上で「軟らかい」「硬い」。`)
+        + ((s.prev && s.prev.value != null) || (B.rail && B.rail.course)
+          ? tile('', (s.prev && s.prev.value != null ? line(`前日（${escapeHtml(s.prev.label || '')}）`, `${num(s.prev.value)} → ${num(s.value)}`) : '')
+            + (B.rail && B.rail.course ? line('仮柵', `${escapeHtml(B.rail.course)}${B.rail.weeks ? `・${B.rail.weeks}週目` : ''}`) : '')) : '');
+    } else {
+      const nm = s.normal || {};
+      body = `<p class="lead">ダートの湿り気を、<b>この競馬場の同じ馬場状態の日のいつも</b>と比べて5段で出しています。数字は含水率（%・大きいほど湿っている）。</p>`
+        + tile(`今日はここ${s.measured_label ? `<span>${escapeHtml(s.measured_label)}</span>` : ''}`, scale(words, B.lvIdx))
+        + tile('', `<div class="kv"><div><i>今日（ゴール前）</i><b class="em">${num(Number(s.goal).toFixed(1))}<small>%</small></b></div><div><i>${escapeHtml(nm.scope || '')}のいつも</i><b>${num(nm.mean)}</b></div>`
+          + `<div><i>いつもとの差</i><b class="em">${num(B.delta > 0 ? `+${B.delta}` : B.delta)}</b></div></div>`,
+          `いつもは${escapeHtml(nm.scope || '')}の${nm.n || '—'}日の平均。いつもとの差が1以上で「湿りぎみ」「乾きぎみ」、3以上で「湿っている」「乾いている」。`)
+        + (s.corner4 != null || (B.rail && B.rail.course)
+          ? tile('', (s.corner4 != null ? line('4コーナー', `${num(Number(s.corner4).toFixed(1))}%`) : '')
+            + (B.rail && B.rail.course ? line('仮柵', `${escapeHtml(B.rail.course)}${B.rail.weeks ? `・${B.rail.weeks}週目` : ''}`) : '')) : '');
+    }
+    out.push(pop('baba', T.turf ? '芝の硬さ' : 'ダートの湿り', B.word, B.lvIdx === 2 ? 'flat' : 'em', body));
+  }
+  if (T.time) {
+    const t = T.time;
+    const words = ['時計が速い', 'ふつう', '時計がかかる'];
+    const cls = ['fast', 'flat', 'slow'][t.k];
+    const tr = t.trend;
+    const TT = { 高速: '時計が速い', やや速い: 'やや速い', 標準: 'ふつう', やや遅い: 'やや遅い', 時計かかる: '時計がかかる' };
+    const trTxt = tr && tr.label ? `${escapeHtml(TT[tr.label] || tr.label)}`
+      + `${tr.n_races ? `<small>（${tr.n_races}レース）</small>` : ''}` : '';
+    out.push(pop('time', '勝ちタイム', ['時計が速い', '時計はふつう', '時計がかかる'][t.k], cls,
+      `<p class="lead">今日の馬場だと、勝ちタイムが<b>いつもより何秒遅く・速くなりやすいか</b>の見込みです。</p>`
+      + tile('今日はここ<span>±0.05秒より大きいと速い・かかる</span>', scale(words, t.k, cls))
+      + tile('', line('いつもとの差（見込み）', `${t.k === 1 ? '±0.0' : `${t.v < 0 ? '−' : '+'}${num(Math.abs(t.v).toFixed(2))}`}秒`)
+        + (trTxt ? line('今週の実際の時計', trTxt) : ''))));
+  }
+  if (T.aim) {
+    const on = !!T.aim.sub;
+    const bars = (lab, a, b, col) => `<div class="cmp"><span>いつも</span><span class="bar"><i style="width:${a / 40 * 100}%;background:#B5B5BB"></i></span><b>${num(a)}%</b>`
+      + `<span>この馬場</span><span class="bar"><i style="width:${b / 40 * 100}%;background:${col}"></i></span><b class="em">${num(b)}%</b></div>`;
+    const top = !on ? `<p class="lead">今日の馬場では、<b>脚質・内外の枠・人気のどれも、いつもと差が1ポイント前後しかありません</b>。馬場で狙う馬は変わりません。</p>`
+      : T.turf ? `<p class="lead">芝が<b>いつもより軟らかい日</b>は、1番人気が勝ちにくくなります。芝 7,261 レースで数えた結果です。</p>${tile('1番人気の勝率', bars('', 34, 30, R27_NAVY))}`
+        : `<p class="lead">ダートが<b>いつもより湿っている日</b>は、逃げた馬が残りやすくなります。ダート 7,547 レースで数えた結果です。</p>${tile('逃げた馬の3着内率', bars('', 29, 33, R27_NAVY))}`;
+    out.push(pop('aim', '馬場の影響', escapeHtml(T.aim.word), on ? 'em' : 'flat', top
+      + tile('言葉が出るのは2つの日だけ', line('芝がいつもより軟らかい', '1番人気が弱い') + line('ダートがいつもより湿っている', '逃げが残る'),
+        'それ以外の日は「なし」。脚質・内外の枠・人気の差が1ポイント前後しかなく、狙う馬が変わらないため。')));
+  }
+  if (T.pace) {
+    const P = T.pace;
+    const cells = (T.grid && T.grid.cells) || [];
+    const cell = (c, s) => cells.find((x) => x.code === c && x.side === s);
+    const grid = cells.length ? `<div class="g6"><span></span><span class="h">前残り</span><span class="h">差し追込</span>`
+      + ['S', 'M', 'H'].map((c) => `<span class="r">${R27_PN[c]}</span>` + ['前', '後'].map((s) => {
+        const x = cell(c, s);
+        const hon = c === P.code && s === P.side;
+        return `<span class="c${hon ? ' on' : ''}">${x ? `${num(Math.round(x.prob * 100))}<small>%</small>` : '—'}</span>`;
+      }).join('')).join('') + '</div>' : '';
+    const pp = T.grid && T.grid.pace_prob;
+    const ppTxt = pp ? ['S', 'M', 'H'].filter((c) => pp[c] != null).map((c) => `${R27_PN[c]} ${Math.round(pp[c] * 100)}%`).join('・') : '';
+    const hs = new Map((site.horses || []).map((h) => [String(h.number), h]));
+    const fav = P.fav.length ? tile('この形で向く馬', `<div class="hs">${P.fav.map((f) => {
+      const h = hs.get(String(f.number)) || {};
+      return `<button type="button" class="h1" data-pop="${escapeHtml(String(f.number))}">${umaBox(f.number, h.gate, 'sm')}<span class="t">${escapeHtml(f.name || h.name || '')}</span>`
+        + `${f.kick_tier ? `<em>${escapeHtml(f.kick_tier)}</em>` : ''}</button>`;
+    }).join('')}</div>`) : '';
+    out.push(pop('pace', 'ペース', `${R27_PN[P.code]}・${R27_SN[P.side]} ${num(P.pct)}<small>%</small>`, 'em',
+      `<p class="lead">前半の速さ（スロー・平均・ハイ）と、<b>前の馬が残るか・後ろの馬が差すか</b>を組み合わせた6つの形の割合です。いちばん高いのが本命。</p>`
+      + (grid ? tile('', grid, ppTxt ? `ペースだけで見ると、${ppTxt}。` : '') : '') + fav));
+  }
+  if (T.pass) {
+    const S = T.pass;
+    out.push(pop('pass', `${S.at}m通過`, `約${num(Number(S.all[T.pace.code].sec).toFixed(1))}<small>秒</small>`, 'flat',
+      `<p class="lead">先頭が ${S.at}m を通る時間の見込みです。<b>本命のペース（${R27_PN[T.pace.code]}）</b>の値を一覧に出しています。</p>`
+      + tile('ペースごと', ['S', 'M', 'H'].map((c) => line(`${R27_PN[c]}${c === T.pace.code ? '（本命）' : ''}`,
+        S.all[c] ? `約${num(Number(S.all[c].sec).toFixed(1))}秒` : '—')).join(''), '速いほど前半が厳しく、後ろの馬に向きやすい。')));
+  }
+  if (T.legs) {
+    const L = T.legs;
+    out.push(pop('legs', '前と後ろ', escapeHtml(L.word), L.flat ? 'flat' : 'em',
+      `<p class="lead">今週この競馬場の${T.surf}で3着以内に入った馬が、<b>最後のコーナーで前にいたか・後ろにいたか</b>の割合です。黒い刻みがいつもの割合。</p>`
+      + tile('', r27Queue(L, L.flat))
+      + tile('', (L.total ? line('3着以内の馬', `先行 ${num(L.front)}頭・差し ${num(L.rear)}頭`) : '')
+        + line('前にいた割合', `${num(Math.round(L.front_pct))}%（いつも ${num(Math.round(L.base_pct != null ? L.base_pct : 62.2))}%）`)
+        + line('数えたレース', scope()))));
+  }
+  if (T.io) {
+    const I = T.io;
+    out.push(pop('io', '内と外', escapeHtml(I.word), I.flat ? 'flat' : 'em',
+      `<p class="lead">今週この競馬場の${T.surf}で、<b>内の枠（1〜4枠）と外の枠（5〜8枠）</b>の馬が3着以内に入った割合です。濃い道ほどよく来ています。</p>`
+      + tile('', r27Lanes(I, I.flat))
+      + tile('', line('3着以内に入った割合', `内 ${num(Number(I.inner_pct).toFixed(1))}%・外 ${num(Number(I.outer_pct).toFixed(1))}%`) + line('数えたレース', scope()))));
+  }
+  return out.join('');
 }
 
 function renderHead26(site) {
@@ -5691,19 +5910,17 @@ function renderHead26(site) {
     + `<div class="r27-sc"><span class="l">クラス</span><span class="v wr cl">${escapeHtml(cls || '—')}`
     + `${r.weight_rule ? `<small>${escapeHtml(r.weight_rule)}</small>` : ''}</span></div></div>`;
 
-  // 荒れ度（横いっぱい）：選ばれた荒れ方とその割合、3つの割合を長さで分けた1本の帯。押すと説明（data-pop="upset"）
+  // 荒れ度（横いっぱい）：選ばれた荒れ方とその割合の1行。押すと説明（data-pop="upset"）
   const up = p.upset;
   const upSel = up && Array.isArray(up.classes) ? (up.classes.find((c) => c.selected) || null) : null;
   let upHtml = '';
   if (upSel) {
     const k = R27_UPKEY[up.label_name] || 'naka';
     const bars = [1, 2, 3].map((i) => `<i${i <= R27_UPLV[k] ? ' class="on"' : ''}></i>`).join('');
-    const segs = up.classes.map((c) => `<i class="${R27_UPKEY[c.name] || 'naka'}${c.selected ? ' on' : ''}" style="flex:${Math.max(Number(c.percent) || 0, 3)}"></i>`).join('');
-    const labs = up.classes.map((c) => `<span class="${R27_UPKEY[c.name] || 'naka'}${c.selected ? ' on' : ''}">${escapeHtml(c.name)}<b class="r27-num">${escapeHtml(String(c.percent))}</b>%</span>`).join('');
-    upHtml = `<button type="button" class="r27-up ${k}" data-pop="upset">`
+    // 2026-10-19 ユーザー「大荒れ30%みたいにメインだけだから、メインのみに絞りたい」（137-spec §15）。3つの割合の帯と字は外した。内訳は押すと開く札にある
+    upHtml = `<button type="button" class="r27-up one ${k}" data-pop="upset">`
       + `<span class="hd"><span class="l">荒れ度<em>›</em></span><span class="vr"><span class="bars">${bars}</span>`
-      + `<span class="nm">${escapeHtml(up.label_name)}</span>${num(upSel.percent)}<small>%</small></span></span>`
-      + `<span class="stk">${segs}</span><span class="slb">${labs}</span></button>`;
+      + `<span class="nm">${escapeHtml(up.label_name)}</span>${num(upSel.percent)}<small>%</small></span></span></button>`;
   }
 
   // 100万超え（4〜6%の時だけ升目に出す。6%以上は激アツの帯）。判定は今までと同じ bigpayTier
@@ -5720,25 +5937,9 @@ function renderHead26(site) {
   }
   const rowHtml = row.length ? `<div class="r27-row${row.length === 1 ? ' one' : ''}">${row.join('')}</div>` : '';
 
-  // 今週の傾向（内と外・前と後ろ）。答えの言葉の決め方は今までと同じ（偏りあり＝紺、偏りなし＝黒、絵も灰）
-  const wk = r26Week(site);
-  let wkHtml = '';
-  if (wk) {
-    const db = p.day_bias || {};
-    const surf = turf ? '芝' : 'ダート';
-    const cells = [];
-    if (wk.io) {
-      const flat = wk.io.label === '大きな偏りなし';
-      cells.push(`<div class="r27-wc"><span class="k">内と外</span><span class="w${flat ? '' : ' em'}">${escapeHtml(String(wk.io.label).replace('傾向', ''))}</span>${r27Lanes(wk.io, flat)}</div>`);
-    }
-    if (wk.legs) {
-      const flat = !wk.legs.label || wk.legs.label === '大きな偏りなし';
-      const lab = wk.legs.label ? (R26_LEGW[wk.legs.label] || wk.legs.label) : `前${Math.round(wk.legs.front_pct)}%`;
-      cells.push(`<div class="r27-wc"><span class="k">前と後ろ</span><span class="w${flat ? '' : ' em'}">${escapeHtml(lab)}</span>${r27Queue(wk.legs, flat)}</div>`);
-    }
-    wkHtml = `<div class="r27-wk"><div class="wh"><span class="l">今週の傾向</span>${r27Scope(db, surf)}</div>`
-      + `<div class="wg n${cells.length}">${cells.join('')}</div></div>`;
-  }
+  // 今日の見立て＋今週の傾向の一覧（2026-10-19 ユーザー決定・mockup-331/332・137-spec §15）。
+  //   それまでの「今週の傾向」（内と外の半円・前と後ろの旗と馬）は、押すと開く札（r27TenkaiPopups）の中へ移した
+  const wkHtml = r27TenkaiRows(site);
 
   // 予想を出した時刻は、レース名のすぐ下（2026-10-07 ユーザー「これは上のどこかに入れてほしい」。前はカードの下）
   //   オッズを取った時刻も並べる。発走10〜2分前は1分ごとに変わる（2026-10-10 ユーザー「最新オッズ更新時間も載せて」・139-spec）
