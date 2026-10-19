@@ -5578,19 +5578,10 @@ function r26HotBanner(site, bp) {
 // 上の札（137-spec・2026-10-07 ユーザー決定・mockup-253「案B-1a-3 直したもの」）。
 // 紺の札（mockup-233）をやめ、絞り込み・印の画面と同じ白い角丸のカード1枚にした。出す中身は紺の札と同じで、
 // 注記の文（「前70%（ふだん62%）」「3着内に入った割合」「5段の下から2番目」）は外して絵で読ませる。
-// 上から：日付の行と買いレース／レース名／予想時刻／条件の4つの欄／激アツの帯／荒れ度（横いっぱい）／100万超えとメンバー／
+// 上から：日付の行と買いレース／レース名／予想時刻／条件の4つの欄／激アツの帯／荒れ度（横いっぱい）／100万超え／
 // 今週の傾向／印・馬券。激アツから印・馬券までは出馬表タブの時だけ（.r26-mit・CSS）
 const R27_UPKEY = { '堅い': 'kata', '中荒れ': 'naka', '大荒れ': 'dai' };
 const R27_UPLV = { kata: 1, naka: 2, dai: 3 };
-// メンバーの勲章（2026-10-07 ユーザー「ここ勲章でいいよ」）。S＝金・A＝銀・B＝銅・C＝青灰・D＝薄い灰
-// [明るい, 中, 暗い, リボン, 字]
-const R27_MEDAL = {
-  S: ['#FFE48A', '#E2A400', '#B57F00', '#C8236A', '#5A3E00'],
-  A: ['#F4F6F9', '#B9C2CD', '#8590A0', '#003E70', '#3A4655'],
-  B: ['#F2C7A0', '#C27C45', '#93552A', '#2E8B7A', '#5A2E10'],
-  C: ['#C9D3DF', '#7F90A6', '#5D6E84', '#8E9AAB', '#3A4655'],
-  D: ['#ECECEF', '#C4C4CA', '#9E9EA6', '#C7C7CC', '#6D6D72'],
-};
 const R27_NAVY = '#003E70';
 const R27_GREY = '#8E8E93';
 const R27_MORE = '#5B93D6';   // 前と後ろ：いつもより多い分
@@ -5605,18 +5596,6 @@ const R27_DEFS = '<svg class="r27-defs" width="0" height="0" aria-hidden="true">
   + '<path d="M2 1.5h8.5v6H2z" fill="#fff" stroke="#3C3C43" stroke-width=".8"/>'
   + '<path d="M2 1.5h2.8v3H2zM7.7 1.5h2.8v3H7.7zM4.8 4.5h2.9v3H4.8z" fill="#3C3C43"/></symbol>'
   + '</defs></svg>';
-
-function r27Medal(g) {
-  const m = R27_MEDAL[g];
-  if (!m) return `<b class="r27-num">${escapeHtml(g)}</b>`;
-  return `<svg class="r27-medal" viewBox="0 0 40 48" role="img" aria-label="メンバーレベル ${g}">`
-    + `<defs><linearGradient id="r27-md" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${m[0]}"/>`
-    + `<stop offset=".55" stop-color="${m[1]}"/><stop offset="1" stop-color="${m[2]}"/></linearGradient></defs>`
-    + `<path d="M11 1h7l4 15h-7z" fill="${m[3]}"/><path d="M29 1h-7l-4 15h7z" fill="${m[3]}" opacity=".78"/>`
-    + '<circle cx="20" cy="30" r="16" fill="url(#r27-md)"/>'
-    + '<circle cx="20" cy="30" r="12.6" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="1"/>'
-    + `<text x="20" y="36.5" text-anchor="middle" class="r27-mt" fill="${m[4]}">${g}</text></svg>`;
-}
 
 // 内と外：コーナーの内の道・外の道。濃いほうが3着内によく来た道（2026-10-07「柵とか書かなくていい」）
 function r27Lanes(io, flat) {
@@ -5725,7 +5704,8 @@ function renderHead26(site) {
       + `<span class="stk">${segs}</span><span class="slb">${labs}</span></button>`;
   }
 
-  // 100万超え（4〜6%の時だけ升目に出す。6%以上は激アツの帯）とメンバー（勲章）。判定は今までと同じ bigpayTier
+  // 100万超え（4〜6%の時だけ升目に出す。6%以上は激アツの帯）。判定は今までと同じ bigpayTier
+  //   メンバー（勲章）の欄は 2026-10-19 に外した（ユーザー「ここいらないから消して」）。member_grade はデータに残る
   const bp = p.bigpay && p.bigpay.field_size ? p.bigpay : null;
   const tier = bp ? (bigpayTier(parseFloat(bp.percent)) || 'quiet') : 'off';   // bands が読めないときは升目で出す（今までと同じ）
   const avg = bp ? parseFloat((String(bp.ratio_line || '').match(/全体([\d.]+)%/) || [])[1]) : NaN;
@@ -5735,9 +5715,6 @@ function renderHead26(site) {
     row.push(`<div class="r27-t"><span class="lf"><span class="l">3連単100万超え</span>`
       + `<span class="sb">${avg ? `平均の${(parseFloat(bp.percent) / avg).toFixed(1)}倍` : escapeHtml(bp.ratio_line || '')}</span></span>`
       + `<span class="vr">${num(bp.percent)}<small>%</small></span></div>`);
-  }
-  if (p.member_grade) {
-    row.push(`<div class="r27-t mem"><span class="l">メンバー</span>${r27Medal(p.member_grade)}</div>`);
   }
   const rowHtml = row.length ? `<div class="r27-row${row.length === 1 ? ' one' : ''}">${row.join('')}</div>` : '';
 
