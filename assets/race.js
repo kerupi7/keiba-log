@@ -3965,7 +3965,11 @@ const RV = { k: 'sc', site: null, prev: {} };
 const RV_R = 15;
 const RV_C = 2 * Math.PI * RV_R;
 const rvHas = (site) => ((site && site.horses) || []).some((h) => !h.scratched && h.model_rates);
-const rvPct = (v) => (v * 100 < 1 ? '<1' : String(Math.round(v * 100)));
+// 連対率は70%以上を「70+」と出す（案B・research/rates_shrink_PREREG.md）。Harville の連対率は高い帯で出しすぎで、
+//   縮める直し方は win-6 で不合格だった（出しすぎ 8.0→4.3 ポイント・半分に届かず）。複勝率は公開時に縮めてあるのでそのまま
+const RV_TOP2_CAP = 70;
+const rvCapped = (v, k) => k === 'top2' && Math.round(v * 100) >= RV_TOP2_CAP;
+const rvPct = (v, k) => (v * 100 < 1 ? '<1' : rvCapped(v, k) ? `${RV_TOP2_CAP}+` : String(Math.round(v * 100)));
 function rvRing(h) {
   if (!h.model_rates) return '';
   return `<span class="rv-ring"><svg viewBox="0 0 36 36" aria-hidden="true"><circle class="trk" cx="18" cy="18" r="${RV_R}"/>`
@@ -3984,13 +3988,13 @@ function rvRanks(site, k) {
   return out;
 }
 // 数字を前の値から新しい値へ 0.32 秒で数え上げる（続けて押したら前の数え上げは止める）
-function rvCount(el, from, to) {
+function rvCount(el, from, to, k) {
   const tok = (el._rvTok = (el._rvTok || 0) + 1);
   const t0 = performance.now();
   const step = (t) => {
     if (el._rvTok !== tok) return;
     const p = Math.min(1, Math.max(0, (t - t0) / 320));
-    el.textContent = rvPct(from + (to - from) * (1 - Math.pow(1 - p, 3)));
+    el.textContent = rvPct(from + (to - from) * (1 - Math.pow(1 - p, 3)), k);
     if (p < 1) requestAnimationFrame(step);
   };
   requestAnimationFrame(step);
@@ -4040,8 +4044,8 @@ function rvPaint(animate) {
     const n = ring.querySelector('.rv-n');
     n.classList.toggle('s', v * 100 < 1);
     const from = RV.prev[h.number];
-    if (animate && from != null) rvCount(n, from, v);
-    else { n._rvTok = (n._rvTok || 0) + 1; n.textContent = rvPct(v); }
+    if (animate && from != null) rvCount(n, from, v, k);
+    else { n._rvTok = (n._rvTok || 0) + 1; n.textContent = rvPct(v, k); }
     RV.prev[h.number] = v;
   });
 }
@@ -4079,7 +4083,7 @@ function rvPopHtml(h, site) {
     const rk = rvRanks(site, k)[h.number];
     return `<div class="rv-pc"><span class="rv-big"><svg viewBox="0 0 50 50" aria-hidden="true"><circle class="trk" cx="25" cy="25" r="${R}"/>`
       + `<circle class="arc${rk <= 3 ? ' top3' : ''}" cx="25" cy="25" r="${R}" stroke-dasharray="${C.toFixed(2)}" stroke-dashoffset="${(C * (1 - Math.min(1, v))).toFixed(2)}"/></svg>`
-      + `<b class="${v * 100 < 1 ? 's' : ''}">${rvPct(v)}<small>%</small></b></span>`
+      + `<b class="${v * 100 < 1 ? 's' : ''}">${rvCapped(v, k) ? `${RV_TOP2_CAP}<small>%+</small>` : `${rvPct(v, k)}<small>%</small>`}</b></span>`
       + `<span class="rv-pl">${l}</span><span class="rv-pr">${n}頭中${rk}位</span></div>`;
   }).join('')}</div>`;
 }
