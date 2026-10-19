@@ -5727,17 +5727,24 @@ function r27TenkaiRows(site) {
   const T = r27TenkaiData(site);
   const num = (v) => `<span class="r27-num">${escapeHtml(String(v))}</span>`;
   const ic = (bg, svg) => `<span class="ic" style="background:${bg}">${svg}</span>`;
-  const row = (key, icon, t, val, cls, vsub, sub) => `<button type="button" class="r27-tr" data-pop="tk-${key}">${icon}`
+  const row = (key, icon, t, val, cls, vsub, sub, hot) => `<button type="button" class="r27-tr${hot ? ' hot' : ''}" data-pop="tk-${key}">${icon}`
     + `<span class="lb"><span class="t">${t}</span>${sub || ''}</span>`
     + `<span class="vl"><b class="${cls}">${val}</b>${vsub ? `<span class="s">${vsub}</span>` : ''}</span><i class="cv" aria-hidden="true">›</i></button>`;
+  // 芝の硬さ・勝ちタイム・馬場の影響は、いつもと違う日だけ出して行を橙に塗る（2026-10-19 ユーザー決定・mockup-333 案B・137-spec §16）。
+  //   ふつう（5段の真ん中）・時計はふつう（±0.05秒未満）・馬場の影響なし の行は出さない。「いつもと違う」の字は出さない（色で分かる）。
+  //   押すと開く札（r27TenkaiPopups）はそのまま
   const a = [];
-  if (T.baba) a.push(row('baba', ic('#2F7FC1', R27_TIC.drop), T.turf ? '芝の硬さ' : 'ダートの湿り', T.baba.word, T.baba.lvIdx === 2 ? 'flat' : 'em'));
-  if (T.time) {
+  if (T.baba && T.baba.lvIdx !== 2) {
+    const d = Number(T.baba.delta);
+    a.push(row('baba', ic('#2F7FC1', R27_TIC.drop), T.turf ? '芝の硬さ' : 'ダートの湿り', T.baba.word, 'em',
+      Number.isFinite(d) ? `いつもより ${d > 0 ? '+' : '−'}${num(Math.abs(d).toFixed(1))}${T.turf ? '' : '%'}` : '', '', true));
+  }
+  if (T.time && T.time.k !== 1) {
     const t = T.time;
     a.push(row('time', ic([R27_GREEN, R27_GREY, R27_RED][t.k], R27_TIC.watch), '勝ちタイム', ['時計が速い', '時計はふつう', '時計がかかる'][t.k],
-      ['fast', 'flat', 'slow'][t.k], `${t.k === 1 ? '±0.0' : `${t.v < 0 ? '−' : '+'}${num(Math.abs(t.v).toFixed(2))}`}秒`));
+      ['fast', 'flat', 'slow'][t.k], `${t.v < 0 ? '−' : '+'}${num(Math.abs(t.v).toFixed(2))}秒`, '', true));
   }
-  if (T.aim) a.push(row('aim', ic(T.aim.sub ? R27_NAVY : '#C7C7CC', T.aim.sub ? R27_TIC.aim : R27_TIC.eq), '馬場の影響', T.aim.word, T.aim.sub ? 'em' : 'flat', escapeHtml(T.aim.sub)));
+  if (T.aim && T.aim.sub) a.push(row('aim', ic(R27_NAVY, R27_TIC.aim), '馬場の影響', T.aim.word, 'em', escapeHtml(T.aim.sub), '', true));
   if (T.pace) a.push(row('pace', ic(R27_NAVY, R27_TIC.pace), 'ペース', `${R27_PN[T.pace.code]}・${R27_SN[T.pace.side]} ${num(T.pace.pct)}<small>%</small>`, 'em'));
   if (T.pass) a.push(row('pass', ic(R27_NAVY, R27_TIC.watch), `${T.pass.at}m通過`, `${num(Number(T.pass.all[T.pace.code].sec).toFixed(1))}<small>秒</small>`, 'flat'));
   const b = [];
@@ -5751,11 +5758,83 @@ function r27TenkaiRows(site) {
   if (T.io) b.push(row('io', ic('#636366', R27_TIC.gate), '内と外', escapeHtml(T.io.word), T.io.flat ? 'flat' : 'em', `内 ${num(Number(T.io.inner_pct).toFixed(1))}%・外 ${num(Number(T.io.outer_pct).toFixed(1))}%`));
   if (!a.length && !b.length) return '';
   const n = T.db ? (T.db.n_races || 0) : 0;
-  return '<div class="r27-tk">'
-    + (a.length ? `<div class="gh"><span>今日の見立て</span></div>${a.join('')}` : '')
-    + (b.length ? `${a.length ? '<div class="sp"></div>' : ''}<div class="gh"><span>今週の傾向</span><span class="wsc">${T.surf} ${num(n)}レース</span></div>${b.join('')}` : '')
+  // 展開ボードに裏返すボタン（2026-10-19 ユーザー決定・mockup-334・137-spec §16）。ボードが組めないレースでは出さない。
+  //   今日の見立ての見出しの右（今日の見立てが1行も無い日は今週の傾向の見出しの右）
+  const board = r27Board(site);
+  const fb = (txt, side) => `<button type="button" class="r27-fb" data-r27flip="${side}">${R27_FLIP_IC}${txt}</button>`;
+  const fbFront = board ? fb('展開ボード', 1) : '';
+  const front = '<div class="r27-tk">'
+    + (a.length ? `<div class="gh${fbFront ? ' wb' : ''}"><span>今日の見立て</span>${fbFront}</div>${a.join('')}` : '')
+    + (b.length ? `${a.length ? '<div class="sp"></div>' : ''}<div class="gh"><span>今週の傾向</span>${!a.length && fbFront ? fbFront : `<span class="wsc">${T.surf} ${num(n)}レース</span>`}</div>${b.join('')}` : '')
     + '</div>';
+  if (!board) return front;
+  return `<div class="r27-fl"><div class="r27-fin"><div class="r27-face fr">${front}</div>`
+    + `<div class="r27-face bk" aria-hidden="true">${board.replace('<!--FB-->', fb('見立て', 0))}</div></div></div>`;
 }
+
+// 展開ボード（予想のページ yoso.js tkMap の隊列の図＋脚質ごとの成績と同じ置き方・同じ色。2026-10-19 mockup-334）。
+//   左が前・上が内。脚質の4つの列（display.leg）に馬を置き、列の中は predicted_position の順に左右へ散らす。右端は枠ごとの成績（inner_outer_bias）。
+//   レース画面には「この馬」が無いので強調（.me）は付けない。馬番は data-pop＝出馬表の馬名と同じ入口（YosoView の「1頭だけ見る」）
+const R27_FLIP_IC = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+  + '<path d="M2.5 6.2A5.6 5.6 0 0 1 13 4.6"/><path d="M13.4 1.8v3.1h-3.1"/><path d="M13.5 9.8A5.6 5.6 0 0 1 3 11.4"/><path d="M2.6 14.2v-3.1h3.1"/></svg>';
+const R27_BD_GC = { S: '#0B5E2E', A: '#1F6B3A', B: '#4E5862', C: '#8E4A36', D: '#A32B1F' };   // yoso.js TK_GC と同じ
+const R27_BD_MK = { '◎': 'hon', '○': 'tai', '▲': 'tan', '△': 'oku' };
+function r27Board(site) {
+  const p = site.prediction || {};
+  const leg = (p.display || {}).leg || [];
+  if (leg.length !== 4 || !leg.every((d) => d.grade)) return '';
+  const hs = (site.horses || []).filter((h) => !h.scratched && h.number != null && typeof h.predicted_position === 'number')
+    .map((h) => ({ n: h.number, g: Number(h.gate) || 1, p: h.predicted_position, mk: h.ability_mark || '',
+      z: leg.findIndex((d) => PACE_STYLE_KEY[d.style] === h.running_style) }));
+  if (!hs.length) return '';
+  hs.forEach((x) => { if (x.z < 0) x.z = 2; });   // 脚質の無い馬は差しの列（yoso.js と同じ）
+  [0, 1, 2, 3].forEach((zi) => {
+    const m = hs.filter((x) => x.z === zi).sort((a, b) => a.p - b.p);
+    const lo = m.length ? m[0].p : 0, hi = m.length ? m[m.length - 1].p : 0;
+    m.forEach((x) => { const f = hi > lo ? (x.p - lo) / (hi - lo) : 0.5; x.q = (zi + 0.2 + 0.6 * f) / 4; });
+  });
+  const TOP = 18, W = 340, x0 = 20, x1 = 298, LH = 23, MH = LH * 8 + 6 + TOP;
+  const P = (x) => `${(x / W * 100).toFixed(2)}%`;
+  const X = (q) => x0 + 12 + q * (x1 - x0 - 24), Y = (g) => 3 + TOP + (g - 1) * LH + LH / 2;
+  const pts = hs.map((x) => ({ h: x, x: X(x.q), y: Y(x.g) })).sort((a, b) => a.x - b.x || a.y - b.y);
+  const off = (x) => (x.mk ? 13 : 0);
+  const boxes = (pt) => { const b = [[pt.x - 10, pt.y - 10, pt.x + 10, pt.y + 10]], o = off(pt.h); if (o) b.push([pt.x + o - 7, pt.y - o - 7, pt.x + o + 7, pt.y - o + 7]); return b; };
+  const hit = (A, B) => A.some((u) => B.some((v) => u[0] < v[2] && v[0] < u[2] && u[1] < v[3] && v[1] < u[3]));
+  const placed = [];
+  pts.forEach((pt) => { for (let k = 0; k < 16 && placed.some((o) => hit(boxes(o), boxes(pt))); k += 1) pt.x += 7; placed.push(pt); });
+  const zx = (zi) => x0 + zi * (x1 - x0) / 4, zw = (x1 - x0) / 4;
+  const gch = (g) => (g ? `<i class="tk3-g" style="background:${R27_BD_GC[g] || '#8E8E93'}">${escapeHtml(g)}</i>` : '');
+  const gates = ((p.inner_outer_bias || {}).gates || []).slice(0, 8);
+  const cnt = (d) => hs.filter((x) => leg[x.z] === d).length;
+  const dirt = String((site.race || {}).surface || '').startsWith('ダ');
+  return `<div class="tk3 ${dirt ? 'dirt' : 'turf'} r27-bd"><div class="bh"><span>展開ボード</span><!--FB--></div>
+    <div class="tk3-map" style="height:${MH}px">
+    ${leg.map((d, zi) => `<div class="tk3-zb" style="left:${P(zx(zi))};width:${P(zw)};background:${R27_BD_GC[d.grade] || 'transparent'}"></div>`).join('')}
+    <div class="tk3-ax" style="width:${P(x0)}"><span>内</span><i></i><span>外</span></div>
+    ${gates.map((gt) => `<div class="tk3-gt" style="top:${Y(Number(gt.gate)) - 10}px">${wakuBox(gt.gate, 'sm')}${gch(gateGrade(gt.ratio))}</div>`).join('')}
+    ${pts.map((pt) => `<button type="button" class="hn ${frameClass(pt.h.g) || 'plain'} tk3-tk" data-pop="${pt.h.n}" aria-label="${pt.h.n}番" style="left:${P(pt.x)};top:${pt.y}px">${pt.h.n}</button>`
+      + (pt.h.mk && R27_BD_MK[pt.h.mk] ? `<b class="tk3-mka k-${R27_BD_MK[pt.h.mk]}" data-pop="${pt.h.n}" style="left:calc(${P(pt.x)} + 13px);top:${pt.y - 13}px">${escapeHtml(pt.h.mk)}</b>` : '')).join('')}
+    </div>
+    <div class="tk3-zl" style="margin-left:${P(x0)};margin-right:${P(W - x1)}">${leg.map((d) => `<span><em>${escapeHtml(d.style)}${cnt(d)}</em>${gch(d.grade)}<b class="r27-num">${escapeHtml(String(d.fukusho_rate))}%</b></span>`).join('')}</div></div>`;
+}
+
+// 展開ボードの裏返し。表と裏で高さが違うので、裏返しながら高さも合わせる（表に戻り切ったら高さの指定を外す）
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-r27flip]');
+  if (!b) return;
+  const fl = b.closest('.r27-fl');
+  if (!fl) return;
+  const fin = fl.querySelector('.r27-fin'), on = b.dataset.r27flip === '1';
+  const fr = fl.querySelector('.r27-face.fr'), bk = fl.querySelector('.r27-face.bk');
+  fin.style.height = `${(on ? fr : bk).offsetHeight}px`;
+  void fin.offsetHeight;
+  fin.style.height = `${(on ? bk : fr).offsetHeight}px`;
+  fl.classList.toggle('on', on);
+  fr.setAttribute('aria-hidden', on ? 'true' : 'false');
+  bk.setAttribute('aria-hidden', on ? 'false' : 'true');
+  clearTimeout(fl._t);
+  if (!on) fl._t = setTimeout(() => { fin.style.height = ''; }, 650);
+});
 
 // 一覧の行を押すと開く札。荒れ度の札（#pop-upset）と同じ形（白い角丸・大きな見出し・灰のタイル）
 function r27TenkaiPopups(site) {
