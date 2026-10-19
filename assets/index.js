@@ -187,12 +187,15 @@ function renderTracks(state, rerender) {
 // 136-spec §9（2026-10-19 ユーザー決定「A（指に吸いつく）で本番に入れて」・mockup-339 案A）:
 // その日の全部の場を横1列に並べた帯を、指と同じ量だけ動かす（隣の場がのぞく）。離した勢いでめくるか戻るかを決め、
 // ばねで止める。白いつまみも同じ割合で動く。端の場では引っぱるほど重くなる。1回で動くのは隣の場まで。
-// 縦のスクロールと取り違えないよう、最初の8pxで横の動きが縦の1.2倍を超えたときだけ横の操作にする
+// 縦のスクロールと取り違えないよう、最初の6pxで横の動きが縦の1.2倍を超えたときだけ横の操作にする。
+// 2026-10-19 ユーザー「なんかゆっくりでもっさりしてる」→ ばねを硬くし（揺れ1回 0.42→0.30秒）、速く払った判定を 300→200px/秒 に下げ、
+// 指の動きの受け取りを「待たせない」形（passive）に戻した（縦スクロールがこの処理を待っていた）
 const SWIPE = { p: 0, anim: null, busy: false };
 const SWIPE_GAP = 28; // 帯の場と場のすき間（.vp26 の左右の余白14pxの2倍。止まっているとき隣の場が見えない）
 const REDUCE_MOTION = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-// ばね（response＝揺れ1回の秒数・damping＝1で揺れなし）。iOS の動きと同じ考え方
+// ばね（response＝揺れ1回の秒数・damping＝1で揺れなし）。iOS の動きと同じ考え方。
+// 残り0.5px（o.eps）を切ったら止めたことにする（止まり際の見えない尻尾で、次の操作を待たせない）
 function spring(o) {
   const k = Math.pow(2 * Math.PI / o.response, 2);
   const c = 4 * Math.PI * o.damping / o.response;
@@ -203,7 +206,7 @@ function spring(o) {
     const n = Math.max(1, Math.ceil(dt * 240));
     const h = dt / n;
     for (let i = 0; i < n; i++) { const a = -k * (x - o.to) - c * v; v += a * h; x += v * h; }
-    if (Math.abs(x - o.to) < 0.001 && Math.abs(v) < 0.01) { o.onUpdate(o.to); o.onDone(); return; }
+    if (Math.abs(x - o.to) < o.eps && Math.abs(v) < o.eps * 20) { o.onUpdate(o.to); o.onDone(); return; }
     o.onUpdate(x);
     requestAnimationFrame(frame);
   }
@@ -257,7 +260,9 @@ function settleTrack(state, rerender, target, v) {
   };
   if (REDUCE_MOTION) { done(); return; }
   SWIPE.busy = true;
-  SWIPE.anim = spring({ from: SWIPE.p, to: target, v, response: 0.42, damping: 1,
+  const vp = document.querySelector('#races-list .vp26');
+  const eps = 0.5 / Math.max(1, vp ? vp.clientWidth : 400); // 0.5px を場の幅で割った値
+  SWIPE.anim = spring({ from: SWIPE.p, to: target, v, response: 0.3, damping: 1, eps,
     onUpdate: (x) => { SWIPE.p = x; applyTrackPos(x, true); }, onDone: done });
 }
 
@@ -275,16 +280,15 @@ function attachTrackSwipe(state, rerender) {
     const dx = t.clientX - st.x;
     const dy = t.clientY - st.y;
     if (!st.dir) {
-      if (Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy) * 1.2) {
+      if (Math.abs(dx) > 6 && Math.abs(dx) > Math.abs(dy) * 1.2) {
         st.dir = 'h';
-        st.x = t.clientX; // 判定までの8pxで跳ねないよう、ここを起点にする
+        st.x = t.clientX; // 判定までの6pxで跳ねないよう、ここを起点にする
         if (SWIPE.anim) SWIPE.anim.cancel();
         SWIPE.anim = null;
         SWIPE.busy = true;
         st.p0 = SWIPE.p;
-      } else if (Math.abs(dy) > 8) { st = null; return; } else return;
+      } else if (Math.abs(dy) > 6) { st = null; return; } else return;
     }
-    e.preventDefault(); // 横に動かしている間は、縦にスクロールさせない
     const n = state.tracksForDate(state.activeDate).length;
     const W = host.querySelector('.vp26').clientWidth;
     let q = st.p0 - (t.clientX - st.x) / W;
@@ -293,7 +297,7 @@ function attachTrackSwipe(state, rerender) {
     applyTrackPos(q, true);
     st.s.push([t.clientX, performance.now()]);
     if (st.s.length > 6) st.s.shift();
-  }, { passive: false });
+  }, { passive: true }); // 横の動きでページが横に流れないのは .vp26 の touch-action: pan-y が受け持つ
   const end = () => {
     if (!st) return;
     const was = st.dir, s = st.s;
@@ -304,9 +308,9 @@ function attachTrackSwipe(state, rerender) {
     const a = s[0], b = s[s.length - 1];
     const vpx = a && b && b[1] > a[1] ? (b[0] - a[0]) / ((b[1] - a[1]) / 1000) : 0; // px/秒
     const v = -vpx / W;            // 1秒あたり何場ぶん
-    // 速く払った（1秒あたり300px以上）なら払った向きの隣へ。ゆっくりなら半分を越えたかで決める
+    // 速く払った（1秒あたり200px以上）なら払った向きの隣へ。ゆっくりなら半分を越えたかで決める
     const lo = Math.max(0, Math.floor(SWIPE.p)), hi = Math.min(n - 1, Math.ceil(SWIPE.p));
-    const target = Math.abs(vpx) > 300 ? (vpx < 0 ? hi : lo) : Math.round(SWIPE.p);
+    const target = Math.abs(vpx) > 200 ? (vpx < 0 ? hi : lo) : Math.round(SWIPE.p);
     settleTrack(state, rerender, Math.max(lo, Math.min(hi, target)), v);
   };
   host.addEventListener('touchend', end, { passive: true });
