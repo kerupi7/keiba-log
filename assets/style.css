@@ -4426,20 +4426,25 @@ body.r26-page.has-bsbar .racepage{padding-bottom:calc(150px + env(safe-area-inse
 /* 見立て・印／馬券は出馬表タブの時だけ */
 .race20.r26:not([data-tab="shutuba"]) .r26-mit{display:none}
 /* 激アツの帯（馬券と判子） */
-.race20.r26 .r26-hot{margin-top:10px;background:linear-gradient(135deg,#FFE08A,#FFC94D);color:#3A2A00;border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:6px}
-.race20.r26 .r26-hot-hd{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-.race20.r26 .r26-hot-hd svg{width:20px;height:20px;flex:none}
-.race20.r26 .r26-hot-hd b{font-size:16px;font-weight:900;letter-spacing:.04em}
-.race20.r26 .r26-hot-hd span{width:100%;font-size:11px;font-weight:700;opacity:.8}
-.race20.r26 .r26-hot-art{width:88%;max-width:300px;height:auto;display:block;margin:-2px auto 0}
-.race20.r26 .r26-hot-art text{font-family:-apple-system,'Hiragino Sans',sans-serif}
-.race20.r26 .r26-hot-cap{font-size:10.5px;font-weight:700;opacity:.8;line-height:1.5}
-.race20.r26 .r26-hot-st{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
-.race20.r26 .r26-hot-st > div{background:rgba(255,255,255,.55);border-radius:9px;padding:5px 8px;display:flex;flex-direction:column;gap:1px}
-.race20.r26 .r26-hot-st span{font-size:10px;font-weight:700;opacity:.75}
-.race20.r26 .r26-hot-st b{font-size:19px;line-height:1.1;white-space:nowrap}
-.race20.r26 .r26-hot-st b small{font-size:10px;margin-left:1px}
-.race20.r26 .r26-hot-st em{font-style:normal;font-size:9.5px;font-weight:700;opacity:.7;white-space:nowrap}
+/* 激アツの帯（2026-10-19 mockup-325 案J 熾火）。黒に近い地・光は橙〜赤の1系統・字は傾けない・光るのは下の縁だけ */
+.race20.r26 .r26-hot{margin-top:10px;position:relative;overflow:hidden;isolation:isolate;border-radius:14px;padding:18px 18px 20px;background:#0D0908;color:#fff}
+.race20.r26 .r26-hot::after{content:"";position:absolute;inset:0;border-radius:14px;box-shadow:inset 0 0 0 1px rgba(255,150,80,.18);pointer-events:none;z-index:3}
+.race20.r26 .r26-hot .glow{position:absolute;left:-10%;right:-10%;bottom:-70px;height:120px;z-index:0;filter:blur(22px)}
+.race20.r26 .r26-hot .glow i{position:absolute;bottom:0;border-radius:50%;display:block;animation:r26breath 3.6s ease-in-out infinite alternate}
+.race20.r26 .r26-hot .glow i:nth-child(1){left:5%;width:55%;height:100%;background:#C42A12}
+.race20.r26 .r26-hot .glow i:nth-child(2){left:38%;width:50%;height:85%;background:#FF6A1F;animation-delay:-1.2s}
+.race20.r26 .r26-hot .glow i:nth-child(3){left:62%;width:40%;height:70%;background:#FFA040;animation-delay:-2.4s}
+.race20.r26 .r26-hot .line{position:absolute;left:0;right:0;bottom:0;height:2px;z-index:1;background:linear-gradient(90deg,transparent,#FF7A2E 30%,#FFC27A 60%,transparent)}
+.race20.r26 .r26-hot .row{position:relative;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.race20.r26 .r26-hot .lf{display:flex;flex-direction:column;gap:7px;min-width:0}
+.race20.r26 .r26-hot .gk{font-weight:700;font-size:26px;letter-spacing:.14em;line-height:1;
+  background:linear-gradient(180deg,#FFE2BE,#FF8A3D);-webkit-background-clip:text;background-clip:text;color:transparent}
+.race20.r26 .r26-hot .lb{font-size:11px;font-weight:600;color:rgba(255,255,255,.62);letter-spacing:.1em;white-space:nowrap}
+.race20.r26 .r26-hot .v{display:flex;align-items:baseline;line-height:.9;white-space:nowrap}
+.race20.r26 .r26-hot .v .r27-num{font-size:54px}
+.race20.r26 .r26-hot .v small{font-size:20px;font-weight:600;margin-left:3px;color:rgba(255,255,255,.75)}
+@keyframes r26breath{0%{opacity:.55;transform:scale(.92)}100%{opacity:1;transform:scale(1.06)}}
+@media (prefers-reduced-motion:reduce){.race20.r26 .r26-hot .glow i{animation:none}}
 
 /* ---- 出馬表の一覧（mockup-230 案B：白いカード1枚に行で並べる） ---- */
 .race20.r26 .bakenview{background:#fff;border-radius:12px;padding:8px}

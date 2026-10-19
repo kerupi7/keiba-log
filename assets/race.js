@@ -5533,45 +5533,15 @@ function r26Week(site) {
   return { scope, io, legs };
 }
 
-// 激アツの帯（mockup-233 案A：3連単の馬券に「100万超え」の判子）
-function r26HotBanner(site, bp) {
-  const t = (((BANDS || {}).bigpay || {}).tiers || {}).hot || {};
-  const pct = parseFloat(bp.percent);
-  const avg = parseFloat((String(bp.ratio_line || '').match(/全体([\d.]+)%/) || [])[1]);
-  const mult = avg ? (pct / avg).toFixed(1) : null;
-  const n = t.n || 0;
-  const over = Math.round(n * (t.over_rate || 0) / 100);
-  const man = t.over_yen ? Math.round(t.over_yen / 10000) : 10;
-  const r = site.race || {};
-  const FL = (x, y, sz) => `<g transform="translate(${x},${y}) scale(${sz / 24})"><path d="M12 1.5c.6 3.4 4.8 5.6 4.8 11.2a4.8 4.8 0 0 1-9.6 0c0-2.7 1.4-4 2-6.3 1 1 1.7 2.3 1.9 3.9.6-2.8.9-5.4.9-8.8z" fill="#F0582A"/><path d="M12 11.5c.3 1.6 2.4 2.6 2.4 5.2a2.4 2.4 0 0 1-4.8 0c0-1.6.9-2.3 1.4-3.5.5.6.8 1 .9 1.9.2-1.3.1-2.4.1-3.6z" fill="#FFC23D"/></g>`;
-  const box = (k) => `<g transform="translate(${22 + k * 40},46)"><rect width="30" height="26" rx="4" fill="#fff" stroke="#C9B89A"/><text x="15" y="10" font-size="6.5" fill="#8A7A60" text-anchor="middle">${k + 1}着</text><text x="15" y="22" font-size="11" font-weight="800" fill="#B9A988" text-anchor="middle">?</text></g>${k < 2 ? `<text x="${56 + k * 40}" y="63" font-size="9" fill="#C9B89A">→</text>` : ''}`;
-  const art = `<svg class="r26-hot-art" viewBox="0 0 170 128" role="img" aria-label="3連単の馬券に100万超え${escapeHtml(bp.percent)}%の判子">
-    <g transform="rotate(-6 80 64)">
-      <rect x="10" y="14" width="140" height="96" rx="7" fill="#FFFDF6" stroke="#E7D3B4" stroke-width="1.5"/>
-      <rect x="10" y="14" width="140" height="22" rx="7" fill="#E35D6A"/><rect x="10" y="28" width="140" height="8" fill="#E35D6A"/>
-      <text x="22" y="30" font-size="12" font-weight="800" fill="#fff">3連単</text>
-      <text x="138" y="30" font-size="8" fill="#fff" text-anchor="end">${escapeHtml(r.track || '')}${escapeHtml(String(r.race_number || ''))}R</text>
-      ${[0, 1, 2].map(box).join('')}
-      ${Array.from({ length: 26 }, (_, k) => `<rect x="${22 + k * 4.2}" y="84" width="${k % 3 ? 1.6 : 2.6}" height="14" fill="#6B5E4A"/>`).join('')}
-    </g>
-    <g transform="rotate(12 122 70)">
-      <circle cx="122" cy="70" r="33" fill="rgba(215,38,61,.08)" stroke="#D7263D" stroke-width="3.5"/>
-      <circle cx="122" cy="70" r="27" fill="none" stroke="#D7263D" stroke-width="1"/>
-      <text x="122" y="60" font-size="7.5" font-weight="800" fill="#D7263D" text-anchor="middle">100万超え</text>
-      <text x="122" y="79" font-size="18" font-weight="700" fill="#D7263D" text-anchor="middle" class="r26-num">${escapeHtml(bp.percent)}<tspan font-size="10">%</tspan></text>
-    </g>
-    ${FL(140, 2, 22)}
-  </svg>`;
-  const med = t.median ? `${(t.median / 10000).toFixed(1)}<small>万円</small>` : '—';
-  return `<div class="r26-hot">
-    <div class="r26-hot-hd"><svg viewBox="0 0 24 24" aria-hidden="true">${FL(0, 0, 24)}</svg><b>激アツ</b><span>20レースに1回の水準</span></div>
-    ${art}
-    <div class="r26-hot-cap">このレースの3連単が100万円を超える見込みは${escapeHtml(bp.percent)}%${mult ? `。全レース平均（${avg}%）の${mult}倍出やすい` : ''}。右の2つは同じ水準だった過去${n}レースの結果</div>
-    <div class="r26-hot-st">
-      <div><span>出やすさ</span><b>${mult || '—'}<small>倍</small></b>${avg ? `<em>平均${avg}%→今回${escapeHtml(bp.percent)}%</em>` : ''}</div>
-      <div><span>真ん中の配当</span><b>${med}</b></div>
-      <div><span>${man}万超え</span><b>${over}<small>/${n}回</small></b></div>
-    </div>
+// 激アツの帯（100万超えが6%以上の時だけ。mockup-233 案A の馬券と判子は 2026-10-19 に mockup-325 案J へ替えた）
+function r26HotBanner(bp) {
+  // 2026-10-19 ユーザー決定（mockup-325 案J 熾火・137-spec §14）。出すのは「激アツ」「3連単 100万円超え」と確率だけ。
+  //   前の形（馬券と判子の絵・説明の文・出やすさ／真ん中の配当／10万超えの3つの数）は外した。
+  //   黒い札の下の縁から橙の光がにじんで息をする。書体はサイトに合わせる（字は --font、数字は .r27-num の Futura）
+  return `<div class="r26-hot" role="img" aria-label="激アツ 3連単100万円超え ${escapeHtml(bp.percent)}%">
+    <div class="glow" aria-hidden="true"><i></i><i></i><i></i></div><div class="line" aria-hidden="true"></div>
+    <div class="row"><div class="lf"><b class="gk">激アツ</b><span class="lb">3連単 100万円超え</span></div>
+    <div class="v"><span class="r27-num">${escapeHtml(bp.percent)}</span><small>%</small></div></div>
   </div>`;
 }
 
@@ -5709,7 +5679,7 @@ function renderHead26(site) {
   const bp = p.bigpay && p.bigpay.field_size ? p.bigpay : null;
   const tier = bp ? (bigpayTier(parseFloat(bp.percent)) || 'quiet') : 'off';   // bands が読めないときは升目で出す（今までと同じ）
   const avg = bp ? parseFloat((String(bp.ratio_line || '').match(/全体([\d.]+)%/) || [])[1]) : NaN;
-  const hot = tier === 'hot' ? r26HotBanner(site, bp) : '';
+  const hot = tier === 'hot' ? r26HotBanner(bp) : '';
   const row = [];
   if (tier === 'quiet') {
     row.push(`<div class="r27-t"><span class="lf"><span class="l">3連単100万超え</span>`
