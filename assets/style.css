@@ -5339,11 +5339,20 @@ body:has(.container.st26){background:#F2F2F7}
 
 /* ---- 勝率・連対率・複勝率の切り替え（145-spec・mockup-342 案3「並び替える輪」） ----
    評価の列を 評価／勝率／連対率／複勝率 で替える。率は輪（一周＝100%）、上位3頭の輪だけ紺。
-   切り替えは本番の .r27-seg と同じ地と影。白いつまみは押した所へ滑る */
-.race20 .rv-seg{position:relative;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));background:rgba(118,118,128,.12);border-radius:10px;padding:2px;margin:0 0 10px}
-.race20 .rv-seg .th{position:absolute;top:2px;bottom:2px;left:2px;width:calc((100% - 4px) / 4);border-radius:8px;background:#fff;
-  box-shadow:0 3px 8px rgba(0,0,0,.12),0 3px 1px rgba(0,0,0,.04);transition:transform .34s cubic-bezier(.3,.7,.2,1)}
-.race20 .rv-seg button{position:relative;z-index:1;height:32px;border:0;border-radius:8px;background:none;font:inherit;font-weight:600;font-size:13.5px;color:var(--text);cursor:pointer}
+   切り替えは列の見出しのボタン（mockup-343 案A「押すたびに次へ」）。枠・地・字はオッズの更新ボタン（.od-rf）と同じ。
+   ボタンは列（38px）より広いので、右端を列に揃えて左の「馬」の見出しの側へはみ出す。
+   右隣のオッズのボタンも列（58px）より広く、こちらの列へ3pxはみ出しているので、その分と隙間4pxだけ左へ寄せる */
+.race20 .mm-hd .h-tot.has-rv{display:flex;justify-content:flex-end;overflow:visible;padding-right:7px}
+.race20 .rv-hb{position:relative;display:inline-flex;align-items:center;gap:3px;padding:3px 6px 3px 5px;border:1px solid #C7C7CC;border-radius:6px;background:#fff;
+  color:#3A3A3C;font:600 11px/1 inherit;cursor:pointer;-webkit-tap-highlight-color:transparent;white-space:nowrap;flex:none}
+.race20 .rv-hb:active{background:#F2F2F7}
+.race20 .rv-hb svg{width:12px;height:12px;fill:none;stroke:#8E8E93;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.race20 .rv-hb .lbw{position:relative;display:inline-block;height:11px;overflow:hidden}
+.race20 .rv-hb .lbw > span{display:block;line-height:11px}
+.race20 .rv-hb .lbw > .nx{position:absolute;left:0;top:0}
+.race20 .rv-hb .dots4{position:absolute;left:0;right:0;bottom:-7px;display:flex;justify-content:center;gap:3px;pointer-events:none}
+.race20 .rv-hb .dots4 i{width:4px;height:4px;border-radius:50%;background:#D1D1D6;transition:background .25s,width .25s}
+.race20 .rv-hb .dots4 i.on{width:9px;border-radius:2px;background:var(--navy)}
 .race20 .mm-list .mm-row{position:relative}
 .race20 .mm-list .tot .rv-ring{display:none}
 .race20 .mm-list.rv-on .tot > .tsc,.race20 .mm-list.rv-on .tot > .grade,

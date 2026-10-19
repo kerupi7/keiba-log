@@ -3750,10 +3750,9 @@ function mmList(site) {
   const rf = site.status === 'prediction' ? oddsRfHtml() : '';
   // .mf-bar は絞り込みの帯（143-spec）。中身は setupMyMarks の後に mfApply が書く
   return `<div class="mm-list">
-      ${rvSegHtml(site)}
       <div class="mf-bar"></div>
       <div class="mm-hd"><span class="h-my">自分</span><span class="h-ai">AI</span>
-        <span class="h-c"><span class="h-nm">馬</span><span class="h-tot">評価</span>
+        <span class="h-c"><span class="h-nm">馬</span>${rvHeadHtml(site)}
           <span class="h-od${rf ? ' has-rf' : ''}">${rf || 'オッズ'}</span></span></div>
       ${rows}
     </div>`;
@@ -3954,7 +3953,10 @@ function mfBarHtml() {
 }
 
 // ---------- 勝率・連対率・複勝率の切り替え（145-spec・2026-10-19 ユーザー決定「並び替える輪で」・mockup-342 案3） ----------
-// 評価の列を、上の切り替えで 評価／勝率／連対率／複勝率 に替える。率は輪で出し（一周＝100%）、上位3頭の輪だけ紺。
+// 評価の列を 評価／勝率／連対率／複勝率 に替える。切り替えは列の見出しのボタン（mockup-343 案A・2026-10-19 ユーザー決定
+//   「A（押すたびに次へ）で本番に入れて」）。右隣のオッズの更新ボタンと同じ形で、押すたびに 評価→勝率→連対率→複勝率→評価 と進み、
+//   字が下から上へ送られる。ボタンの下の4つの点で今どこかを示す。はじめは一覧の上の4つの切り替え（.rv-seg）だったが、これに替えて外した。
+// 率は輪で出し（一周＝100%）、上位3頭の輪だけ紺。
 // 率を選ぶとその率の高い順に行が滑って並び替わり、行の左上に順位が出る。評価を選ぶと馬番の順に戻る。
 // 率は公開時に作った horses[].model_rates（勝率モデルの p_win と、そこから Harville で作った2着以内・3着以内）。
 // 率が1頭も無いレース（2026-10-19 より前の公開分）は、切り替えも輪も出さない（今までと同じ見た目）。
@@ -3976,9 +3978,29 @@ function rvRing(h) {
     + `<circle class="arc" cx="18" cy="18" r="${RV_R}" stroke-dasharray="${RV_C.toFixed(2)}" stroke-dashoffset="${RV_C.toFixed(2)}"/></svg>`
     + '<span class="rv-n"></span></span>';
 }
-function rvSegHtml(site) {
-  if (!rvHas(site)) return '';
-  return `<div class="rv-seg"><span class="th"></span>${RV_KEYS.map(([k, l]) => `<button type="button" data-rv="${k}">${l}</button>`).join('')}</div>`;
+// 評価の列の見出し。率の無いレースは今までどおりの字だけ
+function rvHeadHtml(site) {
+  if (!rvHas(site)) return '<span class="h-tot">評価</span>';
+  return '<span class="h-tot has-rv"><button type="button" class="rv-hb" aria-label="評価の列を切り替える">'
+    + '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 6.5 8 3l3.5 3.5"/><path d="M4.5 9.5 8 13l3.5-3.5"/></svg>'
+    + `<span class="lbw"><span>${RV_KEYS[0][1]}</span></span><span class="dots4" aria-hidden="true">${RV_KEYS.map(() => '<i></i>').join('')}</span></button></span>`;
+}
+// 見出しの字を下から上へ送る（続けて押された時は前の送りを先に終わらせる）。動きを減らす設定の端末では差し替えるだけ
+function rvRoll(btn, text, animate) {
+  const w = btn.querySelector('.lbw');
+  if (w._t) { clearTimeout(w._t); w._t = 0; w.firstElementChild.textContent = w._to; [...w.children].slice(1).forEach((x) => x.remove()); w.style.width = ''; }
+  const old = w.firstElementChild;
+  if (!animate || ODDS_REDUCE || typeof old.animate !== 'function') { old.textContent = text; return; }
+  const nu = document.createElement('span');
+  nu.textContent = text;
+  nu.className = 'nx';
+  w.appendChild(nu);
+  w.style.width = `${Math.max(old.offsetWidth, nu.offsetWidth)}px`;   // 右端は列に揃っているので左へ伸びる
+  const ease = 'cubic-bezier(.3,.7,.2,1)';
+  old.animate([{ transform: 'none', opacity: 1 }, { transform: 'translateY(-100%)', opacity: 0 }], { duration: 260, easing: ease });
+  nu.animate([{ transform: 'translateY(100%)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 260, easing: ease });
+  w._to = text;
+  w._t = setTimeout(() => { w._t = 0; old.textContent = text; nu.remove(); w.style.width = ''; }, 270);
 }
 // その率での順位（取消・率の無い馬は数えない）。同じ率は同じ順位
 function rvRanks(site, k) {
@@ -4023,11 +4045,11 @@ function rvPaint(animate) {
   const k = RV.k;
   const idx = RV_KEYS.findIndex((x) => x[0] === k);
   list.classList.toggle('rv-on', k !== 'sc');
-  list.querySelectorAll('.rv-seg button').forEach((b) => b.classList.toggle('on', b.dataset.rv === k));
-  const th = list.querySelector('.rv-seg .th');
-  if (th) th.style.transform = `translateX(${idx * 100}%)`;
-  const ht = list.querySelector('.mm-hd .h-tot');
-  if (ht) ht.textContent = RV_KEYS[idx][1];
+  const hb = list.querySelector('.rv-hb');
+  if (hb) {
+    rvRoll(hb, RV_KEYS[idx][1], animate);
+    hb.querySelectorAll('.dots4 i').forEach((d, j) => d.classList.toggle('on', j === idx));
+  }
   if (k === 'sc') return;
   const ranks = rvRanks(RV.site, k);
   RV.site.horses.forEach((h) => {
@@ -4057,14 +4079,14 @@ function rvSet(k, animate) {
 }
 function rvInit(site) {
   const list = document.querySelector('.race20 .mm-list');
-  const seg = list && list.querySelector('.rv-seg');
-  if (!seg) { RV.k = 'sc'; return; }
+  const hb = list && list.querySelector('.rv-hb');
+  if (!hb) { RV.k = 'sc'; return; }
   RV.site = site;
   RV.k = 'sc';
   try { localStorage.removeItem(RV_STORE); } catch (e) { /* 前に覚えた選択の掃除。消せなくても読まないので害は無い */ }
-  seg.addEventListener('click', (e) => {
-    const b = e.target.closest('[data-rv]');
-    if (b) rvSet(b.dataset.rv, true);
+  hb.addEventListener('click', () => {
+    const i = RV_KEYS.findIndex((x) => x[0] === RV.k);
+    rvSet(RV_KEYS[(i + 1) % RV_KEYS.length][0], true);
   });
   rvPaint(false);
 }
