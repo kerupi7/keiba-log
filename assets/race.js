@@ -3958,7 +3958,7 @@ function mfBarHtml() {
 // 率を選ぶとその率の高い順に行が滑って並び替わり、行の左上に順位が出る。評価を選ぶと馬番の順に戻る。
 // 率は公開時に作った horses[].model_rates（勝率モデルの p_win と、そこから Harville で作った2着以内・3着以内）。
 // 率が1頭も無いレース（2026-10-19 より前の公開分）は、切り替えも輪も出さない（今までと同じ見た目）。
-// 選んだものは端末に1つだけ覚え、次に開いたレースにもかける（絞り込み⑩と同じ考え方）。
+// 開いた時はいつも評価から（2026-10-19 ユーザー「開いたらデフォルトは評価になるようにしてほしい」）。前は端末に覚えて次のレースにもかけていた。
 const RV_KEYS = [['sc', '評価'], ['win', '勝率'], ['top2', '連対率'], ['top3', '複勝率']];
 const RV_STORE = 'ans:rv';
 const RV = { k: 'sc', site: null, prev: {} };
@@ -4052,7 +4052,6 @@ function rvPaint(animate) {
 function rvSet(k, animate) {
   if (!RV_KEYS.some((x) => x[0] === k) || k === RV.k) return;
   RV.k = k;
-  try { localStorage.setItem(RV_STORE, k); } catch (e) { /* 覚えられなくても切り替えは効く */ }
   rvPaint(animate);
   mfApply({ animate });
 }
@@ -4061,10 +4060,8 @@ function rvInit(site) {
   const seg = list && list.querySelector('.rv-seg');
   if (!seg) { RV.k = 'sc'; return; }
   RV.site = site;
-  try {
-    const k = localStorage.getItem(RV_STORE);
-    if (RV_KEYS.some((x) => x[0] === k)) RV.k = k;
-  } catch (e) { /* 読めなければ評価のまま */ }
+  RV.k = 'sc';
+  try { localStorage.removeItem(RV_STORE); } catch (e) { /* 前に覚えた選択の掃除。消せなくても読まないので害は無い */ }
   seg.addEventListener('click', (e) => {
     const b = e.target.closest('[data-rv]');
     if (b) rvSet(b.dataset.rv, true);
@@ -4418,7 +4415,7 @@ function mfInit(site) {
     if (MF.sheet.classList.contains('on')) mfDrawSheet();
   }).catch(() => {});
   mfRanksReady();
-  rvInit(site);   // 145-spec: 勝率・連対率・複勝率の切り替え（最初の並べ直しの前に、覚えている選択を読む）
+  rvInit(site);   // 145-spec: 勝率・連対率・複勝率の切り替え（最初の並べ直しの前に、評価へ戻す）
   mfApply();
 }
 
