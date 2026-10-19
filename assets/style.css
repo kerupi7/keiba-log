@@ -5317,3 +5317,17 @@ body:has(.container.st26){background:#F2F2F7}
 /* 数えた期間：全部の札と、調教が入るもの（調教・状態・総合）は区切りが違う（144-spec 決め残し ア・ウ） */
 .rg26 .per{font-size:10.5px;color:var(--faint);text-align:right;padding:2px 2px 0}
 .rg26 .top .meta{white-space:nowrap}
+/* 136-spec §9（2026-10-19 ユーザー決定・mockup-339 案A「指に吸いつく」）
+   その日の全部の場を横1列の帯（.strip26）に並べ、見える窓（.vp26）で切り取る。帯は index.js が指の量だけ動かす。
+   窓を左右14px（.container の余白）広げて、端のカードの影と激アツの黄色い縁が切れないようにする。
+   止まっている間は見ている場だけが高さを持つ（.off は高さ0）。 */
+.container.top .vp26{overflow:hidden;margin:0 -14px;padding:0 14px;touch-action:pan-y}
+.container.top .strip26{display:flex;align-items:flex-start;gap:28px;will-change:transform}
+.container.top .strip26 > .rl26{flex:none;width:100%}
+.container.top .strip26 > .rl26.off{height:0;padding:0;overflow:hidden;visibility:hidden}
+/* 白いつまみは1つの部品にして滑らせる（今までは選んだボタン自体を白くしていた） */
+.container.top .tracks.seg26{position:relative}
+.container.top .tracks.seg26 .pill26{position:absolute;top:2px;bottom:2px;left:2px;width:0;border-radius:7px;background:#fff;
+  box-shadow:0 3px 8px rgba(0,0,0,.12),0 3px 1px rgba(0,0,0,.04);will-change:transform;pointer-events:none}
+.container.top .tracks.seg26 .trk{position:relative;z-index:1}
+.container.top .tracks.seg26 .trk.on{background:transparent;box-shadow:none}

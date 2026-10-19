@@ -168,45 +168,152 @@ function renderDateTabs(state, rerender) {
 }
 
 // 136-spec（2026-10-07 ユーザー決定・mockup-248）: 場の切り替えは灰色の切り替えボタン（絞り込み・印の画面と同じ部品）
+// 136-spec §9（2026-10-19 ユーザー決定・mockup-339 案A）: 白いつまみ（.pill26）は1つの部品にして、一覧と同じ割合で滑らせる
 function renderTracks(state, rerender) {
   const el = document.getElementById('tracks');
   const tracks = state.tracksForDate(state.activeDate);
-  el.innerHTML = `<div class="tracks seg26">${tracks
+  el.innerHTML = `<div class="tracks seg26"><i class="pill26"></i>${tracks
     .map((t) => `<span class="trk ${t === state.activeTrack ? 'on' : ''}" data-track="${escapeHtml(t)}">${escapeHtml(t)}</span>`)
     .join('')}</div>`;
-  el.querySelectorAll('.trk').forEach((trkEl) => {
+  el.querySelectorAll('.trk').forEach((trkEl, i) => {
     trkEl.addEventListener('click', () => {
-      state.activeTrack = trkEl.dataset.track;
-      rerender();
+      if (i === tracks.indexOf(state.activeTrack) && !SWIPE.anim) return;
+      settleTrack(state, rerender, i, 0);
     });
   });
 }
 
 // 一覧を横に払うと場が替わる（2026-10-18 ユーザー「横にスワイプしたら開催場が変わるように」）。
-// 左へ払う＝右隣の場、右へ払う＝左隣の場。端の場では止まる（日付は替えない）。
-// 縦のスクロールと取り違えないよう、横の動きが縦の1.5倍以上・50px以上のときだけ替える
+// 136-spec §9（2026-10-19 ユーザー決定「A（指に吸いつく）で本番に入れて」・mockup-339 案A）:
+// その日の全部の場を横1列に並べた帯を、指と同じ量だけ動かす（隣の場がのぞく）。離した勢いでめくるか戻るかを決め、
+// ばねで止める。白いつまみも同じ割合で動く。端の場では引っぱるほど重くなる。1回で動くのは隣の場まで。
+// 縦のスクロールと取り違えないよう、最初の8pxで横の動きが縦の1.2倍を超えたときだけ横の操作にする
+const SWIPE = { p: 0, anim: null, busy: false };
+const SWIPE_GAP = 28; // 帯の場と場のすき間（.vp26 の左右の余白14pxの2倍。止まっているとき隣の場が見えない）
+const REDUCE_MOTION = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// ばね（response＝揺れ1回の秒数・damping＝1で揺れなし）。iOS の動きと同じ考え方
+function spring(o) {
+  const k = Math.pow(2 * Math.PI / o.response, 2);
+  const c = 4 * Math.PI * o.damping / o.response;
+  let x = o.from, v = o.v || 0, last = performance.now(), stop = false;
+  function frame(now) {
+    if (stop) return;
+    const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    const n = Math.max(1, Math.ceil(dt * 240));
+    const h = dt / n;
+    for (let i = 0; i < n; i++) { const a = -k * (x - o.to) - c * v; v += a * h; x += v * h; }
+    if (Math.abs(x - o.to) < 0.001 && Math.abs(v) < 0.01) { o.onUpdate(o.to); o.onDone(); return; }
+    o.onUpdate(x);
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+  return { cancel() { stop = true; } };
+}
+// 端を越えて引っぱったときの重さ（iOS のゴムの式。d＝どこまで伸びるかの上限）
+const rubber = (o, d) => Math.sign(o) * (1 - 1 / (Math.abs(o) * 0.55 / d + 1)) * d;
+
+// 位置 p（0＝左端の場。小数＝途中）で、帯とつまみを置く。止まっている時は見ている場だけ高さを持つ
+function applyTrackPos(p, dragging) {
+  const vp = document.querySelector('#races-list .vp26');
+  if (!vp) return;
+  const strip = vp.firstElementChild;
+  const lists = [...strip.children];
+  const n = lists.length;
+  // 1場ぶんの送り幅＝場の幅（vp の幅−左右の余白28px）＋すき間28px＝vp の幅
+  strip.style.transform = `translate3d(${-p * vp.clientWidth}px,0,0)`;
+  const q = Math.max(0, Math.min(n - 1, p));
+  const lo = Math.floor(q), hi = Math.ceil(q);
+  lists.forEach((el, i) => el.classList.toggle('off', dragging ? Math.abs(i - p) > 1.5 : !(i === lo || i === hi)));
+  const seg = document.querySelector('#tracks .seg26');
+  const pill = seg && seg.querySelector('.pill26');
+  if (pill && n) {
+    const u = (seg.clientWidth - 4) / n;
+    pill.style.width = `${u}px`;
+    pill.style.transform = `translate3d(${q * u}px,0,0)`;
+  }
+}
+
+function stopTrackAnim() {
+  if (SWIPE.anim) SWIPE.anim.cancel();
+  SWIPE.anim = null;
+  SWIPE.busy = false;
+}
+
+// 場 target へばねで動かし、止まったら選んだ場として描き直す（描き直しても位置は同じなので見た目は変わらない）
+function settleTrack(state, rerender, target, v) {
+  const tracks = state.tracksForDate(state.activeDate);
+  if (SWIPE.anim) SWIPE.anim.cancel();
+  const done = () => {
+    SWIPE.anim = null;
+    SWIPE.busy = false;
+    SWIPE.p = target;
+    if (tracks[target] !== state.activeTrack) {
+      state.activeTrack = tracks[target];
+      rerender();
+    } else {
+      applyTrackPos(target);
+    }
+  };
+  if (REDUCE_MOTION) { done(); return; }
+  SWIPE.busy = true;
+  SWIPE.anim = spring({ from: SWIPE.p, to: target, v, response: 0.42, damping: 1,
+    onUpdate: (x) => { SWIPE.p = x; applyTrackPos(x, true); }, onDone: done });
+}
+
 function attachTrackSwipe(state, rerender) {
-  const host = document.getElementById('races-section');
-  let sx = null;
-  let sy = 0;
+  const host = document.getElementById('races-list');
+  let st = null;
   host.addEventListener('touchstart', (e) => {
-    if (e.touches.length !== 1) { sx = null; return; }
-    sx = e.touches[0].clientX;
-    sy = e.touches[0].clientY;
+    if (e.touches.length !== 1 || !host.querySelector('.vp26')) { st = null; return; }
+    const t = e.touches[0];
+    st = { x: t.clientX, y: t.clientY, dir: null, p0: 0, s: [] };
   }, { passive: true });
-  host.addEventListener('touchend', (e) => {
-    if (sx === null) return;
-    const t = e.changedTouches[0];
-    const dx = t.clientX - sx;
-    const dy = t.clientY - sy;
-    sx = null;
-    if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
-    const tracks = state.tracksForDate(state.activeDate);
-    const i = tracks.indexOf(state.activeTrack) + (dx < 0 ? 1 : -1);
-    if (i < 0 || i >= tracks.length) return;
-    state.activeTrack = tracks[i];
-    rerender();
-  }, { passive: true });
+  host.addEventListener('touchmove', (e) => {
+    if (!st) return;
+    const t = e.touches[0];
+    const dx = t.clientX - st.x;
+    const dy = t.clientY - st.y;
+    if (!st.dir) {
+      if (Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy) * 1.2) {
+        st.dir = 'h';
+        st.x = t.clientX; // 判定までの8pxで跳ねないよう、ここを起点にする
+        if (SWIPE.anim) SWIPE.anim.cancel();
+        SWIPE.anim = null;
+        SWIPE.busy = true;
+        st.p0 = SWIPE.p;
+      } else if (Math.abs(dy) > 8) { st = null; return; } else return;
+    }
+    e.preventDefault(); // 横に動かしている間は、縦にスクロールさせない
+    const n = state.tracksForDate(state.activeDate).length;
+    const W = host.querySelector('.vp26').clientWidth;
+    let q = st.p0 - (t.clientX - st.x) / W;
+    if (q < 0) q = rubber(q, 0.3); else if (q > n - 1) q = n - 1 + rubber(q - (n - 1), 0.3);
+    SWIPE.p = q;
+    applyTrackPos(q, true);
+    st.s.push([t.clientX, performance.now()]);
+    if (st.s.length > 6) st.s.shift();
+  }, { passive: false });
+  const end = () => {
+    if (!st) return;
+    const was = st.dir, s = st.s;
+    st = null;
+    if (was !== 'h') return;
+    const n = state.tracksForDate(state.activeDate).length;
+    const W = host.querySelector('.vp26').clientWidth;
+    const a = s[0], b = s[s.length - 1];
+    const vpx = a && b && b[1] > a[1] ? (b[0] - a[0]) / ((b[1] - a[1]) / 1000) : 0; // px/秒
+    const v = -vpx / W;            // 1秒あたり何場ぶん
+    // 速く払った（1秒あたり300px以上）なら払った向きの隣へ。ゆっくりなら半分を越えたかで決める
+    const lo = Math.max(0, Math.floor(SWIPE.p)), hi = Math.min(n - 1, Math.ceil(SWIPE.p));
+    const target = Math.abs(vpx) > 300 ? (vpx < 0 ? hi : lo) : Math.round(SWIPE.p);
+    settleTrack(state, rerender, Math.max(lo, Math.min(hi, target)), v);
+  };
+  host.addEventListener('touchend', end, { passive: true });
+  host.addEventListener('touchcancel', end, { passive: true });
+  // 横に払った直後の指離れでカードを開かない
+  host.addEventListener('click', (e) => { if (SWIPE.busy) { e.preventDefault(); e.stopPropagation(); } }, true);
+  window.addEventListener('resize', () => applyTrackPos(SWIPE.p, !!SWIPE.anim));
 }
 
 // 136-spec: 凡例（発走前＝紺／終了＝赤の箱）はやめた。R番号の色の箱を無くし、
@@ -338,16 +445,23 @@ function renderRaceRow(race, ctx) {
   `;
 }
 
+// 136-spec §9: その日の全部の場を横1列の帯に並べ、見ている場の位置へ寄せて置く（払うと隣の場が指についてくる）
 function renderRaceList(state, races) {
   const el = document.getElementById('races-list');
-  const filtered = races
-    .filter((r) => r.date === state.activeDate && r.track === state.activeTrack)
-    .sort((a, b) => a.race_number - b.race_number);
+  const tracks = state.tracksForDate(state.activeDate);
   const now = nowJst();
-  // 次のレース＝今日の開催で、まだ終わっていない一番早いレース。今日以外の日には出さない
-  const next = filtered.find((r) => r.date === now.date && !isDoneRace(r, now));
-  const ctx = { now, nextId: next ? next.race_id : null };
-  el.innerHTML = `<div class="rl26">${filtered.map((r) => renderRaceRow(r, ctx)).join('')}</div>`;
+  const lists = tracks.map((track) => {
+    const filtered = races
+      .filter((r) => r.date === state.activeDate && r.track === track)
+      .sort((a, b) => a.race_number - b.race_number);
+    // 次のレース＝今日の開催で、まだ終わっていない一番早いレース。今日以外の日には出さない
+    const next = filtered.find((r) => r.date === now.date && !isDoneRace(r, now));
+    const ctx = { now, nextId: next ? next.race_id : null };
+    return `<div class="rl26" data-track="${escapeHtml(track)}">${filtered.map((r) => renderRaceRow(r, ctx)).join('')}</div>`;
+  });
+  el.innerHTML = `<div class="vp26"><div class="strip26">${lists.join('')}</div></div>`;
+  SWIPE.p = Math.max(0, tracks.indexOf(state.activeTrack));
+  applyTrackPos(SWIPE.p);
 }
 
 function renderEmpty() {
@@ -379,6 +493,7 @@ async function main() {
   if (window.location.hash) history.replaceState(null, '', window.location.pathname);
   const state = initState(races);
   const rerender = () => {
+    stopTrackAnim(); // 日付を替えたときなど、動いている途中なら止めてから描き直す
     renderDateTabs(state, rerender);
     renderTracks(state, rerender);
     renderLegend();
@@ -387,7 +502,8 @@ async function main() {
   rerender();
   attachTrackSwipe(state, rerender);
   // 136-spec: 次のレース・終わったレースは時刻で動くので、1分ごとに一覧だけ描き直す
-  setInterval(() => renderRaceList(state, races), 60000);
+  // 払っている途中・ばねで動いている途中は描き直さない（帯が跳ぶため）
+  setInterval(() => { if (!SWIPE.busy) renderRaceList(state, races); }, 60000);
   // 「次」の札の残り時間は1秒ごと。0になったら一覧を描き直して、札を次のレースへ移す
   setInterval(() => {
     let passed = false;
@@ -398,7 +514,7 @@ async function main() {
       if (card) card.classList.toggle('soon', left < SOON_MS);
       if (left <= 0) passed = true;
     });
-    if (passed) renderRaceList(state, races);
+    if (passed && !SWIPE.busy) renderRaceList(state, races);
   }, 1000);
 }
 
