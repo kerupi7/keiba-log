@@ -2076,6 +2076,31 @@ function axDiff(c, basep) {
   return d;
 }
 
+// ===== 距離の山とレースの型の地図の色（2026-10-19 mockup-355 案B「鮮やかなグラデ」。ユーザー決定「Bで実装して」）=====
+//   得意＝青緑・苦手＝ピンク・普段どおり＝薄い青みの灰。灰と色の間は、にごらない混ぜ方（見た目の明るさがそろう OKLab）で混ぜる。
+//   どの差で何色にするか（axDiff・AX_CAP・混ぜる幅）は前と同じで、色の選び方と混ぜ方だけを替えた。
+const AX_VIVID = { g: [226, 228, 242], up: [0, 196, 150], dn: [255, 72, 136], nul: [236, 238, 248] };
+const axLin = (c) => { c /= 255; return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
+const axDelin = (c) => { c = c <= 0.0031308 ? 12.92 * c : 1.055 * c ** (1 / 2.4) - 0.055; return Math.round(Math.max(0, Math.min(1, c)) * 255); };
+function axToOk([r, g, b]) {
+  r = axLin(r); g = axLin(g); b = axLin(b);
+  const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b);
+  const m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b);
+  const s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b);
+  return [0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s, 1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s, 0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s];
+}
+function axFromOk([L, a, b]) {
+  const l = (L + 0.3963377774 * a + 0.2158037573 * b) ** 3, m = (L - 0.1055613458 * a - 0.0638541728 * b) ** 3, s = (L - 0.0894841775 * a - 1.291485548 * b) ** 3;
+  return [axDelin(4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s), axDelin(-1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s), axDelin(-0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s)];
+}
+const AX_OK = { g: axToOk(AX_VIVID.g), up: axToOk(AX_VIVID.up), dn: axToOk(AX_VIVID.dn) };
+// 差 d（null＝色なし）と確かさ f（0〜1）から [r,g,b]。濃さは差の大きさの0.55乗（小さい差も色が見えるように）
+function axVivid(d, f) {
+  if (d == null) return AX_VIVID.nul;
+  const t = Math.pow(Math.min(1, Math.abs(d) / AX_CAP), 0.55) * (f == null ? 1 : f), T = d > 0 ? AX_OK.up : AX_OK.dn;
+  return axFromOk(AX_OK.g.map((v, i) => v + (T[i] - v) * t));
+}
+
 // ===== 見出しの絵（2026-10-13・mockup-306。yoso.js の印を決める画面の IC_* と同じ絵） =====
 //   コース＝競馬場の楕円／距離＝旗／回り＝楕円に矢印（今日の向き）／馬場＝太陽か しずく（今日の馬場）／
 //   枠＝縦の棒3本（今日の位置だけ濃い）／レースの型＝速さのメーター（針＝今日の本命の展開のペース）
@@ -2126,13 +2151,7 @@ function aptCardHtml(h, race, bare, opts) {
     }
     return 100;
   };
-  const GREY = [199, 199, 204];
-  const col = (d, f) => {
-    if (d == null) return 'rgb(226,226,232)';
-    const t = Math.min(1, Math.abs(d) / AX_CAP) * (f == null ? 1 : f);
-    const tgt = d > 0 ? [31, 122, 69] : [200, 53, 44];
-    return `rgb(${GREY.map((g, i) => Math.round(g + (tgt[i] - g) * t)).join(',')})`;
-  };
+  const col = (d, f) => `rgb(${axVivid(d, f).join(',')})`;
   const judge = (c) => {
     const d = axDiff(c, basep);
     return d == null ? 'na' : d >= AX_PT ? 'up' : d <= -AX_PT ? 'dn' : 'eq';
@@ -2165,7 +2184,7 @@ function aptCardHtml(h, race, bare, opts) {
     <div class="ax-pick">${todayDist}${ds.map((c, i) => cell(`全場${c.m}m`, c,
       { today: Boolean(c.today), dot: Boolean(c.today), cls: 'ax-dw' + (String(i) === todayKey ? ' on' : ''), k: i })).join('')}</div></div>`;
 
-  // ----- 距離の傾向：山の形（高さ＝走った数）と色（＝普段との差）。作り方は前と同じで、高さだけ低くした -----
+  // ----- 距離の傾向：山の形（高さ＝走った数）と色（＝普段との差）。作り方は前と同じ。見た目は 2026-10-19 mockup-355 案B -----
   let mount = '<div class="ax-none">この面では走っていない</div>';
   if (ds.length) {
     //   色は一番近い距離だけで決めず、全部の距離を重ねて混ぜる。そうしないと距離の
@@ -2190,10 +2209,13 @@ function aptCardHtml(h, race, bare, opts) {
       pts.push({ w, d: cw > 0.02 ? Math.max(-AX_CAP, Math.min(AX_CAP, cd / cw)) : null,
                  f: Math.min(1, cw), pos: at(x) });
     }
-    const W = 300, Ht = 34;
+    // 2026-10-19 mockup-355 案B：高さ 34→54、下へ白く溶かす、紫の柔らかい影。今日は点線をやめ、尾根の上の白い丸と白い線
+    const W = 300, Ht = 54, TOP = 6;
     const uid = `ax${Math.random().toString(36).slice(2, 8)}`;
-    const path = pts.map((q) => `${((q.pos / 100) * W).toFixed(2)},${(Ht - (q.w / maxW) * (Ht - 4)).toFixed(2)}`).join(' L');
+    const yOf = (w) => Ht - (w / maxW) * (Ht - TOP);
+    const path = pts.map((q) => `${((q.pos / 100) * W).toFixed(2)},${yOf(q.w).toFixed(2)}`).join(' L');
     const stops = pts.map((q) => `<stop offset="${q.pos.toFixed(2)}%" stop-color="${col(q.d, q.f)}"/>`).join('');
+    const tY = yOf(ds.reduce((w, c) => w + c.n * Math.exp(-((R.distance - c.m) ** 2) / (2 * SIG * SIG)), 0));
     // 押す帯は隣との真ん中まで。印は帯の真ん中ではなく実際の距離の位置に置く
     const hits = ds.map((c, i) => {
       const prev = i ? at((c.m + ds[i - 1].m) / 2) : 0;
@@ -2203,10 +2225,14 @@ function aptCardHtml(h, race, bare, opts) {
     }).join('');
     mount = `<div class="ax-mt ax2-mt">
         <svg viewBox="0 0 ${W} ${Ht}" preserveAspectRatio="none">
-          <defs><linearGradient id="${uid}" x1="0" y1="0" x2="1" y2="0">${stops}</linearGradient></defs>
-          <path d="M0,${Ht} L${path} L${W},${Ht} Z" fill="url(#${uid})"/>
+          <defs><linearGradient id="${uid}" x1="0" y1="0" x2="1" y2="0">${stops}</linearGradient>
+            <linearGradient id="${uid}f" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#fff" stop-opacity=".5"/></linearGradient>
+            <filter id="${uid}s" x="-5%" y="-40%" width="110%" height="200%"><feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#635BFF" flood-opacity=".22"/></filter></defs>
+          <path d="M0,${Ht} L${path} L${W},${Ht} Z" fill="url(#${uid})" filter="url(#${uid}s)"/>
+          <path d="M0,${Ht} L${path} L${W},${Ht} Z" fill="url(#${uid}f)"/>
         </svg>
-        <span class="ax-now" style="left:${at(R.distance)}%"></span>
+        <span class="ax-nl" style="left:${at(R.distance)}%;top:${tY.toFixed(1)}px;height:${(Ht - tY).toFixed(1)}px"></span>
+        <span class="ax-nd" style="left:${at(R.distance)}%;top:${tY.toFixed(1)}px"></span>
         <span class="ax-hits">${hits}</span>
         <div class="ax-scale">${used.map((m) => {
           const k = m === R.distance ? ' now' : ds.some((c) => c.m === m) ? ' run' : '';
@@ -2257,7 +2283,7 @@ function aptCardHtml(h, race, bare, opts) {
     ${head}
     ${sec(AX_IC.track, 'コース', '好走率・走数')}
     ${top}
-    ${sec(AX_IC.flag, '距離の傾向', '赤いほど苦手')}
+    ${sec(AX_IC.flag, '距離の傾向', 'ピンクほど苦手')}
     ${mount}
     ${row}</div>`;
 }
@@ -2394,12 +2420,7 @@ const RT_SIDE_NAME = [['前残り', '前残り'], ['差し・追込', '差し追
 const RT_X = { '前残り': 0.27, '差し・追込': 0.73 };
 const RT_Y = { S: 0.2, M: 0.5, H: 0.8 };
 const RT_MAP_W = 132, RT_MAP_H = 84;
-const RT_NEU = [243, 243, 246], RT_UP = [15, 122, 61], RT_DN = [200, 53, 44];
-const rtMix = (d) => {
-  if (d == null) return RT_NEU;
-  const t = Math.min(1, Math.abs(d) / AX_CAP), g = d > 0 ? RT_UP : RT_DN;
-  return RT_NEU.map((v, i) => Math.round(v + (g[i] - v) * t));
-};
+// 色は距離の山と同じ axVivid（2026-10-19 mockup-355 案B。前の緑・赤の rtMix は外した）
 function rtMapImage(cells) {
   try {
     const cv = document.createElement('canvas');
@@ -2417,9 +2438,10 @@ function rtMapImage(cells) {
           const w = Math.exp(-((x - RT_X[c.side]) ** 2) / (2 * SX * SX) - ((y - RT_Y[c.pace]) ** 2) / (2 * SY * SY)) * Math.sqrt(c.n);
           ws += w; dsum += w * (c.d == null ? 0 : c.d);
         });
-        const d = ws > 0 ? dsum / ws : 0, conf = Math.min(1, ws / 0.9), col = rtMix(d), o = (j * RT_MAP_W + i) * 4;
-        for (let q = 0; q < 3; q++) img.data[o + q] = Math.round(250 + (col[q] - 250) * conf * 0.85);
-        img.data[o + 3] = 255;
+        // 2026-10-19 mockup-355 案B：距離の山と同じ色（axVivid）。確かさ（conf）は透けの濃さにして、白い地に浮かせる
+        const d = ws > 0 ? dsum / ws : 0, conf = Math.min(1, ws / 0.9), col = axVivid(d, 1), o = (j * RT_MAP_W + i) * 4;
+        for (let q = 0; q < 3; q++) img.data[o + q] = col[q];
+        img.data[o + 3] = Math.round(255 * conf * 0.95);
       }
     }
     ctx.putImageData(img, 0, 0);
@@ -2463,7 +2485,7 @@ function raceTypeCardHtml(h, site, bare) {
       ${isM ? `<i class="rt2-tg">今日 ${mainProb}%</i>` : ''}${isB ? '<i class="rt2-st">★</i>' : ''}
       ${c.n ? `<b class="ax-dg">${c.p}<small>%</small></b><span class="ax-dg">${c.good}/${c.n}</span>` : '<b class="ax-dg">—</b>'}</div>`;
   };
-  const bar = `linear-gradient(90deg,rgb(${RT_DN}),rgb(${rtMix(-12)}),rgb(${RT_NEU}),rgb(${rtMix(12)}),rgb(${RT_UP}))`;
+  const bar = `linear-gradient(90deg,rgb(${axVivid(-AX_CAP)}),rgb(${axVivid(-12)}),rgb(${AX_VIVID.g}),rgb(${axVivid(12)}),rgb(${axVivid(AX_CAP)}))`;
   return wrap(`
     <div class="rt2-map">
       <div class="rt2-xh">${RT_SIDE_NAME.map(([, lb]) => `<span>${lb}</span>`).join('')}</div>
