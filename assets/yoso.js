@@ -1047,7 +1047,7 @@
     // 札の裏は、その札の段の詳しいページ（今の1頭だけ見る画面の1ページ）
     const pg = m225GroupPage(it, h);
     if (!pg) { m225Toast('この札の詳しいページはありません'); return; }
-    const title = pg.k === 'run' ? `${RUN_LABEL[pg.i]}のページ` : { p1: '条件と状態（基本のページ）', course: '人と血統（コースのページ）', tenkai: 'コースの傾向（展開のページ）', sum: '直近5走' }[pg.k];
+    const title = pg.k === 'run' ? `${RUN_LABEL[pg.i]}のページ` : { p1: '条件と状態（基本のページ）', course: '人と血統（コースのページ）', tenkai: 'コースの傾向（展開のページ）', trend: 'コースの傾向（展開のページ）', sum: '直近5走' }[pg.k];
     m225Open({ title, page: pageHtml(h, pg), pg }, h);
   }
   //   label は10ページのとき（pagesOf）と同じ名前。裏で付けた金は、10ページのときと同じページの名前・部品の順番で残す（印の画面の goldKey がそのまま読む）
@@ -1056,7 +1056,9 @@
     if (it.grp === '馬の力') return it.run != null ? { k: 'run', i: it.run, label: RUN_LABEL[it.run] } : { k: 'sum', label: `直近${nRun}走` };
     if (it.grp === '条件' || it.grp === '状態') return { k: 'p1', label: '基本' };
     if (it.grp === '人と血統') return site.course_entities ? { k: 'course', label: 'コース' } : null;
-    if (it.grp === 'コースの傾向') return it.key === '前走コース' ? (site.course_entities ? { k: 'course', label: 'コース' } : null) : { k: 'tenkai', label: '展開' };
+    // 枠・脚質の札は「この馬の枠・脚質＋展開ボード」のページ（2026-10-19 ユーザー決定・mockup-335 案A・137-spec §17）。前は展開のページ（tenkaiPage）をそのまま出していた。
+    //   label は前と同じ「展開」（裏で付けた金の名前を変えないため）
+    if (it.grp === 'コースの傾向') return it.key === '前走コース' ? (site.course_entities ? { k: 'course', label: 'コース' } : null) : { k: 'trend', label: '展開' };
     return null;
   }
   // ---------- 札の裏（札が裏返って中身が出る） ----------
@@ -1553,6 +1555,7 @@
     if (pg.k === 'sum') return summaryPage(h);
     if (pg.k === 'all') return allPage(h, pg.from, pg.to);
     if (pg.k === 'tenkai') return tenkaiPage(h);
+    if (pg.k === 'trend') return trendPage(h);
     return runPage(h, pg.i);
   }
 
@@ -1955,7 +1958,27 @@
   //   長いので、ほかのページと同じく札に収まるまで縮めて見せる（fitPage）。枠や馬番を押して開く本番の札は、この画面では開かない
   // その馬の目立たせ方は、脚質の区画ごと明るくし、ほかの馬番を灰色にする（2026-09-17 決定・H3。黒い輪 H0・薄くする H1・一文 H2 は選ばなかった）
   let tenkaiCache = null;
-  function tenkaiPage(h) {
+  function tenkaiPage(h) { return tkMap(h, tkParse(tenkaiWrap(h))); }   // 2026-09-24 から上から見たレースの図（tkMap）。前の形（tkDesign）は同日に消した
+  // コースの傾向のページ（2026-10-19 ユーザー決定・mockup-335 案A）。絞り込みの札の「コースの傾向」の枠・脚質の札を押した裏に出す。
+  //   上＝この馬の枠・脚質・前走コース組の3行（表の札と同じ値。割合の帯と平均の黒い線・ランク）、下＝この馬を強調した展開ボード（tkMap の図だけ）。
+  //   今日の馬場・ペース・今週の結果の札は出さない（レース画面の今日の見立てにある）
+  function trendPage(h) {
+    const items = (M225_ITEMS[h.number] || m225Items(h)).filter((it) => it.grp === 'コースの傾向');
+    const gg = m225AvgGrade(h, 'コースの傾向', items.map((it) => it.g));
+    const gbox = (g) => (g ? `<i class="yf-trg" style="background:${G_COLOR[g] || '#8E8E93'}">${esc(g)}</i>` : '');
+    const rows = items.map((it) => {
+      const m = String(it.val || '').match(/(\d+)%・平均(\d+)%/);
+      const me = m ? Number(m[1]) : null, avg = m ? Number(m[2]) : null;
+      const mx = Math.max(50, me || 0, avg || 0);
+      const bar = m ? `<span class="yf-trb"><i style="width:${(me / mx * 100).toFixed(1)}%;background:${G_COLOR[it.g] || '#8E8E93'}"></i><u style="left:calc(${(avg / mx * 100).toFixed(1)}% - 1px)"></u></span>` : '';
+      const v = m ? `<span class="bt-num">${me}</span>%・平均${avg}%` : esc(it.val || '');
+      return `<div class="yf-trr"><span class="ic">${m225Icon(it, h)}</span><span class="lb"><span class="t"><b>${esc(it.label)}</b><span>${v}</span></span>${bar}</span>`
+        + `${it.g ? `<i class="yf-trg lg" style="background:${G_COLOR[it.g] || '#8E8E93'}">${esc(it.g)}</i>` : ''}</div>`;
+    }).join('');
+    const mine = items.length ? `<div class="yf-tr"><div class="cap"><b>${gbox(gg)}この馬の枠・脚質</b><span>3着以内に来た割合（黒い線＝平均）</span></div>${rows}</div>` : '';
+    return `${mine}${tkMap(h, tkParse(tenkaiWrap(h)), true)}`;
+  }
+  function tenkaiWrap(h) {
     if (tenkaiCache == null) {
       const tmp = document.createElement('div');
       // race.js の関数は外から呼べないので、出馬表の裏に描かれている「展開」の面（.tenkaiview）の中身を写す
@@ -1973,7 +1996,7 @@
       e.classList.add('yf-me');
       const z = e.closest('.lz'); if (z) z.classList.add('yf-mez');
     });
-    return tkMap(h, tkParse(wrap));   // 2026-09-24 から上から見たレースの図（tkMap）。前の形（tkDesign）は同日に消した
+    return wrap;
   }
 
   // ---------- 展開のページ：数字は本番の展開の面から読み取り、並べ方と見た目だけ変える ----------
@@ -2027,7 +2050,7 @@
   //   ／今回の馬の枠＝黄色／図の上端の白い線と下の説明の帯は外した
   const TK_GREEN = '#0F7A3D', TK_RED = '#C8352C', TK_BLUE = '#2F7FC1';
   const TK_GC = { S: '#0B5E2E', A: '#1F6B3A', B: '#4E5862', C: '#8E4A36', D: '#A32B1F' };
-  function tkMap(h, D) {
+  function tkMap(h, D, mapOnly) {   // mapOnly＝コースの傾向のページ用。上の馬場の帯とスコアボードを付けず、隊列の図と脚質ごとの成績だけ
     const race = site.race || {};
     const isDirt = String(race.surface || '').startsWith('ダ');
     const lvIdx = D.baba ? Math.max(0, (isDirt ? LV5D : LV5).indexOf(D.baba.label)) : 2;
@@ -2171,6 +2194,7 @@
       ${pts.map(tok).join('')}
     </div>
     <div class="tk3-zl" style="margin-left:${P(x0, W)};margin-right:${P(W - x1, W)}">${Z.map((z) => `<span class="${z.me ? 'me' : ''}"><em>${esc(z.nm)}${esc(z.c)}</em>${gch(z.g)}<b class="bt-num">${esc(z.r)}</b></span>`).join('')}</div>`;
+    if (mapOnly) return `<div class="race20 tk3 ${isDirt ? 'dirt' : 'turf'} yf-trbd"><div class="bh"><span>展開ボード</span><small>左が前・上が内</small></div>${map}</div>`;
     return `<div class="race20 tk3 ${isDirt ? 'dirt' : 'turf'}">${sky}${board}${map}</div>`;
   }
 
