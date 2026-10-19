@@ -5809,13 +5809,15 @@ function r27Board(site) {
   const dirt = String((site.race || {}).surface || '').startsWith('ダ');
   return `<div class="tk3 ${dirt ? 'dirt' : 'turf'} r27-bd"><div class="bh"><span>展開ボード</span><!--FB--></div>
     <div class="tk3-map" style="height:${MH}px">
-    ${leg.map((d, zi) => `<div class="tk3-zb" style="left:${P(zx(zi))};width:${P(zw)};background:${R27_BD_GC[d.grade] || 'transparent'}"></div>`).join('')}
+    ${leg.map((d, zi) => `<div class="tk3-zb" style="left:${P(zx(zi))};width:${P(zw)};background:${R27_BD_GC[legAbsGrade(d.fukusho_rate)] || 'transparent'}"></div>`).join('')}
     <div class="tk3-ax" style="width:${P(x0)}"><span>内</span><i></i><span>外</span></div>
     ${gates.map((gt) => `<div class="tk3-gt" style="top:${Y(Number(gt.gate)) - 10}px">${wakuBox(gt.gate, 'sm')}${gch(gateGrade(gt.ratio))}</div>`).join('')}
     ${pts.map((pt) => `<button type="button" class="hn ${frameClass(pt.h.g) || 'plain'} tk3-tk" data-pop="${pt.h.n}" aria-label="${pt.h.n}番" style="left:${P(pt.x)};top:${pt.y}px">${pt.h.n}</button>`
       + (pt.h.mk && R27_BD_MK[pt.h.mk] ? `<b class="tk3-mka k-${R27_BD_MK[pt.h.mk]}" data-pop="${pt.h.n}" style="left:calc(${P(pt.x)} + 13px);top:${pt.y - 13}px">${escapeHtml(pt.h.mk)}</b>` : '')).join('')}
     </div>
-    <div class="tk3-zl" style="margin-left:${P(x0)};margin-right:${P(W - x1)}">${leg.map((d) => `<span><em>${escapeHtml(d.style)}${cnt(d)}</em>${gch(d.grade)}<b class="r27-num">${escapeHtml(String(d.fukusho_rate))}%</b></span>`).join('')}</div></div>`;
+    <div class="tk3-zl" style="margin-left:${P(x0)};margin-right:${P(W - x1)}">${leg.map((d) => `<span><em>${escapeHtml(d.style)}${cnt(d)}</em>`
+      + `<span class="gw">${gch(legAbsGrade(d.fukusho_rate))}${legRelArrow(d.grade)}</span><b class="r27-num">${escapeHtml(String(d.fukusho_rate))}%</b>`
+      + `${d.baseline && d.baseline.fukusho_rate != null ? `<small>いつも${Math.round(d.baseline.fukusho_rate)}%</small>` : ''}</span>`).join('')}</div></div>`;
 }
 
 // 展開ボードの裏返し。表と裏で高さが違うので、裏返しながら高さも合わせる（表に戻り切ったら高さの指定を外す）
@@ -6963,6 +6965,23 @@ const LEG_WORD = {
 // 部署/競馬部/leg_bias_baseline.json の grade_bands。
 //
 // 等級を持たない過去のレース（grade が無い）は、これまでどおり差を出す。
+// 脚質の字（2026-10-19 ユーザー決定・mockup-336・137-spec §18）。
+//   字＝このコースでその脚質の馬が3着以内に来た割合（display.leg[].fukusho_rate）の高さ。40%以上 S／30%以上 A／20%以上 B／10%以上 C／10%未満 D。
+//   公開JSONの grade（同じ脚質の全国のいつもと比べた5段）は ▲▼ に回す：S・A＝▲（いつもより来ている）／C・D＝▼／B＝付けない。
+//   前は grade をそのまま字にしていて、「割合が高いのに D」が出て混乱した（ユーザー指摘）。yoso.js の LEG_ABS と同じ（変えるときは両方）
+const LEG_ABS_CUTS = [[40, 'S'], [30, 'A'], [20, 'B'], [10, 'C']];
+function legAbsGrade(rate) {
+  const v = Number(rate);
+  if (rate == null || !Number.isFinite(v)) return null;
+  const hit = LEG_ABS_CUTS.find(([t]) => v >= t);
+  return hit ? hit[1] : 'D';
+}
+function legRelArrow(rel) {
+  if (rel === 'S' || rel === 'A') return '<i class="lar up" title="いつもより来ている">▲</i>';
+  if (rel === 'C' || rel === 'D') return '<i class="lar dn" title="いつもより来ていない">▼</i>';
+  return '';
+}
+
 function renderLeg20(site) {
   const p = site.prediction;
   const disp = (p.display || {}).leg;
@@ -6974,13 +6993,15 @@ function renderLeg20(site) {
     const hs = runners.filter((h) => h.running_style === key);
     const chips = hs.map((h) => paceHorsePiece(h, nige.has(h.number))).join('');
     // 等級があれば等級＋複勝率、無ければ従来どおり差を出す（過去の公開分の縮退）
+    const abs = d.grade ? legAbsGrade(d.fukusho_rate) : null;
+    const base = d.baseline && d.baseline.fukusho_rate != null ? Math.round(d.baseline.fukusho_rate) : null;
     const val = d.grade
-      ? `<div class="lgv"><span class="g g-${escapeHtml(d.grade)}">${escapeHtml(d.grade)}</span>`
-        + `<span class="p">複勝 ${d.fukusho_rate}%</span></div>`
+      ? `<div class="lgv"><span class="gw"><span class="g g-${escapeHtml(abs)}">${escapeHtml(abs)}</span>${legRelArrow(d.grade)}</span>`
+        + `<span class="p">複勝 ${d.fukusho_rate}%</span>${base != null ? `<span class="b">いつも${base}%</span>` : ''}</div>`
       : `<div class="lgd ${d.delta > 0.5 ? 'up' : d.delta < -0.5 ? 'dn' : ''}">`
         + `${d.delta > 0.5 ? '▲' : d.delta < -0.5 ? '▼' : '＝'}`
         + `${d.delta > 0 ? '+' : ''}${d.delta.toFixed(1)}<small>%</small></div>`;
-    return `<div class="lz g-${escapeHtml(d.grade || d.cls)}">
+    return `<div class="lz g-${escapeHtml(abs || d.grade || d.cls)}"${d.grade ? ` data-rel="${escapeHtml(d.grade)}"` : ''}${base != null ? ` data-base="${base}"` : ''}>
       <span class="lb">${escapeHtml(d.style)}<span class="c">${hs.length}</span></span>
       ${val}
       <div class="hs">${chips}</div>

@@ -768,6 +768,11 @@
   //   頭の「3着以内」は付けない（札の幅 375px で「3着以内 22%・平均21%」が切れた。段の説明が「来た割合」）。
   //   脚質：展開のページの3着以内率と、ランクの物差しの全コースの同じ脚質の平均（baseline）。
   //   枠：展開のページは倍しか持たないので、倍 × このコースの全馬の3着以内率（rankcard の course_rate）で割合に直す。平均＝course_rate
+  // 脚質の字（2026-10-19 ユーザー決定・mockup-336・137-spec §18）。race.js の LEG_ABS_CUTS・legAbsGrade・legRelArrow と同じ（変えるときは両方）
+  const LEG_ABS = [[40, 'S'], [30, 'A'], [20, 'B'], [10, 'C']];
+  const legAbsGrade = (rate) => { const v = Number(rate); if (rate == null || !Number.isFinite(v)) return null; const hit = LEG_ABS.find(([t]) => v >= t); return hit ? hit[1] : 'D'; };
+  const legRelArrow = (rel) => (rel === 'S' || rel === 'A' ? '<i class="lar up" title="いつもより来ている">▲</i>'
+    : rel === 'C' || rel === 'D' ? '<i class="lar dn" title="いつもより来ていない">▼</i>' : '');
   function m225Tenkai(h) {
     const p = site.prediction || {};
     const out = {};
@@ -775,7 +780,8 @@
     const leg = ((p.display || {}).leg || []).find((d) => M225_STYLE_KEY[d.style] === h.running_style);
     if (leg && leg.grade) {
       const bl = (leg.baseline || {}).fukusho_rate;
-      out['脚質'] = { g: leg.grade, label: leg.style, val: `${pct(leg.fukusho_rate)}%${bl != null ? `・平均${pct(bl)}%` : ''}` };
+      // 字は割合の高さ、▲▼はいつもと比べた5段（2026-10-19・137-spec §18）。展開の面（race.js renderLeg20）と同じ付け方
+      out['脚質'] = { g: legAbsGrade(leg.fukusho_rate) || leg.grade, rel: leg.grade, label: leg.style, val: `${pct(leg.fukusho_rate)}%${bl != null ? `・平均${pct(bl)}%` : ''}` };
     }
     const gt = ((p.inner_outer_bias || {}).gates || []).find((x) => Number(x.gate) === Number(h.gate));
     if (gt && gt.ratio != null) {
@@ -848,7 +854,7 @@
     const pg = m225Tenkai(h);
     const addPage = (key, label) => {
       if (!pg[key]) { add('コースの傾向', key, label); return; }
-      if (cards[key]) out.push({ grp: 'コースの傾向', key, label, g: pg[key].g, thin: false, val: pg[key].val });
+      if (cards[key]) out.push({ grp: 'コースの傾向', key, label, g: pg[key].g, rel: pg[key].rel, thin: false, val: pg[key].val });
     };
     if (cards['枠']) addPage('枠', `${h.gate ?? cards['枠'].gate ?? ''}枠`);
     if (cards['脚質']) addPage('脚質', pg['脚質'] ? pg['脚質'].label : (M225_STYLE[cards['脚質'].style] || cards['脚質'].style || '脚質'));
@@ -987,7 +993,8 @@
         + (isOpen ? `<div class="m225x-list">${items.map((x, i) => (x.grp !== gname ? ''
           : `<div class="m225-t m225x-row r-${rk(x)}${x.thin ? ' thin' : ''}" data-i="${i}" data-k="${esc(x.key)}"><span class="m225x-ic">${m225Icon(x, h)}</span>`
           + `<span class="m225x-t"><span class="m225x-l">${esc(x.label)}${m225NoScore(x) ? '<em class="m225x-few nosc">点外</em>' : ''}</span><span class="m225x-v">${esc(x.val)}${x.thin ? '・少' : ''}</span></span>`
-          + `<b class="m225-r">${esc(x.g === '初' ? '初' : x.g || '—')}</b></div>`)).join('')}</div>` : '')
+          + (x.rel && legRelArrow(x.rel) ? `<span class="m225-rw2"><b class="m225-r">${esc(x.g || '—')}</b>${legRelArrow(x.rel)}</span></div>`
+            : `<b class="m225-r">${esc(x.g === '初' ? '初' : x.g || '—')}</b></div>`))).join('')}</div>` : '')
         + '</div>';
     }).join('');
     return `<div class="race20 m225 m225-pg">${head}${total}<div class="m225x m225x-e1 m225g">${body}</div>${gekiMark(h)}</div>`;
@@ -1973,7 +1980,7 @@
       const bar = m ? `<span class="yf-trb"><i style="width:${(me / mx * 100).toFixed(1)}%;background:${G_COLOR[it.g] || '#8E8E93'}"></i><u style="left:calc(${(avg / mx * 100).toFixed(1)}% - 1px)"></u></span>` : '';
       const v = m ? `<span class="bt-num">${me}</span>%・平均${avg}%` : esc(it.val || '');
       return `<div class="yf-trr"><span class="ic">${m225Icon(it, h)}</span><span class="lb"><span class="t"><b>${esc(it.label)}</b><span>${v}</span></span>${bar}</span>`
-        + `${it.g ? `<i class="yf-trg lg" style="background:${G_COLOR[it.g] || '#8E8E93'}">${esc(it.g)}</i>` : ''}</div>`;
+        + `<span class="yf-trgw">${it.g ? `<i class="yf-trg lg" style="background:${G_COLOR[it.g] || '#8E8E93'}">${esc(it.g)}</i>` : ''}${it.rel ? legRelArrow(it.rel) : ''}</span></div>`;
     }).join('');
     const mine = items.length ? `<div class="yf-tr"><div class="cap"><b>${gbox(gg)}この馬の枠・脚質</b><span>3着以内に来た割合（黒い線＝平均）</span></div>${rows}</div>` : '';
     return `${mine}${tkMap(h, tkParse(tenkaiWrap(h)), true)}`;
@@ -2027,6 +2034,7 @@
       zones: [...root.querySelectorAll('.lz')].map((z) => ({
         style: z.querySelector('.lb') ? z.querySelector('.lb').firstChild.textContent.trim() : '',
         count: T(z, '.lb .c'), grade: T(z, '.lgv .g'), rate: T(z, '.lgv .p').replace('複勝 ', ''),
+        rel: z.dataset.rel || '', base: z.dataset.base || '',   // ▲▼の元（いつもと比べた5段）といつもの割合（2026-10-19・137-spec §18）
         me: z.classList.contains('yf-mez'),
         chips: [...z.querySelectorAll('.pz')].map((c) => ({
           hn: c.querySelector('.hn').outerHTML, mark: T(c, '.mk'), mcls: (c.querySelector('.mk') || { className: '' }).className,
@@ -2178,7 +2186,7 @@
     });
     const meGate = Number(h.gate) || 0;
     const zx = (zi) => x0 + zi * (x1 - x0) / 4;
-    const Z = D.zones.map((z) => ({ nm: z.style, c: z.count, g: z.grade, r: z.rate, me: z.me }));
+    const Z = D.zones.map((z) => ({ nm: z.style, c: z.count, g: z.grade, r: z.rate, me: z.me, rel: z.rel, base: z.base }));
     // 印の丸は札の外（兄弟）に置く。札の灰色のフィルターが印にかからないように。色はサイトの印の決まり（◎ 紺 → △ 薄い灰青）
     const MKC = { '◎': 'hon', '○': 'tai', '▲': 'tan', '△': 'oku' };
     const tok = (pt) => {
@@ -2193,7 +2201,8 @@
       ${(D.gates || []).slice(0, 8).map((gt, k) => `<div class="tk3-gt${k + 1 === meGate ? ' me' : ''}" style="top:${Y(k + 1) - 10}px">${gt.hn}${gch(gt.grade)}</div>`).join('')}
       ${pts.map(tok).join('')}
     </div>
-    <div class="tk3-zl" style="margin-left:${P(x0, W)};margin-right:${P(W - x1, W)}">${Z.map((z) => `<span class="${z.me ? 'me' : ''}"><em>${esc(z.nm)}${esc(z.c)}</em>${gch(z.g)}<b class="bt-num">${esc(z.r)}</b></span>`).join('')}</div>`;
+    <div class="tk3-zl" style="margin-left:${P(x0, W)};margin-right:${P(W - x1, W)}">${Z.map((z) => `<span class="${z.me ? 'me' : ''}"><em>${esc(z.nm)}${esc(z.c)}</em><span class="gw">${gch(z.g)}${legRelArrow(z.rel)}</span><b class="bt-num">${esc(z.r)}</b>`
+      + `${z.base ? `<small>いつも${esc(z.base)}%</small>` : ''}</span>`).join('')}</div>`;
     if (mapOnly) return `<div class="race20 tk3 ${isDirt ? 'dirt' : 'turf'} yf-trbd"><div class="bh"><span>展開ボード</span><small>左が前・上が内</small></div>${map}</div>`;
     return `<div class="race20 tk3 ${isDirt ? 'dirt' : 'turf'}">${sky}${board}${map}</div>`;
   }

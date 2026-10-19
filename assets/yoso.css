@@ -753,7 +753,7 @@ html.rc-frame .mx .mg-close .mg-tag{background:#5E7185}
 .yf-tr .cap>span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .yf-trg{width:22px;height:22px;border-radius:6px;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;font-style:normal;flex:none}
 .yf-trg.lg{width:30px;height:30px;border-radius:8px;font-size:17px}
-.yf-trr{display:grid;grid-template-columns:28px minmax(0,1fr) 30px;gap:10px;align-items:center;padding:8px 12px;position:relative}
+.yf-trr{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px 12px;position:relative}
 .yf-trr+.yf-trr::before{content:"";position:absolute;left:50px;right:0;top:0;border-top:.5px solid rgba(60,60,67,.18)}
 .yf-trr .ic{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;background:#F0F7F1;color:#2E9A4E}
 .yf-trr .ic svg{width:20px;height:20px}
@@ -1266,6 +1266,10 @@ html.rc-frame .mx .mg-close .mg-tag{background:#5E7185}
 .m225x-l{font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .m225x-v{font-size:9.5px;color:#8E8E93;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .m225x-row .m225-r{width:26px;height:24px;border-radius:7px;font-size:16px;background:var(--rc)}
+/* 脚質の▲▼（137-spec §18）。字の右に並べる。▲▼のある行だけ右の列を広げる */
+.m225x-row:has(.m225-rw2){grid-template-columns:26px minmax(0,1fr) auto}
+.m225-rw2{display:inline-flex;align-items:center;gap:2px}
+.m225-rw2 .lar{font-size:9px;padding:2px 2px 1px}
 .m225x-row.thin .m225-r,.m225x-row.thin .m225x-ic{opacity:.45}
 .m225x-gt{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:800;padding:5px 8px}
 .m225x-gi{display:grid;place-items:center;width:22px;height:22px;border-radius:6px;color:#fff;background:var(--gc)}
@@ -1538,3 +1542,6 @@ html.rc-frame .mx .mg-close .mg-tag{background:#5E7185}
 .yk-mk:active{transform:scale(.92)}
 .yk-row.k .yk-mk{background:var(--keshi);border-color:var(--keshi);color:#fff}
 .yk{flex:1;min-height:0;display:flex;flex-direction:column}
+
+.yf-trgw{display:inline-flex;align-items:center;gap:3px}
+.yf-trgw .lar{font-size:11px;padding:3px 3px 2px;border-radius:4px}
