@@ -5815,9 +5815,8 @@ function r27Board(site) {
     ${pts.map((pt) => `<button type="button" class="hn ${frameClass(pt.h.g) || 'plain'} tk3-tk" data-pop="${pt.h.n}" aria-label="${pt.h.n}番" style="left:${P(pt.x)};top:${pt.y}px">${pt.h.n}</button>`
       + (pt.h.mk && R27_BD_MK[pt.h.mk] ? `<b class="tk3-mka k-${R27_BD_MK[pt.h.mk]}" data-pop="${pt.h.n}" style="left:calc(${P(pt.x)} + 13px);top:${pt.y - 13}px">${escapeHtml(pt.h.mk)}</b>` : '')).join('')}
     </div>
-    <div class="tk3-zl" style="margin-left:${P(x0)};margin-right:${P(W - x1)}">${leg.map((d) => `<span><em>${escapeHtml(d.style)}${cnt(d)}</em>`
-      + `<span class="gw">${gch(legAbsGrade(d.fukusho_rate))}${legRelArrow(d.grade)}</span><b class="r27-num">${escapeHtml(String(d.fukusho_rate))}%</b>`
-      + `${d.baseline && d.baseline.fukusho_rate != null ? `<small>いつも${Math.round(d.baseline.fukusho_rate)}%</small>` : ''}</span>`).join('')}</div></div>`;
+    <div class="tk3-zl" style="margin-left:${P(x0)};margin-right:${P(W - x1)}">${leg.map((d, i) => `<button type="button" class="r27-zlb"${d.baseline && d.baseline.fukusho_rate != null ? ` data-pop="tk-leg-${i}"` : ''}><em>${escapeHtml(d.style)}${cnt(d)}</em>`
+      + `<span class="gw">${gch(legAbsGrade(d.fukusho_rate))}${legRelArrow(d.grade)}</span><b class="r27-num">${escapeHtml(String(d.fukusho_rate))}%</b></button>`).join('')}</div></div>`;
 }
 
 // 展開ボードの裏返し。表と裏で高さが違うので、裏返しながら高さも合わせる（表に戻り切ったら高さの指定を外す）
@@ -5955,6 +5954,22 @@ function r27TenkaiPopups(site) {
       + tile('', r27Lanes(I, I.flat))
       + tile('', line('3着以内に入った割合', `内 ${num(Number(I.inner_pct).toFixed(1))}%・外 ${num(Number(I.outer_pct).toFixed(1))}%`) + line('数えたレース', scope()))));
   }
+  // 脚質ごとの札（2026-10-19 ユーザー決定・mockup-338 の3「押した時だけ」・137-spec §18）。展開ボードの下の帯と、展開の面の字を押すと開く。
+  //   「いつも◯%」の字は帯から外し、ここで「このコース」と「いつも」の2本の帯にする
+  const legs = ((site.prediction || {}).display || {}).leg || [];
+  legs.forEach((d, i) => {
+    const base = d.baseline ? d.baseline.fukusho_rate : null;
+    if (!d.grade || base == null || d.fukusho_rate == null) return;
+    const g = legAbsGrade(d.fukusho_rate);
+    const up = d.grade === 'S' || d.grade === 'A', dn = d.grade === 'C' || d.grade === 'D';
+    const word = up ? 'いつもより来ている' : dn ? 'いつもより来ていない' : 'いつもと同じくらい';
+    const mx = Math.max(60, Number(d.fukusho_rate), Number(base));
+    const cmp = `<div class="cmp"><span>このコース</span><span class="bar"><i style="width:${(d.fukusho_rate / mx * 100).toFixed(1)}%;background:${R27_BD_GC[g] || R27_NAVY}"></i></span><b>${num(d.fukusho_rate)}%</b>`
+      + `<span>いつも</span><span class="bar"><i style="width:${(base / mx * 100).toFixed(1)}%;background:#B5B5BB"></i></span><b>${num(base)}%</b></div>`;
+    out.push(pop(`leg-${i}`, `${escapeHtml(d.style)}・3着以内に来た割合`, word, up ? 'fast' : dn ? 'slow' : 'flat',
+      `<p class="lead">このコースで<b>${escapeHtml(d.style)}</b>の馬が3着以内に来た割合と、全国の${escapeHtml(d.style)}のいつもの割合です。`
+      + `字（${g}）は割合の高さ、▲▼はいつもと比べてどうかを表します。</p>` + tile('', cmp)));
+  });
   return out.join('');
 }
 
@@ -6996,8 +7011,8 @@ function renderLeg20(site) {
     const abs = d.grade ? legAbsGrade(d.fukusho_rate) : null;
     const base = d.baseline && d.baseline.fukusho_rate != null ? Math.round(d.baseline.fukusho_rate) : null;
     const val = d.grade
-      ? `<div class="lgv"><span class="gw"><span class="g g-${escapeHtml(abs)}">${escapeHtml(abs)}</span>${legRelArrow(d.grade)}</span>`
-        + `<span class="p">複勝 ${d.fukusho_rate}%</span>${base != null ? `<span class="b">いつも${base}%</span>` : ''}</div>`
+      ? `<button type="button" class="lgv"${base != null ? ` data-pop="tk-leg-${disp.indexOf(d)}"` : ''}><span class="gw"><span class="g g-${escapeHtml(abs)}">${escapeHtml(abs)}</span>${legRelArrow(d.grade)}</span>`
+        + `<span class="p">複勝 ${d.fukusho_rate}%</span></button>`
       : `<div class="lgd ${d.delta > 0.5 ? 'up' : d.delta < -0.5 ? 'dn' : ''}">`
         + `${d.delta > 0.5 ? '▲' : d.delta < -0.5 ? '▼' : '＝'}`
         + `${d.delta > 0 ? '+' : ''}${d.delta.toFixed(1)}<small>%</small></div>`;

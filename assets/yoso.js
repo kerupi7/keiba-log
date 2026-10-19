@@ -2201,8 +2201,7 @@
       ${(D.gates || []).slice(0, 8).map((gt, k) => `<div class="tk3-gt${k + 1 === meGate ? ' me' : ''}" style="top:${Y(k + 1) - 10}px">${gt.hn}${gch(gt.grade)}</div>`).join('')}
       ${pts.map(tok).join('')}
     </div>
-    <div class="tk3-zl" style="margin-left:${P(x0, W)};margin-right:${P(W - x1, W)}">${Z.map((z) => `<span class="${z.me ? 'me' : ''}"><em>${esc(z.nm)}${esc(z.c)}</em><span class="gw">${gch(z.g)}${legRelArrow(z.rel)}</span><b class="bt-num">${esc(z.r)}</b>`
-      + `${z.base ? `<small>いつも${esc(z.base)}%</small>` : ''}</span>`).join('')}</div>`;
+    <div class="tk3-zl" style="margin-left:${P(x0, W)};margin-right:${P(W - x1, W)}">${Z.map((z) => `<span class="${z.me ? 'me' : ''}"><em>${esc(z.nm)}${esc(z.c)}</em><span class="gw">${gch(z.g)}${legRelArrow(z.rel)}</span><b class="bt-num">${esc(z.r)}</b></span>`).join('')}</div>`;   // いつもの割合はレース画面の札だけ（2026-10-19・mockup-338 の3）
     if (mapOnly) return `<div class="race20 tk3 ${isDirt ? 'dirt' : 'turf'} yf-trbd"><div class="bh"><span>展開ボード</span><small>左が前・上が内</small></div>${map}</div>`;
     return `<div class="race20 tk3 ${isDirt ? 'dirt' : 'turf'}">${sky}${board}${map}</div>`;
   }
