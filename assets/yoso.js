@@ -82,12 +82,17 @@
   }
   const canMark = (st) => st.done && st.cand > 0;
 
+  // 2026-10-19 ユーザー「流れを 消す馬を決める → ◎〜▲の候補を決める → ◎〜▲を決める にしたい」で3行にした（mockup-323）。
+  //   消す馬＝出馬表の絞り込み（143-spec）で馬を集め、消す馬を自分で押す。候補＝前の「絞り込み」（払う）。印はそのまま。
+  //   行ごとに単独で始められ、1段終えるごとに次の段へ進むかを聞く
   const MENU_ICON = {
+    keshi: '<span class="yfm-ic ks">✕</span>',
     swipe: '<span class="yfm-ic sw"><i>✕</i><i>✓</i></span>',
     mark: '<span class="yfm-ic mk">◎</span>',
   };
   const MENU_TXT = {
-    swipe: { t: '絞り込み', s: '1頭ずつスワイプして、残す馬（✓）と消す馬を決める。上に払うと自分の激アツ' },
+    keshi: { t: '消す馬', s: '条件で馬を集めて、消す馬を押す' },
+    swipe: { t: '候補', s: '1頭ずつスワイプして、候補（✓）と消す馬を決める。上に払うと自分の激アツ' },
     mark: { t: '印', s: '✓の馬を2頭ずつ比べて、◎○▲を決める' },
   };
   // 行の右端の状態は文字でなく記号で出す（2026-09-18 ユーザー「まだ・先に消しとチェックは芸がない」）。
@@ -95,6 +100,7 @@
 
   // 状態をひとつの言葉にまとめる（swipe: none/part/done、mark: lock/ready/part/done）
   function phase(st, which) {
+    if (which === 'keshi') return st.kesi ? 'done' : 'none';
     if (which === 'swipe') return st.done ? 'done' : st.swiped ? 'part' : 'none';
     if (!canMark(st)) return 'lock';
     if (!st.got.length) return 'ready';
@@ -112,6 +118,7 @@
   };
   function statusHtml(st, which) {
     const ph = phase(st, which);
+    if (which === 'keshi') return st.kesi ? `<span class="yfs-ks"><i>消</i><small>${st.kesi}頭</small></span>` : `<span class="yfs-rw">${ring(0, false)}<small>まだ</small></span>`;
     if (which === 'swipe') {
       return `<span class="yfs-rw">${ring(st.n / st.total, ph === 'done')}<small>${ph === 'done' ? '' : `${st.n}/${st.total}`}</small></span>`;
     }
@@ -131,16 +138,92 @@
     box.querySelector('#yf-go').addEventListener('click', openMenu);
   }
 
-  // 絞り込み：まだ印の無い馬だけを出す。済んだ馬の答えはそのまま持っていく（全頭済みなら16頭すべてやり直し）。
-  //   ◎○▲ が付いた馬は✓として持っていく（印は絞り込みの後に決め直すため）
-  function startSwipe() {
+  // 候補（前の「絞り込み」）：まだ印の無い馬だけを出す。済んだ馬の答えはそのまま持っていく（全頭済みなら、消以外の全頭をやり直し）。
+  //   ◎○▲ が付いた馬は✓として持っていく（印は候補の後に決め直すため）。
+  //   消の馬は出さない（2026-10-19：消す馬の段で消した馬を、もう一度払わせないため）。消を外すのは消す馬の段で
+  //   inRoot＝消す馬の段から続けて入るとき（重ねた画面を開き直さない）
+  function startSwipe(inRoot) {
     const m = loadMarks();
     const fin = (x) => x === '✓' || x === '消' || MARKS3.includes(x);
     const all = markState().done;
-    Q = all ? H : H.filter((h) => !fin(m[h.number]));
-    open('none');
-    if (!all) for (const h of H) { const x = m[h.number]; if (x === '消') S.my[h.number] = '消'; else if (fin(x)) S.my[h.number] = '✓'; }
+    const alive = H.filter((h) => m[h.number] !== '消');
+    if (!alive.length) { toast('全部の馬が消になっています。消す馬の段で外してください'); return; }
+    Q = all ? alive : alive.filter((h) => !fin(m[h.number]));
+    if (inRoot) { S = { ...S, screen: 'swipe', idx: 0, page: 0, my: {}, step: 0, t: null, busy: false, unk: [], kx: [] }; UNDO = []; } else open('none');
+    for (const h of H) { const x = m[h.number]; if (x === '消') S.my[h.number] = '消'; else if (!all && fin(x)) S.my[h.number] = '✓'; }
     go('swipe');
+  }
+
+  // ---------- 消す馬（2026-10-19 ユーザー決定・mockup-322/323） ----------
+  //   出馬表と同じ絞り込みのシートで条件をかけ、合う馬を上に集める（外れた馬は薄く下へ）。消すかどうかは自分で1頭ずつ決める
+  //   （ユーザー「消すかどうかは最終ユーザー判断」）。最初は何も付けない（案B）。開いた時に消が付いている馬だけは消のまま出す。
+  //   馬名を押すと「1頭だけ見る」画面、右の丸を押すと消。行には、かけている条件のランクを2つまで（出馬表の評価の列と同じ）。
+  //   条件は出馬表とは別に覚える（MmFilter の ys・race.js）
+  function startKeshi() {
+    const m = loadMarks();
+    open('none');
+    S.kx = H.filter((h) => m[h.number] === '消').map((h) => h.number);
+    S.ky = 0;
+    go('keshi');
+  }
+  const KF = () => (window.MmFilter && window.MmFilter.ready() ? window.MmFilter : null);
+  function vKeshi() {
+    const F = KF();
+    const s = F ? F.get() : null;
+    const on = !!(F && !F.isEmpty(s));
+    const live = H;
+    const hit = on ? live.filter((h) => F.match(h, s)) : live;
+    const miss = on ? live.filter((h) => !hit.includes(h)) : [];
+    const kx = new Set(S.kx);
+    const chip = (c) => `<span class="yk-trk ${c.grade && c.grade !== '初' ? `t-${c.grade}` : 't-none'}">${esc(c.name)}${esc(c.grade || '—')}</span>`;
+    const row = (h, out) => `<div class="yk-row${kx.has(h.number) ? ' k' : ''}${out ? ' out' : ''}">
+        ${umaBox(h.number, h.gate)}
+        <button type="button" class="yk-nm" data-act="kv" data-n="${h.number}"><b>${esc(h.name)}</b>
+          <small>${esc(h.jockey || '')}　${h.odds != null ? `${h.odds.toFixed(1)}倍` : '—'} ${esc(h.popularity ?? '—')}人気</small></button>
+        <span class="yk-rk">${on ? F.chips(h, s).map(chip).join('') : ''}</span>
+        <span class="yk-ai">${esc(h.ability_mark || '')}</span>
+        <button type="button" class="yk-mk" data-act="kx" data-n="${h.number}" aria-label="${esc(h.name)}を消す">消</button></div>`;
+    const tags = on ? F.tags(s) : [];
+    const sum = tags.length
+      ? tags.map(([k, l]) => `<span class="yk-tag">${esc(l)}<button type="button" data-act="kfx" data-k="${esc(k)}" aria-label="${esc(l)}を外す">✕</button></span>`).join('')
+      : `<span class="yk-tag none">条件なし（${live.length}頭）</span>`;
+    const noRank = F && on && !F.hasRanks() ? '<div class="yk-note">このレースにはランクがありません。ランクの条件では全部の馬が残ります</div>' : '';
+    // 全体を .yk で包む。下に払ってやめる受け口（bindPull）はこの箱に付け、描き直すたびに箱ごと作り直す
+    //   （#yf-col に付けると、丸を押して描き直すたびに受け口が重なり、1頭だけ見る画面を払って閉じた時に「閉じますか？」まで出たため）
+    return `<div class="yk">${head('1 / 3　消す馬', '消す馬を決める', 0)}
+      <div class="yk-bar"><div class="yk-sum">${sum}</div>
+        ${F ? `<button type="button" class="yk-btn" data-act="kf"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 3h12M4.5 8h7M7 13h2" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>絞り込み${tags.length ? `<span class="n">${tags.length}</span>` : ''}</button>` : ''}</div>
+      <div class="yk-body" id="yk-body">${noRank}
+        ${on ? `<div class="yk-hd">条件に合う ${hit.length}頭・消す馬の丸を押す</div>` : `<div class="yk-hd">${live.length}頭・消す馬の丸を押す</div>`}
+        <div class="yk-box">${hit.map((h) => row(h, false)).join('') || '<div class="yk-none">合う馬はいません</div>'}</div>
+        ${miss.length ? `<div class="yk-hd">条件の外 ${miss.length}頭・ここも押せば消せます</div><div class="yk-box">${miss.map((h) => row(h, true)).join('')}</div>` : ''}
+      </div>
+      <div class="yf-foot"><button type="button" class="yf-btn" data-act="kdone">${kx.size ? `${kx.size}頭を消して 次へ` : '消さずに 次へ'}</button></div></div>`;
+  }
+  // 消す馬の段を終える：押した馬に消を付け、押していない馬の消は外す（開いた時に付いていた消を外した場合）
+  function keshiDone() {
+    const kx = new Set(S.kx);
+    S.unk = [];
+    for (const h of H) {
+      if (kx.has(h.number)) S.my[h.number] = '消';
+      else { delete S.my[h.number]; S.unk.push(h.number); }
+    }
+    persist();
+    go('kask');
+  }
+  function vKask() {
+    const k = S.kx.length, rest = H.length - k;
+    return `<div class="yk">${head('1 / 3　消す馬', '消す馬が決まりました', 100)}
+      <div class="yf-mid">
+        <div class="yf-big ks">✕</div>
+        <div class="yf-cnt"><span class="c2">消 ${k}頭</span><span>残り ${rest}頭</span></div>
+        <div class="q">${rest ? '候補を決めるに進みますか？' : '残りの馬がいません'}</div>
+        <div class="s">${rest ? `消していない${rest}頭を1頭ずつスワイプして、候補（✓）を決めます` : '消す馬の段で、消を外すと候補に進めます'}</div>
+      </div>
+      <div class="yf-foot">
+        ${rest ? '<button type="button" class="yf-btn" data-act="toswipe">候補を決める</button>' : ''}
+        <button type="button" class="yf-btn ${rest ? 'text' : ''}" data-act="done">ここで終える（消だけ付ける）</button>
+      </div></div>`;
   }
 
   // 印だけやり直す：いまの✓（と◎○▲）を候補にし、消はそのまま。前の◎○▲は、選び直さなければ✓に戻る
@@ -179,7 +262,7 @@
     const bg = document.createElement('div');
     bg.className = 'yfm-bg';
     bg.innerHTML = `<div class="yfm-sheet">
-      <div class="yfm-grp"><div class="yfm-hd">予想をはじめる</div>${menuRow(st, 'swipe')}${menuRow(st, 'mark')}</div>
+      <div class="yfm-grp"><div class="yfm-hd">予想をはじめる</div>${menuRow(st, 'keshi')}${menuRow(st, 'swipe')}${menuRow(st, 'mark')}</div>
       <button type="button" class="yfm-cancel" data-menu="cancel">キャンセル</button></div>`;
     document.body.appendChild(bg);
     document.body.style.overflow = 'hidden';
@@ -196,7 +279,9 @@
       return;
     }
     closeMenu(true);
-    if (b.dataset.menu === 'swipe') startSwipe(); else startMarkOnly();
+    if (b.dataset.menu === 'keshi') startKeshi();
+    else if (b.dataset.menu === 'swipe') startSwipe();
+    else startMarkOnly();
   }
   function closeMenu(now) {
     if (!MENU) return;
@@ -249,6 +334,7 @@
   function persist() {
     if (!S || S.view) return;
     const m = loadMarks();
+    for (const n of S.unk || []) if (m[n] === '消') delete m[n];
     for (const [n, mk] of Object.entries(S.my)) {
       if (MARKS3.includes(mk)) for (const k of Object.keys(m)) if (m[k] === mk) delete m[k];
       m[n] = mk;
@@ -288,7 +374,7 @@
     const oldBack = document.getElementById('yf-back');
     const keepBack = S.screen === 'swipe' && oldBack && Number(oldBack.dataset.n) === (Q[S.idx + 1] || {}).number ? oldBack : null;
     const keepLater = S.screen === 'swipe' ? [...document.querySelectorAll('.yf-card.later')] : [];
-    col.innerHTML = { swipe: vSwipe, view: vSwipe, ask: vAsk, duel: (m225On() ? vTenbin : vCompare), marked: vMarked }[S.screen]();
+    col.innerHTML = { swipe: vSwipe, view: vSwipe, keshi: vKeshi, kask: vKask, ask: vAsk, duel: (m225On() ? vTenbin : vCompare), marked: vMarked }[S.screen]();
     if (S.screen === 'swipe' || S.screen === 'view') {
       fitPage();
       const deck = document.getElementById('yf-deck');
@@ -297,7 +383,8 @@
       bindCard();
       // 次の後ろの札は、切り替えが済んでから描く（1頭だけ見るときは後ろが無い）
       if (S.screen === 'swipe') fillBack();
-    } else bindPull(col.querySelector('.ap') || col);
+    } else bindPull(col.querySelector('.ap, .yk') || col);
+    if (S.screen === 'keshi') { const b = document.getElementById('yk-body'); if (b) b.scrollTop = S.ky || 0; }
   }
 
   // ---------- 戻る（2026-10-13 ユーザー「絞り込みと印について、ミスった場合の戻る機能を実装したい」→ mockup-295 の案A） ----------
@@ -338,7 +425,7 @@
   //   指は touch、マウスは pointer で受ける（指で縦に動かす画面では pointer が途中で取り消されるため）
   function bindPull(el) {
     if (!el) return;
-    const sc = el.querySelector('#ap-body');
+    const sc = el.querySelector('#ap-body, #yk-body');   // yk-body＝消す馬の一覧
     let y0 = null, x0 = 0, dy = 0, t0 = 0, axis = '', moved = false, tl = [];
     const start = (x, y, target) => {
       // 天秤の段を押して出た比べるシート（.tb-sheet-bg）が開いている間は、払うとシートだけ閉じる（2026-10-17 ユーザー指示）
@@ -2441,7 +2528,7 @@
   function vAsk() {
     const c = checked().length;
     const k = H.filter((h) => S.my[h.number] === '消').length;
-    return `${head('1 / 2　絞り込み', '絞り込みが終わりました', 100)}
+    return `${head('2 / 3　候補', '候補が決まりました', 100)}
       <div class="yf-mid">
         <div class="yf-big chk">✓</div>
         <div class="yf-cnt"><span class="c1">✓ ${c}頭</span><span class="c2">消 ${k}頭</span></div>
@@ -2452,7 +2539,7 @@
       </div>
       <div class="yf-foot">
         ${c ? '<button type="button" class="yf-btn" data-act="mark0">印を決める</button>'
-          : '<button type="button" class="yf-btn" data-act="restart">絞り込みをやり直す</button>'}
+          : '<button type="button" class="yf-btn" data-act="restart">候補をやり直す</button>'}
         <button type="button" class="yf-btn text" data-act="done">ここで終える（消と✓だけ付ける）</button>
       </div>`;
   }
@@ -2806,7 +2893,7 @@
     const rows = V.map((x) => `<button type="button" class="tb-row" data-tbgrp="${x.g}">
         ${cell(x.a, true, x)}<span class="tb-mid">${tbScale(x.side, x.steps)}<b>${x.g}</b></span>${cell(x.b, false, x)}</button>`).join('');
     return `<div class="ap tb">
-        <div class="ap-bar"><div><small>2 / 2　印を決める</small><b>${mk} を決めよう</b></div>${undoBtn()}<span class="ap-left">あと${t.total - t.done}回</span></div>
+        <div class="ap-bar"><div><small>3 / 3　印を決める</small><b>${mk} を決めよう</b></div>${undoBtn()}<span class="ap-left">あと${t.total - t.done}回</span></div>
         <div class="ap-body tb-body" id="ap-body">
           <div class="ap-tops">${top}</div>
           <div class="tb-rows">${rows}</div>
@@ -3203,7 +3290,7 @@
     }
     const recent = cmpSec('直近5走', rRows);
     return `<div class="ap">
-        <div class="ap-bar"><div><small>2 / 2　印を決める</small><b>${mk} を決めよう</b></div>${undoBtn()}<span class="ap-left">あと${t.total - t.done}回</span></div>
+        <div class="ap-bar"><div><small>3 / 3　印を決める</small><b>${mk} を決めよう</b></div>${undoBtn()}<span class="ap-left">あと${t.total - t.done}回</span></div>
         <div class="ap-body" id="ap-body">
           <div class="ap-tops">${top}</div>
           <div class="ap-stk">${HS.map((h) => `<div data-hist="${h.number}">${umaBox(h.number, h.gate, 'sm')}<b>${esc(h.name)}</b><i class="ap-chev">›</i></div>`).join('')}</div>
@@ -3303,7 +3390,7 @@
     const h = byNum(S.lastWinner);
     const nx = nextStep(S.step + 1);
     const more = nx < MARKS3.length && pool().length > 0;
-    return `${head('2 / 2　印を決める', `${mk} が決まりました`, 100)}
+    return `${head('3 / 3　印を決める', `${mk} が決まりました`, 100)}
       <div class="yf-mid">
         <div class="yf-big ${KCLS[mk]}">${mk}</div>
         <div class="who">${umaBox(h.number, h.gate)}${esc(h.name)}</div>
@@ -3551,7 +3638,8 @@
       <button type="button" data-q="quit">閉じる</button></div>
       <button type="button" class="cancel" data-q="keep">キャンセル</button></div>`
       : `<div class="yf-sheet"><div class="grp"><div class="t">予想をやめますか？</div><div class="s">${S.screen === 'duel' || S.screen === 'marked'
-        ? '決まった印は残ります（比べている途中の分は消えます）' : 'ここまでの「残す」「消す」は残ります。次は続きから'}</div>
+        ? '決まった印は残ります（比べている途中の分は消えます）' : S.screen === 'keshi' ? 'この画面で押した消は付きません'
+          : S.screen === 'kask' ? '付けた消は残ります' : 'ここまでの「残す」「消す」は残ります。次は続きから'}</div>
       <button type="button" class="danger" data-q="quit">やめる</button></div>
       <button type="button" class="cancel" data-q="keep">続ける</button></div>`;
     root.appendChild(bg);
@@ -3941,6 +4029,7 @@
   }
 
   // ---------- 操作 ----------
+  const keepKY = () => { const b = document.getElementById('yk-body'); if (b) S.ky = b.scrollTop; };
   function onClick(e) {
     const more = e.target.closest('[data-more]');
     if (more) {
@@ -3962,7 +4051,13 @@
     switch (a.dataset.act) {
       case 'mark0': S.beat = {}; startMark(0); break;
       case 'next': startMark(nextStep(S.step + 1)); break;   // 前の印で答えた組（S.beat）は持ち越す
-      case 'restart': Q = H; S.idx = 0; S.page = 0; S.my = {}; S.beat = {}; UNDO = []; go('swipe'); break;
+      case 'restart': startSwipe(true); break;   // 消の馬は出さずに、残りの全頭をやり直す
+      case 'kx': { const n = Number(a.dataset.n); S.kx = S.kx.includes(n) ? S.kx.filter((x) => x !== n) : S.kx.concat(n); haptic(); keepKY(); render(); break; }
+      case 'kv': keepKY(); openDetail(byNum(Number(a.dataset.n))); break;
+      case 'kf': { const F = KF(); if (F) F.open(() => { S.ky = 0; render(); }); break; }
+      case 'kfx': { const F = KF(); if (F) { F.set(F.clearKey(F.get(), a.dataset.k)); S.ky = 0; render(); } break; }
+      case 'kdone': keshiDone(); break;
+      case 'toswipe': startSwipe(true); break;
       case 'undo': undo(); break;
       case 'done': close(true); break;
       case 'close': close(false); break;   // 1頭だけ見るときの「閉じる」（2026-09-21）

@@ -3824,6 +3824,9 @@ document.addEventListener('gekiatsu-change', gekiPaint);
 //   ・札と段に、成績の「ランクの見どころ」と同じ S と D の差の点（差25以上＝緑・10未満＝赤）。札の名前（ⓘ）を押すとその札の成績の表
 const MF_KEY = 'mmfilter';
 const MF_QUICK_KEY = 'mmfilter-quick';   // 自分で足した「よく使う」（⑥）
+// 予想の「消す馬」の段（yoso.js）で使う条件。出馬表の条件とは別に覚える（2026-10-19 ユーザー決定。
+//   出馬表で「調教A以上」をかけたまま開くと、強い馬が消す候補に並ぶため）。「よく使う」は出馬表と同じ一覧
+const MF_YOSO_KEY = 'mmfilter-yoso';
 const MF_LV = ['S', 'A', 'B', 'C', 'D']; // 条件の値はランクの字の位置 0〜4（0＝S・2＝B）。向き（dir）が以上なら B以上、以下なら B以下
 // 以上と以下は全部の札で1つの向き（mockup-321 案B・2026-10-19 ユーザー「A以上で探したい時と、C以下で探したい時がある」）。
 //   以上で使えるのは S〜C（0〜3）、以下で使えるのは A〜D（1〜4）。S以下・D以上は全部の馬なので置かない
@@ -3848,7 +3851,8 @@ const MF_T3_MAX = 50;      // 成績の表の 3着内率の棒の物差し（0�
 const MF_STAR = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.6l1.9 4 4.4.5-3.3 3 .9 4.3L8 11.3 4.1 13.4l.9-4.3-3.3-3 4.4-.5z" fill="#fff"/></svg>';
 const MF_ICON = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 3h12M4.5 8h7M7 13h2" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>';
 const MF = { s: null, quick: [], site: null, sheet: null, shade: null, draft: null, edit: false,
-  ranks: null, rec: null, open: {}, dt: {}, menu: false };   // 段は最初は全部閉じる（2026-10-19 ユーザー「馬の力はデフォルトで閉じておいて」）
+  ranks: null, rec: null, open: {}, dt: {}, menu: false,
+  mode: 'list', ys: null, onYs: null };   // mode＝いまシートを開いている先（list＝出馬表・yoso＝予想の消す馬）。ys＝消す馬の段の条件   // 段は最初は全部閉じる（2026-10-19 ユーザー「馬の力はデフォルトで閉じておいて」）
 
 const mfEmpty = () => ({ dir: 'up', th: {}, rs: [], ai: false, mine: false, nox: false });
 const mfOk = (i, dir) => Number.isInteger(i) && (dir === 'dn' ? i >= 1 && i <= 4 : i >= 0 && i <= 3);
@@ -3872,6 +3876,7 @@ function mfNorm(o) {
 }
 function mfLoad() {
   try { MF.s = mfNorm(JSON.parse(localStorage.getItem(MF_KEY))); } catch (e) { MF.s = mfEmpty(); }
+  try { MF.ys = mfNorm(JSON.parse(localStorage.getItem(MF_YOSO_KEY))); } catch (e) { MF.ys = mfEmpty(); }
   try {
     const q = JSON.parse(localStorage.getItem(MF_QUICK_KEY));
     MF.quick = Array.isArray(q) ? q.filter((x) => x && typeof x.label === 'string').map((x) => ({ s: mfNorm(x.s) })).filter((x) => !mfIsEmpty(x.s)) : [];
@@ -3881,6 +3886,7 @@ function mfLoad() {
 function mfSave() {
   try {
     localStorage.setItem(MF_KEY, JSON.stringify(MF.s));
+    localStorage.setItem(MF_YOSO_KEY, JSON.stringify(MF.ys));
     localStorage.setItem(MF_QUICK_KEY, JSON.stringify(MF.quick.map((q) => ({ label: mfTags(q.s).map((t) => t[1]).join('＋'), s: q.s }))));
   } catch (e) { /* 保存しないだけ */ }
 }
@@ -3997,9 +4003,20 @@ function mfSetState(s) {
   mfApply();
 }
 
-function mfOpenSheet() {
-  if (!MF.sheet.classList.contains('on')) lockPageScroll();
-  MF.draft = mfClone(MF.s);
+// シートで決めた条件をかける。予想の消す馬の段から開いた時は、その段の条件に入れて知らせる（出馬表の並びは変えない）
+function mfCommit(s) {
+  if (MF.mode !== 'yoso') { mfSetState(s); return; }
+  MF.ys = mfNorm(s);
+  mfSave();
+  if (MF.onYs) MF.onYs(MF.ys);
+}
+const mfCur = () => (MF.mode === 'yoso' ? MF.ys : MF.s);
+
+function mfOpenSheet(mode = 'list') {
+  // 予想の画面は自分でページを止めているので、そこから開く時は止め直さない（閉じた時に後ろのページが動かないように）
+  if (!MF.sheet.classList.contains('on') && mode !== 'yoso') lockPageScroll();
+  MF.mode = mode;
+  MF.draft = mfClone(mfCur());
   MF.edit = false;
   MF.menu = false;
   mfDrawSheet();
@@ -4013,7 +4030,7 @@ function mfCloseSheet() {
   MF.sheet.style.transition = '';
   MF.sheet.classList.remove('on');
   MF.shade.classList.remove('on');
-  unlockPageScroll();
+  if (MF.mode !== 'yoso') unlockPageScroll();
 }
 
 // 成績の「ランクの見どころ」と同じ数字（data/rank_record.json）。差は丸めた後の頭数どうしの引き算（144-spec ⑫）
@@ -4074,7 +4091,7 @@ function mfDrawSheet() {
   // よく使う（mockup-320 案B・2026-10-19 ユーザー決定）：1行にたたみ、押すと iPhone のメニュー（ぼかしの浮いた箱）で選ぶ。
   //   行の右は、いまかけている条件と同じ「よく使う」があればその中身、無ければ登録の数。メニューの中で足す・編集（✕で消す）もできる
   const qText = (s) => mfTags(s).map((x) => x[1]).join('・');
-  const curQ = MF.quick.find((q) => mfSame(q.s, MF.s));
+  const curQ = MF.quick.find((q) => mfSame(q.s, mfCur()));
   const favRow = `<button type="button" class="mf-cell" data-mfmenu><span class="ic">${MF_STAR}</span><span class="lb"><span>よく使う</span></span>`
     + `<span class="cur">${escapeHtml(curQ ? qText(curQ.s) : MF.quick.length ? `${MF.quick.length}つ` : 'なし')}</span><span class="chev">›</span></button>`;
   const menu = MF.menu ? `<div class="mf-menu">${MF.quick.map((q, i) => `<button type="button" class="mi${mfCount(q.s) ? '' : ' zero'}" data-mfq="${i}">`
@@ -4103,7 +4120,7 @@ function mfDrawSheet() {
       <div class="mf-box">${groups}</div>${legend}
       <div class="mf-hd">脚質</div><div class="mf-pills">${rs}</div>
       <div class="mf-hd">印</div><div class="mf-box">${fl}</div></div>
-    <div class="mf-foot"><button type="button" class="mf-apply" data-mfapply>${empty ? '閉じる' : `${n}頭を上に出す`}</button>
+    <div class="mf-foot"><button type="button" class="mf-apply" data-mfapply>${empty ? '閉じる' : MF.mode === 'yoso' ? `${n}頭を集める` : `${n}頭を上に出す`}</button>
       <button type="button" class="mf-save" data-mfsave${empty || dup ? ' disabled' : ''}>いまの組み合わせを「よく使う」に足す</button></div>`;
   MF.sheet.scrollTop = y;
 }
@@ -4128,7 +4145,7 @@ function mfSheetClick(e) {
     if (!q) return;
     MF.menu = false;
     mfCloseSheet();
-    mfSetState(mfClone(q.s));
+    mfCommit(mfClone(q.s));
     return;
   }
   if (t('[data-mfedit]')) { MF.edit = !MF.edit; mfDrawSheet(); return; }
@@ -4141,7 +4158,7 @@ function mfSheetClick(e) {
     mfDrawSheet();
     return;
   }
-  if (t('[data-mfapply]')) { mfCloseSheet(); mfSetState(d); return; }
+  if (t('[data-mfapply]')) { mfCloseSheet(); mfCommit(d); return; }
   if (t('[data-mfsave]')) {
     if (mfIsEmpty(d) || MF.quick.some((q) => mfSame(q.s, d))) return;
     MF.quick.push({ s: mfClone(d) });
@@ -4199,7 +4216,7 @@ function mfSwipeInit() {
     if (!drag) return;
     sh.style.transition = '';
     const fast = dy > 40 && dy / Math.max(1, Date.now() - t0) > 0.6;
-    if (dy >= MF_SWIPE_CLOSE || fast) { mfCloseSheet(); mfSetState(MF.draft); } else sh.style.transform = '';
+    if (dy >= MF_SWIPE_CLOSE || fast) { mfCloseSheet(); mfCommit(MF.draft); } else sh.style.transform = '';
   };
   sh.addEventListener('touchend', end);
   sh.addEventListener('touchcancel', end);
@@ -4214,6 +4231,21 @@ function mfRanksReady() {
   if (MF.sheet && MF.sheet.classList.contains('on')) mfDrawSheet();
 }
 document.addEventListener('ans:ranks', mfRanksReady);
+
+// 予想の「消す馬」の段（yoso.js）から使う口。シートは出馬表と同じもの。決めた条件は ys に入り、onDone に渡る
+window.MmFilter = {
+  ready: () => !!(MF.site && MF.sheet),
+  get: () => mfClone(MF.ys || mfEmpty()),
+  set: (s) => { MF.ys = mfNorm(s); mfSave(); },
+  open: (onDone) => { if (!MF.sheet) return; MF.onYs = onDone; mfOpenSheet('yoso'); },
+  match: (h, s) => mfMatch(h, s),
+  isEmpty: (s) => mfIsEmpty(s),
+  tags: (s) => mfTags(s),
+  clearKey: (s, k) => { const c = mfClone(s); mfClearKey(c, k); return c; },
+  // 行に出す札：かけた順に2つまで（出馬表の評価の列と同じ短い名前）
+  chips: (h, s) => Object.keys(s.th).slice(0, 2).map((k) => { const n = k.slice(2); return { name: MF_SHORT[n] || n, grade: mfRank(h, k) }; }),
+  hasRanks: () => !!MF.ranks,
+};
 
 function mfInit(site) {
   const list = document.querySelector('.race20 .mm-list');
