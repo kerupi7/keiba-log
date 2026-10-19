@@ -5336,3 +5336,40 @@ body:has(.container.st26){background:#F2F2F7}
 .pill-sda .container.top #races-section{timeline-scope:--trk26}
 .pill-sda .container.top .tracks.seg26 .pill26{animation:pill26 linear both;animation-timeline:--trk26}
 @keyframes pill26{from{transform:translateX(0)}to{transform:translateX(calc((var(--n,1) - 1) * 100%))}}
+
+/* ---- 勝率・連対率・複勝率の切り替え（145-spec・mockup-342 案3「並び替える輪」） ----
+   評価の列を 評価／勝率／連対率／複勝率 で替える。率は輪（一周＝100%）、上位3頭の輪だけ紺。
+   切り替えは本番の .r27-seg と同じ地と影。白いつまみは押した所へ滑る */
+.race20 .rv-seg{position:relative;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));background:rgba(118,118,128,.12);border-radius:10px;padding:2px;margin:0 0 10px}
+.race20 .rv-seg .th{position:absolute;top:2px;bottom:2px;left:2px;width:calc((100% - 4px) / 4);border-radius:8px;background:#fff;
+  box-shadow:0 3px 8px rgba(0,0,0,.12),0 3px 1px rgba(0,0,0,.04);transition:transform .34s cubic-bezier(.3,.7,.2,1)}
+.race20 .rv-seg button{position:relative;z-index:1;height:32px;border:0;border-radius:8px;background:none;font:inherit;font-weight:600;font-size:13.5px;color:var(--text);cursor:pointer}
+.race20 .mm-list .mm-row{position:relative}
+.race20 .mm-list .tot .rv-ring{display:none}
+.race20 .mm-list.rv-on .tot > .tsc,.race20 .mm-list.rv-on .tot > .grade,
+.race20.r26 .mm-list.rv-on .mm-c .tot > .grade{display:none}
+.race20 .mm-list.rv-on .tot > .rv-ring{display:flex}
+.race20 .rv-ring{position:relative;flex:none;width:36px;height:36px;align-items:center;justify-content:center}
+.race20 .rv-ring svg,.rv-big svg{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg)}
+.race20 .rv-ring circle,.rv-big circle{fill:none;stroke-width:3.4}
+.race20 .rv-ring .trk,.rv-big .trk{stroke:#EBEBF0}
+.race20 .rv-ring .arc,.rv-big .arc{stroke:#A9BDD3;stroke-linecap:round;transition:stroke-dashoffset .55s cubic-bezier(.3,.7,.2,1),stroke .3s}
+.race20 .rv-ring .arc.top3,.rv-big .arc.top3{stroke:var(--navy)}
+.race20 .rv-ring .rv-n{position:relative;font-family:var(--num27,Futura,Jost,"Avenir Next",-apple-system,sans-serif);font-weight:600;font-size:12.5px;
+  line-height:1;letter-spacing:-.02em;color:var(--text);font-variant-numeric:tabular-nums}
+.race20 .rv-ring .rv-n.s{font-size:10px}
+/* 率を選んでいる間だけ、行の左上にその率での順位 */
+.race20 .mm-row .rv-rk{display:none;position:absolute;left:3px;top:3px;font-family:var(--num27,Futura,Jost,sans-serif);font-size:9px;font-weight:600;color:#8E8E93;line-height:1;pointer-events:none}
+.race20 .mm-list.rv-on .mm-row .rv-rk{display:block}
+/* 馬名の詳細（1頭だけ見る画面の頭のカード・予備のポップアップ）：3つの輪（勝率・連対率・複勝率）と、出走頭数の中の順位。
+   1頭だけ見る画面（yoso.js）でも使うので .race20 の下に限らない */
+.rv-pop{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:0 0 12px;padding:10px 4px 9px;background:#F5F6F8;border-radius:12px}
+.rv-pc{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:0}
+.rv-big{position:relative;width:50px;height:50px;display:flex;align-items:center;justify-content:center}
+.rv-big circle{stroke-width:4}
+.rv-big b{position:relative;font-family:var(--num27,Futura,Jost,"Avenir Next",-apple-system,sans-serif);font-weight:600;font-size:15px;line-height:1;color:var(--text);letter-spacing:-.02em}
+.rv-big b.s{font-size:12px}
+.rv-big b small{font-size:9px;margin-left:1px;color:#8E8E93}
+.rv-pl{font-size:11.5px;font-weight:700;color:var(--text)}
+.rv-pr{font-size:10px;color:#8E8E93}
+.b-hd .rv-pop{margin:12px 0 0}

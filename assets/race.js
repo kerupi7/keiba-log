@@ -3117,6 +3117,7 @@ function popupBody(h, site) {
     </div>
     <div class="pbody">
       ${mmInline(h)}
+      ${rvPopHtml(h, site)}
       ${'' /* 通算（1-1-1-7）の行は外した。代わりに見出しの馬名の右に今日の脚質の札（2026-10-13 ユーザー「通算いらない」） */}
       ${markWhyBlock(h)}
       ${panelButtons(h, site)}
@@ -3355,10 +3356,10 @@ function mmRow(h) {
       <span class="mm-c">${umaBox(h.number, h.gate, 'sm')}<span class="nm"><span class="t">${escapeHtml(h.name)}</span></span>
         <span class="tot">（取消）</span><span class="od">—</span></span></div>`;
   }
-  return `<div class="mm-row${h.ability_mark ? ' pred' : ''}" data-n="${h.number}">${mmCell(h)}
+  return `<div class="mm-row${h.ability_mark ? ' pred' : ''}" data-n="${h.number}"><span class="rv-rk"></span>${mmCell(h)}
     <span class="mm-ai">${markBadge20(h) || '<span class="none">—</span>'}</span>
     <span class="mm-c"><span class="mm-hnleg">${umaBox(h.number, h.gate, 'sm')}${legDots(h.running_style)}</span><span class="mm-nmwrap"><button type="button" class="nm" data-pop="${h.number}"><span class="t">${escapeHtml(h.name)}</span><i class="apop">›</i></button>${mmSub(h)}</span>
-      <span class="tot">${fmtNum(dispScore(h), 1)}<i class="grade ${gradeClass(dispGrade(h))}">${gradeDisp(dispGrade(h))}</i></span>
+      <span class="tot"><span class="tsc">${fmtNum(dispScore(h), 1)}</span><i class="grade ${gradeClass(dispGrade(h))}">${gradeDisp(dispGrade(h))}</i>${rvRing(h)}</span>
       <span class="od${oddsHotClass(h.odds)}"><span class="ov">${h.odds != null ? h.odds.toFixed(1) : '—'}</span><i>倍</i>
         <span class="pp">${h.popularity ?? '—'}人気</span></span></span></div>`;
 }
@@ -3749,6 +3750,7 @@ function mmList(site) {
   const rf = site.status === 'prediction' ? oddsRfHtml() : '';
   // .mf-bar は絞り込みの帯（143-spec）。中身は setupMyMarks の後に mfApply が書く
   return `<div class="mm-list">
+      ${rvSegHtml(site)}
       <div class="mf-bar"></div>
       <div class="mm-hd"><span class="h-my">自分</span><span class="h-ai">AI</span>
         <span class="h-c"><span class="h-nm">馬</span><span class="h-tot">評価</span>
@@ -3951,11 +3953,144 @@ function mfBarHtml() {
     + (t.length ? `<div class="mf-cnt"><b>${mfCount(MF.s)}頭</b>が条件に合う（上に出しています）</div>` : '');
 }
 
+// ---------- 勝率・連対率・複勝率の切り替え（145-spec・2026-10-19 ユーザー決定「並び替える輪で」・mockup-342 案3） ----------
+// 評価の列を、上の切り替えで 評価／勝率／連対率／複勝率 に替える。率は輪で出し（一周＝100%）、上位3頭の輪だけ紺。
+// 率を選ぶとその率の高い順に行が滑って並び替わり、行の左上に順位が出る。評価を選ぶと馬番の順に戻る。
+// 率は公開時に作った horses[].model_rates（勝率モデルの p_win と、そこから Harville で作った2着以内・3着以内）。
+// 率が1頭も無いレース（2026-10-19 より前の公開分）は、切り替えも輪も出さない（今までと同じ見た目）。
+// 選んだものは端末に1つだけ覚え、次に開いたレースにもかける（絞り込み⑩と同じ考え方）。
+const RV_KEYS = [['sc', '評価'], ['win', '勝率'], ['top2', '連対率'], ['top3', '複勝率']];
+const RV_STORE = 'ans:rv';
+const RV = { k: 'sc', site: null, prev: {} };
+const RV_R = 15;
+const RV_C = 2 * Math.PI * RV_R;
+const rvHas = (site) => ((site && site.horses) || []).some((h) => !h.scratched && h.model_rates);
+const rvPct = (v) => (v * 100 < 1 ? '<1' : String(Math.round(v * 100)));
+function rvRing(h) {
+  if (!h.model_rates) return '';
+  return `<span class="rv-ring"><svg viewBox="0 0 36 36" aria-hidden="true"><circle class="trk" cx="18" cy="18" r="${RV_R}"/>`
+    + `<circle class="arc" cx="18" cy="18" r="${RV_R}" stroke-dasharray="${RV_C.toFixed(2)}" stroke-dashoffset="${RV_C.toFixed(2)}"/></svg>`
+    + '<span class="rv-n"></span></span>';
+}
+function rvSegHtml(site) {
+  if (!rvHas(site)) return '';
+  return `<div class="rv-seg"><span class="th"></span>${RV_KEYS.map(([k, l]) => `<button type="button" data-rv="${k}">${l}</button>`).join('')}</div>`;
+}
+// その率での順位（取消・率の無い馬は数えない）。同じ率は同じ順位
+function rvRanks(site, k) {
+  const hs = site.horses.filter((h) => !h.scratched && h.model_rates);
+  const out = {};
+  hs.forEach((h) => { out[h.number] = 1 + hs.filter((x) => x.model_rates[k] > h.model_rates[k]).length; });
+  return out;
+}
+// 数字を前の値から新しい値へ 0.32 秒で数え上げる（続けて押したら前の数え上げは止める）
+function rvCount(el, from, to) {
+  const tok = (el._rvTok = (el._rvTok || 0) + 1);
+  const t0 = performance.now();
+  const step = (t) => {
+    if (el._rvTok !== tok) return;
+    const p = Math.min(1, Math.max(0, (t - t0) / 320));
+    el.textContent = rvPct(from + (to - from) * (1 - Math.pow(1 - p, 3)));
+    if (p < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+// 並べ替えた行を、前の位置から今の位置へ滑らせる（前の位置に戻してから、変形を外して動かす）
+function rvSlide(before) {
+  const moved = [];
+  before.forEach((top, r) => {
+    const dy = top - r.getBoundingClientRect().top;
+    if (!dy) return;
+    r.style.transition = 'none';
+    r.style.transform = `translateY(${dy}px)`;
+    moved.push(r);
+  });
+  if (!moved.length) return;
+  document.body.getBoundingClientRect();
+  moved.forEach((r) => {
+    r.style.transition = 'transform .5s cubic-bezier(.3,.7,.2,1)';
+    r.style.transform = '';
+  });
+  setTimeout(() => moved.forEach((r) => { r.style.transition = ''; }), 560);
+}
+function rvPaint(animate) {
+  const list = document.querySelector('.race20 .mm-list');
+  if (!list || !RV.site) return;
+  const k = RV.k;
+  const idx = RV_KEYS.findIndex((x) => x[0] === k);
+  list.classList.toggle('rv-on', k !== 'sc');
+  list.querySelectorAll('.rv-seg button').forEach((b) => b.classList.toggle('on', b.dataset.rv === k));
+  const th = list.querySelector('.rv-seg .th');
+  if (th) th.style.transform = `translateX(${idx * 100}%)`;
+  const ht = list.querySelector('.mm-hd .h-tot');
+  if (ht) ht.textContent = RV_KEYS[idx][1];
+  if (k === 'sc') return;
+  const ranks = rvRanks(RV.site, k);
+  RV.site.horses.forEach((h) => {
+    const row = list.querySelector(`.mm-row[data-n="${h.number}"]`);
+    if (!row) return;
+    const rk = row.querySelector('.rv-rk');
+    if (rk) rk.textContent = ranks[h.number] || '';
+    const ring = row.querySelector('.rv-ring');
+    if (!ring || !h.model_rates) return;
+    const v = h.model_rates[k];
+    const arc = ring.querySelector('.arc');
+    arc.style.strokeDashoffset = (RV_C * (1 - Math.min(1, v))).toFixed(2);
+    arc.classList.toggle('top3', ranks[h.number] <= 3);
+    const n = ring.querySelector('.rv-n');
+    n.classList.toggle('s', v * 100 < 1);
+    const from = RV.prev[h.number];
+    if (animate && from != null) rvCount(n, from, v);
+    else { n._rvTok = (n._rvTok || 0) + 1; n.textContent = rvPct(v); }
+    RV.prev[h.number] = v;
+  });
+}
+function rvSet(k, animate) {
+  if (!RV_KEYS.some((x) => x[0] === k) || k === RV.k) return;
+  RV.k = k;
+  try { localStorage.setItem(RV_STORE, k); } catch (e) { /* 覚えられなくても切り替えは効く */ }
+  rvPaint(animate);
+  mfApply({ animate });
+}
+function rvInit(site) {
+  const list = document.querySelector('.race20 .mm-list');
+  const seg = list && list.querySelector('.rv-seg');
+  if (!seg) { RV.k = 'sc'; return; }
+  RV.site = site;
+  try {
+    const k = localStorage.getItem(RV_STORE);
+    if (RV_KEYS.some((x) => x[0] === k)) RV.k = k;
+  } catch (e) { /* 読めなければ評価のまま */ }
+  seg.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-rv]');
+    if (b) rvSet(b.dataset.rv, true);
+  });
+  rvPaint(false);
+}
+
+// 馬名の詳細（ポップアップ）に出す3つの輪（145-spec）。一覧の切り替えと同じ色の決まり（上位3頭の輪だけ紺）
+function rvPopHtml(h, site) {
+  if (!h.model_rates || !site || !rvHas(site)) return '';
+  const n = site.horses.filter((x) => !x.scratched && x.model_rates).length;
+  const R = 21;
+  const C = 2 * Math.PI * R;
+  return `<div class="rv-pop">${RV_KEYS.slice(1).map(([k, l]) => {
+    const v = h.model_rates[k];
+    const rk = rvRanks(site, k)[h.number];
+    return `<div class="rv-pc"><span class="rv-big"><svg viewBox="0 0 50 50" aria-hidden="true"><circle class="trk" cx="25" cy="25" r="${R}"/>`
+      + `<circle class="arc${rk <= 3 ? ' top3' : ''}" cx="25" cy="25" r="${R}" stroke-dasharray="${C.toFixed(2)}" stroke-dashoffset="${(C * (1 - Math.min(1, v))).toFixed(2)}"/></svg>`
+      + `<b class="${v * 100 < 1 ? 's' : ''}">${rvPct(v)}<small>%</small></b></span>`
+      + `<span class="rv-pl">${l}</span><span class="rv-pr">${n}頭中${rk}位</span></div>`;
+  }).join('')}</div>`;
+}
+
 // 一覧の並びを、いまの条件で組み直す。行（.mm-row）は作り直さず並べ替えるだけ
 // （印のマス・オッズの塗り・字の縮め具合はそのまま残る）
-function mfApply() {
+function mfApply(opt = {}) {
   const list = document.querySelector('.race20 .mm-list');
   if (!list || !MF.site) return;
+  // 145-spec: 動かす前の位置（切り替えを押した時だけ。行が前の位置から滑って並び替わる）
+  const before = opt.animate ? new Map([...list.querySelectorAll('.mm-row')].map((r) => [r, r.getBoundingClientRect().top])) : null;
   const bar = list.querySelector('.mf-bar');
   if (bar) bar.innerHTML = mfBarHtml();
   const hd = list.querySelector('.mm-hd');
@@ -3964,7 +4099,9 @@ function mfApply() {
   const by = {};
   MF.site.horses.forEach((h) => { by[h.number] = h; });
   const num = (r) => Number(r.dataset.n);
-  const rows = [...list.querySelectorAll('.mm-row')].sort((a, b) => num(a) - num(b));
+  // 145-spec: 勝率・連対率・複勝率を選んでいる間は、その率の高い順（取消・率の無い馬は下）。評価なら馬番の順
+  const rv = (r) => (RV.k === 'sc' ? 0 : ((by[num(r)] || {}).model_rates || {})[RV.k] ?? -1);
+  const rows = [...list.querySelectorAll('.mm-row')].sort((a, b) => (rv(b) - rv(a)) || (num(a) - num(b)));
   const on = !mfIsEmpty(MF.s);
   const hit = on ? rows.filter((r) => by[num(r)] && mfMatch(by[num(r)], MF.s)) : rows;
   const miss = on ? rows.filter((r) => !hit.includes(r)) : [];
@@ -3980,6 +4117,7 @@ function mfApply() {
     miss.forEach((r) => { r.classList.add('mf-out'); frag.appendChild(r); });
   }
   hd.after(frag);
+  if (before) rvSlide(before);
   // ランクで絞っている間だけ、評価の列（点数・評価の下）にその馬のランクの札を出す（⑧）。ランクが無い馬は灰色の「—」、初は「初」（⑪）。
   //   列の幅が38pxなので、出すのはかけた順に2つまで（短い名前・例「直近A」）
   const ks = Object.keys(MF.s.th).slice(0, 2);
@@ -4276,6 +4414,7 @@ function mfInit(site) {
     if (MF.sheet.classList.contains('on')) mfDrawSheet();
   }).catch(() => {});
   mfRanksReady();
+  rvInit(site);   // 145-spec: 勝率・連対率・複勝率の切り替え（最初の並べ直しの前に、覚えている選択を読む）
   mfApply();
 }
 
@@ -7508,6 +7647,8 @@ if (document.getElementById('race-content')) main();
 window.AptCard = aptCardHtml;
 window.RtCard = raceTypeCardHtml;
 window.AptReset = aptResetCards;
+// 145-spec: 1頭だけ見る画面（yoso.js）の頭のカードに出す勝率・連対率・複勝率の3つの輪
+window.RvPop = rvPopHtml;
 
 })();
 
