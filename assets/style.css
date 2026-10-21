@@ -4939,7 +4939,7 @@ body:has(.container.top){background:#F2F2F7}
 .race20 .mf-trk.t-B{background:#E4EEF6;color:#3D6A8F}.race20 .mf-trk.t-C{background:#ECECEF;color:#6E6E73}
 .race20 .mf-trk.t-D{background:#F6EADB;color:#9A6A35}.race20 .mf-trk.t-none{background:#F2F2F5;color:#AEAEB2}
 /* シート（body 直下・印のシートと同じ重なり）。2026-10-19 見直しで iPhone の設定アプリの形に（mockup-318）：
-   灰色の地に白い角丸の箱・行44px・区切り線は左を空ける・色は紺（選んだもの）と差の点（緑・赤）だけ */
+   灰色の地に白い角丸の箱・行44px・区切り線は左を空ける・色は紺（選んだもの）と差の札（緑・赤）だけ */
 .mf-shade{position:fixed;inset:0;background:rgba(0,0,0,.3);opacity:0;pointer-events:none;transition:opacity .16s;z-index:60}
 .mf-shade.on{opacity:1;pointer-events:auto}
 .mf-sheet{position:fixed;left:0;right:0;bottom:0;z-index:61;background:#F2F2F7;border-radius:14px 14px 0 0;
@@ -4977,10 +4977,13 @@ body:has(.container.top){background:#F2F2F7}
 .mf-sheet .mf-cell.op .chev{transform:rotate(90deg)}
 .mf-sheet .mf-cell .bar{display:inline-block;width:3px;height:16px;border-radius:2px;flex:none}
 .mf-sheet .mf-sub{background:#FAFAFC}
-/* 差の点：緑＝S と D の差が大きい札（25以上）・赤＝小さい札（10未満）。色は D と成績の「逆」と同じ赤 */
-.mf-sheet .mf-dot{display:inline-block;width:8px;height:8px;border-radius:50%;flex:none}
-.mf-sheet .mf-dot.big{background:#30A14E}
-.mf-sheet .mf-dot.lo{background:#A32B1F}
+/* 差の札「+39」（mockup-357）：緑＝S と D の差が大きい札（25以上）・赤＝小さい札（10未満）・灰＝その間。色は成績の「ランクの見どころ」と同じ */
+.mf-sheet .mf-gp{flex:none;font:600 12.5px var(--mf-num);border-radius:999px;padding:1px 8px;background:#F2F2F5;color:#6E6E73;white-space:nowrap}
+.mf-sheet .mf-gp.big{background:#E3F2E8;color:#0B5E2E}
+.mf-sheet .mf-gp.lo{background:#F9E4E1;color:#A32B1F}
+.mf-sheet .sl3 .mf-gp{font-size:11.5px;padding:0 6px}
+.mf-sheet .mf-ft b.up{color:#0B5E2E}
+.mf-sheet .mf-ft b.dn{color:#A32B1F}
 /* スライダーの行 */
 .mf-sheet .mf-cell.sl3{flex-wrap:wrap;padding-top:10px;padding-bottom:6px;cursor:default}
 .mf-sheet .info{display:inline-grid;place-items:center;width:17px;height:17px;border-radius:50%;border:1.3px solid var(--navy);color:var(--navy);
@@ -5005,8 +5008,22 @@ body:has(.container.top){background:#F2F2F7}
 .mf-sheet .mf-dt th:first-child,.mf-sheet .mf-dt td:first-child{text-align:left}
 .mf-sheet .mf-dt td{font:600 13px var(--mf-num);text-align:right;padding:4px 2px;border-top:.5px solid var(--mf-sep)}
 .mf-sheet .mf-dt td.n{color:var(--mf-sub);font-size:12px}
-.mf-sheet .mf-dt td.t3{font-weight:700;width:78px}
-.mf-sheet .mf-dt td.t3 i{display:block;height:3px;border-radius:2px;margin:3px 0 0 auto}
+.mf-sheet .mf-dt td.t3{font-weight:700}
+.mf-sheet .mf-dt .cap b{color:var(--text)}
+/* ⓘ で開く柱（mockup-357）。高さは100頭あたり3着以内・物差し 0〜60頭。D の上の点線の箱が S との差。選んでいるランクは字の下に紺の線 */
+.mf-sheet .mf-ch{position:relative;display:flex;align-items:flex-end;justify-content:space-around;height:112px;border-bottom:1px solid #D1D1D6;margin:6px 4px 0;padding:0 6px}
+.mf-sheet .mf-ch .c{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;width:30px}
+.mf-sheet .mf-ch .c i.b{display:block;width:100%;border-radius:4px 4px 0 0}
+.mf-sheet .mf-ch .c em{font-style:normal;font:600 12px var(--mf-num);line-height:1;margin-bottom:3px}
+.mf-sheet .mf-ch .c.mid i.b{opacity:.32}
+.mf-sheet .mf-ch .c.mid em{color:#8E8E93}
+.mf-sheet .mf-ch .gap{position:absolute;left:0;width:100%;border:1.5px dashed #0B5E2E;border-bottom:0;border-radius:4px 4px 0 0;background:rgba(11,94,46,.07)}
+.mf-sheet .mf-ch .gap.rev{border-color:#A32B1F;background:rgba(163,43,31,.07)}
+.mf-sheet .mf-ch .gap span{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font:700 11px var(--mf-num);color:#0B5E2E;white-space:nowrap}
+.mf-sheet .mf-ch .gap.rev span{color:#A32B1F}
+.mf-sheet .mf-chl{display:flex;justify-content:space-around;margin:5px 4px 8px;padding:0 6px}
+.mf-sheet .mf-chl > span{width:30px;display:flex;justify-content:center;padding-bottom:3px;border-bottom:2px solid transparent}
+.mf-sheet .mf-chl > span.sel{border-color:var(--navy)}
 .mf-sheet .mf-dt tr.sel td{background:rgba(0,62,112,.08)}
 .mf-sheet .mf-dt .rk{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:5px;color:#fff;font:600 11.5px Futura,Jost,"Avenir Next",sans-serif}
 .mf-sheet .mf-dt .rk.N{font:600 10px var(--font)}

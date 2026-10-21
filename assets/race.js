@@ -3845,6 +3845,8 @@ document.addEventListener('gekiatsu-change', gekiPaint);
 //   ・最初からある「よく使う」5つ・人気・評価を外した。「よく使う」は自分で足した組み合わせだけ
 //   ・見た目は iPhone の設定アプリに寄せた（灰色の地に白い角丸の箱・スライダー）
 //   ・札と段に、成績の「ランクの見どころ」と同じ S と D の差の点（差25以上＝緑・10未満＝赤）。札の名前（ⓘ）を押すとその札の成績の表
+// 2026-10-21（mockup-357・ユーザー「案Aで、はてな押したら棒グラフが見えるようにしたい」）：
+//   ・差の点を「+39」の数字の札に替え、段の行の右にも出す。ⓘ で開く所に S〜D の柱（成績のページと同じ物差し）を足し、表はその下に残す
 const MF_KEY = 'mmfilter';
 const MF_QUICK_KEY = 'mmfilter-quick';   // 自分で足した「よく使う」（⑥）
 // 予想の「消す馬」の段（yoso.js）で使う条件。出馬表の条件とは別に覚える（2026-10-19 ユーザー決定。
@@ -3870,7 +3872,7 @@ const MF_SHORT = { 直近5走: '直近', '2走前': '2走', '3走前': '3走', '
   馬の力: '力', 人と血統: '人', コースの傾向: '傾向' };
 const MF_GAP_BIG = 25;
 const MF_GAP_SMALL = 10;   // 差の点の境目（stats.js の RG_BIG・RG_SMALL と同じ）
-const MF_T3_MAX = 50;      // 成績の表の 3着内率の棒の物差し（0〜50%）
+const MF_H_MAX = 60;       // ⓘ で開く柱の物差し（0〜60頭）。成績のページ（stats.js RG_H_MAX）と同じ
 const MF_STAR = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.6l1.9 4 4.4.5-3.3 3 .9 4.3L8 11.3 4.1 13.4l.9-4.3-3.3-3 4.4-.5z" fill="#fff"/></svg>';
 const MF_ICON = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 3h12M4.5 8h7M7 13h2" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>';
 const MF = { s: null, quick: [], site: null, sheet: null, shade: null, draft: null, edit: false,
@@ -4223,30 +4225,58 @@ function mfRecRow(k) {
   const x = MF.rec.rows.find((r) => r.kind === kind && r.name === k.slice(2));
   return x ? x.g : null;
 }
-function mfTier(k) {
+// 差の札「+39」：緑＝25以上・赤＝10未満・灰＝その間。S か D の馬がまだいない札は「—」、D の方が多い札は「逆」（stats.js rgDifTxt と同じ）
+function mfDif(g) {
+  return !g || !g.S || !g.D ? null : Math.round(g.S[3]) - Math.round(g.D[3]);
+}
+function mfGap(k) {
   const g = mfRecRow(k);
-  if (!g || !g.S || !g.D) return '';
-  const dif = Math.round(g.S[3]) - Math.round(g.D[3]);
-  return dif >= MF_GAP_BIG ? 'big' : dif < MF_GAP_SMALL ? 'lo' : '';
+  if (!g) return '';
+  const dif = mfDif(g);
+  if (dif === null) return '<span class="mf-gp">—</span>';
+  const tier = dif >= MF_GAP_BIG ? 'big' : dif < MF_GAP_SMALL ? 'lo' : '';
+  return `<span class="mf-gp ${tier}">${dif < 0 ? '逆' : `+${dif}`}</span>`;
+}
+// ⓘ で開く柱：高さは100頭あたり3着以内。S と D は濃く、A〜C と初は薄く。D の柱の上に S の高さまでの点線の箱（＝差）
+function mfChart(g, ks, sel) {
+  const h = (v) => Math.min(v, MF_H_MAX) / MF_H_MAX * 100;
+  const dif = mfDif(g);
+  const cols = ks.map((r) => {
+    const v = g[r][3];
+    const mid = r !== 'S' && r !== 'D';
+    const col = r === '初' ? '#C7C7CC' : MF_RC[r];
+    let gap = '';
+    if (r === 'D' && dif !== null) {
+      const lo = Math.min(h(g.S[3]), h(g.D[3]));
+      const hi = Math.max(h(g.S[3]), h(g.D[3]));
+      gap = `<i class="gap${dif < 0 ? ' rev' : ''}" style="bottom:${lo.toFixed(1)}%;height:${(hi - lo).toFixed(1)}%">`
+        + `${hi - lo >= 16 ? `<span>${dif < 0 ? '逆' : `+${dif}`}</span>` : ''}</i>`;
+    }
+    return `<span class="c${mid ? ' mid' : ''}">${gap}<em${mid ? '' : ` style="color:${col}"`}>${Math.round(v)}</em>`
+      + `<i class="b" style="height:${h(v).toFixed(1)}%;background:${col}"></i></span>`;
+  }).join('');
+  const labs = ks.map((r) => `<span class="${sel(r) ? 'sel' : ''}"><span class="rk${r === '初' ? ' N' : ''}" style="background:${r === '初' ? '#C7C7CC' : MF_RC[r]}">${r}</span></span>`).join('');
+  return `<div class="mf-ch">${cols}</div><div class="mf-chl">${labs}</div>`;
 }
 function mfDetail(k) {
   const g = mfRecRow(k);
   if (!g) return '<div class="mf-dt"><div class="cap"><span>成績はまだ数えていません</span></div></div>';
   const cur = MF.draft.th[k];
-  const rows = ['S', 'A', 'B', 'C', 'D', '初'].filter((r) => g[r]).map((r) => {
+  const sel = (r) => cur !== undefined && r !== '初' && (MF.draft.dir === 'dn' ? 'SABCD'.indexOf(r) >= cur : 'SABCD'.indexOf(r) <= cur);
+  const ks = ['S', 'A', 'B', 'C', 'D', '初'].filter((r) => g[r]);
+  const rows = ks.map((r) => {
     const [n, w, r2, t3] = g[r];
-    const sel = cur !== undefined && r !== '初' && (MF.draft.dir === 'dn' ? 'SABCD'.indexOf(r) >= cur : 'SABCD'.indexOf(r) <= cur);
     const col = r === '初' ? '#C7C7CC' : MF_RC[r];
-    return `<tr class="${sel ? 'sel' : ''}"><td><span class="rk${r === '初' ? ' N' : ''}" style="background:${col}">${r}</span></td>`
+    return `<tr class="${sel(r) ? 'sel' : ''}"><td><span class="rk${r === '初' ? ' N' : ''}" style="background:${col}">${r}</span></td>`
       + `<td class="n">${n.toLocaleString('ja-JP')}</td><td>${w.toFixed(1)}%</td><td>${r2.toFixed(1)}%</td>`
-      + `<td class="t3">${t3.toFixed(1)}%<i style="width:${(Math.min(t3, MF_T3_MAX) / MF_T3_MAX * 100).toFixed(1)}%;background:${col}"></i></td></tr>`;
+      + `<td class="t3">${t3.toFixed(1)}%</td></tr>`;
   }).join('');
   // 調教（状態の段）だけ、調教の表を作り直した後のレースで数えている（144-spec 決め残し ア・ウ）
   const tr = MF.rec.train || {};
   const per = (k === 'c:調教' || k === 'g:状態') && tr.from
     ? `${tr.from.slice(5).replace('-', '/')}〜・${(tr.races || 0).toLocaleString('ja-JP')}レース`
     : `${String(MF.rec.from || '').slice(0, 4)}年〜・${(MF.rec.races || 0).toLocaleString('ja-JP')}レース`;
-  return `<div class="mf-dt"><div class="cap"><span>これまでの成績</span><span>${per}</span></div>
+  return `<div class="mf-dt"><div class="cap"><b>100頭あたり3着以内</b><span>${per}</span></div>${mfChart(g, ks, sel)}
     <table><tr><th>ランク</th><th>頭数</th><th>勝率</th><th>連対率</th><th>3着内率</th></tr>${rows}</table></div>`;
 }
 // スライダー：以上は なし → C以上 → B以上 → A以上 → S、以下は なし → A以下 → B以下 → C以下 → D（どちらも右へ行くほど厳しい）
@@ -4256,10 +4286,9 @@ const mfFromSl = (v) => (MF.draft.dir === 'dn' ? v : 4 - v);
 const mfSlText = (v) => (v ? mfLv(mfFromSl(v), MF.draft.dir) : 'なし');
 function mfSlider(k, label) {
   const v = mfSl(k);
-  const tier = mfTier(k);
   const tk = MF_TK[MF.draft.dir].map((t, j) => `<span class="${j === v && v ? 'on' : ''}">${t}</span>`).join('');
   return `<div class="mf-cell sl3"><button type="button" class="lb${MF.dt[k] ? ' on' : ''}" data-mfdt="${k}">`
-    + `${tier ? `<i class="mf-dot ${tier}"></i>` : ''}<span>${escapeHtml(label)}</span><span class="info">i</span></button>`
+    + `<span>${escapeHtml(label)}</span>${mfGap(k)}<span class="info">i</span></button>`
     + `<span class="val${v ? ' on' : ''}" data-mfvl>${mfSlText(v)}</span>`
     + `<div class="sl"><input type="range" min="0" max="4" step="1" value="${v}" data-mfsl="${k}" style="--p:${v * 25}%" aria-label="${escapeHtml(label)}のランク">`
     + `<div class="ticks">${tk}</div></div>${MF.dt[k] ? mfDetail(k) : ''}</div>`;
@@ -4283,13 +4312,13 @@ function mfDrawSheet() {
       ${MF.quick.length ? `<button type="button" class="mi" data-mfedit><span>${MF.edit ? '編集を終える' : '編集'}</span></button>` : ''}</div>` : '';
   const favs = `<div class="mf-favrow${MF.menu ? ' on' : ''}"><div class="mf-box">${favRow}</div>${menu}</div>`;
   // 凡例は箱の下の注記1行（案B）
-  const legend = MF.rec ? `<div class="mf-ft r1"><span><i class="mf-dot big"></i>S と D の差が大きい札</span><span><i class="mf-dot lo"></i>小さい札</span></div>` : '';
+  const legend = MF.rec ? '<div class="mf-ft">数字は S と D の差（100頭あたり3着以内）。<b class="up">緑</b>は差が大きい、<b class="dn">赤</b>は小さい。ⓘ で柱</div>' : '';
   const noRank = MF.ranks ? '' : '<div class="mf-ft">このレースにはランクがありません。ランクで絞っても全部の馬が残ります</div>';
   const groups = MF_GROUPS.map(([g, c, cs]) => {
     const op = MF.open[g];
     const cnt = [`g:${g}`, ...cs.map((x) => `c:${x}`)].filter((k) => d.th[k] !== undefined).length;
     return `<button type="button" class="mf-cell grp${op ? ' op' : ''}" data-mfg="${g}"><span class="lb"><i class="bar" style="background:${c}"></i><span>${g}</span></span>`
-      + `<span class="val${cnt ? ' on' : ''}">${cnt ? `${cnt}つ` : ''}</span><span class="chev">›</span></button>`
+      + `<span class="val${cnt ? ' on' : ''}">${cnt ? `${cnt}つ` : ''}</span>${mfGap(`g:${g}`)}<span class="chev">›</span></button>`
       + (op ? `<div class="mf-sub">${mfSlider(`g:${g}`, '段のランク')}${cs.map((x) => mfSlider(`c:${x}`, mfLabel(`c:${x}`))).join('')}</div>` : '');
   }).join('');
   const rs = MF_RS.map((v) => `<button type="button" data-mfrs="${v}" class="${d.rs.includes(v) ? 'on' : ''}">${v}</button>`).join('');
