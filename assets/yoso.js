@@ -383,7 +383,10 @@
       bindCard();
       // 次の後ろの札は、切り替えが済んでから描く（1頭だけ見るときは後ろが無い）
       if (S.screen === 'swipe') fillBack();
-    } else bindPull(col.querySelector('.ap, .yk') || col);
+    // 払う受け口は描いた箱（.ap・.yk）にだけ付ける。#yf-col に付けると描き直しても残り続け、
+    //   印の途中で開いた「1頭だけ見る」を下に払って閉じた時にも「予想をやめますか？」が出ていた（2026-10-24 ユーザー指摘）。
+    //   そのため「候補が決まりました」「◎ が決まりました」も消す馬と同じく .yk で包んだ
+    } else bindPull(col.querySelector('.ap, .yk'));
     if (S.screen === 'keshi') { const b = document.getElementById('yk-body'); if (b) b.scrollTop = S.ky || 0; }
   }
 
@@ -2565,7 +2568,7 @@
   function vAsk() {
     const c = checked().length;
     const k = H.filter((h) => S.my[h.number] === '消').length;
-    return `${head('2 / 3　候補', '候補が決まりました', 100)}
+    return `<div class="yk">${head('2 / 3　候補', '候補が決まりました', 100)}
       <div class="yf-mid">
         <div class="yf-big chk">✓</div>
         <div class="yf-cnt"><span class="c1">✓ ${c}頭</span><span class="c2">消 ${k}頭</span></div>
@@ -2578,7 +2581,7 @@
         ${c ? '<button type="button" class="yf-btn" data-act="mark0">印を決める</button>'
           : '<button type="button" class="yf-btn" data-act="restart">候補をやり直す</button>'}
         <button type="button" class="yf-btn text" data-act="done">ここで終える（消と✓だけ付ける）</button>
-      </div>`;
+      </div></div>`;
   }
 
   // ---------- 印を決める：2頭を比べて選ぶ（勝ち残り型） ----------
@@ -3427,7 +3430,7 @@
     const h = byNum(S.lastWinner);
     const nx = nextStep(S.step + 1);
     const more = nx < MARKS3.length && pool().length > 0;
-    return `${head('3 / 3　印を決める', `${mk} が決まりました`, 100)}
+    return `<div class="yk">${head('3 / 3　印を決める', `${mk} が決まりました`, 100)}
       <div class="yf-mid">
         <div class="yf-big ${KCLS[mk]}">${mk}</div>
         <div class="who">${umaBox(h.number, h.gate)}${esc(h.name)}</div>
@@ -3436,7 +3439,7 @@
       <div class="yf-foot">
         ${more ? `<button type="button" class="yf-btn" data-act="next">次の印へ（${MARKS3[nx]}）</button>` : ''}
         <button type="button" class="yf-btn ${more ? 'sub' : ''}" data-act="done">ここで終える</button>
-      </div>`;
+      </div></div>`;
   }
 
   // ---------- 消し馬 ----------
