@@ -1,5 +1,6 @@
 // 各モデルの成績ページ（2026-09-15 ユーザー決定・mockup-168 ②）
 // メニューの「成績」から開く。上から win-6（1枚にまとめた成績）、win-5 の6案、win-4 の五街道5案。
+// 2026-10-24: 「予想｜評価」の切り替えを付けた。予想＝上の3枚、評価＝AIの評価ごとの成績（#eval で評価を開く）。
 // 2026-10-07: TOP・レース詳細と同じ見た目（灰の地・白い角丸のカード・数字は Futura）にした（ユーザー「他の場所と同じように」）。
 // データは data/plans.json（plans＝win-4、plans_w5＝win-5、plan_w6_all＝win-6 のまとめ）と data/w6_reference.json（参考）。行を押すとモデル詳細へ。
 (function () {
@@ -94,8 +95,12 @@ function render(doc, ref) {
   const w6 = doc.plan_w6_all;
   const w5 = doc.plans_w5 || [];
   const w4 = doc.plans || [];
+  // 2026-10-24 ユーザー「予想と評価で分析みたいに切り替えれるようにして」。分析ページ（.an-seg）と同じ形の切り替え
   el.innerHTML = `
-    <div class="st26h"><h1>各モデルの成績</h1><p>参考値。1点100円で買ったとして数えた</p></div>
+    <div class="st26h"><h1>各モデルの成績</h1></div>
+    <div class="st26seg" role="tablist"><button type="button" role="tab" data-seg="yoso">予想</button><button type="button" role="tab" data-seg="eval">評価</button></div>
+    <div id="st-yoso">
+    <div class="st26h"><p>参考値。1点100円で買ったとして数えた</p></div>
     ${card('win-6', '荒れ度ごとの17券種＋100万フラグの3連単',
       periodText(doc.period_w6, doc.n_races_w6) || '載せた日から記録',
       w6 && w6.races ? w6Total(w6)
@@ -108,96 +113,45 @@ function render(doc, ref) {
       backfillNote(doc))}
     ${card('win-4', `五街道${w4.length}案`, periodText(doc.period, doc.n_races),
       w4.length ? planList(w4) : '<div class="st26note">記録がありません</div>')}
+    </div>
+    <div id="st-eval" hidden><p class="st26note">読み込み中…</p></div>
   `;
 }
 
-// 144-spec「ランクの見どころ」（2026-10-18・見た目は mockup-314）。データは data/rank_record.json（keiba_rank_record.py が夜の settle で作る）。
-// ランクのページの札と総合について、S と D で100頭あたり何頭が3着以内に来たかを背比べで出す。押すと S〜D ごとの表が開く。
-// 数えた期間は全レース。調教が入るもの（調教の札・状態の段・総合の順位）だけ、調教の表を作った日より後のレース（rec.train）。
-const RG_GROUPS = [['馬の力', 'g4'], ['条件', 'g1'], ['状態', 'g5'], ['人と血統', 'g2'], ['コースの傾向', 'g3']];   // yoso.js の M225_GROUPS・M225_GC
-const RG_BIG = 25;
-const RG_SMALL = 10;   // 差（100頭あたり・丸めた後）の段の境目
-const RG_H_MAX = 60;   // 柱の物差し（0〜60頭）。全部の札で同じ
-let rgOpen = null;
+function showSeg(which) {
+  document.querySelectorAll('.st26seg button').forEach((b) => {
+    const on = b.dataset.seg === which;
+    b.classList.toggle('on', on);
+    b.setAttribute('aria-selected', on ? 'true' : 'false');
+  });
+  document.getElementById('st-yoso').hidden = which !== 'yoso';
+  document.getElementById('st-eval').hidden = which !== 'eval';
+}
 
 function rgDate(iso, withYear) {
   const [y, m, d] = String(iso).split('-');
   return withYear ? `${y}/${+m}/${+d}` : `${+m}/${+d}`;
 }
 
-function rgItems(rec) {
-  const r0 = Math.round;
-  const top3 = (g, k) => (g[k] ? g[k][3] : 0);
-  const mk = (x) => { const s = top3(x.g, 'S'); const d = top3(x.g, 'D'); return { name: x.name, g: x.g, s, d, dif: r0(s) - r0(d), none: !x.g.S || !x.g.D }; };
-  const total = rec.rows.find((x) => x.kind === '総合');
-  const T = { name: '総合', label: '総合の順位', g: total.g, s: top3(total.g, '1位'), d: top3(total.g, '7位以下'), isTotal: true };
-  T.dif = r0(T.s) - r0(T.d);
-  T.none = !total.g['1位'] || !total.g['7位以下'];
-  const secs = RG_GROUPS.map(([name, gc]) => {
-    const i = rec.rows.findIndex((x) => x.kind === '段' && x.name === name);
-    const cards = [];
-    for (let j = i + 1; j < rec.rows.length && rec.rows[j].kind === '札'; j += 1) cards.push(mk(rec.rows[j]));
-    return { name, gc, grp: mk(rec.rows[i]), cards };
-  });
-  return { T, secs };
-}
+// 2026-10-24 ユーザー「8/1以降の結果のAI評価だけ成績に載せたい」。データは rank_record.json の ai（keiba_rank_record.py の ai_record）。
+// AIの評価（各馬の win_grade）ごとに、頭数・勝率・連対率・3着内率を出す。A+ は A に、B+ は B に、C+ は C にまとめる（E は出さない）
+// 同じ日に「ランクの見どころ」（144-spec）は成績ページから外した（ユーザー指示）。rank_record.json の rows はレース詳細が使うので作り続ける
+const AI_ROWS = [['S', ['S']], ['A', ['A+', 'A']], ['B', ['B+', 'B']], ['C', ['C+', 'C']], ['D', ['D']]];
 
-// S か D の馬がまだいない札（調教の表を作り直した直後など）は差を出さず「—」で薄く
-const rgTier = (it) => (it.none ? 'small' : it.dif < 0 ? 'rev' : it.dif >= RG_BIG ? 'big' : it.dif < RG_SMALL ? 'small' : '');
-const rgDifTxt = (it) => (it.none ? '—' : it.dif < 0 ? '逆' : `+${it.dif}`);
-
-function rgDetail(it) {
-  const keys = it.isTotal ? ['1位', '2位', '3位', '4〜6位', '7位以下'] : ['S', 'A', 'B', 'C', 'D', '初'];
-  const rows = keys.filter((k) => it.g[k]).map((k) => {
-    const v = it.g[k];
-    const lab = it.isTotal ? `<span class="pl">${k}</span>` : `<span class="rk ${k === '初' ? 'N' : k}">${k}</span>`;
-    return `<tr><td>${lab}</td><td class="n">${v[0].toLocaleString('ja-JP')}</td><td>${v[1].toFixed(1)}%</td><td>${v[2].toFixed(1)}%</td><td>${v[3].toFixed(1)}%</td></tr>`;
+function aiDraw(el, ai) {
+  const pct = (x, n) => `${(x / n * 100).toFixed(1)}%`;
+  const rows = AI_ROWS.map(([lab, ks]) => {
+    const v = [0, 0, 0, 0];
+    ks.forEach((k) => (ai.g[k] || []).forEach((x, i) => { v[i] += x; }));
+    if (!v[0]) return '';
+    return `<tr><td><span class="rk ${lab}">${lab}</span></td><td class="n">${v[0].toLocaleString('ja-JP')}</td>`
+      + `<td>${pct(v[1], v[0])}</td><td>${pct(v[2], v[0])}</td><td>${pct(v[3], v[0])}</td></tr>`;
   }).join('');
-  return `<div class="det"><div class="dh">${escapeHtml(it.label || it.name)}<small>×</small></div>
-    <table class="rt"><thead><tr><th>${it.isTotal ? '順位' : 'ランク'}</th><th>頭数</th><th>勝率<small>1着</small></th><th>連対率<small>2着以内</small></th><th>3着内率<small>3着以内</small></th></tr></thead>
-    <tbody>${rows}</tbody></table></div>`;
-}
-
-// S と D の柱。D の柱の上に、S の高さまでの点線の箱（＝差）。逆の札は S の柱の上に D までの箱
-function rgCols(it) {
-  const hs = Math.min(it.s, RG_H_MAX) / RG_H_MAX * 100;
-  const hd = Math.min(it.d, RG_H_MAX) / RG_H_MAX * 100;
-  const lo = Math.min(hs, hd);
-  const hi = Math.max(hs, hd);
-  const gapOn = it.dif < 0 ? 's' : 'd';
-  const gap = `<i class="gap" style="bottom:${lo}%;height:${hi - lo}%"></i>`;
-  return `<div class="cols">
-    <span class="c s">${gapOn === 's' ? gap : ''}<em>${Math.round(it.s)}</em><i class="b" style="height:${hs}%"></i></span>
-    <span class="c d">${gapOn === 'd' ? gap : ''}<em>${Math.round(it.d)}</em><i class="b" style="height:${hd}%"></i></span></div>`;
-}
-
-// 4枚並びの段では、押した札の段（横の4枚）の後ろに表を開く
-function rgGrid(cards, n, cell) {
-  const oi = cards.findIndex((x) => x.name === rgOpen);
-  const after = oi < 0 ? -1 : Math.min(oi - (oi % n) + n - 1, cards.length - 1);
-  return cards.map((it, i) => cell(it) + (i === after ? rgDetail(cards[oi]) : '')).join('');
-}
-
-function rgDraw(el, rec) {
-  const { T, secs } = rgItems(rec);
-  const hero = `<div class="hero" data-n="総合"><div class="t">総合の順位<span class="dv">${rgDifTxt(T)}</span></div>
-    <div class="colsw">${rgCols(T)}<div class="lab"><span>1位</span><span>7位以下</span></div></div><span class="chev">${rgOpen === '総合' ? '×' : '›'}</span></div>`
-    + (rgOpen === '総合' ? rgDetail(T) : '');
-  const cell = (it) => `<div class="tw ${rgTier(it)}${rgOpen === it.name ? ' on' : ''}" data-n="${escapeHtml(it.name)}">
-    <span class="dv">${rgDifTxt(it)}</span>${rgCols(it)}<span class="nm">${escapeHtml(it.name)}</span></div>`;
-  const secHead = (s) => `<div class="sec-h ${s.gc}" data-n="${escapeHtml(s.name)}"><i class="bar"></i><b>${escapeHtml(s.name)}</b>
-    <span class="rt2"><span class="pill ${rgTier(s.grp)}">${rgDifTxt(s.grp)}</span><span class="chev">${rgOpen === s.name ? '×' : '›'}</span></span></div>`
-    + (rgOpen === s.name ? rgDetail({ ...s.grp, label: `${s.name}（段のランク）` }) : '');
-  const tr = rec.train || {};
-  el.innerHTML =
-    `<div class="top"><span class="ttl">ランクの見どころ</span><span class="meta">${rgDate(rec.from, true)}〜${rgDate(rec.to)}・${rec.horses.toLocaleString('ja-JP')}頭</span></div>
-    ${tr.from ? `<div class="per">調教・状態・総合は ${rgDate(tr.from)}〜・${tr.horses.toLocaleString('ja-JP')}頭</div>` : ''}
-    <div class="key"><span><i style="background:var(--rS)"></i>S</span><span><i style="background:var(--rD)"></i>D</span><span><i class="gp"></i>差</span><span>100頭あたり3着以内</span></div>`
-    + hero + secs.map((s) => `<div class="sec">${secHead(s)}<div class="tgrid">${rgGrid(s.cards, 4, cell)}</div></div>`).join('');
-  el.querySelectorAll('[data-n]').forEach((c) => c.addEventListener('click', () => {
-    rgOpen = rgOpen === c.dataset.n ? null : c.dataset.n;
-    rgDraw(el, rec);
-  }));
+  el.innerHTML = `<section class="st26c rg26">
+    <div class="top"><span class="ttl">AIの評価</span><span class="meta">${rgDate(ai.from, true)}〜${rgDate(ai.to)}・${ai.races.toLocaleString('ja-JP')}レース</span></div>
+    <div class="per">A・B・C には A+・B+・C+ を含む。取消は除く</div>
+    <div class="det"><table class="rt"><thead><tr><th>AIの評価</th><th>頭数</th><th>勝率<small>1着</small></th><th>連対率<small>2着以内</small></th><th>3着内率<small>3着以内</small></th></tr></thead>
+    <tbody>${rows}</tbody></table></div></section>`;
 }
 
 async function main() {
@@ -218,17 +172,20 @@ async function main() {
     ref = null;
   }
   render(doc, ref);
-  // ランクの見どころは今のカードの下（144-spec 決め残し イ は仮置き）。表が無い・読めない日はカードごと出さない
+  document.querySelector('.st26seg').addEventListener('click', (e) => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    try { history.replaceState(null, '', b.dataset.seg === 'eval' ? '#eval' : location.pathname + location.search); } catch (err) { /* そのまま */ }
+    showSeg(b.dataset.seg);
+  });
+  showSeg(location.hash === '#eval' ? 'eval' : 'yoso');
+  const ev = document.getElementById('st-eval');
   try {
     const rec = await getData('data/rank_record.json');
-    if (rec && rec.rows && rec.rows.length) {
-      const sec = document.createElement('section');
-      sec.className = 'st26c rg26';
-      document.getElementById('stats-content').appendChild(sec);
-      rgDraw(sec, rec);
-    }
+    if (rec && rec.ai && rec.ai.races) aiDraw(ev, rec.ai);
+    else ev.innerHTML = '<p class="st26note">まだ結果の出たレースがありません。</p>';
   } catch (e) {
-    // 無い日は出さないだけ
+    ev.innerHTML = '<p class="st26note">データを読み込めませんでした。時間をおいて開き直してください。</p>';
   }
 }
 
