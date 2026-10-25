@@ -4008,7 +4008,8 @@ const rvHas = (site) => ((site && site.horses) || []).some((h) => !h.scratched &
 //   縮める直し方は win-6 で不合格だった（出しすぎ 8.0→4.3 ポイント・半分に届かず）。複勝率は公開時に縮めてあるのでそのまま
 const RV_TOP2_CAP = 70;
 const rvCapped = (v, k) => k === 'top2' && Math.round(v * 100) >= RV_TOP2_CAP;
-const rvPct = (v, k) => (v * 100 < 1 ? '<1' : rvCapped(v, k) ? `${RV_TOP2_CAP}+` : String(Math.round(v * 100)));
+// 1%未満は小数1桁で出す（2026-10-25 ユーザー「<1%って表示を直してほしい」）。0.0 にはせず 0.1 で止める
+const rvPct = (v, k) => (v * 100 < 0.95 ? Math.max(0.1, v * 100).toFixed(1) : rvCapped(v, k) ? `${RV_TOP2_CAP}+` : String(Math.round(v * 100)));
 function rvRing(h) {
   if (!h.model_rates) return '';
   return `<span class="rv-ring"><svg viewBox="0 0 36 36" aria-hidden="true"><circle class="trk" cx="18" cy="18" r="${RV_R}"/>`
