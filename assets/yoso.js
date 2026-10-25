@@ -3037,8 +3037,9 @@
       sub = `3着以内 <b>${c.good}</b>/${c.n}走<span class="tb-avg">平均${Math.round(c.course_rate)}%</span>`;
     }
     // 直近5走の（C・A・S・B・S）は元の文字が前走→5走前の順。線（左が古い）と向きをそろえて古い順に並べ直す（2026-09-29 ユーザー）
+    //   横の「古→前走」の注記は外した（2026-10-25 ユーザー「古→の文言削除して」）
     if (k === '直近5走' && Array.isArray(c.runs) && c.runs.length) {
-      sub = `（${c.runs.slice().reverse().map((r) => esc(r.grade || '−')).join('・')}）<small class="tb-ord">古→前走</small>`;
+      sub = `（${c.runs.slice().reverse().map((r) => esc(r.grade || '−')).join('・')}）`;
     }
     if (RUN_LABEL.includes(k) && TB_R.includes(c.grade)) {
       const mg = Number(c.margin);
