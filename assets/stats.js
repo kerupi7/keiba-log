@@ -134,22 +134,23 @@ function rgDate(iso, withYear) {
 }
 
 // 2026-10-24 ユーザー「8/1以降の結果のAI評価だけ成績に載せたい」。データは rank_record.json の ai（keiba_rank_record.py の ai_record）。
-// AIの評価（各馬の win_grade）ごとに、頭数・勝率・連対率・3着内率を出す。A+ は A に、B+ は B に、C+ は C にまとめる（E は出さない）
+// AIの評価（各馬の win_grade）ごとに、頭数・勝率・連対率・3着内率を出す（E は出さない）。
+// 2026-10-25 ユーザー「A+とかも細かく分けてほしい」で、A+・B+・C+ を A・B・C にまとめずに1行ずつ出す
 // 同じ日に「ランクの見どころ」（144-spec）は成績ページから外した（ユーザー指示）。rank_record.json の rows はレース詳細が使うので作り続ける
-const AI_ROWS = [['S', ['S']], ['A', ['A+', 'A']], ['B', ['B+', 'B']], ['C', ['C+', 'C']], ['D', ['D']]];
+const AI_ROWS = ['S', 'A+', 'A', 'B+', 'B', 'C+', 'C', 'D'];
 
 function aiDraw(el, ai) {
   const pct = (x, n) => `${(x / n * 100).toFixed(1)}%`;
-  const rows = AI_ROWS.map(([lab, ks]) => {
-    const v = [0, 0, 0, 0];
-    ks.forEach((k) => (ai.g[k] || []).forEach((x, i) => { v[i] += x; }));
-    if (!v[0]) return '';
-    return `<tr><td><span class="rk ${lab}">${lab}</span></td><td class="n">${v[0].toLocaleString('ja-JP')}</td>`
+  const rows = AI_ROWS.map((k) => {
+    const v = ai.g[k];
+    if (!v || !v[0]) return '';
+    // 札の色は + の付かない段と同じ。+ は文字が2つになるので幅を広げる（.rk.p）
+    return `<tr><td><span class="rk ${k[0]}${k.length > 1 ? ' p' : ''}">${k}</span></td><td class="n">${v[0].toLocaleString('ja-JP')}</td>`
       + `<td>${pct(v[1], v[0])}</td><td>${pct(v[2], v[0])}</td><td>${pct(v[3], v[0])}</td></tr>`;
   }).join('');
   el.innerHTML = `<section class="st26c rg26">
     <div class="top"><span class="ttl">AIの評価</span><span class="meta">${rgDate(ai.from, true)}〜${rgDate(ai.to)}・${ai.races.toLocaleString('ja-JP')}レース</span></div>
-    <div class="per">A・B・C には A+・B+・C+ を含む。取消は除く</div>
+    <div class="per">取消は除く</div>
     <div class="det"><table class="rt"><thead><tr><th>AIの評価</th><th>頭数</th><th>勝率<small>1着</small></th><th>連対率<small>2着以内</small></th><th>3着内率<small>3着以内</small></th></tr></thead>
     <tbody>${rows}</tbody></table></div></section>`;
 }
