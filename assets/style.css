@@ -4598,44 +4598,67 @@ body:has(.container.top){background:#F2F2F7}
 .container.top .cp26.w6{color:#fff;background:var(--navy);font-weight:700}
 .container.top .cp26.hit{color:#fff;background:var(--hit);font-weight:700}
 .container.top .cp26.miss{color:#fff;background:var(--keshi)}
-/* 激アツ：黄色の縁＋左上に飛び出す札（色と炎は詳細ページの .r26-hot と同じ） */
-.container.top .rc26.hot{margin-top:12px;box-shadow:0 0 0 2px #FFC94D,0 6px 18px rgba(240,140,20,.18)}
-.container.top .hot26{position:absolute;top:-11px;left:12px;display:inline-flex;align-items:center;gap:4px;
-  background:linear-gradient(135deg,#FFE08A,#FFC94D);color:#3A2A00;border-radius:999px;padding:1px 10px 1px 7px;
-  font-size:11.5px;font-weight:900;letter-spacing:.04em;line-height:18px;box-shadow:0 2px 6px rgba(240,140,20,.25)}
+/* ==== 次のレース・激アツ・AIの評価S の縁と札（2026-10-25 ユーザー決定・mockup-359 案A1「淡い空色」） ====
+   iPhone Air の色（スカイブルー・ライトゴールド）に寄せた淡い色。縁は3色が布のように重なってゆっくり流れ、
+   カードの角と後ろに同じ色の光がにじむ。形と置き場所は前（mockup-248・287）のまま：
+   札は上へ飛び出す・左上が激アツとAIの評価S（並ぶときは激アツが先）・右上が発走まで・10分を切ったら淡いバラ色。
+   色の組：qn＝次のレース（空色）／qs＝10分を切った時（バラ色）／qh＝激アツ（淡い金）／ql＝AIの評価S（薄紫）。
+   縁の3色は --e1〜--e3 に入れ、重なった時は左の札の色→右の札の色の順に並べる。 */
+.container.top{--qn1:#A9D2F5;--qn2:#F3F9FE;--qn3:#CFCBF2;--qng:rgba(120,170,230,.24);--qntx:#1E3F66;--qntm:#3D7BC2;
+  --qs1:#F4AFC0;--qs2:#FDF3F5;--qs3:#F7CBD6;--qsg:rgba(230,120,150,.24);--qstx:#7A1F38;--qstm:#C8385E;
+  --qh1:#EBCF94;--qh2:#FCF8EC;--qh3:#F2D2BE;--qhg:rgba(210,170,100,.22);--qhtx:#6A4A12;
+  --ql1:#C9C2F1;--ql2:#F8F7FE;--ql3:#B7D7F4;--qlg:rgba(150,135,225,.24);--qltx:#3B2F7A}
+/* 後ろの光をカードの裏へ置くので、一覧の帯を1枚の重なりにする */
+.container.top .rl26{isolation:isolate}
+@keyframes drift26{0%{background-position:0% 50%,0% 50%}50%{background-position:100% 50%,100% 50%}100%{background-position:0% 50%,0% 50%}}
+.container.top .rc26.next{--e1:var(--qn1);--e2:var(--qn2);--e3:var(--qn3);--ag:var(--qng)}
+.container.top .rc26.hot{--e1:var(--qh1);--e2:var(--qh2);--e3:var(--qh3);--ag:var(--qhg)}
+.container.top .rc26.ais{--e1:var(--ql1);--e2:var(--ql2);--e3:var(--ql3);--ag:var(--qlg)}
+.container.top .rc26.hot.ais{--e1:var(--qh1);--e2:var(--qh2);--e3:var(--ql1);--ag:var(--qhg)}
+.container.top .rc26.next.hot{--e1:var(--qh1);--e2:var(--qh2);--e3:var(--qn1);--ag:var(--qng)}
+.container.top .rc26.next.ais{--e1:var(--ql1);--e2:var(--ql2);--e3:var(--qn1);--ag:var(--qng)}
+.container.top .rc26.next.hot.ais{--e1:var(--qh1);--e2:var(--ql1);--e3:var(--qn1);--ag:var(--qng)}
+.container.top .rc26.next.soon{--e1:var(--qs1);--e2:var(--qs2);--e3:var(--qs3);--ag:var(--qsg)}
+.container.top .rc26.next.soon:is(.hot,.ais){--e3:var(--qs1);--ag:var(--qsg)}
+.container.top .rc26:is(.next,.hot,.ais){margin-top:12px}
+.container.top .rc26.next,.container.top .rc26:is(.hot,.ais):not(.done){border:2.5px solid transparent;padding:10.5px 11.5px 9.5px;
+  background:radial-gradient(90% 150% at 0% 0%,color-mix(in srgb,var(--e1) 24%,transparent),transparent 62%) padding-box,
+    radial-gradient(80% 150% at 100% 100%,color-mix(in srgb,var(--e3) 22%,transparent),transparent 62%) padding-box,
+    linear-gradient(#fff,#fff) padding-box,linear-gradient(115deg,var(--e1),var(--e2) 35%,var(--e3) 65%,var(--e1)) border-box;
+  background-size:100% 100%,100% 100%,100% 100%,240% 100%;animation:drift26 9s ease-in-out infinite;box-shadow:0 12px 30px var(--ag)}
+.container.top .rc26.next::before,.container.top .rc26:is(.hot,.ais):not(.done)::before{content:"";position:absolute;inset:4px 10px -6px;z-index:-1;
+  border-radius:20px;filter:blur(16px);opacity:.5;pointer-events:none;
+  background:radial-gradient(60% 90% at 15% 30%,var(--e1),transparent 70%),radial-gradient(60% 90% at 85% 70%,var(--e3),transparent 70%)}
+/* 札：つやのある淡い帯。白い縁と上のつやは全部の札で同じ */
+.container.top .tg26{position:absolute;top:-11px;left:12px;display:inline-flex;gap:5px}
+.container.top .hot26,.container.top .ai26,.container.top .next26{display:inline-flex;align-items:center;border-radius:999px;line-height:18px;
+  border:1px solid rgba(255,255,255,.9);background-size:100% 100%,220% 100%;animation:drift26 9s ease-in-out infinite;letter-spacing:.04em}
+.container.top .hot26{gap:4px;padding:0 10px 0 6px;font-size:11.5px;font-weight:900;color:var(--qhtx);
+  background-image:radial-gradient(120% 140% at 20% -20%,rgba(255,255,255,.95),transparent 55%),linear-gradient(115deg,var(--qh1),var(--qh2) 45%,var(--qh3));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 4px 14px var(--qhg)}
 .container.top .hot26 b{font-family:var(--num26);font-weight:600;letter-spacing:0;font-size:12px}
 .container.top .hot26 b small{font-size:9.5px}
-.container.top .hot26 i{font-style:normal;font-weight:700;font-size:10.5px;opacity:.75;letter-spacing:0}
-.container.top .fl26{width:16px;height:16px;flex:none}
-/* 次のレース：紺から青へ移る縁＋右上に飛び出す札。激アツと重なると縁は黄色→青の1本 */
-.container.top .rc26.next{border:2px solid transparent;padding:11px 12px 10px;box-shadow:0 10px 26px rgba(0,62,112,.16);
-  background:linear-gradient(#fff,#fff) padding-box,linear-gradient(135deg,#003E70,#2F7BD9) border-box}
-.container.top .rc26.next:not(.hot){margin-top:12px}
-.container.top .rc26.next.hot{background:linear-gradient(#fff,#fff) padding-box,linear-gradient(135deg,#FFC94D,#2F7BD9 70%,#003E70) border-box;
-  box-shadow:0 10px 26px rgba(240,140,20,.16)}
-.container.top .rc26.next .tm{color:var(--navy)}
-.container.top .rc26.next .hot26{left:10px}
-.container.top .next26{position:absolute;top:-11px;right:12px;display:inline-flex;align-items:center;gap:5px;
-  background:linear-gradient(135deg,#003E70,#2F7BD9);color:#fff;border-radius:999px;padding:1px 10px;font-size:11px;font-weight:800;
-  letter-spacing:.04em;line-height:18px;box-shadow:0 2px 6px rgba(0,62,112,.3)}
+.container.top .fl26,.container.top .sp26{width:16px;height:16px;flex:none}
+.container.top .ai26{gap:4px;padding:0 10px 0 6px;font-size:11.5px;font-weight:900;color:var(--qltx);
+  background-image:radial-gradient(120% 140% at 20% -20%,rgba(255,255,255,.95),transparent 55%),linear-gradient(115deg,var(--ql1),var(--ql2) 45%,var(--ql3));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 4px 14px var(--qlg)}
+/* 激アツと並ぶ時は「✦S」の印だけにする（「AI評価S」のままだと 390px 幅・残り25分で右上の発走までの札との間が3pxしか空かないため。✦Sなら45px） */
+.container.top .rc26.hot .ai26{padding:0 9px 0 6px}
+.container.top .rc26.hot .ai26 .ail{display:none}
+.container.top .next26{position:absolute;top:-11px;right:12px;gap:5px;padding:0 11px;font-size:11px;font-weight:800;color:var(--qntx);
+  background-image:radial-gradient(120% 140% at 20% -20%,rgba(255,255,255,.95),transparent 55%),linear-gradient(115deg,var(--qn1),var(--qn2) 45%,var(--qn3));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 4px 14px var(--qng)}
 .container.top .next26 b{font-family:var(--num26);font-weight:600;font-size:12px;letter-spacing:0}
-.container.top .next26 i{font-style:normal;font-weight:600;font-size:10px;opacity:.8;letter-spacing:0}
+.container.top .next26 i{font-style:normal;font-weight:600;font-size:10px;opacity:.7;letter-spacing:0}
 /* 2026-10-10: 残り時間は1秒ごとに変わるので、数字の幅を揃えて札が揺れないようにする */
 .container.top .next26 .cd26{font-variant-numeric:tabular-nums}
-/* 2026-10-10 mockup-287 案B：発走10分前を切ったら、札・縁・影・左の発走時刻を全部赤にする。
-   縁と札のグラデーションは色の変数で持ち、@property で0.6秒かけて紺から赤へ移す（対応しない端末では一瞬で変わるだけ） */
-@property --nx1{syntax:'<color>';inherits:true;initial-value:#003E70}
-@property --nx2{syntax:'<color>';inherits:true;initial-value:#2F7BD9}
-@property --nxs{syntax:'<color>';inherits:true;initial-value:rgba(0,62,112,.16)}
-.container.top .rc26.next{--nx1:#003E70;--nx2:#2F7BD9;--nxs:rgba(0,62,112,.16);
-  background:linear-gradient(#fff,#fff) padding-box,linear-gradient(135deg,var(--nx1),var(--nx2)) border-box;
-  box-shadow:0 10px 26px var(--nxs);transition:--nx1 .6s,--nx2 .6s,--nxs .6s}
-.container.top .rc26.next .tm{transition:color .6s}
-.container.top .rc26.next .next26{background:linear-gradient(135deg,var(--nx1),var(--nx2));box-shadow:0 2px 6px var(--nxs)}
-.container.top .rc26.next.soon{--nx1:#B5102B;--nx2:#F2453A;--nxs:rgba(215,40,45,.22)}
-.container.top .rc26.next.soon .tm{color:#C8102E}
-/* 激アツと重なった時：縁は黄色→赤の1本（いつもの黄色→青と同じ並び） */
-.container.top .rc26.next.hot{background:linear-gradient(#fff,#fff) padding-box,linear-gradient(135deg,#FFC94D,var(--nx2) 70%,var(--nx1)) border-box}
+.container.top .rc26.next .tm{color:var(--qntm)}
+/* 2026-10-10 の決まり（発走10分を切ったら札・縁・影・左の発走時刻の色を変える）は残し、赤を淡いバラ色にした。時刻の字だけ濃くして急ぎを見せる */
+.container.top .rc26.next.soon .next26{color:var(--qstx);
+  background-image:radial-gradient(120% 140% at 20% -20%,rgba(255,255,255,.95),transparent 55%),linear-gradient(115deg,var(--qs1),var(--qs2) 45%,var(--qs3));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 4px 14px var(--qsg)}
+.container.top .rc26.next.soon .tm{color:var(--qstm)}
+@media (prefers-reduced-motion:reduce){.container.top .rc26,.container.top .hot26,.container.top .ai26,.container.top .next26{animation:none}}
 /* 終わったレース：影を消して地に沈め、色を抜く。的中の札だけは緑のまま */
 .container.top .rc26.done{background:#F8F8FA;box-shadow:none}
 .container.top .rc26.done .tm,.container.top .rc26.done .rno{color:#AEAEB2}
@@ -4643,8 +4666,10 @@ body:has(.container.top){background:#F2F2F7}
 .container.top .rc26.done .ub26,.container.top .rc26.done .sf26,.container.top .rc26.done .hc26,
 .container.top .rc26.done .w5,.container.top .rc26.done .brtag{filter:grayscale(1);opacity:.55}
 .container.top .rc26.done .cp26:not(.hit){opacity:.6}
-.container.top .rc26.done.hot{box-shadow:0 0 0 1.5px rgba(255,201,77,.55)}
-.container.top .rc26.done .hot26{filter:grayscale(.7);opacity:.7}
+.container.top .rc26.done.hot{box-shadow:0 0 0 1.5px color-mix(in srgb,var(--qh1) 70%,transparent)}
+.container.top .rc26.done.ais{box-shadow:0 0 0 1.5px color-mix(in srgb,var(--ql1) 70%,transparent)}
+.container.top .rc26.done.hot.ais{box-shadow:0 0 0 1.5px color-mix(in srgb,var(--qh1) 70%,transparent)}
+.container.top .rc26.done .hot26,.container.top .rc26.done .ai26{filter:grayscale(.7);opacity:.7;animation:none}
 
 /* ==== レース詳細の上の札と出馬表（印）の一覧（137-spec・2026-10-07 ユーザー決定・mockup-253／mockup-254 案A） ====
    上の札は紺の札（mockup-233）をやめ、白い角丸のカード1枚（.r27）。一覧は白い角丸の表に1頭1行。

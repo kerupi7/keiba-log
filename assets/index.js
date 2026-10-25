@@ -296,6 +296,8 @@ function w6TagHtml(race) {
 // 激アツ（3連単100万超えの見込みが6%以上）。判定は keiba_publish.bigpay_for_manifest が済ませている
 const FLAME_SVG = '<svg class="fl26" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.5c.6 3.4 4.8 5.6 4.8 11.2a4.8 4.8 0 0 1-9.6 0c0-2.7 1.4-4 2-6.3 1 1 1.7 2.3 1.9 3.9.6-2.8.9-5.4.9-8.8z" fill="#F0582A"/><path d="M12 11.5c.3 1.6 2.4 2.6 2.4 5.2a2.4 2.4 0 0 1-4.8 0c0-1.6.9-2.3 1.4-3.5.5.6.8 1 .9 1.9.2-1.3.1-2.4.1-3.6z" fill="#FFC23D"/></svg>';
 const isHotRace = (race) => !!(race.bigpay && race.bigpay.hot);
+// AIの評価Sの札の印（大小2つのきらめき）。馬番は keiba_publish.ai_s_for_manifest が manifest の ai_s に入れている
+const SPARK_SVG = '<svg class="sp26" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 2.5c.7 4.6 2.4 6.3 7 7-4.6.7-6.3 2.4-7 7-.7-4.6-2.4-6.3-7-7 4.6-.7 6.3-2.4 7-7z" fill="#8C7CE6"/><path d="M18.5 13.5c.35 2.3 1.2 3.15 3.5 3.5-2.3.35-3.15 1.2-3.5 3.5-.35-2.3-1.2-3.15-3.5-3.5 2.3-.35 3.15-1.2 3.5-3.5z" fill="#7FB6EC"/></svg>';
 
 // 日本時間の「今」（YYYY-MM-DD と HH:MM）。端末の時刻帯に左右されないよう Asia/Tokyo で出す
 function nowJst() {
@@ -345,8 +347,15 @@ function renderRaceRow(race, ctx) {
   const badge = race.grade ? `<span class="gb26">${escapeHtml(race.grade)}</span>` : '';
   // 2026-09-08: 自分で付けた「買いレース」の札。付け外しは詳細ページだけで、ここは出すだけ
   const bchip = isBuyRace(race.race_id) ? '<span class="brtag">買い</span>' : '';
+  // 2026-10-25 ユーザー「100万超えの文言は削除して」→ 札は「激アツ 8.3%」だけ
   const hotTab = hot
-    ? `<span class="hot26">${FLAME_SVG}激アツ<b>${race.bigpay.pct.toFixed(1)}<small>%</small></b><i>100万超え</i></span>` : '';
+    ? `<span class="hot26">${FLAME_SVG}激アツ<b>${race.bigpay.pct.toFixed(1)}<small>%</small></b></span>` : '';
+  // 2026-10-25 ユーザー「AIモデルのSランクの馬がいた場合も同じように表示」→ 激アツと同じ左上の札と縁（色は薄紫）。並ぶときは激アツが先。
+  // 同じ日「Sがいるかどうかでいい」→ 馬番は出さず「✦ AI評価S」だけ（manifest の ai_s には馬番が入っているが、ここでは有無だけ見る）
+  const aiS = Array.isArray(race.ai_s) && race.ai_s.length > 0;
+  // 激アツと並ぶ時は右上の「発走まで」とぶつかるので、CSS で「AI評価」を隠して「✦S」だけにする（.ail）
+  const aiTab = aiS ? `<span class="ai26">${SPARK_SVG}<span class="ail">AI評価</span>S</span>` : '';
+  const leftTabs = hotTab || aiTab ? `<span class="tg26">${hotTab}${aiTab}</span>` : '';
   // 2026-10-10 ユーザー「次14:00発走じゃなくて、発走まで残り何分何秒か出して、カウントダウン式に」。
   // 残りの文字は tickCountdown が1秒ごとに書き換える（発走時刻は札の左にもう出ている）
   const postAt = postAtMs(race);
@@ -357,10 +366,10 @@ function renderRaceRow(race, ctx) {
     : '';
   // 2026-10-10 ユーザー「10分切ったら色が赤っぽい色に変わるように」→ mockup-287 案B（札・縁・影・発走時刻を全部赤）
   const soon = isNext && postAt != null && postAt - Date.now() < SOON_MS;
-  const cls = ['rc26', done ? 'done' : '', hot ? 'hot' : '', isNext ? 'next' : '', soon ? 'soon' : ''].filter(Boolean).join(' ');
+  const cls = ['rc26', done ? 'done' : '', hot ? 'hot' : '', aiS ? 'ais' : '', isNext ? 'next' : '', soon ? 'soon' : ''].filter(Boolean).join(' ');
   return `
     <a class="${cls}" href="race.html?id=${race.race_id}">
-      ${hotTab}${nextTab}
+      ${leftTabs}${nextTab}
       <div class="c1">
         <b class="tm">${escapeHtml(race.post_time || '—')}</b>
         <span class="rno">${race.race_number}R</span>
