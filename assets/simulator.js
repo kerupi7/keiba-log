@@ -779,6 +779,16 @@
     return 'フォーメーション';
   }
 
+  // 確かめる欄は馬番の順（2026-10-25 ユーザー「馬番順にして 2 3 4 11って順番」）。
+  //   出ている並び（10-2 なら 10 が先）のまま、前の馬から数字の小さい順に比べる。枠連は枠番で同じ。シート（rowsFor）は EV 順のまま
+  function sortRowsByNumber(rows) {
+    rows.sort(function (a, b) {
+      var x = a.frame || a.ids, y = b.frame || b.ids;
+      for (var i = 0; i < Math.min(x.length, y.length); i++) if (x[i] !== y[i]) return x[i] - y[i];
+      return x.length - y.length;
+    });
+  }
+
   function renderConfirm(state, site, probs, heads, oddsAll) {
     var t = typeOf(state.betType);
     if (t.arity === 1 && state.tanFuku === 'fukusho' && heads <= 4) return '';
@@ -787,7 +797,7 @@
     var groups = frameGroups(site.horses);
     var items = enumerate(state, site, heads);
     var rows = items.map(function (item) { return rowDataFor(state, item, probs, heads, oddsAll, groups); }).filter(Boolean);
-    sortRows(rows);
+    sortRowsByNumber(rows);
 
     // 2026-10-10（mockup-287 案C・ユーザー決定「元のCで本番実装して」）: 確かめる欄を馬の表と同じ
     // 「灰の地に1点ずつの白い帯」にした。真ん中は目盛り＝今のオッズが買いラインのどこまで来たか
