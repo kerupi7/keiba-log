@@ -6335,6 +6335,197 @@ function renderBetFold26(site) {
   return `<section class="r26-bf"><div class="r26-bfh"><span>買い目</span><span>点数</span><span>金額</span><span>払戻</span><span></span></div>${rows}</section>`;
 }
 
+// ===== 回顧を自分の印の基準にする（mockup-363〜374・2026-10-29 ユーザー決定） =====
+// 自分の印（localStorage の mymark:{race_id}）で答え合わせをする。この端末に印が無いレースは
+// AIの印で代わりに出す（断りの一言は出さない。列の見出しが「AI」になる）。
+// ランクは出馬表のランクのページと同じ値（yoso.js の YosoRanks）。yoso.js は race.js より後に読み終えるので、
+// 'ans:ranks' が届いたら着順・読みのずれ・振り返りのランクを描き直す。
+const K2_COLS = [['馬の力', '力'], ['条件', '条件'], ['状態', '調教'], ['人と血統', '人・血'], ['コースの傾向', 'コース']];
+const K2_CARDS = {
+  馬の力: ['直近5走', '前走', '2走前', '3走前', '4走前', '5走前'],
+  条件: ['コース', '場', '距離', '回り', '馬場', '内外', '頭数', '流れ'],
+  状態: ['調教'],
+  人と血統: ['騎手', '種牡馬', '調教師', '母父'],
+  コースの傾向: ['枠', '脚質', '前走コース'],
+};
+const K2_BUY = new Set(['◎', '○', '▲', '△', '☆', '✓']);
+const K2_TOP = new Set(['◎', '○', '▲']);
+const K2_ORDER = ['◎', '○', '▲', '△', '☆', '✓', '消'];
+// 読みのずれで「高かった・低かった札」を並べる順。着順の差に強く出た順（3着以内の馬の平均−4着以下の平均）。
+// data/mymark_grades.json の effect（keiba_mymark_grades.py が夜に全レースで出し直す）が読めたらその値で並べ、
+// 読めないときはこの並び（2026-10-29 時点の680レースの値の順・札22枚だけ）を使う
+const K2_EFFECT_FALLBACK = ['前走', '距離', '流れ', '馬場', '場', '騎手', '頭数', '回り', 'コース', '直近5走', '調教',
+  '内外', '2走前', '3走前', '4走前', '調教師', '前走コース', '5走前', '母父', '種牡馬', '枠', '脚質'];
+let K2_EFFECT = null;
+
+function k2Marks(site) {
+  const live = new Set(site.horses.filter((h) => !h.scratched).map((h) => String(h.number)));
+  const id = new URLSearchParams(location.search).get('id');
+  let mine = {};
+  try { mine = JSON.parse(localStorage.getItem(`mymark:${id}`)) || {}; } catch (e) { mine = {}; }
+  const m = {};
+  Object.entries(mine).forEach(([n, mk]) => { if (live.has(String(n)) && MM_CLS[mk]) m[n] = mk; });
+  if (Object.keys(m).length) return { ai: false, m };
+  const a = {};
+  site.horses.forEach((h) => { if (!h.scratched && h.ability_mark) a[h.number] = h.ability_mark; });
+  return { ai: true, m: a };
+}
+function k2Mk(mk, cls = '') {
+  return mk ? `<i class="k2-mk ${MM_CLS[mk] || ''} ${cls}">${mk}</i>` : '';
+}
+function k2G(g, attrs = '') {
+  if (!g || g === '初') return `<i class="k2-g none"${attrs}>${g === '初' ? '初' : '—'}</i>`;
+  return `<i class="k2-g g${g}"${attrs}>${g}</i>`;
+}
+function k2Tags(r, keys) {
+  return keys.map((k) => `<span class="k2-tg">${escapeHtml(k)}${k2G(r[`c:${k}`] || r[`g:${k}`])}</span>`).join('');
+}
+// 1頭の札を、着順の差に強く出た順に、want（'SA' か 'CD'）のランクだけ3枚
+function k2Picks(r, want) {
+  const order = K2_EFFECT || K2_EFFECT_FALLBACK;
+  return order.filter((k) => !K2_COLS.some(([g]) => g === k))
+    .filter((k) => { const g = r[`c:${k}`]; return g && want.includes(g); }).slice(0, 3);
+}
+
+// 着順の表。着・馬番・自分（AI）・馬名・ランク5列のあとに、今までの列（性齢〜厩舎）を横に続ける
+function k2ChakuHtml(site, K, R) {
+  const runners = site.horses.filter((h) => !h.scratched && (h.finish != null || h.finish_text))
+    .sort((a, b) => (a.finish ?? 999) - (b.finish ?? 999) || a.number - b.number);
+  if (!runners.length) return '';
+  const l3 = runners.map((h) => h.last_3f).filter((v) => typeof v === 'number');
+  const ctx = { l3Top: [...new Set(l3)].sort((a, b) => a - b).slice(0, 3) };
+  const winner = runners.find((h) => h.finish === 1);
+  ctx.winSec = winner ? timeToSec(winner.finish_time) : null;
+  const rest = FO_COLS.filter((c) => !['着', '馬番', '印', '馬名'].includes(c.label) && (!c.has || runners.some((h) => c.has(h, ctx))));
+  const head = `<th>着</th><th>馬番</th><th>${K.ai ? 'AI' : '自分'}</th><th>馬名</th>`
+    + (R ? K2_COLS.map(([, l]) => `<th class="k2-gh">${l}</th>`).join('') : '')
+    + rest.map((c) => `<th>${c.label}</th>`).join('');
+  const tr = (h) => {
+    const mk = K.m[h.number];
+    const f = h.finish;
+    const cls = f && f <= 3 ? (mk === '消' ? 'k2-ng' : (mk ? 'k2-ok' : '')) : '';
+    const r = (R && R[h.number]) || {};
+    const ranks = R ? K2_COLS.map(([g]) => `<td class="k2-gc">${k2G(r[`g:${g}`], ` data-k2g="${g}" data-k2n="${h.number}" role="button" tabindex="0"`)}</td>`).join('') : '';
+    const cells = rest.map((c) => `<td class="${`${c.cls || ''}${c.cellCls ? c.cellCls(h, ctx) : ''}`.trim()}">${c.cell(h, ctx)}</td>`).join('');
+    return `<tr class="${cls}${f === 1 ? ' fo-win' : ''}" data-k2row="${h.number}"><td class="fo-c1 num">${f != null ? f : escapeHtml(h.finish_text || '—')}</td>`
+      + `<td class="fo-c2 num">${umaBox(h.number, h.gate, 'sm')}</td><td class="fo-mk">${k2Mk(mk)}</td>`
+      + `<td class="fo-nm${mk === '消' && f && f <= 3 ? ' k2-ngnm' : ''}">${escapeHtml(h.name)}</td>${ranks}${cells}</tr>`;
+  };
+  const top = runners.slice(0, FO_TOP_N);
+  const more = runners.slice(FO_TOP_N);
+  const moreMk = more.filter((h) => K.m[h.number]).map((h) => `${K.m[h.number]}${h.finish ?? '—'}着`).join('　');
+  const legend = R ? `<div class="k2-legend">ランク ${['S', 'A', 'B', 'C', 'D'].map((g) => k2G(g)).join('')}<span>濃い緑が強い・濃い赤が弱い。ランクを押すと中の札が開く</span></div>` : '';
+  return `<div class="fo-scroll"><table class="fo k2-fo"><thead><tr>${head}</tr></thead><tbody>${top.map(tr).join('')}</tbody></table></div>${legend}
+    ${more.length ? `<details class="fold fo-more"><summary><span class="tri"></span>${FO_TOP_N + 1}着以下も見る（${more.length}頭）${moreMk ? `<span class="k2-fm">${K.ai ? 'AI' : '印'} ${moreMk}</span>` : ''}</summary>
+      <div class="fold-body"><div class="fo-scroll"><table class="fo k2-fo"><thead><tr>${head}</tr></thead><tbody>${more.map(tr).join('')}</tbody></table></div></div></details>` : ''}`;
+}
+function k2ChakuSum(site, K) {
+  const live = site.horses.filter((h) => !h.scratched && h.finish);
+  const buy = live.filter((h) => K2_BUY.has(K.m[h.number]));
+  const kill = live.filter((h) => K.m[h.number] === '消' && h.finish <= 3).sort((a, b) => a.finish - b.finish);
+  const n3 = buy.filter((h) => h.finish <= 3).length;
+  if (!buy.length && !kill.length) return '';
+  return `${K.ai ? 'AIの印 ' : ''}3着以内 <b class="${n3 ? 'hit' : ''}">${n3}</b>/${buy.length}頭${kill.length ? `・<b class="ng">消が${kill[0].finish}着</b>` : ''}`;
+}
+
+// 読みのずれ：低く見ていたのに来た馬（消・印なしで3着以内）／高く見ていたのに負けた馬（◎○▲で6着以下）
+function k2ZureList(site, K) {
+  const live = site.horses.filter((h) => !h.scratched && h.finish);
+  const up = live.filter((h) => h.finish <= 3 && (!K.m[h.number] || K.m[h.number] === '消')).sort((a, b) => a.finish - b.finish);
+  const down = live.filter((h) => K2_TOP.has(K.m[h.number]) && h.finish >= 6).sort((a, b) => a.finish - b.finish);
+  return { up, down };
+}
+function k2ZureHtml(site, K, R) {
+  const { up, down } = k2ZureList(site, K);
+  if (!up.length && !down.length) return '<div class="k2-none">低く見て来た馬も、高く見て負けた馬もいません</div>';
+  const li = (h, want, word) => {
+    const r = (R && R[h.number]) || {};
+    const picks = R ? k2Picks(r, want) : [];
+    const mk = K.m[h.number];
+    return `<li><div class="k2-lr">${k2Mk(mk) || '<i class="k2-mk none">—</i>'}${umaBox(h.number, h.gate, 'sm')}<span class="nm">${escapeHtml(h.name)}</span>
+      <span class="ls">${mk || '印なし'} → <b>${h.finish}着</b></span></div>
+      ${picks.length ? `<div class="k2-cw">${word}</div><div class="k2-tgs">${k2Tags(r, picks)}</div>` : ''}</li>`;
+  };
+  return (up.length ? `<div class="k2-blk up"><div class="bh">低く見ていたのに来た馬</div><ul>${up.map((h) => li(h, 'SA', '高かったランク')).join('')}</ul></div>` : '')
+    + (down.length ? `<div class="k2-blk down"><div class="bh">高く見ていたのに負けた馬</div><ul>${down.map((h) => li(h, 'CD', '低かったランク')).join('')}</ul></div>` : '')
+    + (R ? '<div class="rv-fnote">ランクの並びは、全レースで着順の差に強く出た順です</div>' : '');
+}
+
+// どんなレース：「〜と読んでいた」（AIの展開の読み）を消し、自分の印の馬の位置取りを足す
+function k2Donna(els, site, K) {
+  els.forEach((el) => {
+    if (!el.querySelectorAll) return;
+    el.querySelectorAll('.rv-fact').forEach((f) => {
+      f.classList.remove('bad');
+      const s = f.querySelector('.rv-fs');
+      if (s && /読んでいた|読みと一致/.test(s.textContent)) s.textContent = '';
+    });
+  });
+  const SW = { 逃: '逃げ', 先: '先行', 差: '差し', 追: '追込' };
+  const last = (h) => { const p = String(h.passing || '').split('-').map(Number).filter((x) => x > 0); return p.length ? p[p.length - 1] : null; };
+  const hs = site.horses.filter((h) => !h.scratched && h.finish && K2_BUY.has(K.m[h.number]) && last(h) != null)
+    .sort((a, b) => last(a) - last(b));
+  if (!hs.length) return null;
+  const field = site.horses.filter((h) => !h.scratched && h.finish).length;
+  const front = hs.filter((h) => h.running_style === '逃' || h.running_style === '先').length;
+  const back = hs.filter((h) => h.running_style === '差' || h.running_style === '追').length;
+  const rt = ((site.review.race || {}).race_type || {}).act_label;
+  const zone = (p) => (p <= field / 3 ? '前' : p <= (field * 2) / 3 ? '中' : '後ろ');
+  const div = document.createElement('div');
+  div.className = 'k2-pos';
+  div.innerHTML = `<div class="mh">${K.ai ? 'AIの印' : '自分の印'}の馬は<b>前に${front}頭・後ろに${back}頭</b>。${rt ? `レースは「${escapeHtml(rt)}」` : ''}</div>`
+    + hs.map((h) => `<div class="pr${h.finish <= 3 ? ' ok' : ''}">${k2Mk(K.m[h.number])}${umaBox(h.number, h.gate, 'sm')}<span class="nm">${escapeHtml(h.name)}</span>`
+      + `<span class="ps">${SW[h.running_style] || ''}・4角${last(h)}番手（${zone(last(h))}）</span><b class="pf">${h.finish}着</b></div>`).join('')
+    + '<div class="rv-fnote">緑＝3着以内。4角の番手は通過順から</div>';
+  return div;
+}
+
+// 自分とAIの印（一番下の小さい1枚）：どちらかが印を付けた馬を着順の順に。地雷・穴の結果も添える
+function k2AiHtml(site, K) {
+  const AIC = { '◎': 'm1', '○': 'm2', '▲': 'm3', '△': 'm4' };
+  const rows = site.horses.filter((h) => !h.scratched && h.finish && (h.ability_mark || (!K.ai && K.m[h.number])))
+    .sort((a, b) => a.finish - b.finish).map((h) => {
+      const me = K.ai ? null : K.m[h.number];
+      return `<tr class="${h.finish <= 3 ? 'k2-ok' : ''}"><td class="fo-c1 num">${h.finish}</td><td>${umaBox(h.number, h.gate, 'sm')}</td>`
+        + `<td class="fo-nm">${escapeHtml(h.name)}</td><td>${me ? k2Mk(me) : '—'}</td>`
+        + `<td>${h.ability_mark ? `<i class="k2-mk ${AIC[h.ability_mark] || ''}">${h.ability_mark}</i>` : '—'}</td></tr>`;
+    }).join('');
+  const v = site.verification || {};
+  const byN = Object.fromEntries(site.horses.map((h) => [h.number, h]));
+  const ex = (word, res, okWord) => Object.keys(res || {}).sort((a, b) => a - b).map((n) => {
+    const x = res[n]; const h = byN[n] || {};
+    return `<span class="k2-ex${x.ok ? ' ok' : ''}" title="${okWord}">${word}${umaBox(Number(n), h.gate, 'sm')}${x.finish != null ? `${x.finish}着` : '—'}</span>`;
+  }).join('');
+  const exs = ex('地雷', v.landmine_result, '地雷は4着以下なら読みどおり') + ex('穴', v.ana_result, '穴は3着以内なら読みどおり');
+  return `<div class="fo-scroll"><table class="fo k2-ai"><thead><tr><th>着</th><th>馬番</th><th>馬名</th><th>自分</th><th>AI</th></tr></thead><tbody>${rows}</tbody></table></div>`
+    + (exs ? `<div class="k2-exs">${exs}</div>` : '')
+    + '<div class="rv-fnote">どちらかが印を付けた馬だけ（着順の順）。地雷は4着以下、穴は3着以内なら緑</div>';
+}
+function k2AiSum(site, K) {
+  const live = site.horses.filter((h) => !h.scratched && h.finish);
+  const ai3 = live.filter((h) => h.ability_mark && h.finish <= 3).length;
+  if (K.ai) return `AI <b>${ai3}</b>頭`;
+  const me3 = live.filter((h) => K2_BUY.has(K.m[h.number]) && h.finish <= 3).length;
+  return `自分 <b>${me3}</b>・AI <b>${ai3}</b>`;
+}
+
+// 振り返り（気になった馬）：選ぶ馬は今のまま。自分の印と5つのランクを添える
+function k2Furi(els, site, K, R) {
+  const notes = (site.review.horses || []);
+  const ncs = [];
+  els.forEach((el) => { if (el.classList && el.classList.contains('rv-nc')) ncs.push(el); });
+  ncs.forEach((nc, i) => {
+    const c = notes[i];
+    if (!c) return;
+    const nh = nc.querySelector('.rv-nh');
+    if (nh && !nh.querySelector('.k2-mk')) nh.insertAdjacentHTML('afterbegin', k2Mk(K.m[c.number]) || '<i class="k2-mk none">—</i>');
+    const old = nc.querySelector('.k2-tgs');
+    if (old) old.remove();
+    const r = R && R[c.number];
+    if (r) nc.insertAdjacentHTML('beforeend', `<div class="k2-tgs">${K2_COLS.map(([g, l]) => `<span class="k2-tg">${l}${k2G(r[`g:${g}`])}</span>`).join('')}</div>`);
+  });
+}
+
 // 回顧（mockup-239 案B）。今までの描き方で組んだ部品を7枚のカードに振り分け、上にレースを再生を置く。
 // 回顧データ（site.review）の無い古いレースと結果前のレースは今までのまま
 let r26LaneFn = null;
@@ -6342,8 +6533,10 @@ function setupKaiko26(site) {
   if (site.status !== 'final' || !site.review) return;
   const pane = document.querySelector('#race-content #pane-kaiko');
   if (!pane) return;
-  const SECS = [['chaku', '着順'], ['donna', 'どんなレース'], ['lap', 'ラップ'], ['corner', '通過順'], ['mark', '印と買い目'], ['pay', '払戻'], ['furi', '振り返り']];
-  const parts = Object.fromEntries(SECS.map(([k]) => [k, []]));
+  // 2026-10-29（mockup-374）: 自分の印の基準に組み替えた。「印と買い目」（AIの印）は「読みのずれ」に替え、
+  // AIの印は一番下の「自分とAIの印」にまとめる。振り分けは今までの mark を使い、あとで中身を差し替える
+  const SECS = [['chaku', '着順'], ['zure', '読みのずれ'], ['donna', 'どんなレース'], ['lap', 'ラップ'], ['corner', '通過順'], ['pay', '払戻'], ['furi', '振り返り'], ['ai', '自分とAIの印']];
+  const parts = Object.fromEntries([...SECS.map(([k]) => [k, []]), ['mark', []]]);
   let cur = 'chaku';
   // 見出し（eyebrow）はカードの見出しが代わりをするので捨てる（「気になった馬」だけ中に残す）
   [...pane.children].forEach((el) => {
@@ -6366,13 +6559,29 @@ function setupKaiko26(site) {
   const top = (res.top3 || [])[0];
   const HS = site.horses.filter((h) => !h.scratched);
   const HB = Object.fromEntries(HS.map((h) => [h.number, h]));
+  const K = k2Marks(site);
+  const ranksNow = () => (window.YosoRanks ? window.YosoRanks.grades() : null);
+  let R = ranksNow();
+  const mkDiv = (cls, html) => { const d = document.createElement('div'); d.className = cls; d.innerHTML = html; return d; };
+  // 着順：今までの表（renderFinishOrder）を、自分の印とランクの表に替える（今までの列は右へ続ける）
+  parts.chaku = [mkDiv('k2-chaku', k2ChakuHtml(site, K, R))];
+  parts.zure = [mkDiv('k2-zure', k2ZureHtml(site, K, R))];
+  const pos = k2Donna(parts.donna, site, K);
+  if (pos) parts.donna.push(pos);
+  // 「低く見ていたのに上位に来た馬／高く買っていたのに負けた馬」（AIの評価順）は読みのずれに替わったので外す
+  parts.furi = parts.furi.filter((e) => !(e.classList && e.classList.contains('rv-blk')));
+  k2Furi(parts.furi, site, K, R);
+  // AIの買い目の行（rv-betline）はAIの1枚へ移す。AIの印のバッジ・カード・地雷・穴は表と札に置き換える
+  const betline = parts.mark.find((e) => e.classList && e.classList.contains('rv-betline'));
+  parts.ai = [mkDiv('k2-aic', k2AiHtml(site, K)), ...(betline ? [betline] : [])];
   const txt = (k, sel) => { const e = parts[k].find((n) => n.matches && n.matches(sel)); return e ? e.textContent.trim().replace(/\s+/g, ' ') : ''; };
   const summary = (k) => {
-    if (k === 'chaku') return top ? `1着 <b>${top.number}</b> ${escapeHtml(top.name)}（${top.popularity}番人気）` : '';
+    if (k === 'chaku') return k2ChakuSum(site, K) || (top ? `1着 <b>${top.number}</b> ${escapeHtml(top.name)}（${top.popularity}番人気）` : '');
     if (k === 'donna') return escapeHtml(txt('donna', '.rv-lead'));
     if (k === 'lap') return escapeHtml(txt('lap', '.rv-note').replace(/（.*$/, ''));
     if (k === 'corner') { const w = top && HB[top.number]; return w && w.passing ? `勝ち馬 <b>${escapeHtml(w.passing)}</b>` : ''; }
-    if (k === 'mark') { const m = txt('mark', '.rv-msum').match(/3着以内\s*(\d+)\/(\d+)頭/); return m ? `印の3着以内 <b class="${+m[1] ? 'hit' : ''}">${m[1]}</b>/${m[2]}頭` : ''; }
+    if (k === 'zure') { const z = k2ZureList(site, K); const n = z.up.length + z.down.length; return n ? `<b class="ng">${n}</b>頭` : 'なし'; }
+    if (k === 'ai') return k2AiSum(site, K);
     if (k === 'pay') return pay.sanrentan ? `3連単 <b>${r26Yen([].concat(pay.sanrentan)[0].payout)}</b>円` : '';
     if (k === 'furi') { const n = parts.furi.filter((e) => e.classList && e.classList.contains('rv-nc')).length; return n ? `気になった馬 <b>${n}</b>頭` : ''; }
     return '';
@@ -6394,15 +6603,17 @@ function setupKaiko26(site) {
   const CPS = [['1c', '1角'], ['2c', '2角'], ['3c', '3角'], ['4c', '4角']].filter(([k]) => corners[k])
     .map(([k, l]) => ({ l, groups: parseCorner(corners[k]) }))
     .concat([{ l: 'ゴール', groups: HS.filter((h) => h.finish).sort((a, b) => a.finish - b.finish).map((h) => ({ ns: [h.number], gap: false })) }]);
-  const mk = (h) => [h.ability_mark, h.landmine_reason != null ? '地雷' : null, h.ana_reason != null ? '穴' : null].filter(Boolean);
+  // 金の枠は自分の印（無ければAIの印）の馬、点線は消、印のない馬は薄く（mockup-368 案B）
+  const anyMk = Object.keys(K.m).length > 0;
+  const rcls = (h) => { const m = K.m[h.number]; return !anyMk ? '' : !m ? ' dim' : m === '消' ? ' kill' : ' me'; };
   let cp = CPS.length - 1;
   let playing = null;
   const stage = CPS.length > 1 ? `<section class="r26-rp">
       <div class="r26-rp-top"><b>レースを再生</b><span>1角からゴールまで、並びがどう変わったか（左が先頭）</span></div>
       <div class="r26-lane${site.race.surface === '芝' ? '' : ' dirt'}"><div class="rail"></div><span class="dir">← 進む向き</span>
-        ${HS.filter((h) => h.finish).map((h) => { const m = mk(h); return `<div class="r26-h${m.length ? ' me' : ''}" data-rh="${h.number}">${m.length ? `<em>${escapeHtml(m[0])}</em>` : ''}${umaBox(h.number, h.gate, 'sm')}</div>`; }).join('')}</div>
+        ${HS.filter((h) => h.finish).map((h) => `<div class="r26-h${rcls(h)}" data-rh="${h.number}">${K.m[h.number] ? `<em class="k2">${k2Mk(K.m[h.number])}</em>` : ''}${umaBox(h.number, h.gate, 'sm')}</div>`).join('')}</div>
       <div class="r26-cps">${CPS.map((c, i) => `<button type="button" data-rcp="${i}" class="${cp === i ? 'on' : ''}">${c.l}</button>`).join('')}</div>
-      <div class="r26-play"><button type="button" data-rplay>▶ 1角から再生</button><span>金の枠は印・穴・地雷の馬</span></div>
+      <div class="r26-play"><button type="button" data-rplay>▶ 1角から再生</button><span>${anyMk ? `金の枠は${K.ai ? 'AIの印' : '自分の印'}・点線は消` : ''}</span></div>
     </section>` : '';
 
   pane.innerHTML = stage + SECS.filter(([k]) => parts[k].length).map(([k, t]) => `<section class="r26-kc" data-kc="${k}">
@@ -6425,7 +6636,47 @@ function setupKaiko26(site) {
     pane.querySelectorAll('[data-rcp]').forEach((b) => b.classList.toggle('on', +b.dataset.rcp === cp));
   };
   const stop = () => { clearInterval(playing); playing = null; const b = pane.querySelector('[data-rplay]'); if (b) b.textContent = '▶ 1角から再生'; };
+  // ランクを押すと、その行の下に分類の中の札が開く。同じランクをもう一度押すと閉じる
+  const k2Open = (el) => {
+    const tr = el.closest('tr');
+    const key = `${el.dataset.k2n}|${el.dataset.k2g}`;
+    const was = pane.querySelector(`tr.k2-dt[data-k="${key}"]`);
+    pane.querySelectorAll('tr.k2-dt').forEach((x) => x.remove());
+    pane.querySelectorAll('.k2-g.on').forEach((x) => x.classList.remove('on'));
+    if (was || !tr) return;
+    const r = (R && R[el.dataset.k2n]) || {};
+    const g = el.dataset.k2g;
+    tr.insertAdjacentHTML('afterend', `<tr class="k2-dt" data-k="${key}"><td colspan="${tr.children.length}"><div class="k2-dbox">`
+      + `<div class="k2-dh">${escapeHtml(g)}${k2G(r[`g:${g}`])}<span class="x">閉じる ×</span></div><div class="k2-tgs">${k2Tags(r, K2_CARDS[g] || [])}</div></div></td></tr>`);
+    el.classList.add('on');
+  };
+  const redraw = () => {
+    R = ranksNow();
+    if (!R) return;
+    const c = pane.querySelector('.k2-chaku');
+    if (c) c.innerHTML = k2ChakuHtml(site, K, R);
+    const z = pane.querySelector('.k2-zure');
+    if (z) z.innerHTML = k2ZureHtml(site, K, R);
+    k2Furi([...pane.querySelectorAll('.rv-nc')], site, K, R);
+    if (typeof setupFinishOrder === 'function') setupFinishOrder();
+  };
+  if (!R) document.addEventListener('ans:ranks', redraw, { once: true });
+  if (!K2_EFFECT) {
+    // getData は毎回取り直す（no-store）ので使わない。並びは夜に1回しか変わらないので、ふつうの読み込み（ブラウザの控え）でよい
+    fetch('data/mymark_grades.json').then((res) => res.json()).then((d) => {
+      const e = (d && d.effect) || {};
+      const order = Object.keys(e).filter((k) => e[k] && e[k].n).sort((a, b) => (e[b].top - e[b].oth) - (e[a].top - e[a].oth));
+      if (order.length) { K2_EFFECT = order; redraw(); }
+    }).catch(() => { /* 読めなければ K2_EFFECT_FALLBACK の並びのまま */ });
+  }
+  pane.addEventListener('keydown', (e) => {
+    const g = e.target.closest && e.target.closest('[data-k2g]');
+    if (g && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); k2Open(g); }
+  });
   pane.addEventListener('click', (e) => {
+    const g = e.target.closest('[data-k2g]');
+    if (g) { k2Open(g); return; }
+    if (e.target.closest('.k2-dt .x')) { pane.querySelectorAll('tr.k2-dt').forEach((x) => x.remove()); pane.querySelectorAll('.k2-g.on').forEach((x) => x.classList.remove('on')); return; }
     const b = e.target.closest('[data-rcp]');
     if (b) { stop(); cp = +b.dataset.rcp; place(); return; }
     if (e.target.closest('[data-rplay]')) {
