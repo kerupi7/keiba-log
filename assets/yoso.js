@@ -2949,6 +2949,29 @@
   //   数字はどれもランク札の値（天秤と同じ元の数字）。色は上の側＝青、下の側＝灰（詳細画面の緑・赤は「その馬のふだん」との比べなので使わない）
   let TB_SG = null;
   const TB_WIN = '#0068BC', TB_OFF = '#AEAEB2';
+  // 前走〜5走前の1走は、相手との上下でなく「1頭だけ見る」の直近5走（summaryRun・sm-page bc-b4）と同じ決まりで色を付ける
+  //   （2026-10-29 ユーザー「他で見る戦績と違って着差がない場合は着順に色がついてる。今の直近5走の仕様にして」）：
+  //   地＝1着は金・芝0.4秒／ダート0.6秒以内の負けは銀の地＋銀の枠、着順の字＝1〜3着だけ金銀銅、着差は勝った走も出す
+  const TB_MD = { 1: '#C49A1C', 2: '#5E7185', 3: '#B06A34' };
+  const tbRun = (h, k) => {
+    const i = RUN_LABEL.indexOf(k);
+    const r = i >= 0 ? (h.past_runs || [])[i] : null;
+    if (!r) return null;
+    const fin = Number(r.finish), mg = marginSec(r.margin);
+    const th = { '芝': 0.4, 'ダート': 0.6 }[r.surface] ?? 0.5;
+    return { r, fin, mg, band: fin === 1 ? 'win' : (mg != null && Math.abs(mg) <= th ? 'close' : '') };
+  };
+  // 着順の丸（下の「◯着」と同じ中身）は外し、札の下に勝ち馬（この馬が勝った走は2着馬）の名前と、今いるクラスでの最高成績を出す
+  //   （2026-10-29 ユーザー「①と1着って同じ」「勝ち馬もしくは2着馬の現時点での最高成績は入れたい」→ mockup-367 の2案を下に）。
+  //   値は直近5走のページの「勝ち／2着」の行（summaryRun の winner・bpHtml）と同じ winner_best。札の色・着順の金銀銅も同じ
+  const tbWin = (run) => {
+    const r = run.r;
+    if (!r.winner) return '';
+    const bp = bestParts(r.winner_best);
+    const md = bp && TB_MD[bp.fin] ? ` style="color:${TB_MD[bp.fin]}"` : '';
+    return `<span class="tb-wb"><span class="nm"><i>${run.fin === 1 ? '2着' : '勝'}</i>${esc(r.winner)}</span>`
+      + `${bp ? `<span class="race20 bp">${clsBadge(bp.cls)}<b${md}>${bp.fin}着</b></span>` : ''}</span>`;
+  };
   const tbRing = (c, size, col) => {
     const sw = size * 0.13, r = (size - sw) / 2, cx = size / 2, C = 2 * Math.PI * r;
     if (!c.n) return `<svg width="${size}" height="${size}"><circle cx="${cx}" cy="${cx}" r="${r}" fill="none" stroke="#E5E5EA" stroke-width="${sw}" stroke-dasharray="3 4"/></svg>`;
@@ -3041,13 +3064,17 @@
     if (k === '直近5走' && Array.isArray(c.runs) && c.runs.length) {
       sub = `（${c.runs.slice().reverse().map((r) => esc(r.grade || '−')).join('・')}）`;
     }
-    if (RUN_LABEL.includes(k) && TB_R.includes(c.grade)) {
-      const mg = Number(c.margin);
-      const fn = Number(c.finish);
-      sub = `${fn !== 1 && Number.isFinite(mg) ? `${mg.toFixed(1)}秒` : ''}${c.class_label ? `<span class="race20 tb-cls">${c.class_label === '地方等' ? '<span class="cb c-jusho">地方</span>' : clsBadge(c.class_label)}</span>` : ''}`;
+    const run = RUN_LABEL.includes(k) ? tbRun(h, k) : null;
+    if (run && TB_R.includes(c.grade)) {
+      const mgTxt = run.mg == null ? '' : `<span class="tb-mg ${run.band}">${run.mg < 0 ? '−' : ''}${Math.abs(run.mg).toFixed(1)}<small>秒</small></span>`;
+      sub = `${mgTxt}${c.class_label ? `<span class="race20 tb-cls">${c.class_label === '地方等' ? '<span class="cb c-jusho">地方</span>' : clsBadge(c.class_label)}</span>` : ''}`;
+    }
+    const bigCol = run ? (TB_MD[run.fin] || '') : (win ? TB_WIN : '');
+    if (run) {
+      return `<div class="tb-aw ic"><b class="tb-dg sm" style="color:${bigCol}">${big}</b><span class="tb-un">${sub}${thin}</span>${tbWin(run)}</div>`;
     }
     return `<div class="tb-aw ic"><span class="tb-ic" style="color:${col}">${ic}</span>
-      <b class="tb-dg sm" style="color:${win ? TB_WIN : ''}">${big}</b><span class="tb-un">${sub}${thin}</span></div>`;
+      <b class="tb-dg sm" style="color:${bigCol}">${big}</b><span class="tb-un">${sub}${thin}</span></div>`;
   }
   // 札の中身を「見出しの数字」と「残り」に分ける（例 13% 2/15走 → 13% ／ 2/15走、枠1 1.13倍 419走 → 1.13倍 ／ 枠1・419走）
   function tbHead(c) {
@@ -3101,9 +3128,10 @@
     // 前走コース（前走も今日と同じコースだったときだけ付く札）は、2頭とも付いていなければ行ごと出さない
     const rows = keys.filter((k) => !(k === '前走コース' && !TB_R.includes(tbCard(L, k).g) && !TB_R.includes(tbCard(R, k).g))).map((k) => {
       const a = tbCard(L, k), b = tbCard(R, k), x = cmp(a.g, b.g);
-      return `<div class="tb-ar"><div class="tb-as L${GL[k] ? ' gd' : ''}">${tbArt(L, k, x.side === -1)}${GL[k] ? tbStar(1, 'in') : ''}</div>
+      const bd = (h) => { const r = tbRun(h, k); return r && r.band ? ` bd-${r.band}` : ''; };
+      return `<div class="tb-ar"><div class="tb-as L${GL[k] ? ' gd' : ''}${bd(L)}">${tbArt(L, k, x.side === -1)}${GL[k] ? tbStar(1, 'in') : ''}</div>
         <div class="tb-am"><i>${tbLabel(k, L)}</i><span>${tbChip(a.g, 'xs')}${tbChip(b.g, 'xs')}</span></div>
-        <div class="tb-as R${GR[k] ? ' gd' : ''}">${tbArt(R, k, x.side === 1)}${GR[k] ? tbStar(1, 'in') : ''}</div></div>`;
+        <div class="tb-as R${GR[k] ? ' gd' : ''}${bd(R)}">${tbArt(R, k, x.side === 1)}${GR[k] ? tbStar(1, 'in') : ''}</div></div>`;
     }).join('');
     return `<div class="tb-sheet" role="dialog" aria-label="${g}の中身">
       <div class="tb-sh-h"><b>${g}</b></div>
