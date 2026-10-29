@@ -52,9 +52,9 @@
       var st = l.state;
       var siki = st.betType === 'tansho' ? (st.tanFuku === 'fukusho' ? 2 : 1) : SIKI[st.betType];
       if (!siki) return;
-      var units = Math.round((l.unit || 100) / 100);
       Simulator._internal.enumerate(st, site).forEach(function (it) {
         if (!BetSheet.keep(l, it)) return;   // シートで外した点
+        var units = Math.round(BetSheet.itemUnit(l, it) / 100);   // 1点ごとの金額（2026-10-29）
         var frame = !Array.isArray(it);
         var nums = frame ? it.frame.slice() : it.slice();
         if (!frame && nums.some(function (n) { return scratched[n]; })) { skipped++; return; }

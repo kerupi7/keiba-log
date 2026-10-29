@@ -141,9 +141,13 @@
       if (!x[3]) frameAllOut[x[1]] = false;
     });
     var pays = race.p[bt] || [];
-    var unit = line.unit || 100;
-    var r = { bt: bt, pts: items.length, hit: 0, buy: unit * items.length, refund: 0, ret: 0 };
+    // 1点ごとの金額（2026-10-29。betsheet.js の amts）。名前の無い点は unit
+    var amts = line.amts || {};
+    var unitOf = function (it) { return amts[S.itemKey(it)] || line.unit || 100; };
+    var r = { bt: bt, pts: items.length, hit: 0, buy: 0, refund: 0, ret: 0 };
     items.forEach(function (it) {
+      var unit = unitOf(it);
+      r.buy += unit;
       var ids = it.frame || it;
       var refunded = it.frame
         ? ids.some(function (g) { return frameAllOut[g]; })

@@ -4154,7 +4154,7 @@ body.bs-locked{overflow:hidden}
 .bs-stepper{display:flex;align-items:center;gap:6px}
 .bs-stepper button{width:30px;height:30px;border-radius:50%;border:1px solid var(--rule);
   background:#fff;font-size:16px;line-height:1;color:var(--text);cursor:pointer;padding:0}
-.bs-stepper .v{width:72px;min-width:0;text-align:right;font-size:17px;font-weight:700;color:var(--text);
+.bs-stepper .v{width:84px;min-width:0;text-align:right;font-size:17px;font-weight:700;color:var(--text);
   border:1px solid transparent;border-radius:8px;background:transparent;padding:2px 6px;font-family:inherit}
 .bs-stepper .v:focus{outline:none;border-color:var(--rule);background:#fff}
 .bs-unit{font-size:10.5px;color:var(--cap)}
@@ -4166,7 +4166,29 @@ body.bs-locked{overflow:hidden}
 .bs-toggle{width:100%;border:0;border-top:1px solid var(--rule);background:#FAFAF7;padding:8px;
   font:inherit;font-size:11.5px;color:var(--cap);cursor:pointer}
 .bs-tbl{border-top:1px solid var(--rule);font-size:12px}
-.bs-thead,.bs-trow{display:grid;grid-template-columns:1fr 86px 28px;align-items:center;gap:6px;padding:5px 6px 5px 10px}
+/* 2026-10-29 mockup-362：列に1点ごとの金額（−／＋）を足した */
+.bs-thead,.bs-trow{display:grid;grid-template-columns:1fr 74px 92px 26px;align-items:center;gap:4px;padding:5px 4px 5px 10px}
+.bs-thead span:nth-child(2),.bs-thead span:nth-child(3){text-align:right}
+.bs-trow .od small{display:block;font-family:system-ui,-apple-system,"Hiragino Sans",sans-serif;font-size:10px;font-weight:500;color:var(--cap);white-space:nowrap}
+.bs-istep{display:flex;align-items:center;justify-content:flex-end;gap:3px}
+.bs-istep button{width:26px;height:26px;border-radius:50%;border:1px solid var(--rule);background:#fff;font-size:14px;line-height:1;color:var(--text);cursor:pointer;padding:0;flex:none}
+.bs-istep button:active{background:var(--sub-bg2)}
+.bs-istep .v{min-width:38px;text-align:right;font-size:13.5px}
+/* 配り直すボタン。押すとどうなるかの棒と金額を中に出す（見た目2）。今の金額と同じ形なら「今この形」 */
+.bs-alloc{display:flex;gap:8px;padding:10px 10px 10px;border-top:1px solid var(--rule)}
+.bs-shape{flex:1 1 0;min-width:0;display:flex;align-items:center;gap:9px;border:1.5px solid var(--rule);border-radius:12px;background:#fff;
+  font:inherit;color:var(--text);padding:8px 9px;cursor:pointer;text-align:left;position:relative}
+.bs-shape:active{background:var(--sub-bg2)}
+.bs-shape.on{border-color:var(--navy);background:#F4F8FC}
+.bs-shape.on::after{content:'今この形';position:absolute;top:-8px;right:8px;background:var(--navy);color:#fff;
+  font-size:9px;font-weight:800;border-radius:4px;padding:1px 5px}
+.bs-shape[disabled]{cursor:default;opacity:.55}
+.bs-shape .bars{display:flex;align-items:flex-end;gap:2px;height:26px;width:30px;flex:none}
+.bs-shape .bars i{flex:1 1 0;max-width:7px;border-radius:2px 2px 0 0;background:var(--navy);opacity:.85}
+.bs-shape .bars.pay i{background:var(--hit)}
+.bs-shape .t{min-width:0}
+.bs-shape .t b{display:block;font-size:13px;font-weight:800;white-space:nowrap}
+.bs-shape .t span{display:block;font-size:10.5px;color:var(--cap);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* 1点だけ消す ✕（2026-10-13）。指で押せる大きさは行の高さいっぱい */
 .bs-xrow{width:28px;height:28px;border:0;border-radius:6px;background:transparent;color:var(--cap);
   font:inherit;font-size:13px;line-height:1;cursor:pointer;padding:0}

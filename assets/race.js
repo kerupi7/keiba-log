@@ -918,6 +918,17 @@ function setupBetSheet(site, oddsAll) {
       BetSheet.stepUnit(BS.raceId, step.dataset.id, Number(step.dataset.bsStep));
       bsPaintList(); bsPaintBar(); return;
     }
+    // 展開した表の1行の −／＋ と、「均等に」「払戻をそろえる」（2026-10-29 mockup-362）
+    const istep = e.target.closest('[data-bs-istep]');
+    if (istep) {
+      BetSheet.stepItem(BS.raceId, istep.dataset.id, istep.dataset.k, Number(istep.dataset.bsIstep), BS.site);
+      bsPaintList(); bsPaintBar(); return;
+    }
+    const al = e.target.closest('[data-bs-alloc]');
+    if (al) {
+      BetSheet.reshape(BS.raceId, al.dataset.id, al.dataset.bsAlloc, BS.site, BS.probs, BS.heads, BS.oddsAll);
+      bsPaintList(); bsPaintBar(); return;
+    }
     const op = e.target.closest('[data-bs-open]');
     if (op) {
       const id = op.dataset.bsOpen;
@@ -938,7 +949,7 @@ function setupBetSheet(site, oddsAll) {
   document.addEventListener('change', (e) => {
     const amt = e.target.closest('[data-bs-amt]');
     if (!amt) return;
-    BetSheet.setUnit(BS.raceId, amt.dataset.bsAmt, amt.value);
+    BetSheet.setUnit(BS.raceId, amt.dataset.bsAmt, amt.value, BS.site);
     bsPaintList(); bsPaintBar();
   });
   document.addEventListener('focusin', (e) => {
