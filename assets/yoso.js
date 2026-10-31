@@ -1216,22 +1216,28 @@
     pb.setAttribute('aria-hidden', 'true');
     Object.assign(pb.style, { position: 'absolute', left: '0', top: '0', width: `${pe.offsetWidth}px`, height: `${pe.offsetHeight}px`,
       visibility: 'hidden', pointerEvents: 'none', animation: 'none', transform: 'none', zoom: '' });
-    pb.innerHTML = allPage(h, 0, n);
+    // 2026-10-31 から全戦績はページの上にグラフがある（1ページ目＝大きいグラフ・2ページ目から＝細いグラフ・mockup-377 D）。
+    //   見えない札に「大きいグラフ・細いグラフ・全部の札」の順で並べ、グラフのぶんを差し引いて札の入る高さを出す
+    pb.innerHTML = allPage(h, 0, n, false, true);
     pe.parentNode.appendChild(pb);
     const wrap = pb.firstElementChild;
-    const R = [...wrap.children].map((x) => x.getBoundingClientRect());
+    const R = [...wrap.querySelectorAll(':scope > .al-row')].map((x) => x.getBoundingClientRect());
+    const tb = wrap.querySelector(':scope > .alg-top').getBoundingClientRect();
+    const tm = wrap.querySelector(':scope > .alg-mini').getBoundingClientRect();
     const ps = getComputedStyle(pb), ws = getComputedStyle(wrap);
     const limit = pb.getBoundingClientRect().bottom - parseFloat(ps.paddingBottom)
       - parseFloat(ws.paddingBottom) - parseFloat(ws.borderBottomWidth);
     pb.remove();
-    const cap = limit - R[0].top;
-    const fits = (s, e) => R[e - 1].bottom - R[s].top <= cap + 0.5;   // s〜e-1 走目が1ページに入るか
+    const cap = limit - tb.top;
+    const head0 = tm.top - tb.top, headN = R[0].top - tm.top;   // グラフとその下の間（1ページ目／2ページ目から）
+    // s〜e-1 走目が p ページ目（0から）に入るか
+    const fits = (s, e, p) => R[e - 1].bottom - R[s].top <= cap - (p === 0 ? head0 : headN) + 0.5;
     // 上から入るだけ詰める。残りは最後のページに回すので、最後のページだけ短くなることがある（1行だけのことも）。
     //   前は同じページ数で行の数をそろえていたが、どのページも下が大きく空いた（44走が 9・9・9・9・8 行。
     //   2026-09-25 ユーザー「スマホで見てもだいぶ空欄がある」）ので、詰める方に戻した
     const cuts = [0];
     for (let e = 1, s = 0; e < R.length; e += 1) {
-      if (!fits(s, e + 1)) { cuts.push(e); s = e; }
+      if (!fits(s, e + 1, cuts.length - 1)) { cuts.push(e); s = e; }
     }
     cuts.push(n);
     ALL_CUTS.set(h.number, { key, n, cuts });
@@ -2245,16 +2251,168 @@
     return `<div class="al-row alx ${bg}${sheet ? ' al-go' : ''}"${go}>${lb}<div class="al-m alx-m">${r1}${r2}</div>${sheet ? allDetail(d, r) : ''}</div>`;
   }
 
-  function allPage(h, from, to, sheet) {
+  // 全戦績（2026-10-31 作り替え・試作 mockup-375〜377 の D「グラフを目次に」。ユーザー「AとCを融合」→ D を選んで「サイトに入れて」）。
+  //   1ページ目の上に通算の札と着順のグラフ、2ページ目からは細いグラフ。今のページに出ている走をグラフに青い帯で示す
+  //   （全部が1ページに入る馬は帯を出さない。グラフ全体が青くなり、僅差の青い丸と紛れるため）。
+  //   グラフ：横＝古い→新しい・縦＝着順（上が1着）。丸は 1〜3着＝金銀銅、4着以下で着差が小さい走（札の地に色がつく走）＝青
+  //   （ユーザー「着差が小さい場合の丸の色も」）。点線は馬体重で、重いほど上・右に kg の目盛り（ユーザー「人気の点線じゃなくて、馬体重の点線に」）。
+  //   1走＝3段の札（A「大きな札」を詰めたもの）：①距離・馬場・場・日付・クラス・レース名 ②タイム・上り・通過に名前 ③馬番・人気/頭数・騎手と斤量。
+  //   札の高さはみな同じ（2026-09-25「走数が同じなら、全部同じ高さに」）。金の枠は今までどおり .al-row（1走ぶんの札）に付く
+  const ALG_CLOSE = '#4E92DE', ALG_NAVY = '#0B3D6E';
+  // クラスの段（グラフの区切り用）。重賞・L・OP はまとめて「OP」。中央の外で走った走は「地方」
+  function algTier(r) {
+    const c = raceClass(r.grade, r.race_name);
+    if (!JRA_TRACKS.includes(r.track) && r.track) return '地方';
+    if (c === '新馬' || c === '未勝利') return '未勝利';
+    if (['1勝', '2勝', '3勝'].includes(c)) return c;
+    return c ? 'OP' : '';
+  }
+  const algFin = (r) => { const f = Number(r.finish); return Number.isFinite(f) && f >= 1 ? f : null; };
+  function algRec(rs) {
+    const c = [0, 0, 0, 0];
+    rs.forEach((r) => { const f = algFin(r); c[f && f <= 3 ? f - 1 : 3] += 1; });
+    return c.join('-');
+  }
+  // グラフ。all＝新しい順の全走、from〜to＝今のページに出ている走、big＝1ページ目の大きいグラフ
+  function allChart(h, all, from, to, big) {
+    const rs = all.slice().reverse();
+    const n = rs.length;
+    const W = 348, H = big ? 136 : 30;   // 細いグラフは低め（2ページ目から札がもう1枚入るように）
+    const x0 = 26, x1 = big ? 312 : 336;   // 大きいグラフは右に馬体重の目盛りを置くぶん狭める
+    const y0 = big ? 20 : 5, y1 = big ? 96 : 25;
+    const fins = rs.map(algFin);
+    const fmax = Math.max(16, ...fins.filter(Boolean));
+    const step = n > 1 ? (x1 - x0) / (n - 1) : 0;
+    const xs = rs.map((_, i) => (n > 1 ? x0 + step * i : (x0 + x1) / 2));
+    const y = (v) => y0 + (y1 - y0) * (Math.min(v, fmax) - 1) / (fmax - 1);
+    const f1 = (v) => v.toFixed(1);
+    const p = [];
+    const lo = n - to, hi = n - 1 - from;   // 今のページの走（古い順の番号）
+    if (to - from < n) {
+      const w = step || 16;
+      p.push(`<rect x="${f1(xs[lo] - w / 2 - 2)}" y="${y0 - 8}" width="${f1(xs[hi] - xs[lo] + w + 4)}" height="${y1 - y0 + 16}" rx="6" fill="#E6EEF7"/>`);
+    }
+    if (big) {
+      [1, 5, 10, fmax].forEach((v) => p.push(`<line x1="${x0 - 4}" x2="${x1 + 4}" y1="${f1(y(v))}" y2="${f1(y(v))}" stroke="#E1E4EA"/>`
+        + `<text x="${x0 - 8}" y="${f1(y(v) + 3)}" text-anchor="end" class="alg-ax">${v}</text>`));
+      // クラスが変わった所に縦の点線と名前（名前どうしが重なる所は名前を省く）
+      let prev = null, lastX = -99;
+      rs.forEach((r, i) => {
+        const t = algTier(r);
+        if (t === prev) return;
+        const xl = i ? xs[i] - step / 2 : x0 - 4;
+        if (i) p.push(`<line x1="${f1(xl)}" x2="${f1(xl)}" y1="10" y2="${y1 + 6}" stroke="${ALG_NAVY}" stroke-dasharray="2 3" opacity=".4"/>`);
+        if (t && xl - lastX >= 30) { p.push(`<text x="${f1(xl + 3)}" y="9" class="alg-cz">${esc(t)}</text>`); lastX = xl; }
+        prev = t;
+      });
+      // 芝・ダートの印（下の小さな四角）
+      rs.forEach((r, i) => {
+        const s = String(r.surface || '');
+        const col = s.startsWith('芝') ? '#1F6B3A' : s.startsWith('ダ') ? '#A05A12' : '#AEB4BC';
+        p.push(`<rect x="${f1(xs[i] - 3)}" y="${y1 + 10}" width="6" height="4" rx="1" fill="${col}" opacity=".8"/>`);
+      });
+      // 目盛り（同じ年の中だけなら月、年をまたぐなら年）。前の字に近すぎる所は省く
+      const oneYear = new Set(rs.map((r) => String(r.date || '').slice(0, 4))).size <= 1;
+      let lastLab = null, lastLx = -99;
+      rs.forEach((r, i) => {
+        const ds = String(r.date || '');
+        const lab = oneYear ? `${Number(ds.slice(5, 7))}月` : ds.slice(0, 4);
+        if (!ds || lab === lastLab || xs[i] - lastLx < 24) return;
+        p.push(`<text x="${f1(xs[i])}" y="${y1 + 26}" class="alg-ax" text-anchor="${oneYear ? 'middle' : 'start'}">${esc(lab)}</text>`);
+        lastLab = lab; lastLx = xs[i];
+      });
+      // 馬体重の点線（重いほど上）。増減が小さい馬で線が暴れないよう、最低16kgの幅で描く。馬体重の無い走は線を飛ばす
+      const ws = rs.map((r) => { const v = Number(r.body_weight); return v > 200 ? v : null; });
+      const wv = ws.filter(Boolean);
+      if (wv.length >= 2) {
+        const wLo = Math.min(...wv), wHi = Math.max(...wv), span = Math.max(wHi - wLo, 16);
+        const top = (wHi + wLo) / 2 + span / 2;
+        const yw = (v) => y0 + (y1 - y0) * (top - v) / span;
+        p.push(`<polyline points="${ws.map((v, i) => (v ? `${f1(xs[i])},${f1(yw(v))}` : '')).filter(Boolean).join(' ')}" fill="none" stroke="#B07A3C" stroke-width="1.3" stroke-dasharray="3 3" opacity=".8"/>`);
+        [wHi, wLo].forEach((v) => p.push(`<text x="${x1 + 8}" y="${f1(yw(v) + 3)}" class="alg-axw">${v}</text>`));
+        p.push(`<text x="${x1 + 8}" y="${y1 + 14}" class="alg-axw">kg</text>`);
+      }
+    }
+    // 着順の線と丸（着順が数字でない走＝中止・除外などは飛ばす）
+    const pts = rs.map((r, i) => (fins[i] ? `${f1(xs[i])},${f1(y(fins[i]))}` : '')).filter(Boolean);
+    if (pts.length > 1) p.push(`<polyline points="${pts.join(' ')}" fill="none" stroke="${ALG_NAVY}" stroke-width="${big ? 1.8 : 1.4}"/>`);
+    rs.forEach((r, i) => {
+      const f = fins[i];
+      if (!f) return;
+      const mg = marginSec(r.margin);
+      const cl = f > 3 && mg != null && Math.abs(mg) <= ({ '芝': 0.4, 'ダート': 0.6 }[r.surface] ?? 0.5);   // summaryRun の band と同じ決まり
+      const big1 = f <= 3 || cl;
+      const rad = big ? (big1 ? 4.5 : 3.5) : (big1 ? 3 : 2.2);
+      const fill = f <= 3 ? E5_CUP_COL[f] : cl ? ALG_CLOSE : ALG_NAVY;
+      const op = i >= lo && i <= hi ? 1 : 0.35;
+      p.push(`<circle cx="${f1(xs[i])}" cy="${f1(y(f))}" r="${rad}" fill="${fill}" stroke="#fff" stroke-width="${cl ? 1.2 : 1}" opacity="${op}"/>`);
+    });
+    if (big) {
+      // 丸の色の見方（グラフの下の右）
+      let lx = 96;
+      const ly = H - 4;
+      [[E5_CUP_COL[1], '1〜3着', 38], [ALG_CLOSE, '着差が小さい', 64], [ALG_NAVY, 'そのほか', 44]].forEach(([c, lab, w]) => {
+        p.push(`<circle cx="${lx + 4}" cy="${ly - 3}" r="3.5" fill="${c}"/><text x="${lx + 10}" y="${ly}" class="alg-lg">${lab}</text>`);
+        lx += w + 14;
+      });
+      p.push(`<line x1="${lx}" x2="${lx + 12}" y1="${ly - 3}" y2="${ly - 3}" stroke="#B07A3C" stroke-width="1.3" stroke-dasharray="3 2"/><text x="${lx + 15}" y="${ly}" class="alg-lg">馬体重</text>`);
+    }
+    return `<svg class="alg-svg ${big ? 'alg-big' : 'alg-sm'}" viewBox="0 0 ${W} ${H}" aria-hidden="true">${p.join('')}</svg>`;
+  }
+  // 1ページ目の上：通算の札（成績・何戦何勝・芝ダの走数・今日のクラスで何走）＋大きいグラフ
+  function allTop(h, all, from, to) {
+    const n = all.length;
+    const rc = algRec(all);
+    const turf = all.filter((r) => String(r.surface || '').startsWith('芝')).length;
+    const dirt = all.filter((r) => String(r.surface || '').startsWith('ダ')).length;
+    const race = site.race || {};
+    // 今日のレースのクラス。名前にクラスが無い特別戦（例「鳴海特別」）のために race.class（全角の「２勝クラス」）も足して読む
+    const zen = String(race.class || '').replace(/[０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xFEE0));
+    const today = algTier({ grade: race.grade, race_name: `${race.race_name || ''} ${zen}`, track: race.track });
+    const same = today ? all.filter((r) => algTier(r) === today).length : 0;
+    const tLab = { '1勝': '1勝クラス', '2勝': '2勝クラス', '3勝': '3勝クラス' }[today] || today;
+    const chips = [`<span><b class="bt-num">${rc}</b></span>`, `<span>${n}戦${rc.split('-')[0]}勝</span>`]
+      .concat(turf && dirt ? [`<span>芝${turf}・ダ${dirt}</span>`] : [])
+      .concat(today && today !== '地方' ? [`<span>${esc(tLab)}${same ? `で${same}走` : 'は初めて'}</span>`] : []);
+    // グラフは2走から（1走だと点が1つだけで流れが無いため）
+    return `<div class="alg-top"><div class="alg-chips">${chips.join('')}</div>${n >= 2 ? allChart(h, all, from, to, true) : ''}</div>`;
+  }
+  // 2ページ目から：何走目のページかと細いグラフ
+  const allMini = (h, all, from, to) => `<div class="alg-mini"><b>${from + 1}〜${to}走目</b>${allChart(h, all, from, to, false)}</div>`;
+  // 1走ぶんの札
+  function allCard(d) {
+    const r = d.raw;
+    const bg = d.band ? `bd-${d.band}` : '';
+    const ub = Number(r.umaban ?? r.gate), wk = Number(r.waku);
+    const box = ub ? umaBox(ub, wk, 'sm') : '<i class="alg-nb">—</i>';
+    const tgN = { md1: 1, md2: 2, md3: 3 }[d.tg];
+    const finOk = Number.isFinite(d.fin) && d.fin >= 1;
+    return `<div class="al-row alg-card ${bg}">`
+      + `<div class="alg-fn"><span class="alg-fb">${finOk && d.fin <= 3 ? e5Cup(d.fin, 13) : ''}<b class="bt-num alg-fin ${d.finMd}">${esc(d.finTxt)}</b>${finOk ? '<small>着</small>' : ''}</span>`
+      + `<span class="alg-mg bt-num ${d.band}">${d.mgPlain}</span></div>`
+      + `<div class="alg-bd"><div class="alg-l1"><b class="alg-sf ${d.sf}">${esc(d.sfTxt)}<b>${esc(d.dist)}</b></b><span>${esc(d.going)}</span>`
+      + `<span>${esc(d.track)}</span><span class="bt-num alg-dt">${esc(d.date)}</span>${d.clsHtml}<span class="alg-rn">${esc(d.rn)}</span></div>`
+      + `<div class="alg-l2"><span class="alg-kv"><i>タイム</i><b class="bt-num ${d.tg}">${tgN ? e5Cup(tgN, 11) : ''}${esc(d.time)}</b></span>`
+      + `<span class="alg-kv"><i>上り</i><b class="bt-num ${d.rkMd}">${esc(d.up)}${d.rk != null && d.rk <= 3 ? e5Cup(d.rk, 11) : ''}</b></span>`
+      + `<span class="alg-kv"><i>通過</i><b class="bt-num">${esc(d.corners.join('-') || '—')}</b></span></div>`
+      + `<div class="alg-l3">${box}<span><b class="bt-num">${esc(d.pop)}</b>人気 / ${esc(d.field)}頭</span>`
+      + `<span class="alg-jk">${esc(d.jockey)} <small class="bt-num">${esc(d.weight)}</small></span></div></div></div>`;
+  }
+
+  // probe=true は allMeasure 用：大きいグラフ・細いグラフ・全部の札を1枚に並べる。sheet=true は前の細い行のまま（比べる画面の戦績シート用に残す）
+  function allPage(h, from, to, sheet, probe) {
     const all = allRuns(h);
     const out = [];
     for (let i = from; i < to; i += 1) {
       const r = all[i];
       const d = summaryRun(h, r, Math.min(i, 4));
-      out.push(allRowH1(d, sheet, i, r));   // 2026-09-24 から H1 の行（前の形の組み立ては消した）
+      out.push(sheet ? allRowH1(d, sheet, i, r) : allCard(d));
       // 休養の帯は全戦績には出さない（2026-09-17 ユーザー「ここに休養は不要」）。直近5走のページには残す
     }
-    return `<div class="race20 rvC c3 mx hd-r3 sm-page al-page al-s bc-b4">${out.join('')}</div>`;
+    if (sheet) return `<div class="race20 rvC c3 mx hd-r3 sm-page al-page al-s bc-b4">${out.join('')}</div>`;
+    const top = !all.length ? '' : probe ? allTop(h, all, from, to) + allMini(h, all, from, to)
+      : from === 0 ? allTop(h, all, from, to) : allMini(h, all, from, to);
+    return `<div class="race20 rvC c3 mx hd-r3 sm-page al-page al-s bc-b4 alg">${top}${out.join('')}</div>`;
   }
   // 戦績シートで行を押すと開く中身（mockup-170 と同じ項目）
   function allDetail(d, r) {

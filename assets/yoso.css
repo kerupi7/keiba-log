@@ -1034,6 +1034,52 @@ html.rc-frame .mx .mg-close .mg-tag{background:#5E7185}
 .yf .sm-s1 .sv-tm b.bt-num,.yf .sm-s1 .sv-up b.bt-num,.yf .sm-s1 .sv-mg{font-family:Futura,Jost,sans-serif}
 .yf .al-page .alx .alx-fin,.yf .al-page .alx .alx-mg{font-family:Futura,Jost,var(--font)}
 
+/* ===== 全戦績（2026-10-31 作り替え・試作 mockup-377 の D「グラフを目次に」）。組み立ては yoso.js の allPage・allCard・allChart =====
+   1ページ目＝通算の札＋大きいグラフ、2ページ目から＝細いグラフ。その下に1走1枚の札（高さはみな62px）。
+   何走で次のページへ送るかは allMeasure が札とグラフの高さを測って決める */
+.al-page.alg{gap:5px}
+.alg-top,.alg-mini{flex:none;min-width:0}
+.alg-chips{display:flex;gap:5px;white-space:nowrap;overflow:hidden;padding-top:2px}
+.alg-chips span{flex:none;font-size:11px;background:#fff;border-radius:999px;padding:2px 8px;line-height:1.5}
+.alg-chips b{font-size:12px}
+.alg-svg{display:block;width:100%;height:auto}
+.alg-mini{display:flex;align-items:center;gap:4px}
+.alg-mini>b{flex:none;width:56px;font-size:10px;color:#0B3D6E;white-space:nowrap}
+.alg-mini .alg-sm{flex:1;min-width:0;width:auto}
+.alg-ax{font-size:9px;fill:#8E8E93}.alg-axw{font-size:9px;fill:#B07A3C}.alg-cz{font-size:9px;fill:#0B3D6E}.alg-lg{font-size:9px;fill:#6D6D72}
+.al-row.alg-card{flex:none;height:62px;display:grid;grid-template-columns:48px minmax(0,1fr);gap:0 6px;align-items:center;
+  border-radius:12px;background:#fff;padding:0 10px 0 4px;border-bottom:0}
+.al-row.alg-card.bd-win{background:#FFF6DC}
+.al-page.bc-b4 .al-row.alg-card.bd-close{background:#E4E9EF}
+.alg-fn{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:0}
+.alg-fb{display:inline-flex;align-items:center;gap:1px;white-space:nowrap}
+.alg-fin{font-size:24px;line-height:1}
+.alg-fb small{font-size:10px;font-weight:700;margin-left:1px;align-self:flex-end}
+.alg-mg{font-size:10.5px;font-weight:700;line-height:1.4;border-radius:999px;padding:1px 6px;background:#EFEFF4;color:#3a3a3c;min-width:28px;text-align:center}
+.alg-mg.win{background:#B8860B;color:#fff}.alg-mg.close{background:#5E7185;color:#fff}
+.alg-bd{min-width:0}
+.alg-l1,.alg-l2,.alg-l3{display:flex;align-items:center;white-space:nowrap;min-width:0;overflow:hidden}
+.alg-l1{gap:5px;height:18px;font-size:11px;color:#3a3a3c}
+.alg-l1 .alg-dt{color:#8E8E93}
+.alg-l1 .cb{flex:none;font-size:9px;padding:0 4px;border-radius:3px}
+.alg-rn{font-weight:700;color:#1C1C1E;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.alg-sf{flex:none;display:inline-flex;align-items:baseline;gap:1px;font-size:9.5px;font-weight:700;border-radius:4px;padding:0 4px;line-height:16px}
+.alg-sf b{font-size:12px;color:inherit}
+.alg-sf.sf-tf{background:#E3F1E7;color:#1F6B3A}.alg-sf.sf-dt{background:#F6E9DA;color:#A05A12}
+.alg-l2{gap:10px;height:21px;align-items:baseline}
+.alg-kv{flex:none}
+.alg-kv i{font-style:normal;font-size:9px;color:#8E8E93;margin-right:2px}
+.alg-kv b{display:inline-flex;align-items:center;gap:1px;font-size:14.5px;font-weight:600}
+.alg-l3{gap:6px;height:18px;font-size:11px;color:#3a3a3c}
+.alg-l3 b{font-size:12px}
+.alg-l3 .hn.sm{flex:none;width:16px;height:16px;font-size:10px;border-radius:3px}
+.alg-l3 .alg-nb{font-style:normal;color:#AEB2B8;font-size:10px}
+.alg-jk{margin-left:auto;color:#6D6D72;font-size:10.5px;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.alg-jk small{font-size:10px;color:#8E8E93}
+/* 数字の書体：全戦績は着順・着差だけ Futura（2026-09-18 の決まりのまま）。グラフの目盛りの数字も Futura */
+.yf .al-page .alg-card .alg-fin,.yf .al-page .alg-card .alg-mg,
+.yf .al-page .alg-svg .alg-ax,.yf .al-page .alg-svg .alg-axw{font-family:Futura,Jost,var(--font)}
+
 /* ===== 金の枠（2026-09-24・試作 mockup-217） =====
    絞り込みで、良いと思った部品を押すと付く。太い金の枠（3px）＋中をうっすら金色。
    「最も好走」は 1.5px・中は白（.rt-m.is-best）なので太さと中の色で見分ける。
