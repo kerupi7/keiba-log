@@ -3130,6 +3130,18 @@
     return `<span class="tb-wb"><span class="nm"><i>${run.fin === 1 ? '2着' : '勝'}</i>${esc(r.winner)}</span>`
       + `${bp ? `<span class="race20 bp">${clsBadge(bp.cls)}<b${md}>${bp.fin}着</b></span>` : ''}</span>`;
   };
+  // 札のいちばん上に、その走の場・芝ダ・距離（例 京都 ダ1400）を1行（2026-10-31 ユーザー「ここコースと距離を入れたい」→ mockup-378 の1案）。
+  //   地方の走は track が空なので、race_id の5〜6桁目（場の番号）から名前を出す。番号が表に無ければ「地方」
+  const TB_NAR = { 30: '門別', 35: '盛岡', 36: '水沢', 42: '浦和', 43: '船橋', 44: '大井', 45: '川崎', 46: '金沢',
+    47: '笠松', 48: '名古屋', 50: '園田', 51: '姫路', 54: '高知', 55: '佐賀' };
+  const tbCourse = (run) => {
+    const r = run.r;
+    const tk = r.track || TB_NAR[String(r.race_id || '').slice(4, 6)] || '地方';
+    const sf = String(r.surface || '').startsWith('ダ') ? 'ダ' : String(r.surface || '').startsWith('芝') ? '芝' : '';
+    if (!sf && !r.distance) return '';
+    return `<span class="tb-cs"><span class="tk">${esc(tk)}</span>${sf ? `<span class="sf ${sf === 'ダ' ? 'dt' : 'tf'}">${sf}</span>` : ''}`
+      + `<b>${esc(String(r.distance || ''))}</b></span>`;
+  };
   const tbRing = (c, size, col) => {
     const sw = size * 0.13, r = (size - sw) / 2, cx = size / 2, C = 2 * Math.PI * r;
     if (!c.n) return `<svg width="${size}" height="${size}"><circle cx="${cx}" cy="${cx}" r="${r}" fill="none" stroke="#E5E5EA" stroke-width="${sw}" stroke-dasharray="3 4"/></svg>`;
@@ -3229,7 +3241,7 @@
     }
     const bigCol = run ? (TB_MD[run.fin] || '') : (win ? TB_WIN : '');
     if (run) {
-      return `<div class="tb-aw ic"><b class="tb-dg sm" style="color:${bigCol}">${big}</b><span class="tb-un">${sub}${thin}</span>${tbWin(run)}</div>`;
+      return `<div class="tb-aw ic">${tbCourse(run)}<b class="tb-dg sm" style="color:${bigCol}">${big}</b><span class="tb-un">${sub}${thin}</span>${tbWin(run)}</div>`;
     }
     return `<div class="tb-aw ic"><span class="tb-ic" style="color:${col}">${ic}</span>
       <b class="tb-dg sm" style="color:${bigCol}">${big}</b><span class="tb-un">${sub}${thin}</span></div>`;
