@@ -23,9 +23,9 @@
     }
   },
   "prediction": {
-    "predicted_at": "2026-11-07T13:10:33",
+    "predicted_at": "2026-11-07T14:02:24",
     "odds_basis": "中間オッズ",
-    "odds_fetched_at": "2026-11-07T13:08",
+    "odds_fetched_at": "2026-11-07T14:01",
     "info_sufficiency": 85,
     "analysis_state": "中間オッズ版",
     "stance": "pass",
@@ -621,7 +621,31 @@
         "label": null
       }
     },
-    "time_trend": null,
+    "time_trend": {
+      "value": 0.78,
+      "label": "時計かかる",
+      "n_races": 3,
+      "n_days": 1,
+      "today_races": 3,
+      "prev_races": 0,
+      "races": [
+        {
+          "race_id": "202605050103",
+          "residual": 1.2,
+          "same_day": true
+        },
+        {
+          "race_id": "202605050104",
+          "residual": 1.57,
+          "same_day": true
+        },
+        {
+          "race_id": "202605050107",
+          "residual": -0.43,
+          "same_day": true
+        }
+      ]
+    },
     "leg_bias": [
       {
         "style": "逃げ",
@@ -664,14 +688,14 @@
       "note": "オッズと頭数から出した目安です。買い目には影響しません。",
       "model_version": "upset-3",
       "threshold_line": "大荒れ19%・堅い43%のどちらにも届かないので中荒れ",
-      "average_line": "全レース平均57%より16ポイント多い",
+      "average_line": "全レース平均57%より12ポイント多い",
       "classes": [
         {
           "key": "kata",
           "name": "堅い",
-          "percent": 18,
+          "percent": 22,
           "base_percent": 32,
-          "prob": 0.175466,
+          "prob": 0.216303,
           "card": "3番人気以内で決まる",
           "selected": false,
           "tendency_caption": "「堅い」で決まったレースでは（過去11,960レース）",
@@ -697,9 +721,9 @@
         {
           "key": "naka",
           "name": "中荒れ",
-          "percent": 73,
+          "percent": 69,
           "base_percent": 57,
-          "prob": 0.73103,
+          "prob": 0.689093,
           "card": "4番人気以下が1頭絡む",
           "selected": true,
           "tendency_caption": "「中荒れ」で決まったレースでは（過去11,960レース）",
@@ -727,7 +751,7 @@
           "name": "大荒れ",
           "percent": 9,
           "base_percent": 12,
-          "prob": 0.093504,
+          "prob": 0.094604,
           "card": "8番人気以下が突っ込む",
           "selected": false,
           "tendency_caption": "「大荒れ」で決まったレースでは（過去11,960レース）",
@@ -884,9 +908,9 @@
       "sex_age": "牡4",
       "weight_carried": 58.0,
       "jockey": "津村明秀",
-      "body_weight": null,
-      "body_weight_diff": null,
-      "body_weight_source": null,
+      "body_weight": 476,
+      "body_weight_diff": 4,
+      "body_weight_source": "live",
       "sire": "スクリーンヒーロー",
       "damsire": "キンシャサノキセキ",
       "trainer": "美浦・林",
@@ -2362,8 +2386,20 @@
             "exp": 0.2509,
             "lift": 1.039
           },
-          "bweight": null,
-          "wratio": null,
+          "bweight": {
+            "level": "460-500",
+            "n": 855,
+            "rate": 0.2795,
+            "exp": 0.2548,
+            "lift": 1.097
+          },
+          "wratio": {
+            "level": "標準",
+            "n": 859,
+            "rate": 0.2643,
+            "exp": 0.246,
+            "lift": 1.074
+          },
           "age": {
             "level": "4-5歳",
             "n": 701,
@@ -2392,7 +2428,13 @@
             "exp": 0.3674,
             "lift": 1.12
           },
-          "bwdelta": null,
+          "bwdelta": {
+            "level": "±9kg内",
+            "n": 1480,
+            "rate": 0.2534,
+            "exp": 0.244,
+            "lift": 1.038
+          },
           "jchange": {
             "level": "乗り替わり",
             "n": 1339,
@@ -2422,9 +2464,9 @@
             "lift": 1.03
           }
         },
-        "up": 17,
+        "up": 46,
         "dn": 0,
-        "net": 17,
+        "net": 46,
         "conds": [
           {
             "c": [
@@ -2447,6 +2489,72 @@
             "exp": 0.2916,
             "lift": 1.482,
             "z": 3.66
+          },
+          {
+            "c": [
+              [
+                "sex",
+                "牡セ"
+              ],
+              [
+                "sire",
+                "中位"
+              ],
+              [
+                "wratio",
+                "標準"
+              ]
+            ],
+            "sign": 1,
+            "n": 142,
+            "rate": 0.3944,
+            "exp": 0.2701,
+            "lift": 1.46,
+            "z": 3.7
+          },
+          {
+            "c": [
+              [
+                "bwdelta",
+                "±9kg内"
+              ],
+              [
+                "prevcorner",
+                "中団"
+              ],
+              [
+                "sire",
+                "中位"
+              ]
+            ],
+            "sign": 1,
+            "n": 126,
+            "rate": 0.3968,
+            "exp": 0.2807,
+            "lift": 1.414,
+            "z": 3.22
+          },
+          {
+            "c": [
+              [
+                "bweight",
+                "460-500"
+              ],
+              [
+                "sex",
+                "牡セ"
+              ],
+              [
+                "sire",
+                "中位"
+              ]
+            ],
+            "sign": 1,
+            "n": 156,
+            "rate": 0.3782,
+            "exp": 0.2711,
+            "lift": 1.395,
+            "z": 3.36
           },
           {
             "c": [
@@ -2553,6 +2661,50 @@
           {
             "c": [
               [
+                "bwdelta",
+                "±9kg内"
+              ],
+              [
+                "sex",
+                "牡セ"
+              ],
+              [
+                "sire",
+                "中位"
+              ]
+            ],
+            "sign": 1,
+            "n": 222,
+            "rate": 0.3784,
+            "exp": 0.2806,
+            "lift": 1.349,
+            "z": 3.6
+          },
+          {
+            "c": [
+              [
+                "bwdelta",
+                "±9kg内"
+              ],
+              [
+                "distchg",
+                "短縮"
+              ],
+              [
+                "rota",
+                "中6週以上"
+              ]
+            ],
+            "sign": 1,
+            "n": 114,
+            "rate": 0.3596,
+            "exp": 0.2667,
+            "lift": 1.348,
+            "z": 2.56
+          },
+          {
+            "c": [
+              [
                 "rota",
                 "中6週以上"
               ],
@@ -2597,6 +2749,50 @@
           {
             "c": [
               [
+                "distexp",
+                "深・実績あり"
+              ],
+              [
+                "prevfin",
+                "1-3着"
+              ],
+              [
+                "wratio",
+                "標準"
+              ]
+            ],
+            "sign": 1,
+            "n": 137,
+            "rate": 0.4599,
+            "exp": 0.3506,
+            "lift": 1.312,
+            "z": 2.87
+          },
+          {
+            "c": [
+              [
+                "jchange",
+                "乗り替わり"
+              ],
+              [
+                "sire",
+                "中位"
+              ],
+              [
+                "wratio",
+                "標準"
+              ]
+            ],
+            "sign": 1,
+            "n": 179,
+            "rate": 0.3464,
+            "exp": 0.2642,
+            "lift": 1.311,
+            "z": 2.77
+          },
+          {
+            "c": [
+              [
                 "damsire",
                 "その他"
               ],
@@ -2619,6 +2815,28 @@
           {
             "c": [
               [
+                "prevfin",
+                "1-3着"
+              ],
+              [
+                "sex",
+                "牡セ"
+              ],
+              [
+                "wratio",
+                "標準"
+              ]
+            ],
+            "sign": 1,
+            "n": 165,
+            "rate": 0.4667,
+            "exp": 0.3574,
+            "lift": 1.306,
+            "z": 3.19
+          },
+          {
+            "c": [
+              [
                 "distexp",
                 "深・実績あり"
               ],
@@ -2637,71 +2855,9 @@
           {
             "c": [
               [
-                "numpos",
-                "内"
+                "bweight",
+                "460-500"
               ],
-              [
-                "prevfin",
-                "1-3着"
-              ],
-              [
-                "sex",
-                "牡セ"
-              ]
-            ],
-            "sign": 1,
-            "n": 118,
-            "rate": 0.4915,
-            "exp": 0.3856,
-            "lift": 1.275,
-            "z": 2.57
-          },
-          {
-            "c": [
-              [
-                "damsire",
-                "その他"
-              ],
-              [
-                "prevfin",
-                "1-3着"
-              ],
-              [
-                "sex",
-                "牡セ"
-              ]
-            ],
-            "sign": 1,
-            "n": 184,
-            "rate": 0.4674,
-            "exp": 0.372,
-            "lift": 1.256,
-            "z": 2.9
-          },
-          {
-            "c": [
-              [
-                "jchange",
-                "乗り替わり"
-              ],
-              [
-                "prevfin",
-                "1-3着"
-              ],
-              [
-                "sex",
-                "牡セ"
-              ]
-            ],
-            "sign": 1,
-            "n": 221,
-            "rate": 0.4389,
-            "exp": 0.3544,
-            "lift": 1.238,
-            "z": 2.87
-          },
-          {
-            "c": [
               [
                 "distexp",
                 "深・実績あり"
@@ -2709,39 +2865,43 @@
               [
                 "prevfin",
                 "1-3着"
+              ]
+            ],
+            "sign": 1,
+            "n": 131,
+            "rate": 0.4809,
+            "exp": 0.3704,
+            "lift": 1.299,
+            "z": 2.81
+          },
+          {
+            "c": [
+              [
+                "age",
+                "4-5歳"
               ],
               [
                 "sex",
                 "牡セ"
-              ]
-            ],
-            "sign": 1,
-            "n": 194,
-            "rate": 0.4381,
-            "exp": 0.3549,
-            "lift": 1.235,
-            "z": 2.62
-          },
-          {
-            "c": [
-              [
-                "homeaway",
-                "地元"
               ],
               [
-                "sire",
-                "中位"
+                "wratio",
+                "標準"
               ]
             ],
             "sign": 1,
-            "n": 323,
-            "rate": 0.3158,
-            "exp": 0.2583,
-            "lift": 1.222,
-            "z": 2.63
+            "n": 271,
+            "rate": 0.3358,
+            "exp": 0.2592,
+            "lift": 1.296,
+            "z": 3.13
           },
           {
             "c": [
+              [
+                "bweight",
+                "460-500"
+              ],
               [
                 "prevfin",
                 "1-3着"
@@ -2752,32 +2912,80 @@
               ]
             ],
             "sign": 1,
-            "n": 333,
-            "rate": 0.4444,
-            "exp": 0.3697,
-            "lift": 1.202,
-            "z": 3.08
+            "n": 187,
+            "rate": 0.492,
+            "exp": 0.381,
+            "lift": 1.291,
+            "z": 3.4
           },
           {
             "c": [
               [
-                "prevcorner",
-                "中団"
+                "age",
+                "4-5歳"
               ],
               [
-                "sex",
-                "牡セ"
+                "bweight",
+                "460-500"
+              ],
+              [
+                "prevfin",
+                "1-3着"
               ]
             ],
             "sign": 1,
-            "n": 366,
-            "rate": 0.3251,
-            "exp": 0.2723,
-            "lift": 1.194,
-            "z": 2.51
+            "n": 127,
+            "rate": 0.4724,
+            "exp": 0.3689,
+            "lift": 1.281,
+            "z": 2.59
+          },
+          {
+            "c": [
+              [
+                "bweight",
+                "460-500"
+              ],
+              [
+                "prevfin",
+                "1-3着"
+              ],
+              [
+                "rota",
+                "中6週以上"
+              ]
+            ],
+            "sign": 1,
+            "n": 143,
+            "rate": 0.5105,
+            "exp": 0.3985,
+            "lift": 1.281,
+            "z": 2.97
+          },
+          {
+            "c": [
+              [
+                "bweight",
+                "460-500"
+              ],
+              [
+                "jchange",
+                "乗り替わり"
+              ],
+              [
+                "prevfin",
+                "1-3着"
+              ]
+            ],
+            "sign": 1,
+            "n": 164,
+            "rate": 0.4756,
+            "exp": 0.3721,
+            "lift": 1.278,
+            "z": 2.99
           }
         ],
-        "conds_total": 17
+        "conds_total": 46
       },
       "training_rank": {
         "grade": "S",
@@ -3162,11 +3370,11 @@
         "top2": 0.2168,
         "top3": 0.3424
       },
-      "estimated_prob": 0.116645,
-      "fair_odds": 8.6,
-      "odds": 6.4,
+      "estimated_prob": 0.121131,
+      "fair_odds": 8.3,
+      "odds": 6.1,
       "popularity": 3,
-      "ev": -0.25,
+      "ev": -0.26,
       "ability_mark": "▲",
       "bet_mark": null,
       "landmine_reason": null,
@@ -3197,9 +3405,9 @@
       "sex_age": "牡4",
       "weight_carried": 58.0,
       "jockey": "マーカンド",
-      "body_weight": null,
-      "body_weight_diff": null,
-      "body_weight_source": null,
+      "body_weight": 480,
+      "body_weight_diff": -2,
+      "body_weight_source": "live",
       "sire": "ダノンバラード",
       "damsire": "タイキシャトル",
       "trainer": "美浦・鈴木慎",
@@ -4881,8 +5089,20 @@
             "exp": 0.2356,
             "lift": 0.939
           },
-          "bweight": null,
-          "wratio": null,
+          "bweight": {
+            "level": "460-500",
+            "n": 855,
+            "rate": 0.2795,
+            "exp": 0.2548,
+            "lift": 1.097
+          },
+          "wratio": {
+            "level": "標準",
+            "n": 859,
+            "rate": 0.2643,
+            "exp": 0.246,
+            "lift": 1.074
+          },
           "age": {
             "level": "4-5歳",
             "n": 701,
@@ -4911,7 +5131,13 @@
             "exp": 0.2245,
             "lift": 1.039
           },
-          "bwdelta": null,
+          "bwdelta": {
+            "level": "±9kg内",
+            "n": 1480,
+            "rate": 0.2534,
+            "exp": 0.244,
+            "lift": 1.038
+          },
           "jchange": {
             "level": "乗り替わり",
             "n": 1339,
@@ -4941,9 +5167,9 @@
             "lift": 1.056
           }
         },
-        "up": 10,
+        "up": 26,
         "dn": 0,
-        "net": 10,
+        "net": 26,
         "conds": [
           {
             "c": [
@@ -5036,6 +5262,50 @@
           {
             "c": [
               [
+                "bweight",
+                "460-500"
+              ],
+              [
+                "sex",
+                "牡セ"
+              ],
+              [
+                "style",
+                "逃先"
+              ]
+            ],
+            "sign": 1,
+            "n": 232,
+            "rate": 0.4009,
+            "exp": 0.308,
+            "lift": 1.302,
+            "z": 3.38
+          },
+          {
+            "c": [
+              [
+                "age",
+                "4-5歳"
+              ],
+              [
+                "sex",
+                "牡セ"
+              ],
+              [
+                "wratio",
+                "標準"
+              ]
+            ],
+            "sign": 1,
+            "n": 271,
+            "rate": 0.3358,
+            "exp": 0.2592,
+            "lift": 1.296,
+            "z": 3.13
+          },
+          {
+            "c": [
+              [
                 "jockey",
                 "その他"
               ],
@@ -5080,6 +5350,72 @@
           {
             "c": [
               [
+                "bweight",
+                "460-500"
+              ],
+              [
+                "distchg",
+                "同距離"
+              ],
+              [
+                "sex",
+                "牡セ"
+              ]
+            ],
+            "sign": 1,
+            "n": 268,
+            "rate": 0.3582,
+            "exp": 0.2825,
+            "lift": 1.268,
+            "z": 3.06
+          },
+          {
+            "c": [
+              [
+                "distexp",
+                "深・実績あり"
+              ],
+              [
+                "sex",
+                "牡セ"
+              ],
+              [
+                "wratio",
+                "標準"
+              ]
+            ],
+            "sign": 1,
+            "n": 275,
+            "rate": 0.36,
+            "exp": 0.2843,
+            "lift": 1.266,
+            "z": 3.03
+          },
+          {
+            "c": [
+              [
+                "distchg",
+                "同距離"
+              ],
+              [
+                "sex",
+                "牡セ"
+              ],
+              [
+                "wratio",
+                "標準"
+              ]
+            ],
+            "sign": 1,
+            "n": 239,
+            "rate": 0.3515,
+            "exp": 0.2783,
+            "lift": 1.263,
+            "z": 2.8
+          },
+          {
+            "c": [
+              [
                 "distchg",
                 "同距離"
               ],
@@ -5102,6 +5438,72 @@
           {
             "c": [
               [
+                "age",
+                "4-5歳"
+              ],
+              [
+                "bweight",
+                "460-500"
+              ],
+              [
+                "sex",
+                "牡セ"
+              ]
+            ],
+            "sign": 1,
+            "n": 301,
+            "rate": 0.3322,
+            "exp": 0.2671,
+            "lift": 1.244,
+            "z": 2.8
+          },
+          {
+            "c": [
+              [
+                "bweight",
+                "460-500"
+              ],
+              [
+                "distexp",
+                "深・実績あり"
+              ],
+              [
+                "sex",
+                "牡セ"
+              ]
+            ],
+            "sign": 1,
+            "n": 288,
+            "rate": 0.3611,
+            "exp": 0.2916,
+            "lift": 1.238,
+            "z": 2.84
+          },
+          {
+            "c": [
+              [
+                "jchange",
+                "乗り替わり"
+              ],
+              [
+                "sex",
+                "牡セ"
+              ],
+              [
+                "wratio",
+                "標準"
+              ]
+            ],
+            "sign": 1,
+            "n": 435,
+            "rate": 0.3057,
+            "exp": 0.2497,
+            "lift": 1.224,
+            "z": 3.0
+          },
+          {
+            "c": [
+              [
                 "distchg",
                 "同距離"
               ],
@@ -5120,6 +5522,94 @@
             "exp": 0.2864,
             "lift": 1.215,
             "z": 2.79
+          },
+          {
+            "c": [
+              [
+                "bwdelta",
+                "±9kg内"
+              ],
+              [
+                "distexp",
+                "深・実績あり"
+              ],
+              [
+                "wratio",
+                "標準"
+              ]
+            ],
+            "sign": 1,
+            "n": 307,
+            "rate": 0.3355,
+            "exp": 0.2766,
+            "lift": 1.213,
+            "z": 2.5
+          },
+          {
+            "c": [
+              [
+                "bwdelta",
+                "±9kg内"
+              ],
+              [
+                "sex",
+                "牡セ"
+              ],
+              [
+                "wratio",
+                "標準"
+              ]
+            ],
+            "sign": 1,
+            "n": 497,
+            "rate": 0.3058,
+            "exp": 0.2535,
+            "lift": 1.206,
+            "z": 2.97
+          },
+          {
+            "c": [
+              [
+                "bwdelta",
+                "±9kg内"
+              ],
+              [
+                "sex",
+                "牡セ"
+              ],
+              [
+                "style",
+                "逃先"
+              ]
+            ],
+            "sign": 1,
+            "n": 360,
+            "rate": 0.3639,
+            "exp": 0.3022,
+            "lift": 1.204,
+            "z": 2.82
+          },
+          {
+            "c": [
+              [
+                "bwdelta",
+                "±9kg内"
+              ],
+              [
+                "distchg",
+                "同距離"
+              ],
+              [
+                "sex",
+                "牡セ"
+              ]
+            ],
+            "sign": 1,
+            "n": 395,
+            "rate": 0.3418,
+            "exp": 0.2855,
+            "lift": 1.197,
+            "z": 2.73
           },
           {
             "c": [
@@ -5156,9 +5646,49 @@
             "exp": 0.2995,
             "lift": 1.19,
             "z": 2.81
+          },
+          {
+            "c": [
+              [
+                "bweight",
+                "460-500"
+              ],
+              [
+                "sex",
+                "牡セ"
+              ],
+              [
+                "wratio",
+                "標準"
+              ]
+            ],
+            "sign": 1,
+            "n": 488,
+            "rate": 0.2971,
+            "exp": 0.2507,
+            "lift": 1.185,
+            "z": 2.63
+          },
+          {
+            "c": [
+              [
+                "sex",
+                "牡セ"
+              ],
+              [
+                "wratio",
+                "標準"
+              ]
+            ],
+            "sign": 1,
+            "n": 568,
+            "rate": 0.2993,
+            "exp": 0.2527,
+            "lift": 1.184,
+            "z": 2.83
           }
         ],
-        "conds_total": 10
+        "conds_total": 26
       },
       "training_rank": {
         "grade": "B",
@@ -5543,15 +6073,15 @@
         "top2": 0.132,
         "top3": 0.2154
       },
-      "estimated_prob": 0.034872,
-      "fair_odds": 28.7,
-      "odds": 32.8,
+      "estimated_prob": 0.033156,
+      "fair_odds": 30.2,
+      "odds": 36.6,
       "popularity": 9,
-      "ev": 0.14,
+      "ev": 0.21,
       "ability_mark": null,
       "bet_mark": "穴",
       "landmine_reason": null,
-      "ana_reason": "32.8倍(9番人気)だが3着以内に入る確率は10%（オッズ相応なら8%）",
+      "ana_reason": "36.6倍(9番人気)だが3着以内に入る確率は9%（オッズ相応なら7%）",
       "keshi": false,
       "finish": null,
       "finish_text": null,
@@ -5578,9 +6108,9 @@
       "sex_age": "牡4",
       "weight_carried": 58.0,
       "jockey": "佐々木大輔",
-      "body_weight": null,
-      "body_weight_diff": null,
-      "body_weight_source": null,
+      "body_weight": 570,
+      "body_weight_diff": 4,
+      "body_weight_source": "live",
       "sire": "ニューイヤーズデイ",
       "damsire": "ジャイアントレッカー",
       "trainer": "美浦・蛯名正",
@@ -7092,8 +7622,20 @@
             "exp": 0.2509,
             "lift": 1.039
           },
-          "bweight": null,
-          "wratio": null,
+          "bweight": {
+            "level": "500〜",
+            "n": 314,
+            "rate": 0.2675,
+            "exp": 0.2713,
+            "lift": 0.986
+          },
+          "wratio": {
+            "level": "軽い",
+            "n": 535,
+            "rate": 0.2729,
+            "exp": 0.2675,
+            "lift": 1.02
+          },
           "age": {
             "level": "4-5歳",
             "n": 701,
@@ -7122,7 +7664,13 @@
             "exp": 0.2245,
             "lift": 1.039
           },
-          "bwdelta": null,
+          "bwdelta": {
+            "level": "±9kg内",
+            "n": 1480,
+            "rate": 0.2534,
+            "exp": 0.244,
+            "lift": 1.038
+          },
           "jchange": {
             "level": "継続",
             "n": 347,
@@ -7152,9 +7700,9 @@
             "lift": 1.062
           }
         },
-        "up": 8,
+        "up": 10,
         "dn": 0,
-        "net": 8,
+        "net": 10,
         "conds": [
           {
             "c": [
@@ -7291,6 +7839,28 @@
           {
             "c": [
               [
+                "bwdelta",
+                "±9kg内"
+              ],
+              [
+                "jchange",
+                "継続"
+              ],
+              [
+                "style",
+                "逃先"
+              ]
+            ],
+            "sign": 1,
+            "n": 140,
+            "rate": 0.4286,
+            "exp": 0.3331,
+            "lift": 1.287,
+            "z": 2.64
+          },
+          {
+            "c": [
+              [
                 "jchange",
                 "継続"
               ],
@@ -7305,6 +7875,28 @@
             "exp": 0.3337,
             "lift": 1.273,
             "z": 2.63
+          },
+          {
+            "c": [
+              [
+                "bwdelta",
+                "±9kg内"
+              ],
+              [
+                "sex",
+                "牡セ"
+              ],
+              [
+                "style",
+                "逃先"
+              ]
+            ],
+            "sign": 1,
+            "n": 360,
+            "rate": 0.3639,
+            "exp": 0.3022,
+            "lift": 1.204,
+            "z": 2.82
           },
           {
             "c": [
@@ -7325,7 +7917,7 @@
             "z": 2.81
           }
         ],
-        "conds_total": 8
+        "conds_total": 10
       },
       "training_rank": {
         "grade": "B",
@@ -7710,11 +8302,11 @@
         "top2": 0.1591,
         "top3": 0.2571
       },
-      "estimated_prob": 0.06407,
-      "fair_odds": 15.6,
-      "odds": 13.1,
+      "estimated_prob": 0.06203,
+      "fair_odds": 16.1,
+      "odds": 13.8,
       "popularity": 6,
-      "ev": -0.16,
+      "ev": -0.14,
       "ability_mark": null,
       "bet_mark": null,
       "landmine_reason": null,
@@ -7745,9 +8337,9 @@
       "sex_age": "牡4",
       "weight_carried": 58.0,
       "jockey": "横山武史",
-      "body_weight": null,
-      "body_weight_diff": null,
-      "body_weight_source": null,
+      "body_weight": 450,
+      "body_weight_diff": 2,
+      "body_weight_source": "live",
       "sire": "フィエールマン",
       "damsire": "ロードカナロア",
       "trainer": "栗東・藤岡健",
@@ -9506,8 +10098,20 @@
             "exp": 0.2509,
             "lift": 1.039
           },
-          "bweight": null,
-          "wratio": null,
+          "bweight": {
+            "level": "〜460",
+            "n": 550,
+            "rate": 0.2145,
+            "exp": 0.2204,
+            "lift": 0.973
+          },
+          "wratio": {
+            "level": "重い",
+            "n": 325,
+            "rate": 0.2092,
+            "exp": 0.2151,
+            "lift": 0.973
+          },
           "age": {
             "level": "4-5歳",
             "n": 701,
@@ -9536,7 +10140,13 @@
             "exp": 0.3674,
             "lift": 1.12
           },
-          "bwdelta": null,
+          "bwdelta": {
+            "level": "±9kg内",
+            "n": 1480,
+            "rate": 0.2534,
+            "exp": 0.244,
+            "lift": 1.038
+          },
           "jchange": {
             "level": "乗り替わり",
             "n": 1339,
@@ -9566,9 +10176,9 @@
             "lift": 1.03
           }
         },
-        "up": 6,
+        "up": 7,
         "dn": 0,
-        "net": 6,
+        "net": 7,
         "conds": [
           {
             "c": [
@@ -9683,6 +10293,28 @@
           {
             "c": [
               [
+                "bwdelta",
+                "±9kg内"
+              ],
+              [
+                "prevfin",
+                "1-3着"
+              ],
+              [
+                "sex",
+                "牡セ"
+              ]
+            ],
+            "sign": 1,
+            "n": 291,
+            "rate": 0.4536,
+            "exp": 0.3732,
+            "lift": 1.216,
+            "z": 3.08
+          },
+          {
+            "c": [
+              [
                 "prevfin",
                 "1-3着"
               ],
@@ -9699,7 +10331,7 @@
             "z": 3.08
           }
         ],
-        "conds_total": 6
+        "conds_total": 7
       },
       "training_rank": {
         "grade": "A",
@@ -10084,11 +10716,11 @@
         "top2": 0.1139,
         "top3": 0.1869
       },
-      "estimated_prob": 0.054416,
-      "fair_odds": 18.4,
-      "odds": 14.2,
+      "estimated_prob": 0.053188,
+      "fair_odds": 18.8,
+      "odds": 14.7,
       "popularity": 7,
-      "ev": -0.23,
+      "ev": -0.22,
       "ability_mark": null,
       "bet_mark": null,
       "landmine_reason": null,
@@ -10119,9 +10751,9 @@
       "sex_age": "牡5",
       "weight_carried": 58.0,
       "jockey": "Ｃ．デムーロ",
-      "body_weight": null,
-      "body_weight_diff": null,
-      "body_weight_source": null,
+      "body_weight": 478,
+      "body_weight_diff": -2,
+      "body_weight_source": "live",
       "sire": "ドゥラメンテ",
       "damsire": "Essence of Dubai",
       "trainer": "栗東・藤原",
@@ -11672,8 +12304,20 @@
             "exp": 0.2509,
             "lift": 1.039
           },
-          "bweight": null,
-          "wratio": null,
+          "bweight": {
+            "level": "460-500",
+            "n": 855,
+            "rate": 0.2795,
+            "exp": 0.2548,
+            "lift": 1.097
+          },
+          "wratio": {
+            "level": "標準",
+            "n": 859,
+            "rate": 0.2643,
+            "exp": 0.246,
+            "lift": 1.074
+          },
           "age": {
             "level": "4-5歳",
             "n": 701,
@@ -11702,7 +12346,13 @@
             "exp": 0.3674,
             "lift": 1.12
           },
-          "bwdelta": null,
+          "bwdelta": {
+            "level": "±9kg内",
+            "n": 1480,
+            "rate": 0.2534,
+            "exp": 0.244,
+            "lift": 1.038
+          },
           "jchange": {
             "level": "乗り替わり",
             "n": 1339,
@@ -11732,9 +12382,9 @@
             "lift": 1.062
           }
         },
-        "up": 17,
+        "up": 49,
         "dn": 0,
-        "net": 17,
+        "net": 49,
         "conds": [
           {
             "c": [
@@ -11805,6 +12455,72 @@
           {
             "c": [
               [
+                "bweight",
+                "460-500"
+              ],
+              [
+                "prevcorner",
+                "3番手以内"
+              ],
+              [
+                "prevfin",
+                "1-3着"
+              ]
+            ],
+            "sign": 1,
+            "n": 114,
+            "rate": 0.4825,
+            "exp": 0.3568,
+            "lift": 1.352,
+            "z": 3.07
+          },
+          {
+            "c": [
+              [
+                "bweight",
+                "460-500"
+              ],
+              [
+                "style",
+                "逃先"
+              ],
+              [
+                "waku",
+                "中枠"
+              ]
+            ],
+            "sign": 1,
+            "n": 115,
+            "rate": 0.4087,
+            "exp": 0.3027,
+            "lift": 1.35,
+            "z": 2.69
+          },
+          {
+            "c": [
+              [
+                "bweight",
+                "460-500"
+              ],
+              [
+                "distexp",
+                "深・実績あり"
+              ],
+              [
+                "homeaway",
+                "遠征"
+              ]
+            ],
+            "sign": 1,
+            "n": 137,
+            "rate": 0.365,
+            "exp": 0.2737,
+            "lift": 1.333,
+            "z": 2.64
+          },
+          {
+            "c": [
+              [
                 "distchg",
                 "同距離"
               ],
@@ -11849,6 +12565,248 @@
           {
             "c": [
               [
+                "distexp",
+                "深・実績あり"
+              ],
+              [
+                "prevfin",
+                "1-3着"
+              ],
+              [
+                "wratio",
+                "標準"
+              ]
+            ],
+            "sign": 1,
+            "n": 137,
+            "rate": 0.4599,
+            "exp": 0.3506,
+            "lift": 1.312,
+            "z": 2.87
+          },
+          {
+            "c": [
+              [
+                "prevfin",
+                "1-3着"
+              ],
+              [
+                "sex",
+                "牡セ"
+              ],
+              [
+                "wratio",
+                "標準"
+              ]
+            ],
+            "sign": 1,
+            "n": 165,
+            "rate": 0.4667,
+            "exp": 0.3574,
+            "lift": 1.306,
+            "z": 3.19
+          },
+          {
+            "c": [
+              [
+                "bweight",
+                "460-500"
+              ],
+              [
+                "prevfin",
+                "1-3着"
+              ],
+              [
+                "style",
+                "逃先"
+              ]
+            ],
+            "sign": 1,
+            "n": 125,
+            "rate": 0.504,
+            "exp": 0.387,
+            "lift": 1.302,
+            "z": 2.91
+          },
+          {
+            "c": [
+              [
+                "bweight",
+                "460-500"
+              ],
+              [
+                "sex",
+                "牡セ"
+              ],
+              [
+                "style",
+                "逃先"
+              ]
+            ],
+            "sign": 1,
+            "n": 232,
+            "rate": 0.4009,
+            "exp": 0.308,
+            "lift": 1.302,
+            "z": 3.38
+          },
+          {
+            "c": [
+              [
+                "bweight",
+                "460-500"
+              ],
+              [
+                "homeaway",
+                "遠征"
+              ],
+              [
+                "sex",
+                "牡セ"
+              ]
+            ],
+            "sign": 1,
+            "n": 172,
+            "rate": 0.3314,
+            "exp": 0.2547,
+            "lift": 1.301,
+            "z": 2.58
+          },
+          {
+            "c": [
+              [
+                "bweight",
+                "460-500"
+              ],
+              [
+                "distexp",
+                "深・実績あり"
+              ],
+              [
+                "prevfin",
+                "1-3着"
+              ]
+            ],
+            "sign": 1,
+            "n": 131,
+            "rate": 0.4809,
+            "exp": 0.3704,
+            "lift": 1.299,
+            "z": 2.81
+          },
+          {
+            "c": [
+              [
+                "age",
+                "4-5歳"
+              ],
+              [
+                "sex",
+                "牡セ"
+              ],
+              [
+                "wratio",
+                "標準"
+              ]
+            ],
+            "sign": 1,
+            "n": 271,
+            "rate": 0.3358,
+            "exp": 0.2592,
+            "lift": 1.296,
+            "z": 3.13
+          },
+          {
+            "c": [
+              [
+                "bweight",
+                "460-500"
+              ],
+              [
+                "prevfin",
+                "1-3着"
+              ],
+              [
+                "sex",
+                "牡セ"
+              ]
+            ],
+            "sign": 1,
+            "n": 187,
+            "rate": 0.492,
+            "exp": 0.381,
+            "lift": 1.291,
+            "z": 3.4
+          },
+          {
+            "c": [
+              [
+                "age",
+                "4-5歳"
+              ],
+              [
+                "bweight",
+                "460-500"
+              ],
+              [
+                "prevfin",
+                "1-3着"
+              ]
+            ],
+            "sign": 1,
+            "n": 127,
+            "rate": 0.4724,
+            "exp": 0.3689,
+            "lift": 1.281,
+            "z": 2.59
+          },
+          {
+            "c": [
+              [
+                "bweight",
+                "460-500"
+              ],
+              [
+                "prevfin",
+                "1-3着"
+              ],
+              [
+                "rota",
+                "中6週以上"
+              ]
+            ],
+            "sign": 1,
+            "n": 143,
+            "rate": 0.5105,
+            "exp": 0.3985,
+            "lift": 1.281,
+            "z": 2.97
+          },
+          {
+            "c": [
+              [
+                "bweight",
+                "460-500"
+              ],
+              [
+                "jchange",
+                "乗り替わり"
+              ],
+              [
+                "prevfin",
+                "1-3着"
+              ]
+            ],
+            "sign": 1,
+            "n": 164,
+            "rate": 0.4756,
+            "exp": 0.3721,
+            "lift": 1.278,
+            "z": 2.99
+          },
+          {
+            "c": [
+              [
                 "age",
                 "4-5歳"
               ],
@@ -11871,74 +12829,8 @@
           {
             "c": [
               [
-                "distchg",
-                "同距離"
-              ],
-              [
-                "prevfin",
-                "1-3着"
-              ],
-              [
-                "sex",
-                "牡セ"
-              ]
-            ],
-            "sign": 1,
-            "n": 172,
-            "rate": 0.4884,
-            "exp": 0.3877,
-            "lift": 1.26,
-            "z": 2.94
-          },
-          {
-            "c": [
-              [
-                "damsire",
-                "その他"
-              ],
-              [
-                "prevfin",
-                "1-3着"
-              ],
-              [
-                "sex",
-                "牡セ"
-              ]
-            ],
-            "sign": 1,
-            "n": 184,
-            "rate": 0.4674,
-            "exp": 0.372,
-            "lift": 1.256,
-            "z": 2.9
-          },
-          {
-            "c": [
-              [
-                "damsire",
-                "その他"
-              ],
-              [
-                "distchg",
-                "同距離"
-              ],
-              [
-                "prevfin",
-                "1-3着"
-              ]
-            ],
-            "sign": 1,
-            "n": 139,
-            "rate": 0.482,
-            "exp": 0.3843,
-            "lift": 1.254,
-            "z": 2.57
-          },
-          {
-            "c": [
-              [
-                "damsire",
-                "その他"
+                "bweight",
+                "460-500"
               ],
               [
                 "distchg",
@@ -11950,55 +12842,11 @@
               ]
             ],
             "sign": 1,
-            "n": 225,
-            "rate": 0.3689,
-            "exp": 0.2952,
-            "lift": 1.25,
-            "z": 2.68
-          },
-          {
-            "c": [
-              [
-                "distchg",
-                "同距離"
-              ],
-              [
-                "sex",
-                "牡セ"
-              ],
-              [
-                "style",
-                "逃先"
-              ]
-            ],
-            "sign": 1,
-            "n": 189,
-            "rate": 0.3968,
-            "exp": 0.3188,
-            "lift": 1.245,
-            "z": 2.51
-          },
-          {
-            "c": [
-              [
-                "jchange",
-                "乗り替わり"
-              ],
-              [
-                "prevfin",
-                "1-3着"
-              ],
-              [
-                "sex",
-                "牡セ"
-              ]
-            ],
-            "sign": 1,
-            "n": 221,
-            "rate": 0.4389,
-            "exp": 0.3544,
-            "lift": 1.238,
-            "z": 2.87
+            "n": 268,
+            "rate": 0.3582,
+            "exp": 0.2825,
+            "lift": 1.268,
+            "z": 3.06
           },
           {
             "c": [
@@ -12007,99 +12855,67 @@
                 "深・実績あり"
               ],
               [
-                "prevfin",
-                "1-3着"
-              ],
-              [
                 "sex",
                 "牡セ"
+              ],
+              [
+                "wratio",
+                "標準"
               ]
             ],
             "sign": 1,
-            "n": 194,
-            "rate": 0.4381,
-            "exp": 0.3549,
-            "lift": 1.235,
-            "z": 2.62
-          },
-          {
-            "c": [
-              [
-                "distchg",
-                "同距離"
-              ],
-              [
-                "jockey",
-                "その他"
-              ],
-              [
-                "sex",
-                "牡セ"
-              ]
-            ],
-            "sign": 1,
-            "n": 339,
-            "rate": 0.3481,
-            "exp": 0.2864,
-            "lift": 1.215,
-            "z": 2.79
-          },
-          {
-            "c": [
-              [
-                "prevfin",
-                "1-3着"
-              ],
-              [
-                "sex",
-                "牡セ"
-              ]
-            ],
-            "sign": 1,
-            "n": 333,
-            "rate": 0.4444,
-            "exp": 0.3697,
-            "lift": 1.202,
-            "z": 3.08
-          },
-          {
-            "c": [
-              [
-                "distchg",
-                "同距離"
-              ],
-              [
-                "sex",
-                "牡セ"
-              ]
-            ],
-            "sign": 1,
-            "n": 455,
-            "rate": 0.3385,
+            "n": 275,
+            "rate": 0.36,
             "exp": 0.2843,
-            "lift": 1.191,
-            "z": 2.83
+            "lift": 1.266,
+            "z": 3.03
           },
           {
             "c": [
               [
-                "sex",
-                "牡セ"
+                "bweight",
+                "460-500"
               ],
               [
-                "style",
-                "逃先"
+                "distchg",
+                "同距離"
+              ],
+              [
+                "prevfin",
+                "1-3着"
               ]
             ],
             "sign": 1,
-            "n": 421,
-            "rate": 0.3563,
-            "exp": 0.2995,
-            "lift": 1.19,
-            "z": 2.81
+            "n": 123,
+            "rate": 0.4959,
+            "exp": 0.392,
+            "lift": 1.265,
+            "z": 2.54
+          },
+          {
+            "c": [
+              [
+                "bweight",
+                "460-500"
+              ],
+              [
+                "prevfin",
+                "1-3着"
+              ],
+              [
+                "wratio",
+                "標準"
+              ]
+            ],
+            "sign": 1,
+            "n": 162,
+            "rate": 0.463,
+            "exp": 0.3659,
+            "lift": 1.265,
+            "z": 2.79
           }
         ],
-        "conds_total": 17
+        "conds_total": 49
       },
       "training_rank": {
         "grade": "A",
@@ -12484,14 +13300,14 @@
         "top2": 0.1786,
         "top3": 0.2865
       },
-      "estimated_prob": 0.096479,
-      "fair_odds": 10.4,
-      "odds": 7.7,
+      "estimated_prob": 0.092275,
+      "fair_odds": 10.8,
+      "odds": 8.2,
       "popularity": 4,
-      "ev": -0.26,
+      "ev": -0.24,
       "ability_mark": "△",
       "bet_mark": "地雷",
-      "landmine_reason": "7.7倍(4番人気)だが3着内を外す確率は75%（オッズ相応なら64%）",
+      "landmine_reason": "8.2倍(4番人気)だが3着内を外す確率は77%（オッズ相応なら66%）",
       "ana_reason": null,
       "keshi": false,
       "finish": null,
@@ -12519,9 +13335,9 @@
       "sex_age": "牡6",
       "weight_carried": 58.0,
       "jockey": "木幡巧也",
-      "body_weight": null,
-      "body_weight_diff": null,
-      "body_weight_source": null,
+      "body_weight": 494,
+      "body_weight_diff": 12,
+      "body_weight_source": "live",
       "sire": "ゴールドシップ",
       "damsire": "アグネスデジタル",
       "trainer": "美浦・畠山",
@@ -14870,8 +15686,20 @@
             "exp": 0.2356,
             "lift": 0.939
           },
-          "bweight": null,
-          "wratio": null,
+          "bweight": {
+            "level": "460-500",
+            "n": 855,
+            "rate": 0.2795,
+            "exp": 0.2548,
+            "lift": 1.097
+          },
+          "wratio": {
+            "level": "標準",
+            "n": 859,
+            "rate": 0.2643,
+            "exp": 0.246,
+            "lift": 1.074
+          },
           "age": {
             "level": "6歳以上",
             "n": 197,
@@ -14900,7 +15728,13 @@
             "exp": 0.2245,
             "lift": 1.039
           },
-          "bwdelta": null,
+          "bwdelta": {
+            "level": "+10kg以上",
+            "n": 146,
+            "rate": 0.274,
+            "exp": 0.2795,
+            "lift": 0.98
+          },
           "jchange": {
             "level": "乗り替わり",
             "n": 1339,
@@ -14930,9 +15764,9 @@
             "lift": 1.062
           }
         },
-        "up": 21,
+        "up": 32,
         "dn": 0,
-        "net": 21,
+        "net": 32,
         "conds": [
           {
             "c": [
@@ -15003,6 +15837,28 @@
           {
             "c": [
               [
+                "sex",
+                "牡セ"
+              ],
+              [
+                "sire",
+                "中位"
+              ],
+              [
+                "wratio",
+                "標準"
+              ]
+            ],
+            "sign": 1,
+            "n": 142,
+            "rate": 0.3944,
+            "exp": 0.2701,
+            "lift": 1.46,
+            "z": 3.7
+          },
+          {
+            "c": [
+              [
                 "jockey",
                 "その他"
               ],
@@ -15043,6 +15899,28 @@
             "exp": 0.3049,
             "lift": 1.418,
             "z": 3.27
+          },
+          {
+            "c": [
+              [
+                "bweight",
+                "460-500"
+              ],
+              [
+                "sex",
+                "牡セ"
+              ],
+              [
+                "sire",
+                "中位"
+              ]
+            ],
+            "sign": 1,
+            "n": 156,
+            "rate": 0.3782,
+            "exp": 0.2711,
+            "lift": 1.395,
+            "z": 3.36
           },
           {
             "c": [
@@ -15259,6 +16137,28 @@
           {
             "c": [
               [
+                "jchange",
+                "乗り替わり"
+              ],
+              [
+                "sire",
+                "中位"
+              ],
+              [
+                "wratio",
+                "標準"
+              ]
+            ],
+            "sign": 1,
+            "n": 179,
+            "rate": 0.3464,
+            "exp": 0.2642,
+            "lift": 1.311,
+            "z": 2.77
+          },
+          {
+            "c": [
+              [
                 "distexp",
                 "深・実績あり"
               ],
@@ -15273,6 +16173,28 @@
             "exp": 0.2898,
             "lift": 1.305,
             "z": 2.63
+          },
+          {
+            "c": [
+              [
+                "jockey",
+                "その他"
+              ],
+              [
+                "sire",
+                "中位"
+              ],
+              [
+                "wratio",
+                "標準"
+              ]
+            ],
+            "sign": 1,
+            "n": 151,
+            "rate": 0.3444,
+            "exp": 0.264,
+            "lift": 1.304,
+            "z": 2.51
           },
           {
             "c": [
@@ -15317,59 +16239,49 @@
           {
             "c": [
               [
-                "jockey",
-                "その他"
-              ],
-              [
-                "sire",
-                "中位"
-              ]
-            ],
-            "sign": 1,
-            "n": 286,
-            "rate": 0.3182,
-            "exp": 0.2598,
-            "lift": 1.225,
-            "z": 2.54
-          },
-          {
-            "c": [
-              [
-                "homeaway",
-                "地元"
-              ],
-              [
-                "sire",
-                "中位"
-              ]
-            ],
-            "sign": 1,
-            "n": 323,
-            "rate": 0.3158,
-            "exp": 0.2583,
-            "lift": 1.222,
-            "z": 2.63
-          },
-          {
-            "c": [
-              [
                 "prevcorner",
                 "中団"
               ],
               [
                 "sex",
                 "牡セ"
+              ],
+              [
+                "wratio",
+                "標準"
               ]
             ],
             "sign": 1,
-            "n": 366,
-            "rate": 0.3251,
-            "exp": 0.2723,
-            "lift": 1.194,
-            "z": 2.51
+            "n": 190,
+            "rate": 0.3421,
+            "exp": 0.2682,
+            "lift": 1.276,
+            "z": 2.53
+          },
+          {
+            "c": [
+              [
+                "distexp",
+                "深・実績あり"
+              ],
+              [
+                "sex",
+                "牡セ"
+              ],
+              [
+                "wratio",
+                "標準"
+              ]
+            ],
+            "sign": 1,
+            "n": 275,
+            "rate": 0.36,
+            "exp": 0.2843,
+            "lift": 1.266,
+            "z": 3.03
           }
         ],
-        "conds_total": 21
+        "conds_total": 32
       },
       "training_rank": {
         "grade": "D",
@@ -15755,16 +16667,16 @@
         "top2": 0.0103,
         "top3": 0.0175
       },
-      "estimated_prob": 0.009959,
-      "fair_odds": 100.4,
-      "odds": 45.6,
+      "estimated_prob": 0.009033,
+      "fair_odds": 110.7,
+      "odds": 51.0,
       "popularity": 10,
-      "ev": -0.55,
+      "ev": -0.54,
       "ability_mark": null,
       "bet_mark": null,
       "landmine_reason": null,
       "ana_reason": null,
-      "keshi": false,
+      "keshi": true,
       "finish": null,
       "finish_text": null,
       "final_odds": null,
@@ -15790,9 +16702,9 @@
       "sex_age": "セ4",
       "weight_carried": 58.0,
       "jockey": "田辺裕信",
-      "body_weight": null,
-      "body_weight_diff": null,
-      "body_weight_source": null,
+      "body_weight": 454,
+      "body_weight_diff": 4,
+      "body_weight_source": "live",
       "sire": "シルバーステート",
       "damsire": "Royal Anthem",
       "trainer": "美浦・田中博",
@@ -17191,8 +18103,20 @@
             "exp": 0.2509,
             "lift": 1.039
           },
-          "bweight": null,
-          "wratio": null,
+          "bweight": {
+            "level": "〜460",
+            "n": 550,
+            "rate": 0.2145,
+            "exp": 0.2204,
+            "lift": 0.973
+          },
+          "wratio": {
+            "level": "重い",
+            "n": 325,
+            "rate": 0.2092,
+            "exp": 0.2151,
+            "lift": 0.973
+          },
           "age": {
             "level": "4-5歳",
             "n": 701,
@@ -17221,7 +18145,13 @@
             "exp": 0.3674,
             "lift": 1.12
           },
-          "bwdelta": null,
+          "bwdelta": {
+            "level": "±9kg内",
+            "n": 1480,
+            "rate": 0.2534,
+            "exp": 0.244,
+            "lift": 1.038
+          },
           "jchange": {
             "level": "乗り替わり",
             "n": 1339,
@@ -17251,9 +18181,9 @@
             "lift": 1.062
           }
         },
-        "up": 26,
+        "up": 32,
         "dn": 0,
-        "net": 26,
+        "net": 32,
         "conds": [
           {
             "c": [
@@ -17342,6 +18272,28 @@
             "exp": 0.3049,
             "lift": 1.418,
             "z": 3.27
+          },
+          {
+            "c": [
+              [
+                "bwdelta",
+                "±9kg内"
+              ],
+              [
+                "prevcorner",
+                "中団"
+              ],
+              [
+                "sire",
+                "中位"
+              ]
+            ],
+            "sign": 1,
+            "n": 126,
+            "rate": 0.3968,
+            "exp": 0.2807,
+            "lift": 1.414,
+            "z": 3.22
           },
           {
             "c": [
@@ -17514,6 +18466,28 @@
           {
             "c": [
               [
+                "bwdelta",
+                "±9kg内"
+              ],
+              [
+                "sex",
+                "牡セ"
+              ],
+              [
+                "sire",
+                "中位"
+              ]
+            ],
+            "sign": 1,
+            "n": 222,
+            "rate": 0.3784,
+            "exp": 0.2806,
+            "lift": 1.349,
+            "z": 3.6
+          },
+          {
+            "c": [
+              [
                 "jchange",
                 "乗り替わり"
               ],
@@ -17616,6 +18590,50 @@
           {
             "c": [
               [
+                "bwdelta",
+                "±9kg内"
+              ],
+              [
+                "prevcorner",
+                "中団"
+              ],
+              [
+                "waku",
+                "外枠"
+              ]
+            ],
+            "sign": 1,
+            "n": 198,
+            "rate": 0.3434,
+            "exp": 0.2664,
+            "lift": 1.289,
+            "z": 2.73
+          },
+          {
+            "c": [
+              [
+                "bwdelta",
+                "±9kg内"
+              ],
+              [
+                "jockey",
+                "その他"
+              ],
+              [
+                "sire",
+                "中位"
+              ]
+            ],
+            "sign": 1,
+            "n": 252,
+            "rate": 0.3254,
+            "exp": 0.254,
+            "lift": 1.281,
+            "z": 2.93
+          },
+          {
+            "c": [
+              [
                 "prevfin",
                 "1-3着"
               ],
@@ -17678,89 +18696,9 @@
             "exp": 0.3544,
             "lift": 1.238,
             "z": 2.87
-          },
-          {
-            "c": [
-              [
-                "distexp",
-                "深・実績あり"
-              ],
-              [
-                "prevfin",
-                "1-3着"
-              ],
-              [
-                "sex",
-                "牡セ"
-              ]
-            ],
-            "sign": 1,
-            "n": 194,
-            "rate": 0.4381,
-            "exp": 0.3549,
-            "lift": 1.235,
-            "z": 2.62
-          },
-          {
-            "c": [
-              [
-                "homeaway",
-                "地元"
-              ],
-              [
-                "prevfin",
-                "1-3着"
-              ],
-              [
-                "waku",
-                "外枠"
-              ]
-            ],
-            "sign": 1,
-            "n": 174,
-            "rate": 0.4828,
-            "exp": 0.3939,
-            "lift": 1.226,
-            "z": 2.61
-          },
-          {
-            "c": [
-              [
-                "jockey",
-                "その他"
-              ],
-              [
-                "sire",
-                "中位"
-              ]
-            ],
-            "sign": 1,
-            "n": 286,
-            "rate": 0.3182,
-            "exp": 0.2598,
-            "lift": 1.225,
-            "z": 2.54
-          },
-          {
-            "c": [
-              [
-                "homeaway",
-                "地元"
-              ],
-              [
-                "sire",
-                "中位"
-              ]
-            ],
-            "sign": 1,
-            "n": 323,
-            "rate": 0.3158,
-            "exp": 0.2583,
-            "lift": 1.222,
-            "z": 2.63
           }
         ],
-        "conds_total": 26
+        "conds_total": 32
       },
       "training_rank": {
         "grade": "B",
@@ -18146,11 +19084,11 @@
         "top2": 0.2382,
         "top3": 0.3728
       },
-      "estimated_prob": 0.083252,
-      "fair_odds": 12.0,
-      "odds": 11.1,
+      "estimated_prob": 0.079629,
+      "fair_odds": 12.6,
+      "odds": 12.0,
       "popularity": 5,
-      "ev": -0.08,
+      "ev": -0.04,
       "ability_mark": "○",
       "bet_mark": null,
       "landmine_reason": null,
@@ -18181,9 +19119,9 @@
       "sex_age": "牡4",
       "weight_carried": 58.0,
       "jockey": "プーシャン",
-      "body_weight": null,
-      "body_weight_diff": null,
-      "body_weight_source": null,
+      "body_weight": 470,
+      "body_weight_diff": 0,
+      "body_weight_source": "live",
       "sire": "キタサンブラック",
       "damsire": "Intikhab",
       "trainer": "美浦・黒岩",
@@ -19392,8 +20330,20 @@
             "exp": 0.2509,
             "lift": 1.039
           },
-          "bweight": null,
-          "wratio": null,
+          "bweight": {
+            "level": "460-500",
+            "n": 855,
+            "rate": 0.2795,
+            "exp": 0.2548,
+            "lift": 1.097
+          },
+          "wratio": {
+            "level": "標準",
+            "n": 859,
+            "rate": 0.2643,
+            "exp": 0.246,
+            "lift": 1.074
+          },
           "age": {
             "level": "4-5歳",
             "n": 701,
@@ -19422,7 +20372,13 @@
             "exp": 0.1421,
             "lift": 0.858
           },
-          "bwdelta": null,
+          "bwdelta": {
+            "level": "±9kg内",
+            "n": 1480,
+            "rate": 0.2534,
+            "exp": 0.244,
+            "lift": 1.038
+          },
           "jchange": {
             "level": "乗り替わり",
             "n": 1339,
@@ -19452,9 +20408,9 @@
             "lift": 1.03
           }
         },
-        "up": 11,
+        "up": 30,
         "dn": 0,
-        "net": 11,
+        "net": 30,
         "conds": [
           {
             "c": [
@@ -19481,6 +20437,28 @@
           {
             "c": [
               [
+                "sex",
+                "牡セ"
+              ],
+              [
+                "sire",
+                "中位"
+              ],
+              [
+                "wratio",
+                "標準"
+              ]
+            ],
+            "sign": 1,
+            "n": 142,
+            "rate": 0.3944,
+            "exp": 0.2701,
+            "lift": 1.46,
+            "z": 3.7
+          },
+          {
+            "c": [
+              [
                 "jockey",
                 "その他"
               ],
@@ -19499,6 +20477,28 @@
             "exp": 0.2856,
             "lift": 1.424,
             "z": 4.06
+          },
+          {
+            "c": [
+              [
+                "bweight",
+                "460-500"
+              ],
+              [
+                "sex",
+                "牡セ"
+              ],
+              [
+                "sire",
+                "中位"
+              ]
+            ],
+            "sign": 1,
+            "n": 156,
+            "rate": 0.3782,
+            "exp": 0.2711,
+            "lift": 1.395,
+            "z": 3.36
           },
           {
             "c": [
@@ -19587,6 +20587,50 @@
           {
             "c": [
               [
+                "bwdelta",
+                "±9kg内"
+              ],
+              [
+                "sex",
+                "牡セ"
+              ],
+              [
+                "sire",
+                "中位"
+              ]
+            ],
+            "sign": 1,
+            "n": 222,
+            "rate": 0.3784,
+            "exp": 0.2806,
+            "lift": 1.349,
+            "z": 3.6
+          },
+          {
+            "c": [
+              [
+                "bwdelta",
+                "±9kg内"
+              ],
+              [
+                "distchg",
+                "短縮"
+              ],
+              [
+                "rota",
+                "中6週以上"
+              ]
+            ],
+            "sign": 1,
+            "n": 114,
+            "rate": 0.3596,
+            "exp": 0.2667,
+            "lift": 1.348,
+            "z": 2.56
+          },
+          {
+            "c": [
+              [
                 "jchange",
                 "乗り替わり"
               ],
@@ -19605,6 +20649,28 @@
             "exp": 0.2669,
             "lift": 1.337,
             "z": 3.07
+          },
+          {
+            "c": [
+              [
+                "jchange",
+                "乗り替わり"
+              ],
+              [
+                "sire",
+                "中位"
+              ],
+              [
+                "wratio",
+                "標準"
+              ]
+            ],
+            "sign": 1,
+            "n": 179,
+            "rate": 0.3464,
+            "exp": 0.2642,
+            "lift": 1.311,
+            "z": 2.77
           },
           {
             "c": [
@@ -19655,6 +20721,160 @@
               [
                 "sire",
                 "中位"
+              ],
+              [
+                "wratio",
+                "標準"
+              ]
+            ],
+            "sign": 1,
+            "n": 151,
+            "rate": 0.3444,
+            "exp": 0.264,
+            "lift": 1.304,
+            "z": 2.51
+          },
+          {
+            "c": [
+              [
+                "age",
+                "4-5歳"
+              ],
+              [
+                "sex",
+                "牡セ"
+              ],
+              [
+                "wratio",
+                "標準"
+              ]
+            ],
+            "sign": 1,
+            "n": 271,
+            "rate": 0.3358,
+            "exp": 0.2592,
+            "lift": 1.296,
+            "z": 3.13
+          },
+          {
+            "c": [
+              [
+                "bwdelta",
+                "±9kg内"
+              ],
+              [
+                "jockey",
+                "その他"
+              ],
+              [
+                "sire",
+                "中位"
+              ]
+            ],
+            "sign": 1,
+            "n": 252,
+            "rate": 0.3254,
+            "exp": 0.254,
+            "lift": 1.281,
+            "z": 2.93
+          },
+          {
+            "c": [
+              [
+                "distexp",
+                "深・実績あり"
+              ],
+              [
+                "sex",
+                "牡セ"
+              ],
+              [
+                "wratio",
+                "標準"
+              ]
+            ],
+            "sign": 1,
+            "n": 275,
+            "rate": 0.36,
+            "exp": 0.2843,
+            "lift": 1.266,
+            "z": 3.03
+          },
+          {
+            "c": [
+              [
+                "age",
+                "4-5歳"
+              ],
+              [
+                "bweight",
+                "460-500"
+              ],
+              [
+                "sex",
+                "牡セ"
+              ]
+            ],
+            "sign": 1,
+            "n": 301,
+            "rate": 0.3322,
+            "exp": 0.2671,
+            "lift": 1.244,
+            "z": 2.8
+          },
+          {
+            "c": [
+              [
+                "bweight",
+                "460-500"
+              ],
+              [
+                "distexp",
+                "深・実績あり"
+              ],
+              [
+                "sex",
+                "牡セ"
+              ]
+            ],
+            "sign": 1,
+            "n": 288,
+            "rate": 0.3611,
+            "exp": 0.2916,
+            "lift": 1.238,
+            "z": 2.84
+          },
+          {
+            "c": [
+              [
+                "bwdelta",
+                "±9kg内"
+              ],
+              [
+                "homeaway",
+                "地元"
+              ],
+              [
+                "sire",
+                "中位"
+              ]
+            ],
+            "sign": 1,
+            "n": 280,
+            "rate": 0.3179,
+            "exp": 0.2578,
+            "lift": 1.233,
+            "z": 2.57
+          },
+          {
+            "c": [
+              [
+                "jockey",
+                "その他"
+              ],
+              [
+                "sire",
+                "中位"
               ]
             ],
             "sign": 1,
@@ -19663,6 +20883,28 @@
             "exp": 0.2598,
             "lift": 1.225,
             "z": 2.54
+          },
+          {
+            "c": [
+              [
+                "jchange",
+                "乗り替わり"
+              ],
+              [
+                "sex",
+                "牡セ"
+              ],
+              [
+                "wratio",
+                "標準"
+              ]
+            ],
+            "sign": 1,
+            "n": 435,
+            "rate": 0.3057,
+            "exp": 0.2497,
+            "lift": 1.224,
+            "z": 3.0
           },
           {
             "c": [
@@ -19683,7 +20925,7 @@
             "z": 2.63
           }
         ],
-        "conds_total": 11
+        "conds_total": 30
       },
       "training_rank": {
         "grade": "A",
@@ -20069,14 +21311,14 @@
         "top2": 0.1714,
         "top3": 0.2756
       },
-      "estimated_prob": 0.149299,
-      "fair_odds": 6.7,
-      "odds": 4.4,
+      "estimated_prob": 0.141588,
+      "fair_odds": 7.1,
+      "odds": 4.7,
       "popularity": 2,
-      "ev": -0.34,
+      "ev": -0.33,
       "ability_mark": "△",
       "bet_mark": "地雷",
-      "landmine_reason": "4.4倍(2番人気)だが3着内を外す確率は56%（オッズ相応なら50%）",
+      "landmine_reason": "4.7倍(2番人気)だが3着内を外す確率は56%（オッズ相応なら50%）",
       "ana_reason": null,
       "keshi": false,
       "finish": null,
@@ -20104,9 +21346,9 @@
       "sex_age": "牡4",
       "weight_carried": 58.0,
       "jockey": "松岡正海",
-      "body_weight": null,
-      "body_weight_diff": null,
-      "body_weight_source": null,
+      "body_weight": 454,
+      "body_weight_diff": 0,
+      "body_weight_source": "live",
       "sire": "ウインブライト",
       "damsire": "ロードカナロア",
       "trainer": "美浦・竹内",
@@ -21836,8 +23078,20 @@
             "exp": 0.2509,
             "lift": 1.039
           },
-          "bweight": null,
-          "wratio": null,
+          "bweight": {
+            "level": "〜460",
+            "n": 550,
+            "rate": 0.2145,
+            "exp": 0.2204,
+            "lift": 0.973
+          },
+          "wratio": {
+            "level": "重い",
+            "n": 325,
+            "rate": 0.2092,
+            "exp": 0.2151,
+            "lift": 0.973
+          },
           "age": {
             "level": "4-5歳",
             "n": 701,
@@ -21866,7 +23120,13 @@
             "exp": 0.2245,
             "lift": 1.039
           },
-          "bwdelta": null,
+          "bwdelta": {
+            "level": "±9kg内",
+            "n": 1480,
+            "rate": 0.2534,
+            "exp": 0.244,
+            "lift": 1.038
+          },
           "jchange": {
             "level": "乗り替わり",
             "n": 1339,
@@ -21896,9 +23156,9 @@
             "lift": 1.062
           }
         },
-        "up": 8,
+        "up": 10,
         "dn": 0,
-        "net": 8,
+        "net": 10,
         "conds": [
           {
             "c": [
@@ -21961,6 +23221,28 @@
             "exp": 0.2645,
             "lift": 1.292,
             "z": 2.99
+          },
+          {
+            "c": [
+              [
+                "bwdelta",
+                "±9kg内"
+              ],
+              [
+                "prevcorner",
+                "中団"
+              ],
+              [
+                "waku",
+                "外枠"
+              ]
+            ],
+            "sign": 1,
+            "n": 198,
+            "rate": 0.3434,
+            "exp": 0.2664,
+            "lift": 1.289,
+            "z": 2.73
           },
           {
             "c": [
@@ -22031,6 +23313,28 @@
           {
             "c": [
               [
+                "bwdelta",
+                "±9kg内"
+              ],
+              [
+                "distchg",
+                "同距離"
+              ],
+              [
+                "sex",
+                "牡セ"
+              ]
+            ],
+            "sign": 1,
+            "n": 395,
+            "rate": 0.3418,
+            "exp": 0.2855,
+            "lift": 1.197,
+            "z": 2.73
+          },
+          {
+            "c": [
+              [
                 "prevcorner",
                 "中団"
               ],
@@ -22065,7 +23369,7 @@
             "z": 2.83
           }
         ],
-        "conds_total": 8
+        "conds_total": 10
       },
       "training_rank": {
         "grade": "A",
@@ -22451,15 +23755,15 @@
         "top2": 0.1427,
         "top3": 0.232
       },
-      "estimated_prob": 0.053874,
+      "estimated_prob": 0.053748,
       "fair_odds": 18.6,
-      "odds": 16.1,
+      "odds": 16.2,
       "popularity": 8,
       "ev": -0.13,
       "ability_mark": null,
       "bet_mark": "穴",
       "landmine_reason": null,
-      "ana_reason": "16.1倍(8番人気)だが3着以内に入る確率は22%（オッズ相応なら20%）",
+      "ana_reason": "16.2倍(8番人気)だが3着以内に入る確率は22%（オッズ相応なら20%）",
       "keshi": false,
       "finish": null,
       "finish_text": null,
@@ -22486,9 +23790,9 @@
       "sex_age": "牝4",
       "weight_carried": 56.0,
       "jockey": "ルメール",
-      "body_weight": null,
-      "body_weight_diff": null,
-      "body_weight_source": null,
+      "body_weight": 480,
+      "body_weight_diff": 8,
+      "body_weight_source": "live",
       "sire": "サートゥルナーリア",
       "damsire": "ディープインパクト",
       "trainer": "美浦・武井",
@@ -23790,8 +25094,20 @@
             "exp": 0.2489,
             "lift": 1.095
           },
-          "bweight": null,
-          "wratio": null,
+          "bweight": {
+            "level": "460-500",
+            "n": 855,
+            "rate": 0.2795,
+            "exp": 0.2548,
+            "lift": 1.097
+          },
+          "wratio": {
+            "level": "標準",
+            "n": 859,
+            "rate": 0.2643,
+            "exp": 0.246,
+            "lift": 1.074
+          },
           "age": {
             "level": "4-5歳",
             "n": 701,
@@ -23820,7 +25136,13 @@
             "exp": 0.3674,
             "lift": 1.12
           },
-          "bwdelta": null,
+          "bwdelta": {
+            "level": "±9kg内",
+            "n": 1480,
+            "rate": 0.2534,
+            "exp": 0.244,
+            "lift": 1.038
+          },
           "jchange": {
             "level": "継続",
             "n": 347,
@@ -23850,9 +25172,9 @@
             "lift": 1.03
           }
         },
-        "up": 4,
+        "up": 16,
         "dn": 0,
-        "net": 4,
+        "net": 16,
         "conds": [
           {
             "c": [
@@ -23879,6 +25201,72 @@
           {
             "c": [
               [
+                "distexp",
+                "深・実績あり"
+              ],
+              [
+                "prevfin",
+                "1-3着"
+              ],
+              [
+                "wratio",
+                "標準"
+              ]
+            ],
+            "sign": 1,
+            "n": 137,
+            "rate": 0.4599,
+            "exp": 0.3506,
+            "lift": 1.312,
+            "z": 2.87
+          },
+          {
+            "c": [
+              [
+                "bweight",
+                "460-500"
+              ],
+              [
+                "prevfin",
+                "1-3着"
+              ],
+              [
+                "style",
+                "逃先"
+              ]
+            ],
+            "sign": 1,
+            "n": 125,
+            "rate": 0.504,
+            "exp": 0.387,
+            "lift": 1.302,
+            "z": 2.91
+          },
+          {
+            "c": [
+              [
+                "bweight",
+                "460-500"
+              ],
+              [
+                "distexp",
+                "深・実績あり"
+              ],
+              [
+                "prevfin",
+                "1-3着"
+              ]
+            ],
+            "sign": 1,
+            "n": 131,
+            "rate": 0.4809,
+            "exp": 0.3704,
+            "lift": 1.299,
+            "z": 2.81
+          },
+          {
+            "c": [
+              [
                 "prevcorner",
                 "中団"
               ],
@@ -23893,6 +25281,94 @@
             "exp": 0.2645,
             "lift": 1.292,
             "z": 2.99
+          },
+          {
+            "c": [
+              [
+                "bwdelta",
+                "±9kg内"
+              ],
+              [
+                "prevcorner",
+                "中団"
+              ],
+              [
+                "waku",
+                "外枠"
+              ]
+            ],
+            "sign": 1,
+            "n": 198,
+            "rate": 0.3434,
+            "exp": 0.2664,
+            "lift": 1.289,
+            "z": 2.73
+          },
+          {
+            "c": [
+              [
+                "bwdelta",
+                "±9kg内"
+              ],
+              [
+                "jchange",
+                "継続"
+              ],
+              [
+                "style",
+                "逃先"
+              ]
+            ],
+            "sign": 1,
+            "n": 140,
+            "rate": 0.4286,
+            "exp": 0.3331,
+            "lift": 1.287,
+            "z": 2.64
+          },
+          {
+            "c": [
+              [
+                "age",
+                "4-5歳"
+              ],
+              [
+                "bweight",
+                "460-500"
+              ],
+              [
+                "prevfin",
+                "1-3着"
+              ]
+            ],
+            "sign": 1,
+            "n": 127,
+            "rate": 0.4724,
+            "exp": 0.3689,
+            "lift": 1.281,
+            "z": 2.59
+          },
+          {
+            "c": [
+              [
+                "bweight",
+                "460-500"
+              ],
+              [
+                "prevfin",
+                "1-3着"
+              ],
+              [
+                "rota",
+                "中6週以上"
+              ]
+            ],
+            "sign": 1,
+            "n": 143,
+            "rate": 0.5105,
+            "exp": 0.3985,
+            "lift": 1.281,
+            "z": 2.97
           },
           {
             "c": [
@@ -23915,6 +25391,72 @@
           {
             "c": [
               [
+                "bweight",
+                "460-500"
+              ],
+              [
+                "distchg",
+                "同距離"
+              ],
+              [
+                "prevfin",
+                "1-3着"
+              ]
+            ],
+            "sign": 1,
+            "n": 123,
+            "rate": 0.4959,
+            "exp": 0.392,
+            "lift": 1.265,
+            "z": 2.54
+          },
+          {
+            "c": [
+              [
+                "bweight",
+                "460-500"
+              ],
+              [
+                "prevfin",
+                "1-3着"
+              ],
+              [
+                "wratio",
+                "標準"
+              ]
+            ],
+            "sign": 1,
+            "n": 162,
+            "rate": 0.463,
+            "exp": 0.3659,
+            "lift": 1.265,
+            "z": 2.79
+          },
+          {
+            "c": [
+              [
+                "bwdelta",
+                "±9kg内"
+              ],
+              [
+                "prevcorner",
+                "中団"
+              ],
+              [
+                "style",
+                "逃先"
+              ]
+            ],
+            "sign": 1,
+            "n": 210,
+            "rate": 0.3905,
+            "exp": 0.3088,
+            "lift": 1.264,
+            "z": 2.83
+          },
+          {
+            "c": [
+              [
                 "homeaway",
                 "地元"
               ],
@@ -23933,9 +25475,49 @@
             "exp": 0.3939,
             "lift": 1.226,
             "z": 2.61
+          },
+          {
+            "c": [
+              [
+                "bweight",
+                "460-500"
+              ],
+              [
+                "prevfin",
+                "1-3着"
+              ]
+            ],
+            "sign": 1,
+            "n": 248,
+            "rate": 0.4637,
+            "exp": 0.3798,
+            "lift": 1.221,
+            "z": 2.96
+          },
+          {
+            "c": [
+              [
+                "bwdelta",
+                "±9kg内"
+              ],
+              [
+                "distexp",
+                "深・実績あり"
+              ],
+              [
+                "wratio",
+                "標準"
+              ]
+            ],
+            "sign": 1,
+            "n": 307,
+            "rate": 0.3355,
+            "exp": 0.2766,
+            "lift": 1.213,
+            "z": 2.5
           }
         ],
-        "conds_total": 4
+        "conds_total": 16
       },
       "training_rank": {
         "grade": "S",
@@ -24321,11 +25903,11 @@
         "top2": 0.6215,
         "top3": 0.6939
       },
-      "estimated_prob": 0.323596,
-      "fair_odds": 3.1,
-      "odds": 2.6,
+      "estimated_prob": 0.341911,
+      "fair_odds": 2.9,
+      "odds": 2.4,
       "popularity": 1,
-      "ev": -0.16,
+      "ev": -0.18,
       "ability_mark": "◎",
       "bet_mark": null,
       "landmine_reason": null,
@@ -24356,9 +25938,9 @@
       "sex_age": "牡5",
       "weight_carried": 58.0,
       "jockey": "菅原明良",
-      "body_weight": null,
-      "body_weight_diff": null,
-      "body_weight_source": null,
+      "body_weight": 520,
+      "body_weight_diff": 0,
+      "body_weight_source": "live",
       "sire": "スワーヴリチャード",
       "damsire": "Siyouni",
       "trainer": "美浦・手塚久",
@@ -25940,8 +27522,20 @@
             "exp": 0.2509,
             "lift": 1.039
           },
-          "bweight": null,
-          "wratio": null,
+          "bweight": {
+            "level": "500〜",
+            "n": 314,
+            "rate": 0.2675,
+            "exp": 0.2713,
+            "lift": 0.986
+          },
+          "wratio": {
+            "level": "軽い",
+            "n": 535,
+            "rate": 0.2729,
+            "exp": 0.2675,
+            "lift": 1.02
+          },
           "age": {
             "level": "4-5歳",
             "n": 701,
@@ -25970,7 +27564,13 @@
             "exp": 0.1421,
             "lift": 0.858
           },
-          "bwdelta": null,
+          "bwdelta": {
+            "level": "±9kg内",
+            "n": 1480,
+            "rate": 0.2534,
+            "exp": 0.244,
+            "lift": 1.038
+          },
           "jchange": {
             "level": "乗り替わり",
             "n": 1339,
@@ -26390,11 +27990,11 @@
         "top2": 0.0153,
         "top3": 0.0259
       },
-      "estimated_prob": 0.013539,
-      "fair_odds": 73.9,
-      "odds": 48.1,
+      "estimated_prob": 0.01231,
+      "fair_odds": 81.2,
+      "odds": 54.0,
       "popularity": 11,
-      "ev": -0.35,
+      "ev": -0.34,
       "ability_mark": null,
       "bet_mark": null,
       "landmine_reason": null,
@@ -26428,8 +28028,8 @@
       1,
       5,
       9,
-      11,
-      2
+      2,
+      11
     ],
     "plans": {
       "東海": {
@@ -26451,8 +28051,8 @@
                 11
               ],
               [
-                11,
-                2
+                2,
+                11
               ]
             ]
           },
@@ -26464,8 +28064,8 @@
                 11
               ],
               [
-                11,
-                2
+                2,
+                11
               ]
             ]
           },
@@ -26490,12 +28090,12 @@
               [
                 7,
                 5,
-                11
+                2
               ],
               [
                 7,
                 5,
-                2
+                11
               ],
               [
                 1,
@@ -26509,12 +28109,7 @@
               ],
               [
                 1,
-                11,
-                2
-              ],
-              [
-                5,
-                9,
+                2,
                 11
               ],
               [
@@ -26524,8 +28119,13 @@
               ],
               [
                 5,
-                11,
-                2
+                9,
+                11
+              ],
+              [
+                5,
+                2,
+                11
               ]
             ]
           },
@@ -26554,11 +28154,6 @@
               ],
               [
                 10,
-                11,
-                2
-              ],
-              [
-                10,
                 2,
                 7
               ],
@@ -26573,6 +28168,11 @@
                 9
               ],
               [
+                10,
+                2,
+                11
+              ],
+              [
                 7,
                 1,
                 9
@@ -26580,12 +28180,12 @@
               [
                 7,
                 1,
-                11
+                2
               ],
               [
                 7,
                 1,
-                2
+                11
               ],
               [
                 7,
@@ -26595,6 +28195,21 @@
               [
                 7,
                 9,
+                11
+              ],
+              [
+                7,
+                2,
+                1
+              ],
+              [
+                7,
+                2,
+                9
+              ],
+              [
+                7,
+                2,
                 11
               ],
               [
@@ -26608,21 +28223,6 @@
                 5
               ],
               [
-                7,
-                11,
-                2
-              ],
-              [
-                7,
-                2,
-                1
-              ],
-              [
-                7,
-                2,
-                9
-              ],
-              [
                 1,
                 7,
                 11
@@ -26635,12 +28235,22 @@
               [
                 1,
                 9,
-                11
+                2
               ],
               [
                 1,
                 9,
-                2
+                11
+              ],
+              [
+                1,
+                2,
+                9
+              ],
+              [
+                1,
+                2,
+                11
               ],
               [
                 1,
@@ -26663,16 +28273,6 @@
                 2
               ],
               [
-                1,
-                2,
-                9
-              ],
-              [
-                1,
-                2,
-                11
-              ],
-              [
                 5,
                 7,
                 11
@@ -26685,6 +28285,11 @@
               [
                 5,
                 9,
+                11
+              ],
+              [
+                5,
+                2,
                 11
               ],
               [
@@ -26708,11 +28313,6 @@
                 2
               ],
               [
-                5,
-                2,
-                11
-              ],
-              [
                 9,
                 1,
                 11
@@ -26720,6 +28320,11 @@
               [
                 9,
                 5,
+                11
+              ],
+              [
+                9,
+                2,
                 11
               ],
               [
@@ -26733,9 +28338,24 @@
                 5
               ],
               [
-                9,
+                2,
+                1,
+                11
+              ],
+              [
+                2,
+                5,
+                11
+              ],
+              [
+                2,
                 11,
-                2
+                1
+              ],
+              [
+                2,
+                11,
+                5
               ],
               [
                 11,
@@ -26805,26 +28425,6 @@
               [
                 11,
                 2,
-                5
-              ],
-              [
-                2,
-                1,
-                11
-              ],
-              [
-                2,
-                5,
-                11
-              ],
-              [
-                2,
-                11,
-                1
-              ],
-              [
-                2,
-                11,
                 5
               ]
             ]
@@ -26880,19 +28480,19 @@
               ],
               [
                 7,
-                11
+                2
               ],
               [
                 7,
-                2
-              ],
-              [
-                9,
                 11
               ],
               [
                 9,
                 2
+              ],
+              [
+                9,
+                11
               ]
             ]
           },
@@ -26905,38 +28505,38 @@
               ],
               [
                 7,
-                11
+                2
               ],
               [
                 7,
-                2
+                11
               ],
               [
                 9,
                 7
+              ],
+              [
+                9,
+                2
               ],
               [
                 9,
                 11
               ],
               [
-                9,
-                2
-              ],
-              [
-                11,
+                2,
                 7
               ],
               [
-                11,
+                2,
                 9
               ],
               [
-                2,
+                11,
                 7
               ],
               [
-                2,
+                11,
                 9
               ]
             ]
@@ -27011,8 +28611,8 @@
               ],
               [
                 1,
-                11,
-                2
+                2,
+                11
               ],
               [
                 5,
@@ -27021,8 +28621,8 @@
               ],
               [
                 5,
-                11,
-                2
+                2,
+                11
               ]
             ]
           },
@@ -27226,6 +28826,11 @@
               ],
               [
                 1,
+                2,
+                11
+              ],
+              [
+                1,
                 11,
                 7
               ],
@@ -27245,73 +28850,73 @@
                 2
               ],
               [
+                5,
+                10,
+                7
+              ],
+              [
+                5,
+                10,
+                9
+              ],
+              [
+                5,
+                7,
+                10
+              ],
+              [
+                5,
+                7,
+                1
+              ],
+              [
+                5,
+                7,
+                9
+              ],
+              [
+                5,
+                7,
+                11
+              ],
+              [
+                5,
                 1,
+                7
+              ],
+              [
+                5,
+                1,
+                9
+              ],
+              [
+                5,
+                1,
+                11
+              ],
+              [
+                5,
+                9,
+                10
+              ],
+              [
+                5,
+                9,
+                7
+              ],
+              [
+                5,
+                9,
+                1
+              ],
+              [
+                5,
+                9,
+                11
+              ],
+              [
+                5,
                 2,
-                11
-              ],
-              [
-                5,
-                10,
-                7
-              ],
-              [
-                5,
-                10,
-                9
-              ],
-              [
-                5,
-                7,
-                10
-              ],
-              [
-                5,
-                7,
-                1
-              ],
-              [
-                5,
-                7,
-                9
-              ],
-              [
-                5,
-                7,
-                11
-              ],
-              [
-                5,
-                1,
-                7
-              ],
-              [
-                5,
-                1,
-                9
-              ],
-              [
-                5,
-                1,
-                11
-              ],
-              [
-                5,
-                9,
-                10
-              ],
-              [
-                5,
-                9,
-                7
-              ],
-              [
-                5,
-                9,
-                1
-              ],
-              [
-                5,
-                9,
                 11
               ],
               [
@@ -27335,11 +28940,6 @@
                 2
               ],
               [
-                5,
-                2,
-                11
-              ],
-              [
                 9,
                 10,
                 7
@@ -27416,6 +29016,26 @@
               ],
               [
                 9,
+                11,
+                5
+              ],
+              [
+                2,
+                1,
+                11
+              ],
+              [
+                2,
+                5,
+                11
+              ],
+              [
+                2,
+                11,
+                1
+              ],
+              [
+                2,
                 11,
                 5
               ],
@@ -27487,26 +29107,6 @@
               [
                 11,
                 2,
-                5
-              ],
-              [
-                2,
-                1,
-                11
-              ],
-              [
-                2,
-                5,
-                11
-              ],
-              [
-                2,
-                11,
-                1
-              ],
-              [
-                2,
-                11,
                 5
               ]
             ]
@@ -27562,8 +29162,8 @@
               ],
               [
                 10,
-                2,
-                11
+                11,
+                2
               ],
               [
                 7,
@@ -27598,6 +29198,11 @@
               [
                 1,
                 9,
+                11
+              ],
+              [
+                1,
+                2,
                 11
               ],
               [
@@ -27621,11 +29226,6 @@
                 2
               ],
               [
-                1,
-                2,
-                11
-              ],
-              [
                 5,
                 7,
                 11
@@ -27638,6 +29238,11 @@
               [
                 5,
                 9,
+                11
+              ],
+              [
+                5,
+                2,
                 11
               ],
               [
@@ -27661,11 +29266,6 @@
                 2
               ],
               [
-                5,
-                2,
-                11
-              ],
-              [
                 9,
                 1,
                 11
@@ -27682,6 +29282,26 @@
               ],
               [
                 9,
+                11,
+                5
+              ],
+              [
+                2,
+                1,
+                11
+              ],
+              [
+                2,
+                5,
+                11
+              ],
+              [
+                2,
+                11,
+                1
+              ],
+              [
+                2,
                 11,
                 5
               ],
@@ -27753,26 +29373,6 @@
               [
                 11,
                 2,
-                5
-              ],
-              [
-                2,
-                1,
-                11
-              ],
-              [
-                2,
-                5,
-                11
-              ],
-              [
-                2,
-                11,
-                1
-              ],
-              [
-                2,
-                11,
                 5
               ]
             ]
@@ -27826,8 +29426,8 @@
                 11
               ],
               [
-                11,
-                2
+                2,
+                11
               ]
             ]
           },
@@ -27844,14 +29444,10 @@
               ],
               [
                 7,
-                11
+                2
               ],
               [
                 7,
-                2
-              ],
-              [
-                9,
                 11
               ],
               [
@@ -27859,8 +29455,12 @@
                 2
               ],
               [
-                11,
-                2
+                9,
+                11
+              ],
+              [
+                2,
+                11
               ]
             ]
           },
@@ -27873,38 +29473,38 @@
               ],
               [
                 7,
-                11
+                2
               ],
               [
                 7,
-                2
+                11
               ],
               [
                 9,
                 7
+              ],
+              [
+                9,
+                2
               ],
               [
                 9,
                 11
               ],
               [
-                9,
-                2
-              ],
-              [
-                11,
+                2,
                 7
               ],
               [
-                11,
+                2,
                 9
               ],
               [
-                2,
+                11,
                 7
               ],
               [
-                2,
+                11,
                 9
               ]
             ]
@@ -27970,12 +29570,12 @@
               [
                 7,
                 5,
-                11
+                2
               ],
               [
                 7,
                 5,
-                2
+                11
               ],
               [
                 1,
@@ -27994,12 +29594,7 @@
               ],
               [
                 1,
-                11,
-                2
-              ],
-              [
-                5,
-                9,
+                2,
                 11
               ],
               [
@@ -28009,8 +29604,13 @@
               ],
               [
                 5,
-                11,
-                2
+                9,
+                11
+              ],
+              [
+                5,
+                2,
+                11
               ]
             ]
           },
@@ -28089,11 +29689,6 @@
               ],
               [
                 10,
-                11,
-                2
-              ],
-              [
-                10,
                 2,
                 7
               ],
@@ -28106,6 +29701,11 @@
                 10,
                 2,
                 9
+              ],
+              [
+                10,
+                2,
+                11
               ],
               [
                 7,
@@ -28136,11 +29736,6 @@
                 7,
                 1,
                 9
-              ],
-              [
-                7,
-                1,
-                11
               ],
               [
                 7,
@@ -28149,6 +29744,11 @@
               ],
               [
                 7,
+                1,
+                11
+              ],
+              [
+                7,
                 5,
                 10
               ],
@@ -28189,21 +29789,6 @@
               ],
               [
                 7,
-                11,
-                1
-              ],
-              [
-                7,
-                11,
-                5
-              ],
-              [
-                7,
-                11,
-                2
-              ],
-              [
-                7,
                 2,
                 1
               ],
@@ -28211,6 +29796,21 @@
                 7,
                 2,
                 9
+              ],
+              [
+                7,
+                2,
+                11
+              ],
+              [
+                7,
+                11,
+                1
+              ],
+              [
+                7,
+                11,
+                5
               ],
               [
                 1,
@@ -28275,12 +29875,22 @@
               [
                 1,
                 9,
-                11
+                2
               ],
               [
                 1,
                 9,
-                2
+                11
+              ],
+              [
+                1,
+                2,
+                9
+              ],
+              [
+                1,
+                2,
+                11
               ],
               [
                 1,
@@ -28301,16 +29911,6 @@
                 1,
                 11,
                 2
-              ],
-              [
-                1,
-                2,
-                9
-              ],
-              [
-                1,
-                2,
-                11
               ],
               [
                 5,
@@ -28379,6 +29979,11 @@
               ],
               [
                 5,
+                2,
+                11
+              ],
+              [
+                5,
                 11,
                 7
               ],
@@ -28396,11 +30001,6 @@
                 5,
                 11,
                 2
-              ],
-              [
-                5,
-                2,
-                11
               ],
               [
                 9,
@@ -28474,6 +30074,11 @@
               ],
               [
                 9,
+                2,
+                11
+              ],
+              [
+                9,
                 11,
                 1
               ],
@@ -28483,9 +30088,24 @@
                 5
               ],
               [
-                9,
+                2,
+                1,
+                11
+              ],
+              [
+                2,
+                5,
+                11
+              ],
+              [
+                2,
                 11,
-                2
+                1
+              ],
+              [
+                2,
+                11,
+                5
               ],
               [
                 11,
@@ -28555,26 +30175,6 @@
               [
                 11,
                 2,
-                5
-              ],
-              [
-                2,
-                1,
-                11
-              ],
-              [
-                2,
-                5,
-                11
-              ],
-              [
-                2,
-                11,
-                1
-              ],
-              [
-                2,
-                11,
                 5
               ]
             ]
@@ -28630,19 +30230,19 @@
               ],
               [
                 7,
-                11
+                2
               ],
               [
                 7,
-                2
-              ],
-              [
-                9,
                 11
               ],
               [
                 9,
                 2
+              ],
+              [
+                9,
+                11
               ]
             ]
           },
@@ -28663,11 +30263,11 @@
               ],
               [
                 7,
-                11
+                2
               ],
               [
                 7,
-                2
+                11
               ],
               [
                 5,
@@ -28679,26 +30279,26 @@
               ],
               [
                 9,
-                11
-              ],
-              [
-                9,
                 2
               ],
               [
-                11,
+                9,
+                11
+              ],
+              [
+                2,
                 7
               ],
               [
-                11,
+                2,
                 9
               ],
               [
-                2,
+                11,
                 7
               ],
               [
-                2,
+                11,
                 9
               ]
             ]
@@ -28773,8 +30373,8 @@
               ],
               [
                 1,
-                11,
-                2
+                2,
+                11
               ],
               [
                 5,
@@ -28783,8 +30383,8 @@
               ],
               [
                 5,
-                11,
-                2
+                2,
+                11
               ]
             ]
           },
@@ -28863,152 +30463,157 @@
               ],
               [
                 10,
+                11,
+                2
+              ],
+              [
+                7,
+                10,
+                1
+              ],
+              [
+                7,
+                10,
+                5
+              ],
+              [
+                7,
+                10,
+                9
+              ],
+              [
+                7,
+                1,
+                10
+              ],
+              [
+                7,
+                1,
+                5
+              ],
+              [
+                7,
+                1,
+                9
+              ],
+              [
+                7,
+                1,
+                11
+              ],
+              [
+                7,
+                5,
+                10
+              ],
+              [
+                7,
+                5,
+                1
+              ],
+              [
+                7,
+                5,
+                9
+              ],
+              [
+                7,
+                5,
+                11
+              ],
+              [
+                7,
+                9,
+                10
+              ],
+              [
+                7,
+                9,
+                1
+              ],
+              [
+                7,
+                9,
+                5
+              ],
+              [
+                7,
+                11,
+                1
+              ],
+              [
+                7,
+                11,
+                5
+              ],
+              [
+                1,
+                10,
+                7
+              ],
+              [
+                1,
+                10,
+                9
+              ],
+              [
+                1,
+                7,
+                10
+              ],
+              [
+                1,
+                7,
+                5
+              ],
+              [
+                1,
+                7,
+                9
+              ],
+              [
+                1,
+                7,
+                11
+              ],
+              [
+                1,
+                5,
+                7
+              ],
+              [
+                1,
+                5,
+                9
+              ],
+              [
+                1,
+                5,
+                11
+              ],
+              [
+                1,
+                9,
+                10
+              ],
+              [
+                1,
+                9,
+                7
+              ],
+              [
+                1,
+                9,
+                5
+              ],
+              [
+                1,
+                9,
+                11
+              ],
+              [
+                1,
                 2,
-                11
-              ],
-              [
-                7,
-                10,
-                1
-              ],
-              [
-                7,
-                10,
-                5
-              ],
-              [
-                7,
-                10,
-                9
-              ],
-              [
-                7,
-                1,
-                10
-              ],
-              [
-                7,
-                1,
-                5
-              ],
-              [
-                7,
-                1,
-                9
-              ],
-              [
-                7,
-                1,
-                11
-              ],
-              [
-                7,
-                5,
-                10
-              ],
-              [
-                7,
-                5,
-                1
-              ],
-              [
-                7,
-                5,
-                9
-              ],
-              [
-                7,
-                5,
-                11
-              ],
-              [
-                7,
-                9,
-                10
-              ],
-              [
-                7,
-                9,
-                1
-              ],
-              [
-                7,
-                9,
-                5
-              ],
-              [
-                7,
-                11,
-                1
-              ],
-              [
-                7,
-                11,
-                5
-              ],
-              [
-                1,
-                10,
-                7
-              ],
-              [
-                1,
-                10,
-                9
-              ],
-              [
-                1,
-                7,
-                10
-              ],
-              [
-                1,
-                7,
-                5
-              ],
-              [
-                1,
-                7,
-                9
-              ],
-              [
-                1,
-                7,
-                11
-              ],
-              [
-                1,
-                5,
-                7
-              ],
-              [
-                1,
-                5,
-                9
-              ],
-              [
-                1,
-                5,
-                11
-              ],
-              [
-                1,
-                9,
-                10
-              ],
-              [
-                1,
-                9,
-                7
-              ],
-              [
-                1,
-                9,
-                5
-              ],
-              [
-                1,
-                9,
                 11
               ],
               [
@@ -29032,73 +30637,73 @@
                 2
               ],
               [
+                5,
+                10,
+                7
+              ],
+              [
+                5,
+                10,
+                9
+              ],
+              [
+                5,
+                7,
+                10
+              ],
+              [
+                5,
+                7,
+                1
+              ],
+              [
+                5,
+                7,
+                9
+              ],
+              [
+                5,
+                7,
+                11
+              ],
+              [
+                5,
                 1,
+                7
+              ],
+              [
+                5,
+                1,
+                9
+              ],
+              [
+                5,
+                1,
+                11
+              ],
+              [
+                5,
+                9,
+                10
+              ],
+              [
+                5,
+                9,
+                7
+              ],
+              [
+                5,
+                9,
+                1
+              ],
+              [
+                5,
+                9,
+                11
+              ],
+              [
+                5,
                 2,
-                11
-              ],
-              [
-                5,
-                10,
-                7
-              ],
-              [
-                5,
-                10,
-                9
-              ],
-              [
-                5,
-                7,
-                10
-              ],
-              [
-                5,
-                7,
-                1
-              ],
-              [
-                5,
-                7,
-                9
-              ],
-              [
-                5,
-                7,
-                11
-              ],
-              [
-                5,
-                1,
-                7
-              ],
-              [
-                5,
-                1,
-                9
-              ],
-              [
-                5,
-                1,
-                11
-              ],
-              [
-                5,
-                9,
-                10
-              ],
-              [
-                5,
-                9,
-                7
-              ],
-              [
-                5,
-                9,
-                1
-              ],
-              [
-                5,
-                9,
                 11
               ],
               [
@@ -29122,11 +30727,6 @@
                 2
               ],
               [
-                5,
-                2,
-                11
-              ],
-              [
                 9,
                 10,
                 7
@@ -29203,6 +30803,26 @@
               ],
               [
                 9,
+                11,
+                5
+              ],
+              [
+                2,
+                1,
+                11
+              ],
+              [
+                2,
+                5,
+                11
+              ],
+              [
+                2,
+                11,
+                1
+              ],
+              [
+                2,
                 11,
                 5
               ],
@@ -29274,26 +30894,6 @@
               [
                 11,
                 2,
-                5
-              ],
-              [
-                2,
-                1,
-                11
-              ],
-              [
-                2,
-                5,
-                11
-              ],
-              [
-                2,
-                11,
-                1
-              ],
-              [
-                2,
-                11,
                 5
               ]
             ]
@@ -29309,9 +30909,9 @@
           "pick": "top",
           "rank": 1,
           "p_win": 0.45909,
-          "odds": 2.6,
-          "jirai_market": 0.341059,
-          "jirai_p": 0.25257,
+          "odds": 2.4,
+          "jirai_market": 0.318665,
+          "jirai_p": 0.233924,
           "jirai": false
         },
         {
@@ -29319,9 +30919,9 @@
           "pick": "top",
           "rank": 2,
           "p_win": 0.095609,
-          "odds": 11.1,
-          "jirai_market": 0.714628,
-          "jirai_p": 0.674207,
+          "odds": 12.0,
+          "jirai_market": 0.718935,
+          "jirai_p": 0.67885,
           "jirai": false
         },
         {
@@ -29329,9 +30929,9 @@
           "pick": "top",
           "rank": 3,
           "p_win": 0.087364,
-          "odds": 6.4,
-          "jirai_market": 0.611167,
-          "jirai_p": 0.560664,
+          "odds": 6.1,
+          "jirai_market": 0.584334,
+          "jirai_p": 0.533009,
           "jirai": false
         },
         {
@@ -29339,9 +30939,9 @@
           "pick": "top",
           "rank": 4,
           "p_win": 0.082945,
-          "odds": 7.7,
-          "jirai_market": 0.642139,
-          "jirai_p": 0.793084,
+          "odds": 8.2,
+          "jirai_market": 0.642241,
+          "jirai_p": 0.793157,
           "jirai": true
         },
         {
@@ -29349,25 +30949,25 @@
           "pick": "top",
           "rank": 5,
           "p_win": 0.065058,
-          "odds": 16.1
-        },
-        {
-          "number": 11,
-          "pick": "ana",
-          "rank": 10,
-          "p_win": 0.007692,
-          "odds": 48.1,
-          "ana_market": 0.05558,
-          "ana_p": 0.076067
+          "odds": 16.2
         },
         {
           "number": 2,
           "pick": "ana",
           "rank": 9,
           "p_win": 0.045304,
-          "odds": 32.8,
-          "ana_market": 0.081582,
-          "ana_p": 0.100998
+          "odds": 36.6,
+          "ana_market": 0.080042,
+          "ana_p": 0.099131
+        },
+        {
+          "number": 11,
+          "pick": "ana",
+          "rank": 10,
+          "p_win": 0.007692,
+          "odds": 54.0,
+          "ana_market": 0.051431,
+          "ana_p": 0.070503
         }
       ],
       "ana_threshold": 0.018792,
@@ -29377,7 +30977,7 @@
     "prob_source": "win4_predict.json（win-4）",
     "ana_mode": "all",
     "model_version": "betrule-gokaido-3",
-    "computed_at": "2026-11-07T13:10:34"
+    "computed_at": "2026-11-07T14:02:24"
   },
   "bets_rules_w5": {
     "upset": "中荒れ",
@@ -29388,8 +30988,8 @@
       1,
       8,
       9,
-      11,
-      2
+      2,
+      11
     ],
     "plans": {
       "A東海": {
@@ -29419,8 +31019,8 @@
                 11
               ],
               [
-                11,
-                2
+                2,
+                11
               ]
             ]
           },
@@ -29452,12 +31052,12 @@
                 2
               ],
               [
-                11,
-                2
-              ],
-              [
                 2,
                 11
+              ],
+              [
+                11,
+                2
               ]
             ]
           },
@@ -29501,8 +31101,8 @@
               ],
               [
                 5,
-                11,
-                2
+                2,
+                11
               ],
               [
                 1,
@@ -29511,8 +31111,8 @@
               ],
               [
                 1,
-                11,
-                2
+                2,
+                11
               ]
             ]
           },
@@ -29536,11 +31136,6 @@
               ],
               [
                 10,
-                11,
-                2
-              ],
-              [
-                10,
                 2,
                 7
               ],
@@ -29565,6 +31160,11 @@
                 9
               ],
               [
+                10,
+                2,
+                11
+              ],
+              [
                 7,
                 10,
                 1
@@ -29583,11 +31183,6 @@
                 7,
                 1,
                 9
-              ],
-              [
-                7,
-                1,
-                11
               ],
               [
                 7,
@@ -29596,6 +31191,11 @@
               ],
               [
                 7,
+                1,
+                11
+              ],
+              [
+                7,
                 8,
                 5
               ],
@@ -29616,26 +31216,6 @@
               ],
               [
                 7,
-                11,
-                5
-              ],
-              [
-                7,
-                11,
-                1
-              ],
-              [
-                7,
-                11,
-                8
-              ],
-              [
-                7,
-                11,
-                2
-              ],
-              [
-                7,
                 2,
                 5
               ],
@@ -29653,6 +31233,26 @@
                 7,
                 2,
                 9
+              ],
+              [
+                7,
+                2,
+                11
+              ],
+              [
+                7,
+                11,
+                5
+              ],
+              [
+                7,
+                11,
+                1
+              ],
+              [
+                7,
+                11,
+                8
               ],
               [
                 5,
@@ -29687,6 +31287,26 @@
               [
                 5,
                 9,
+                11
+              ],
+              [
+                5,
+                2,
+                1
+              ],
+              [
+                5,
+                2,
+                8
+              ],
+              [
+                5,
+                2,
+                9
+              ],
+              [
+                5,
+                2,
                 11
               ],
               [
@@ -29715,26 +31335,6 @@
                 2
               ],
               [
-                5,
-                2,
-                1
-              ],
-              [
-                5,
-                2,
-                8
-              ],
-              [
-                5,
-                2,
-                9
-              ],
-              [
-                5,
-                2,
-                11
-              ],
-              [
                 1,
                 10,
                 8
@@ -29767,12 +31367,27 @@
               [
                 1,
                 9,
-                11
+                2
               ],
               [
                 1,
                 9,
-                2
+                11
+              ],
+              [
+                1,
+                2,
+                8
+              ],
+              [
+                1,
+                2,
+                9
+              ],
+              [
+                1,
+                2,
+                11
               ],
               [
                 1,
@@ -29800,19 +31415,9 @@
                 2
               ],
               [
-                1,
-                2,
-                8
-              ],
-              [
-                1,
+                8,
                 2,
                 9
-              ],
-              [
-                1,
-                2,
-                11
               ],
               [
                 8,
@@ -29821,13 +31426,8 @@
               ],
               [
                 8,
-                2,
-                9
-              ],
-              [
-                8,
-                2,
-                11
+                11,
+                2
               ],
               [
                 9,
@@ -29841,6 +31441,11 @@
               ],
               [
                 9,
+                2,
+                11
+              ],
+              [
+                9,
                 11,
                 5
               ],
@@ -29850,9 +31455,24 @@
                 1
               ],
               [
-                9,
+                2,
+                5,
+                11
+              ],
+              [
+                2,
+                1,
+                11
+              ],
+              [
+                2,
                 11,
-                2
+                5
+              ],
+              [
+                2,
+                11,
+                1
               ],
               [
                 11,
@@ -29922,26 +31542,6 @@
               [
                 11,
                 2,
-                1
-              ],
-              [
-                2,
-                5,
-                11
-              ],
-              [
-                2,
-                1,
-                11
-              ],
-              [
-                2,
-                11,
-                5
-              ],
-              [
-                2,
-                11,
                 1
               ]
             ]
@@ -29960,11 +31560,11 @@
             "tickets": [
               [
                 10,
-                11
+                2
               ],
               [
                 10,
-                2
+                11
               ],
               [
                 7,
@@ -29976,11 +31576,11 @@
               ],
               [
                 5,
-                11
+                2
               ],
               [
                 5,
-                2
+                11
               ],
               [
                 1,
@@ -30007,6 +31607,14 @@
                 2
               ],
               [
+                2,
+                8
+              ],
+              [
+                2,
+                11
+              ],
+              [
                 11,
                 5
               ],
@@ -30017,14 +31625,6 @@
               [
                 11,
                 2
-              ],
-              [
-                2,
-                8
-              ],
-              [
-                2,
-                11
               ]
             ]
           },
@@ -30059,12 +31659,12 @@
               [
                 7,
                 8,
-                11
+                2
               ],
               [
                 7,
                 8,
-                2
+                11
               ],
               [
                 5,
@@ -30084,12 +31684,12 @@
               [
                 5,
                 8,
-                11
+                2
               ],
               [
                 5,
                 8,
-                2
+                11
               ],
               [
                 5,
@@ -30098,8 +31698,8 @@
               ],
               [
                 5,
-                11,
-                2
+                2,
+                11
               ],
               [
                 1,
@@ -30109,12 +31709,12 @@
               [
                 1,
                 8,
-                11
+                2
               ],
               [
                 1,
                 8,
-                2
+                11
               ],
               [
                 1,
@@ -30123,12 +31723,7 @@
               ],
               [
                 1,
-                11,
-                2
-              ],
-              [
-                8,
-                9,
+                2,
                 11
               ],
               [
@@ -30138,8 +31733,13 @@
               ],
               [
                 8,
-                11,
-                2
+                9,
+                11
+              ],
+              [
+                8,
+                2,
+                11
               ]
             ]
           },
@@ -30173,21 +31773,6 @@
               ],
               [
                 10,
-                11,
-                7
-              ],
-              [
-                10,
-                11,
-                9
-              ],
-              [
-                10,
-                11,
-                2
-              ],
-              [
-                10,
                 2,
                 7
               ],
@@ -30209,6 +31794,21 @@
               [
                 10,
                 2,
+                9
+              ],
+              [
+                10,
+                2,
+                11
+              ],
+              [
+                10,
+                11,
+                7
+              ],
+              [
+                10,
+                11,
                 9
               ],
               [
@@ -30250,11 +31850,6 @@
                 7,
                 1,
                 9
-              ],
-              [
-                7,
-                1,
-                11
               ],
               [
                 7,
@@ -30263,6 +31858,11 @@
               ],
               [
                 7,
+                1,
+                11
+              ],
+              [
+                7,
                 8,
                 5
               ],
@@ -30298,6 +31898,31 @@
               ],
               [
                 7,
+                2,
+                5
+              ],
+              [
+                7,
+                2,
+                1
+              ],
+              [
+                7,
+                2,
+                8
+              ],
+              [
+                7,
+                2,
+                9
+              ],
+              [
+                7,
+                2,
+                11
+              ],
+              [
+                7,
                 11,
                 10
               ],
@@ -30319,31 +31944,6 @@
               [
                 7,
                 11,
-                9
-              ],
-              [
-                7,
-                11,
-                2
-              ],
-              [
-                7,
-                2,
-                5
-              ],
-              [
-                7,
-                2,
-                1
-              ],
-              [
-                7,
-                2,
-                8
-              ],
-              [
-                7,
-                2,
                 9
               ],
               [
@@ -30399,6 +31999,26 @@
               [
                 5,
                 9,
+                11
+              ],
+              [
+                5,
+                2,
+                1
+              ],
+              [
+                5,
+                2,
+                8
+              ],
+              [
+                5,
+                2,
+                9
+              ],
+              [
+                5,
+                2,
                 11
               ],
               [
@@ -30427,26 +32047,6 @@
                 2
               ],
               [
-                5,
-                2,
-                1
-              ],
-              [
-                5,
-                2,
-                8
-              ],
-              [
-                5,
-                2,
-                9
-              ],
-              [
-                5,
-                2,
-                11
-              ],
-              [
                 1,
                 10,
                 8
@@ -30494,12 +32094,27 @@
               [
                 1,
                 9,
-                11
+                2
               ],
               [
                 1,
                 9,
-                2
+                11
+              ],
+              [
+                1,
+                2,
+                8
+              ],
+              [
+                1,
+                2,
+                9
+              ],
+              [
+                1,
+                2,
+                11
               ],
               [
                 1,
@@ -30527,21 +32142,6 @@
                 2
               ],
               [
-                1,
-                2,
-                8
-              ],
-              [
-                1,
-                2,
-                9
-              ],
-              [
-                1,
-                2,
-                11
-              ],
-              [
                 8,
                 10,
                 9
@@ -30568,85 +32168,125 @@
               ],
               [
                 8,
-                11,
-                9
-              ],
-              [
-                8,
                 2,
                 9
               ],
               [
                 8,
-                2,
-                11
+                11,
+                9
               ],
               [
-                9,
-                10,
-                7
-              ],
-              [
-                9,
-                10,
-                11
-              ],
-              [
-                9,
-                7,
-                10
-              ],
-              [
-                9,
-                5,
-                10
-              ],
-              [
-                9,
-                5,
-                11
-              ],
-              [
-                9,
-                1,
-                5
-              ],
-              [
-                9,
-                1,
-                11
-              ],
-              [
-                9,
                 8,
-                5
-              ],
-              [
-                9,
-                8,
-                1
-              ],
-              [
-                9,
-                11,
-                10
-              ],
-              [
-                9,
-                11,
-                5
-              ],
-              [
-                9,
-                11,
-                1
-              ],
-              [
-                9,
                 11,
                 2
               ],
               [
+                9,
+                10,
+                7
+              ],
+              [
+                9,
+                10,
+                11
+              ],
+              [
+                9,
+                7,
+                10
+              ],
+              [
+                9,
+                5,
+                10
+              ],
+              [
+                9,
+                5,
+                11
+              ],
+              [
+                9,
+                1,
+                5
+              ],
+              [
+                9,
+                1,
+                11
+              ],
+              [
+                9,
+                8,
+                5
+              ],
+              [
+                9,
+                8,
+                1
+              ],
+              [
+                9,
+                2,
+                11
+              ],
+              [
+                9,
+                11,
+                10
+              ],
+              [
+                9,
+                11,
+                5
+              ],
+              [
+                9,
+                11,
+                1
+              ],
+              [
+                2,
+                5,
+                10
+              ],
+              [
+                2,
+                5,
+                11
+              ],
+              [
+                2,
+                1,
+                5
+              ],
+              [
+                2,
+                1,
+                11
+              ],
+              [
+                2,
+                8,
+                5
+              ],
+              [
+                2,
+                8,
+                1
+              ],
+              [
+                2,
+                11,
+                5
+              ],
+              [
+                2,
+                11,
+                1
+              ],
+              [
                 11,
                 10,
                 7
@@ -30749,46 +32389,6 @@
               [
                 11,
                 2,
-                1
-              ],
-              [
-                2,
-                5,
-                10
-              ],
-              [
-                2,
-                5,
-                11
-              ],
-              [
-                2,
-                1,
-                5
-              ],
-              [
-                2,
-                1,
-                11
-              ],
-              [
-                2,
-                8,
-                5
-              ],
-              [
-                2,
-                8,
-                1
-              ],
-              [
-                2,
-                11,
-                5
-              ],
-              [
-                2,
-                11,
                 1
               ]
             ]
@@ -30811,19 +32411,19 @@
               ],
               [
                 7,
-                11
+                2
               ],
               [
                 7,
-                2
-              ],
-              [
-                9,
                 11
               ],
               [
                 9,
                 2
+              ],
+              [
+                9,
+                11
               ]
             ]
           },
@@ -30836,38 +32436,38 @@
               ],
               [
                 7,
-                11
+                2
               ],
               [
                 7,
-                2
+                11
               ],
               [
                 9,
                 7
+              ],
+              [
+                9,
+                2
               ],
               [
                 9,
                 11
               ],
               [
-                9,
-                2
-              ],
-              [
-                11,
+                2,
                 7
               ],
               [
-                11,
+                2,
                 9
               ],
               [
-                2,
+                11,
                 7
               ],
               [
-                2,
+                11,
                 9
               ]
             ]
@@ -30917,8 +32517,8 @@
               ],
               [
                 5,
-                11,
-                2
+                2,
+                11
               ],
               [
                 1,
@@ -30932,8 +32532,8 @@
               ],
               [
                 1,
-                11,
-                2
+                2,
+                11
               ]
             ]
           },
@@ -30958,12 +32558,12 @@
               [
                 7,
                 5,
-                11
+                2
               ],
               [
                 7,
                 5,
-                2
+                11
               ],
               [
                 7,
@@ -30983,12 +32583,12 @@
               [
                 7,
                 1,
-                11
+                2
               ],
               [
                 7,
                 1,
-                2
+                11
               ],
               [
                 7,
@@ -31022,22 +32622,22 @@
               ],
               [
                 7,
-                11,
+                2,
                 5
               ],
               [
                 7,
-                11,
+                2,
                 1
               ],
               [
                 7,
-                2,
+                11,
                 5
               ],
               [
                 7,
-                2,
+                11,
                 1
               ],
               [
@@ -31058,12 +32658,12 @@
               [
                 5,
                 7,
-                11
+                2
               ],
               [
                 5,
                 7,
-                2
+                11
               ],
               [
                 5,
@@ -31078,12 +32678,12 @@
               [
                 5,
                 1,
-                11
+                2
               ],
               [
                 5,
                 1,
-                2
+                11
               ],
               [
                 5,
@@ -31113,32 +32713,12 @@
               [
                 5,
                 9,
-                11
+                2
               ],
               [
                 5,
                 9,
-                2
-              ],
-              [
-                5,
-                11,
-                7
-              ],
-              [
-                5,
-                11,
-                1
-              ],
-              [
-                5,
-                11,
-                9
-              ],
-              [
-                5,
-                11,
-                2
+                11
               ],
               [
                 5,
@@ -31159,6 +32739,26 @@
                 5,
                 2,
                 11
+              ],
+              [
+                5,
+                11,
+                7
+              ],
+              [
+                5,
+                11,
+                1
+              ],
+              [
+                5,
+                11,
+                9
+              ],
+              [
+                5,
+                11,
+                2
               ],
               [
                 1,
@@ -31178,12 +32778,12 @@
               [
                 1,
                 7,
-                11
+                2
               ],
               [
                 1,
                 7,
-                2
+                11
               ],
               [
                 1,
@@ -31198,12 +32798,12 @@
               [
                 1,
                 5,
-                11
+                2
               ],
               [
                 1,
                 5,
-                2
+                11
               ],
               [
                 1,
@@ -31233,32 +32833,12 @@
               [
                 1,
                 9,
-                11
+                2
               ],
               [
                 1,
                 9,
-                2
-              ],
-              [
-                1,
-                11,
-                7
-              ],
-              [
-                1,
-                11,
-                5
-              ],
-              [
-                1,
-                11,
-                9
-              ],
-              [
-                1,
-                11,
-                2
+                11
               ],
               [
                 1,
@@ -31279,6 +32859,26 @@
                 1,
                 2,
                 11
+              ],
+              [
+                1,
+                11,
+                7
+              ],
+              [
+                1,
+                11,
+                5
+              ],
+              [
+                1,
+                11,
+                9
+              ],
+              [
+                1,
+                11,
+                2
               ],
               [
                 8,
@@ -31363,12 +32963,12 @@
               [
                 9,
                 5,
-                11
+                2
               ],
               [
                 9,
                 5,
-                2
+                11
               ],
               [
                 9,
@@ -31388,15 +32988,15 @@
               [
                 9,
                 1,
+                2
+              ],
+              [
+                9,
+                1,
                 11
               ],
               [
                 9,
-                1,
-                2
-              ],
-              [
-                9,
                 8,
                 7
               ],
@@ -31412,16 +33012,6 @@
               ],
               [
                 9,
-                11,
-                5
-              ],
-              [
-                9,
-                11,
-                1
-              ],
-              [
-                9,
                 2,
                 5
               ],
@@ -31431,73 +33021,13 @@
                 1
               ],
               [
-                11,
-                7,
-                5
-              ],
-              [
-                11,
-                7,
-                1
-              ],
-              [
-                11,
-                5,
-                7
-              ],
-              [
-                11,
-                5,
-                1
-              ],
-              [
-                11,
-                5,
-                9
-              ],
-              [
-                11,
-                5,
-                2
-              ],
-              [
-                11,
-                1,
-                7
-              ],
-              [
-                11,
-                1,
-                5
-              ],
-              [
-                11,
-                1,
-                9
-              ],
-              [
-                11,
-                1,
-                2
-              ],
-              [
-                11,
                 9,
+                11,
                 5
               ],
               [
-                11,
                 9,
-                1
-              ],
-              [
                 11,
-                2,
-                5
-              ],
-              [
-                11,
-                2,
                 1
               ],
               [
@@ -31568,6 +33098,76 @@
               [
                 2,
                 11,
+                1
+              ],
+              [
+                11,
+                7,
+                5
+              ],
+              [
+                11,
+                7,
+                1
+              ],
+              [
+                11,
+                5,
+                7
+              ],
+              [
+                11,
+                5,
+                1
+              ],
+              [
+                11,
+                5,
+                9
+              ],
+              [
+                11,
+                5,
+                2
+              ],
+              [
+                11,
+                1,
+                7
+              ],
+              [
+                11,
+                1,
+                5
+              ],
+              [
+                11,
+                1,
+                9
+              ],
+              [
+                11,
+                1,
+                2
+              ],
+              [
+                11,
+                9,
+                5
+              ],
+              [
+                11,
+                9,
+                1
+              ],
+              [
+                11,
+                2,
+                5
+              ],
+              [
+                11,
+                2,
                 1
               ]
             ]
@@ -31650,8 +33250,8 @@
               ],
               [
                 1,
-                11,
-                2
+                2,
+                11
               ]
             ]
           },
@@ -31695,6 +33295,11 @@
               ],
               [
                 5,
+                2,
+                11
+              ],
+              [
+                5,
                 11,
                 7
               ],
@@ -31712,11 +33317,6 @@
                 5,
                 11,
                 2
-              ],
-              [
-                5,
-                2,
-                11
               ],
               [
                 1,
@@ -31735,6 +33335,11 @@
               ],
               [
                 1,
+                2,
+                11
+              ],
+              [
+                1,
                 11,
                 7
               ],
@@ -31754,11 +33359,6 @@
                 2
               ],
               [
-                1,
-                2,
-                11
-              ],
-              [
                 9,
                 5,
                 11
@@ -31775,6 +33375,26 @@
               ],
               [
                 9,
+                11,
+                1
+              ],
+              [
+                2,
+                5,
+                11
+              ],
+              [
+                2,
+                1,
+                11
+              ],
+              [
+                2,
+                11,
+                5
+              ],
+              [
+                2,
                 11,
                 1
               ],
@@ -31846,26 +33466,6 @@
               [
                 11,
                 2,
-                1
-              ],
-              [
-                2,
-                5,
-                11
-              ],
-              [
-                2,
-                1,
-                11
-              ],
-              [
-                2,
-                11,
-                5
-              ],
-              [
-                2,
-                11,
                 1
               ]
             ]
@@ -31899,8 +33499,8 @@
                 11
               ],
               [
-                11,
-                2
+                2,
+                11
               ]
             ]
           },
@@ -31913,19 +33513,19 @@
               ],
               [
                 7,
-                11
+                2
               ],
               [
                 7,
-                2
-              ],
-              [
-                9,
                 11
               ],
               [
                 9,
                 2
+              ],
+              [
+                9,
+                11
               ]
             ]
           },
@@ -31942,11 +33542,11 @@
               ],
               [
                 7,
-                11
+                2
               ],
               [
                 7,
-                2
+                11
               ],
               [
                 5,
@@ -31966,23 +33566,11 @@
               ],
               [
                 9,
-                11
+                2
               ],
               [
                 9,
-                2
-              ],
-              [
-                11,
-                7
-              ],
-              [
-                11,
-                9
-              ],
-              [
-                11,
-                2
+                11
               ],
               [
                 2,
@@ -31995,6 +33583,18 @@
               [
                 2,
                 11
+              ],
+              [
+                11,
+                7
+              ],
+              [
+                11,
+                9
+              ],
+              [
+                11,
+                2
               ]
             ]
           },
@@ -32058,8 +33658,8 @@
               ],
               [
                 5,
-                11,
-                2
+                2,
+                11
               ],
               [
                 1,
@@ -32073,8 +33673,8 @@
               ],
               [
                 1,
-                11,
-                2
+                2,
+                11
               ]
             ]
           },
@@ -32098,11 +33698,6 @@
               ],
               [
                 10,
-                11,
-                2
-              ],
-              [
-                10,
                 2,
                 7
               ],
@@ -32127,6 +33722,11 @@
                 9
               ],
               [
+                10,
+                2,
+                11
+              ],
+              [
                 7,
                 10,
                 1
@@ -32154,12 +33754,12 @@
               [
                 7,
                 5,
-                11
+                2
               ],
               [
                 7,
                 5,
-                2
+                11
               ],
               [
                 7,
@@ -32175,6 +33775,11 @@
                 7,
                 1,
                 9
+              ],
+              [
+                7,
+                1,
+                2
               ],
               [
                 7,
@@ -32183,11 +33788,6 @@
               ],
               [
                 7,
-                1,
-                2
-              ],
-              [
-                7,
                 8,
                 5
               ],
@@ -32223,26 +33823,6 @@
               ],
               [
                 7,
-                11,
-                5
-              ],
-              [
-                7,
-                11,
-                1
-              ],
-              [
-                7,
-                11,
-                8
-              ],
-              [
-                7,
-                11,
-                2
-              ],
-              [
-                7,
                 2,
                 5
               ],
@@ -32260,6 +33840,26 @@
                 7,
                 2,
                 9
+              ],
+              [
+                7,
+                2,
+                11
+              ],
+              [
+                7,
+                11,
+                5
+              ],
+              [
+                7,
+                11,
+                1
+              ],
+              [
+                7,
+                11,
+                8
               ],
               [
                 5,
@@ -32289,12 +33889,12 @@
               [
                 5,
                 7,
-                11
+                2
               ],
               [
                 5,
                 7,
-                2
+                11
               ],
               [
                 5,
@@ -32309,12 +33909,12 @@
               [
                 5,
                 1,
-                11
+                2
               ],
               [
                 5,
                 1,
-                2
+                11
               ],
               [
                 5,
@@ -32349,37 +33949,12 @@
               [
                 5,
                 9,
-                11
+                2
               ],
               [
                 5,
                 9,
-                2
-              ],
-              [
-                5,
-                11,
-                7
-              ],
-              [
-                5,
-                11,
-                1
-              ],
-              [
-                5,
-                11,
-                8
-              ],
-              [
-                5,
-                11,
-                9
-              ],
-              [
-                5,
-                11,
-                2
+                11
               ],
               [
                 5,
@@ -32405,6 +33980,31 @@
                 5,
                 2,
                 11
+              ],
+              [
+                5,
+                11,
+                7
+              ],
+              [
+                5,
+                11,
+                1
+              ],
+              [
+                5,
+                11,
+                8
+              ],
+              [
+                5,
+                11,
+                9
+              ],
+              [
+                5,
+                11,
+                2
               ],
               [
                 1,
@@ -32434,12 +34034,12 @@
               [
                 1,
                 7,
-                11
+                2
               ],
               [
                 1,
                 7,
-                2
+                11
               ],
               [
                 1,
@@ -32459,12 +34059,12 @@
               [
                 1,
                 5,
-                11
+                2
               ],
               [
                 1,
                 5,
-                2
+                11
               ],
               [
                 1,
@@ -32494,37 +34094,12 @@
               [
                 1,
                 9,
-                11
+                2
               ],
               [
                 1,
                 9,
-                2
-              ],
-              [
-                1,
-                11,
-                7
-              ],
-              [
-                1,
-                11,
-                5
-              ],
-              [
-                1,
-                11,
-                8
-              ],
-              [
-                1,
-                11,
-                9
-              ],
-              [
-                1,
-                11,
-                2
+                11
               ],
               [
                 1,
@@ -32552,6 +34127,31 @@
                 11
               ],
               [
+                1,
+                11,
+                7
+              ],
+              [
+                1,
+                11,
+                5
+              ],
+              [
+                1,
+                11,
+                8
+              ],
+              [
+                1,
+                11,
+                9
+              ],
+              [
+                1,
+                11,
+                2
+              ],
+              [
                 8,
                 7,
                 5
@@ -32600,6 +34200,11 @@
                 8,
                 9,
                 1
+              ],
+              [
+                8,
+                2,
+                9
               ],
               [
                 8,
@@ -32608,13 +34213,8 @@
               ],
               [
                 8,
-                2,
-                9
-              ],
-              [
-                8,
-                2,
-                11
+                11,
+                2
               ],
               [
                 9,
@@ -32649,12 +34249,12 @@
               [
                 9,
                 5,
-                11
+                2
               ],
               [
                 9,
                 5,
-                2
+                11
               ],
               [
                 9,
@@ -32674,15 +34274,15 @@
               [
                 9,
                 1,
+                2
+              ],
+              [
+                9,
+                1,
                 11
               ],
               [
                 9,
-                1,
-                2
-              ],
-              [
-                9,
                 8,
                 7
               ],
@@ -32698,21 +34298,6 @@
               ],
               [
                 9,
-                11,
-                5
-              ],
-              [
-                9,
-                11,
-                1
-              ],
-              [
-                9,
-                11,
-                2
-              ],
-              [
-                9,
                 2,
                 5
               ],
@@ -32722,73 +34307,18 @@
                 1
               ],
               [
-                11,
-                7,
-                5
-              ],
-              [
-                11,
-                7,
-                1
-              ],
-              [
-                11,
-                5,
-                7
-              ],
-              [
-                11,
-                5,
-                1
-              ],
-              [
-                11,
-                5,
-                9
-              ],
-              [
-                11,
-                5,
-                2
-              ],
-              [
-                11,
-                1,
-                7
-              ],
-              [
-                11,
-                1,
-                5
-              ],
-              [
-                11,
-                1,
-                9
-              ],
-              [
-                11,
-                1,
-                2
-              ],
-              [
-                11,
                 9,
-                5
+                2,
+                11
               ],
               [
-                11,
                 9,
-                1
-              ],
-              [
                 11,
-                2,
                 5
               ],
               [
+                9,
                 11,
-                2,
                 1
               ],
               [
@@ -32859,6 +34389,76 @@
               [
                 2,
                 11,
+                1
+              ],
+              [
+                11,
+                7,
+                5
+              ],
+              [
+                11,
+                7,
+                1
+              ],
+              [
+                11,
+                5,
+                7
+              ],
+              [
+                11,
+                5,
+                1
+              ],
+              [
+                11,
+                5,
+                9
+              ],
+              [
+                11,
+                5,
+                2
+              ],
+              [
+                11,
+                1,
+                7
+              ],
+              [
+                11,
+                1,
+                5
+              ],
+              [
+                11,
+                1,
+                9
+              ],
+              [
+                11,
+                1,
+                2
+              ],
+              [
+                11,
+                9,
+                5
+              ],
+              [
+                11,
+                9,
+                1
+              ],
+              [
+                11,
+                2,
+                5
+              ],
+              [
+                11,
+                2,
                 1
               ]
             ]
@@ -32902,19 +34502,19 @@
               ],
               [
                 7,
-                11
+                2
               ],
               [
                 7,
-                2
-              ],
-              [
-                9,
                 11
               ],
               [
                 9,
                 2
+              ],
+              [
+                9,
+                11
               ]
             ]
           },
@@ -32931,11 +34531,11 @@
               ],
               [
                 7,
-                11
+                2
               ],
               [
                 7,
-                2
+                11
               ],
               [
                 5,
@@ -32955,19 +34555,11 @@
               ],
               [
                 9,
-                11
-              ],
-              [
-                9,
                 2
               ],
               [
-                11,
-                7
-              ],
-              [
-                11,
-                9
+                9,
+                11
               ],
               [
                 2,
@@ -32979,6 +34571,14 @@
               ],
               [
                 2,
+                9
+              ],
+              [
+                11,
+                7
+              ],
+              [
+                11,
                 9
               ]
             ]
@@ -33028,8 +34628,8 @@
               ],
               [
                 5,
-                11,
-                2
+                2,
+                11
               ],
               [
                 1,
@@ -33043,8 +34643,8 @@
               ],
               [
                 1,
-                11,
-                2
+                2,
+                11
               ]
             ]
           },
@@ -33069,12 +34669,12 @@
               [
                 7,
                 5,
-                11
+                2
               ],
               [
                 7,
                 5,
-                2
+                11
               ],
               [
                 7,
@@ -33094,12 +34694,12 @@
               [
                 7,
                 1,
-                11
+                2
               ],
               [
                 7,
                 1,
-                2
+                11
               ],
               [
                 7,
@@ -33133,22 +34733,22 @@
               ],
               [
                 7,
-                11,
+                2,
                 5
               ],
               [
                 7,
-                11,
+                2,
                 1
               ],
               [
                 7,
-                2,
+                11,
                 5
               ],
               [
                 7,
-                2,
+                11,
                 1
               ],
               [
@@ -33169,12 +34769,12 @@
               [
                 5,
                 7,
-                11
+                2
               ],
               [
                 5,
                 7,
-                2
+                11
               ],
               [
                 5,
@@ -33189,12 +34789,12 @@
               [
                 5,
                 1,
-                11
+                2
               ],
               [
                 5,
                 1,
-                2
+                11
               ],
               [
                 5,
@@ -33224,32 +34824,12 @@
               [
                 5,
                 9,
-                11
+                2
               ],
               [
                 5,
                 9,
-                2
-              ],
-              [
-                5,
-                11,
-                7
-              ],
-              [
-                5,
-                11,
-                1
-              ],
-              [
-                5,
-                11,
-                9
-              ],
-              [
-                5,
-                11,
-                2
+                11
               ],
               [
                 5,
@@ -33270,6 +34850,26 @@
                 5,
                 2,
                 11
+              ],
+              [
+                5,
+                11,
+                7
+              ],
+              [
+                5,
+                11,
+                1
+              ],
+              [
+                5,
+                11,
+                9
+              ],
+              [
+                5,
+                11,
+                2
               ],
               [
                 1,
@@ -33289,12 +34889,12 @@
               [
                 1,
                 7,
-                11
+                2
               ],
               [
                 1,
                 7,
-                2
+                11
               ],
               [
                 1,
@@ -33309,12 +34909,12 @@
               [
                 1,
                 5,
-                11
+                2
               ],
               [
                 1,
                 5,
-                2
+                11
               ],
               [
                 1,
@@ -33344,32 +34944,12 @@
               [
                 1,
                 9,
-                11
+                2
               ],
               [
                 1,
                 9,
-                2
-              ],
-              [
-                1,
-                11,
-                7
-              ],
-              [
-                1,
-                11,
-                5
-              ],
-              [
-                1,
-                11,
-                9
-              ],
-              [
-                1,
-                11,
-                2
+                11
               ],
               [
                 1,
@@ -33390,6 +34970,26 @@
                 1,
                 2,
                 11
+              ],
+              [
+                1,
+                11,
+                7
+              ],
+              [
+                1,
+                11,
+                5
+              ],
+              [
+                1,
+                11,
+                9
+              ],
+              [
+                1,
+                11,
+                2
               ],
               [
                 8,
@@ -33474,12 +35074,12 @@
               [
                 9,
                 5,
-                11
+                2
               ],
               [
                 9,
                 5,
-                2
+                11
               ],
               [
                 9,
@@ -33499,15 +35099,15 @@
               [
                 9,
                 1,
+                2
+              ],
+              [
+                9,
+                1,
                 11
               ],
               [
                 9,
-                1,
-                2
-              ],
-              [
-                9,
                 8,
                 7
               ],
@@ -33523,16 +35123,6 @@
               ],
               [
                 9,
-                11,
-                5
-              ],
-              [
-                9,
-                11,
-                1
-              ],
-              [
-                9,
                 2,
                 5
               ],
@@ -33542,73 +35132,13 @@
                 1
               ],
               [
-                11,
-                7,
-                5
-              ],
-              [
-                11,
-                7,
-                1
-              ],
-              [
-                11,
-                5,
-                7
-              ],
-              [
-                11,
-                5,
-                1
-              ],
-              [
-                11,
-                5,
-                9
-              ],
-              [
-                11,
-                5,
-                2
-              ],
-              [
-                11,
-                1,
-                7
-              ],
-              [
-                11,
-                1,
-                5
-              ],
-              [
-                11,
-                1,
-                9
-              ],
-              [
-                11,
-                1,
-                2
-              ],
-              [
-                11,
                 9,
+                11,
                 5
               ],
               [
-                11,
                 9,
-                1
-              ],
-              [
                 11,
-                2,
-                5
-              ],
-              [
-                11,
-                2,
                 1
               ],
               [
@@ -33679,6 +35209,76 @@
               [
                 2,
                 11,
+                1
+              ],
+              [
+                11,
+                7,
+                5
+              ],
+              [
+                11,
+                7,
+                1
+              ],
+              [
+                11,
+                5,
+                7
+              ],
+              [
+                11,
+                5,
+                1
+              ],
+              [
+                11,
+                5,
+                9
+              ],
+              [
+                11,
+                5,
+                2
+              ],
+              [
+                11,
+                1,
+                7
+              ],
+              [
+                11,
+                1,
+                5
+              ],
+              [
+                11,
+                1,
+                9
+              ],
+              [
+                11,
+                1,
+                2
+              ],
+              [
+                11,
+                9,
+                5
+              ],
+              [
+                11,
+                9,
+                1
+              ],
+              [
+                11,
+                2,
+                5
+              ],
+              [
+                11,
+                2,
                 1
               ]
             ]
@@ -33694,9 +35294,9 @@
           "pick": "top",
           "rank": 1,
           "p_win": 0.410721,
-          "odds": 2.6,
-          "jirai_market": 0.341059,
-          "jirai_p": 0.25257,
+          "odds": 2.4,
+          "jirai_market": 0.318665,
+          "jirai_p": 0.233924,
           "jirai": false
         },
         {
@@ -33704,9 +35304,9 @@
           "pick": "top",
           "rank": 2,
           "p_win": 0.096984,
-          "odds": 11.1,
-          "jirai_market": 0.714628,
-          "jirai_p": 0.674207,
+          "odds": 12.0,
+          "jirai_market": 0.718935,
+          "jirai_p": 0.67885,
           "jirai": false
         },
         {
@@ -33714,9 +35314,9 @@
           "pick": "top",
           "rank": 3,
           "p_win": 0.096775,
-          "odds": 7.7,
-          "jirai_market": 0.642139,
-          "jirai_p": 0.793084,
+          "odds": 8.2,
+          "jirai_market": 0.642241,
+          "jirai_p": 0.793157,
           "jirai": true
         },
         {
@@ -33724,9 +35324,9 @@
           "pick": "top",
           "rank": 4,
           "p_win": 0.087372,
-          "odds": 6.4,
-          "jirai_market": 0.611167,
-          "jirai_p": 0.560664,
+          "odds": 6.1,
+          "jirai_market": 0.584334,
+          "jirai_p": 0.533009,
           "jirai": false
         },
         {
@@ -33734,9 +35334,9 @@
           "pick": "top",
           "rank": 5,
           "p_win": 0.072296,
-          "odds": 4.4,
-          "jirai_market": 0.500985,
-          "jirai_p": 0.547061,
+          "odds": 4.7,
+          "jirai_market": 0.505014,
+          "jirai_p": 0.551052,
           "jirai": true
         },
         {
@@ -33744,27 +35344,27 @@
           "pick": "ana",
           "rank": 6,
           "p_win": 0.058922,
-          "odds": 16.1,
-          "ana_market": 0.205233,
-          "ana_p": 0.233217
-        },
-        {
-          "number": 11,
-          "pick": "ana",
-          "rank": 10,
-          "p_win": 0.011428,
-          "odds": 48.1,
-          "ana_market": 0.05558,
-          "ana_p": 0.076067
+          "odds": 16.2,
+          "ana_market": 0.206496,
+          "ana_p": 0.234601
         },
         {
           "number": 2,
           "pick": "ana",
           "rank": 9,
           "p_win": 0.045154,
-          "odds": 32.8,
-          "ana_market": 0.081582,
-          "ana_p": 0.100998
+          "odds": 36.6,
+          "ana_market": 0.080042,
+          "ana_p": 0.099131
+        },
+        {
+          "number": 11,
+          "pick": "ana",
+          "rank": 10,
+          "p_win": 0.011428,
+          "odds": 54.0,
+          "ana_market": 0.051431,
+          "ana_p": 0.070503
         }
       ],
       "ana_threshold": 0.018792,
@@ -33774,17 +35374,14 @@
     "prob_source": "win5_predict.json（win-5）",
     "ana_mode": "all",
     "model_version": "betrule-w5-3",
-    "computed_at": "2026-11-07T13:10:34"
+    "computed_at": "2026-11-07T14:02:24"
   },
   "bets_rules_w6": {
     "upset": "中荒れ",
-    "horses": [
-      10,
-      2
-    ],
+    "horses": [],
     "engine": "w6ideas",
     "bigpay": {
-      "p": 0.006529,
+      "p": 0.007417,
       "threshold": 0.04,
       "on": false,
       "model_version": "bigpay-1"
@@ -33792,8 +35389,8 @@
     "plans": {
       "中荒れ": {
         "desc": "中荒れのレースの買い方（6券種）",
-        "points": 2,
-        "stake": 200,
+        "points": 0,
+        "stake": 0,
         "types": [
           {
             "type": "複勝",
@@ -33810,24 +35407,14 @@
           {
             "type": "馬連",
             "desc": "穴（3着以内率10%以上）× 勝率1位",
-            "tickets": [
-              [
-                2,
-                10
-              ]
-            ],
-            "none": false
+            "tickets": [],
+            "none": true
           },
           {
             "type": "馬単",
             "desc": "勝率30%以上 → 穴（10%以上）／穴（15%以上）→ 勝率1位（1位40%未満）",
-            "tickets": [
-              [
-                10,
-                2
-              ]
-            ],
-            "none": false
+            "tickets": [],
+            "none": true
           },
           {
             "type": "三連複",
@@ -33845,29 +35432,11 @@
         "slug": "naka"
       }
     },
-    "roles": {
-      "10": {
-        "tags": [
-          "勝率1位"
-        ],
-        "p": 0.395172,
-        "ana_p": null,
-        "odds": 2.6
-      },
-      "2": {
-        "tags": [
-          "穴",
-          "勝率9位"
-        ],
-        "p": 0.044065,
-        "ana_p": 0.100998,
-        "odds": 32.8
-      }
-    },
+    "roles": {},
     "label": "win-6",
     "prob_source": "win6_predict.json（win-6）",
     "model_version": "betrule-w6-2",
-    "computed_at": "2026-11-07T13:10:34"
+    "computed_at": "2026-11-07T14:02:24"
   },
   "sections": {
     "overview_md": "**コース:** 東京芝2000m\n**馬場:** 晴 / 良  クッション値9.9 含水率: 4C=14.0% G前=14.5%\n**頭数:** 11頭\n\n**脚質傾向（コースデータ）:**\n- 逃げ: 17.1%/26.8%/35.8%（246走）→ 有利\n- 先行: 11.3%/22.5%/32.5%（835走）→ やや有利\n- 差し: 7.2%/16.2%/25.6%（1118走）→ やや有利\n- 追込: 4.7%/9.0%/14.6%（644走）→ やや不利\n- 内外バイアス: フラット（1枠1.08, 2枠0.82, 3枠1.00, 4枠1.11, 5枠1.11, 6枠0.97, 7枠0.89, 8枠1.03）\n\n### 逃げ候補・先行圧判定\n\n| 馬番 | 馬名 | 分類 | 先行率 |\n|---:|---|---|---:|\n| 3 | ダンツファイター | 先行(逃げ候補) | 1.40 |\n| 2 | マイネルフーガ | 先行(番手) | 0.80 |\n| 10 | ボウウィンドウ | 先行(番手) | 0.80 |\n| 5 | シャハザマーン | 先行(番手) | 0.75 |\n| 1 | オストラヴァ | 先行(番手) | 0.60 |\n\n**先行圧指数** = 0.455 → standard"
@@ -39713,7 +41282,7 @@
   "verification": null,
   "rankcard_meta": {
     "version": "rankcard-6",
-    "generated_at": "2026-11-07T13:10:41",
+    "generated_at": "2026-11-07T14:03:36",
     "cards": [
       "コース",
       "場",
