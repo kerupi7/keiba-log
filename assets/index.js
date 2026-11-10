@@ -298,6 +298,8 @@ const FLAME_SVG = '<svg class="fl26" viewBox="0 0 24 24" aria-hidden="true"><pat
 const isHotRace = (race) => !!(race.bigpay && race.bigpay.hot);
 // AIの評価Sの札の印（大小2つのきらめき）。馬番は keiba_publish.ai_s_for_manifest が manifest の ai_s に入れている
 const SPARK_SVG = '<svg class="sp26" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 2.5c.7 4.6 2.4 6.3 7 7-4.6.7-6.3 2.4-7 7-.7-4.6-2.4-6.3-7-7 4.6-.7 6.3-2.4 7-7z" fill="#8C7CE6"/><path d="M18.5 13.5c.35 2.3 1.2 3.15 3.5 3.5-2.3.35-3.15 1.2-3.5 3.5-.35-2.3-1.2-3.15-3.5-3.5 2.3-.35 3.15-1.2 3.5-3.5z" fill="#7FB6EC"/></svg>';
+// AIの評価A+の札の印。形は S と同じで、色だけ札に合わせて緑にする
+const SPARK_AP_SVG = SPARK_SVG.replace('#8C7CE6', '#35A583').replace('#7FB6EC', '#7CCFB0');
 
 // 日本時間の「今」（YYYY-MM-DD と HH:MM）。端末の時刻帯に左右されないよう Asia/Tokyo で出す
 function nowJst() {
@@ -353,8 +355,11 @@ function renderRaceRow(race, ctx) {
   // 2026-10-25 ユーザー「AIモデルのSランクの馬がいた場合も同じように表示」→ 激アツと同じ左上の札と縁（色は薄紫）。並ぶときは激アツが先。
   // 同じ日「Sがいるかどうかでいい」→ 馬番は出さず「✦ AI評価S」だけ（manifest の ai_s には馬番が入っているが、ここでは有無だけ見る）
   const aiS = Array.isArray(race.ai_s) && race.ai_s.length > 0;
+  // 2026-11-10 ユーザー「Sランクの表示があるけど、A＋も追加してほしい」→ 同じ札と縁を緑で出す。S もいるレースは S の札だけ（札を2枚にすると発走までの札とぶつかるため）
+  const aiAp = !aiS && Array.isArray(race.ai_ap) && race.ai_ap.length > 0;
   // 激アツと並ぶ時は右上の「発走まで」とぶつかるので、CSS で「AI評価」を隠して「✦S」だけにする（.ail）
-  const aiTab = aiS ? `<span class="ai26">${SPARK_SVG}<span class="ail">AI評価</span>S</span>` : '';
+  const aiTab = aiS ? `<span class="ai26">${SPARK_SVG}<span class="ail">AI評価</span>S</span>`
+    : aiAp ? `<span class="ai26">${SPARK_AP_SVG}<span class="ail">AI評価</span>A+</span>` : '';
   const leftTabs = hotTab || aiTab ? `<span class="tg26">${hotTab}${aiTab}</span>` : '';
   // 2026-10-10 ユーザー「次14:00発走じゃなくて、発走まで残り何分何秒か出して、カウントダウン式に」。
   // 残りの文字は tickCountdown が1秒ごとに書き換える（発走時刻は札の左にもう出ている）
@@ -366,7 +371,7 @@ function renderRaceRow(race, ctx) {
     : '';
   // 2026-10-10 ユーザー「10分切ったら色が赤っぽい色に変わるように」→ mockup-287 案B（札・縁・影・発走時刻を全部赤）
   const soon = isNext && postAt != null && postAt - Date.now() < SOON_MS;
-  const cls = ['rc26', done ? 'done' : '', hot ? 'hot' : '', aiS ? 'ais' : '', isNext ? 'next' : '', soon ? 'soon' : ''].filter(Boolean).join(' ');
+  const cls = ['rc26', done ? 'done' : '', hot ? 'hot' : '', aiS || aiAp ? 'ais' : '', aiAp ? 'aip' : '', isNext ? 'next' : '', soon ? 'soon' : ''].filter(Boolean).join(' ');
   return `
     <a class="${cls}" href="race.html?id=${race.race_id}">
       ${leftTabs}${nextTab}

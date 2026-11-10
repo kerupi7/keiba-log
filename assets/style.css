@@ -4630,6 +4630,8 @@ body:has(.container.top){background:#F2F2F7}
   --qs1:#F4AFC0;--qs2:#FDF3F5;--qs3:#F7CBD6;--qsg:rgba(230,120,150,.24);--qstx:#7A1F38;--qstm:#C8385E;
   --qh1:#EBCF94;--qh2:#FCF8EC;--qh3:#F2D2BE;--qhg:rgba(210,170,100,.22);--qhtx:#6A4A12;
   --ql1:#C9C2F1;--ql2:#F8F7FE;--ql3:#B7D7F4;--qlg:rgba(150,135,225,.24);--qltx:#3B2F7A}
+/* AIの評価A+（2026-11-10）：作りは S の .ais をそのまま使い、色の組だけ淡い緑に差し替える */
+.container.top .rc26.aip{--ql1:#A8E2CC;--ql2:#F3FCF8;--ql3:#CBEBC4;--qlg:rgba(90,190,150,.24);--qltx:#14543E}
 /* 後ろの光をカードの裏へ置くので、一覧の帯を1枚の重なりにする */
 .container.top .rl26{isolation:isolate}
 @keyframes drift26{0%{background-position:0% 50%,0% 50%}50%{background-position:100% 50%,100% 50%}100%{background-position:0% 50%,0% 50%}}
@@ -4667,6 +4669,8 @@ body:has(.container.top){background:#F2F2F7}
 /* 激アツと並ぶ時は「✦S」の印だけにする（「AI評価S」のままだと 390px 幅・残り25分で右上の発走までの札との間が3pxしか空かないため。✦Sなら45px） */
 .container.top .rc26.hot .ai26{padding:0 9px 0 6px}
 .container.top .rc26.hot .ai26 .ail{display:none}
+/* 2026-11-10：幅の狭い端末で激アツ・AIの札・発走までの3枚が並ぶと、残り1時間超で札が重なって「A+」が隠れた（375px で確認）。残り時間の数字は残し「発走まで」の字だけ省く */
+@media (max-width:389px){.container.top .rc26.next.hot.ais .next26 i{display:none}}
 .container.top .next26{position:absolute;top:-11px;right:12px;gap:5px;padding:0 11px;font-size:11px;font-weight:800;color:var(--qntx);
   background-image:radial-gradient(120% 140% at 20% -20%,rgba(255,255,255,.95),transparent 55%),linear-gradient(115deg,var(--qn1),var(--qn2) 45%,var(--qn3));
   box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 4px 14px var(--qng)}
