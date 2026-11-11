@@ -139,19 +139,23 @@ function rgDate(iso, withYear) {
 // 同じ日に「ランクの見どころ」（144-spec）は成績ページから外した（ユーザー指示）。rank_record.json の rows はレース詳細が使うので作り続ける
 const AI_ROWS = ['S', 'A+', 'A', 'B+', 'B', 'C+', 'C', 'D'];
 
+// 2026-11-11 ユーザー「穴と各平均人気を載せてほしい」：平均人気の列と、穴の印が付いた馬の行（いちばん下）を足した。
+// 平均人気は v[4]÷v[5]（人気の合計÷人気の分かる頭数）。古い rank_record.json（4つだけ）でも壊れないように、無ければ「—」
 function aiDraw(el, ai) {
   const pct = (x, n) => `${(x / n * 100).toFixed(1)}%`;
+  const avgPop = (v) => (v[5] ? (v[4] / v[5]).toFixed(1) : '—');
+  const row = (badge, v, cls) => `<tr${cls ? ` class="${cls}"` : ''}><td>${badge}</td><td class="n">${v[0].toLocaleString('ja-JP')}</td>`
+    + `<td class="n">${avgPop(v)}</td><td>${pct(v[1], v[0])}</td><td>${pct(v[2], v[0])}</td><td>${pct(v[3], v[0])}</td></tr>`;
   const rows = AI_ROWS.map((k) => {
     const v = ai.g[k];
     if (!v || !v[0]) return '';
     // 札の色は + の付かない段と同じ。+ は文字が2つになるので幅を広げる（.rk.p）
-    return `<tr><td><span class="rk ${k[0]}${k.length > 1 ? ' p' : ''}">${k}</span></td><td class="n">${v[0].toLocaleString('ja-JP')}</td>`
-      + `<td>${pct(v[1], v[0])}</td><td>${pct(v[2], v[0])}</td><td>${pct(v[3], v[0])}</td></tr>`;
-  }).join('');
+    return row(`<span class="rk ${k[0]}${k.length > 1 ? ' p' : ''}">${k}</span>`, v);
+  }).join('') + (ai.ana && ai.ana[0] ? row('<span class="rk ana">穴</span>', ai.ana, 'ana') : '');
   el.innerHTML = `<section class="st26c rg26">
     <div class="top"><span class="ttl">AIの評価</span><span class="meta">${rgDate(ai.from, true)}〜${rgDate(ai.to)}・${ai.races.toLocaleString('ja-JP')}レース</span></div>
-    <div class="per">取消は除く</div>
-    <div class="det"><table class="rt"><thead><tr><th>AIの評価</th><th>頭数</th><th>勝率<small>1着</small></th><th>連対率<small>2着以内</small></th><th>3着内率<small>3着以内</small></th></tr></thead>
+    <div class="per">取消は除く・人気は確定の人気</div>
+    <div class="det"><table class="rt"><thead><tr><th>AIの評価</th><th>頭数</th><th>平均人気<small>番人気</small></th><th>勝率<small>1着</small></th><th>連対率<small>2着以内</small></th><th>3着内率<small>3着以内</small></th></tr></thead>
     <tbody>${rows}</tbody></table></div></section>`;
 }
 
