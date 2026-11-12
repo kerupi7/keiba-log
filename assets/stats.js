@@ -1,5 +1,7 @@
 // 各モデルの成績ページ（2026-09-15 ユーザー決定・mockup-168 ②）
 // メニューの「成績」から開く。上から win-6（1枚にまとめた成績）、win-5 の6案、win-4 の五街道5案。
+// 2026-11-12 ユーザー指示「win-4からwin-6の予想は廃止・win-9の予想がサイトに載るようにして」:
+// 一番上を win-9（plan_w9_all・w9-all）にし、win-6・5・4 は「終了した予想」の折り畳みの中に移した（記録は消さない）。
 // 2026-10-24: 「予想｜評価」の切り替えを付けた。予想＝上の3枚、評価＝AIの評価ごとの成績（#eval で評価を開く）。
 // 2026-10-07: TOP・レース詳細と同じ見た目（灰の地・白い角丸のカード・数字は Futura）にした（ユーザー「他の場所と同じように」）。
 // データは data/plans.json（plans＝win-4、plans_w5＝win-5、plan_w6_all＝win-6 のまとめ）と data/w6_reference.json（参考）。行を押すとモデル詳細へ。
@@ -93,6 +95,7 @@ function w6RefBox(ref) {
 function render(doc, ref) {
   const el = document.getElementById('stats-content');
   const w6 = doc.plan_w6_all;
+  const w9 = doc.plan_w9_all;
   const w5 = doc.plans_w5 || [];
   const w4 = doc.plans || [];
   // 2026-10-24 ユーザー「予想と評価で分析みたいに切り替えれるようにして」。分析ページ（.an-seg）と同じ形の切り替え
@@ -101,6 +104,11 @@ function render(doc, ref) {
     <div class="st26seg" role="tablist"><button type="button" role="tab" data-seg="yoso">予想</button><button type="button" role="tab" data-seg="eval">評価</button></div>
     <div id="st-yoso">
     <div class="st26h"><p>参考値。1点100円で買ったとして数えた</p></div>
+    ${card('win-9', '荒れ度ごとの7券種',
+      periodText(doc.period_w9, doc.n_races_w9) || '2026-11-14 から記録',
+      w9 && w9.races ? w6Total(w9)
+        : '<div class="st26note">2026-11-14 から数え始めます。まだ結果の出たレースがありません。</div>')}
+    <details class="st26old"><summary>終了した予想（win-6・win-5・win-4・2026-11-13 まで）</summary>
     ${card('win-6', '荒れ度ごとの17券種＋100万フラグの3連単',
       periodText(doc.period_w6, doc.n_races_w6) || '載せた日から記録',
       w6 && w6.races ? w6Total(w6)
@@ -113,6 +121,7 @@ function render(doc, ref) {
       backfillNote(doc))}
     ${card('win-4', `五街道${w4.length}案`, periodText(doc.period, doc.n_races),
       w4.length ? planList(w4) : '<div class="st26note">記録がありません</div>')}
+    </details>
     </div>
     <div id="st-eval" hidden><p class="st26note">読み込み中…</p></div>
   `;

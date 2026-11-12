@@ -48,9 +48,12 @@ function render(doc, slug) {
   // 順位・期間・ほかのモデルは、その案が属するまとまりの中で数える
   const isW5 = String(slug).startsWith('w5-');
   // 2026-09-28: win-6 の16券種（案＝荒れ度・slug が w6- で始まる）
-  const isW6 = String(slug).startsWith('w6-');
+  // 2026-11-12: win-9 の7券種（slug が w9- で始まる）は win-6 と同じ形（まとめ1枚＋荒れ度の内訳）で開く
+  const isW9 = String(slug).startsWith('w9-');
+  const isW6 = String(slug).startsWith('w6-') || isW9;
+  const fam = isW9 ? 'w9' : 'w6';
   // 2026-10-07 ユーザー「WIN6は一つにまとめたい」: win-6 は4案を足した1枚（plan_w6_all・w6-all）が表で、4案はその内訳
-  const plans = (isW6 ? [doc.plan_w6_all, ...(doc.plans_w6 || [])].filter(Boolean)
+  const plans = (isW6 ? [doc[`plan_${fam}_all`], ...(doc[`plans_${fam}`] || [])].filter(Boolean)
     : (isW5 ? doc.plans_w5 : doc.plans)) || [];
   const name = SLUG_NAME[slug];
   const p = plans.find((x) => x.slug === slug) || plans.find((x) => x.name === name);
@@ -60,15 +63,15 @@ function render(doc, slug) {
   }
   const ranked = [...plans].sort((a, b) => b.roi - a.roi);
   const rank = ranked.findIndex((x) => x.name === p.name) + 1;
-  const per = isW6 ? doc.period_w6 : (isW5 ? doc.period_w5 : doc.period);
-  const nr = isW6 ? doc.n_races_w6 : (isW5 ? doc.n_races_w5 : doc.n_races);
+  const per = isW6 ? doc[`period_${fam}`] : (isW5 ? doc.period_w5 : doc.period);
+  const nr = isW6 ? doc[`n_races_${fam}`] : (isW5 ? doc.n_races_w5 : doc.n_races);
   const bfn = isW5 ? (doc.n_backfilled_w5 || 0) : 0;
   const period = (per && per.from
     ? `参考値・${md(per.from)}〜${md(per.to)}の${nr}レース`
     : '参考値')
     + (bfn ? `（うち${bfn}レースは本番化の日に遡って計算した参考値）` : '');
-  const chipTx = isW6 ? 'win-6' : (isW5 ? 'win-5' : 'win-4');
-  const label = (x) => (x.slug === 'w6-all' ? 'まとめ' : x.name);
+  const chipTx = isW9 ? 'win-9' : (isW6 ? 'win-6' : (isW5 ? 'win-5' : 'win-4'));
+  const label = (x) => (x.slug === `${fam}-all` ? 'まとめ' : x.name);
 
   const typeRows = TYPE_ORDER.map((ty) => {
     const x = p.by_type[ty];
@@ -138,7 +141,7 @@ function render(doc, slug) {
     ${card('払戻があったレース', (hitRows ? table(['レース', '回収率', '買った', '払戻'], hitRows)
       : '<div class="st26note">払戻のあったレースはありません</div>')
       + (rest > 0 ? `<div class="st26note">ほか${rest}レースでも払戻あり（回収率の高い${(p.top_races || []).length}件だけ表示）</div>` : ''))}
-    ${card(isW6 ? (slug === 'w6-all' ? '案ごとの内訳' : 'win-6 のまとめ・ほかの案') : 'ほかのモデル',
+    ${card(isW6 ? (slug === `${fam}-all` ? '案ごとの内訳' : `${chipTx} のまとめ・ほかの案`) : 'ほかのモデル',
       others ? `<div class="st26list">${others}</div>` : '')}
   `;
 }

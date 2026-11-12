@@ -5427,6 +5427,8 @@ function brWhyPct(v) {
 // 2026-09-28: win-6 の16券種（handoff_2026-09-28_win6-betrule-ans.md）。
 // 「使う馬」は bets_rules_w6.roles（札＝穴の一番・穴・勝率◯位、勝率、穴の3着以内率）から作る。
 // 2026-09-29: 案「100万フラグ」が増えたので、案ごとに買い目に入っている馬だけ出す
+// 2026-11-12: win-9 の7券種（engine w9ideas・bets_rules_w9）も同じ形（荒れ度ごとの案・roles）なので同じ描き方にする
+const IDEA_ENGINES = new Set(['w6ideas', 'w9ideas']);
 function w6WhyCards(pl, br, byNum) {
   const roles = br.roles || {};
   const used = new Set();
@@ -5448,7 +5450,7 @@ function w6WhyCards(pl, br, byNum) {
 }
 
 function brWhyCards(pl, br, byNum) {
-  if (br.engine === 'w6ideas') return w6WhyCards(pl, br, byNum);
+  if (IDEA_ENGINES.has(br.engine)) return w6WhyCards(pl, br, byNum);
   const why = br.why;
   if (!why || !Array.isArray(why.horses)) return '';
   const rowOf = {};
@@ -5587,7 +5589,7 @@ function renderBetRuleGroup(site, br, order, headCls, openAll) {
     // 2026-09-09 ユーザー決定: 帯の右の材料の説明（例「オッズ帯・頭数… 129ルール」）は出さない。
     // 代わりに点数（確定後は払戻）を出し、帯を押すと表が開く形にする（既定は閉じる）
     // win-6 は0点でも「買わない」行を並べて見せる（決定3）ので、ここでは落とさない
-    if (!pl.points && br.engine !== 'w6ideas') {
+    if (!pl.points && !IDEA_ENGINES.has(br.engine)) {
       return `<div class="secthead${hcls}">${escapeHtml(name)}</div>`
         + `<div class="conf">${oddsPending(site) ? BETS_PENDING_TEXT : '本レースは見送り（買い目なし）'}</div>`;
     }
@@ -5661,7 +5663,7 @@ function renderBetRuleGroup(site, br, order, headCls, openAll) {
     const cap = showResult
       ? `${pl.points}点 ${fmtYen(pl.stake)} → ${fmtYen(ret)}`
       : `${pl.points}点 ${fmtYen(pl.stake)}`;
-    const title = br.engine === 'w6ideas' ? `${name}の買い方` : name;
+    const title = IDEA_ENGINES.has(br.engine) ? `${name}の買い方` : name;
     return `<details class="brdet"${openAll ? ' open' : ''}><summary class="secthead${hcls}">${escapeHtml(title)}`
       + `<span class="cnt">${cap}</span></summary>`
       + brWhyCards(pl, br, byNum)
@@ -6307,6 +6309,9 @@ function renderHead26(site) {
 // win-5 の段が無い古いレースは null を返し、今までの表示に落とす
 function renderBetFold26(site) {
   const has = (g) => !!(g && (g.plans || g.skip));
+  // 2026-11-12 ユーザー指示「win-4からwin-6の予想は廃止・win-9の予想がサイトに載るようにして」:
+  // win-9 の買い目（bets_rules_w9）があるレースは win-9 の1行だけにする。無いレース（11/13 以前の公開分）は今までどおり
+  if (has(site.bets_rules_w9)) return renderBetFoldW9(site);
   const w6 = site.bets_rules_w6;
   const w5 = site.bets_rules_w5;
   const br = site.bets_rules;
@@ -6333,6 +6338,29 @@ function renderBetFold26(site) {
         <span class="v${g.ret ? ' hit' : ''}">${showResult && g.pts != null ? r26Yen(g.ret) : '—'}</span><span class="c" aria-hidden="true">▸</span></summary>
       <div class="r26-gb">${g.body}</div></details>`).join('');
   return `<section class="r26-bf"><div class="r26-bfh"><span>買い目</span><span>点数</span><span>金額</span><span>払戻</span><span></span></div>${rows}</section>`;
+}
+
+function renderBetFoldW9(site) {
+  const g = site.bets_rules_w9;
+  const showResult = site.status === 'final';
+  let body;
+  let pts = null;
+  let ret = 0;
+  if (g.skip) {
+    body = `<div class="conf">${escapeHtml(g.skip)}</div>`;
+  } else {
+    const keys = Object.keys(g.plans || {});
+    const r = renderBetRuleGroup(site, g, keys, '', true);
+    pts = r.points;
+    ret = r.ret;
+    body = r.secs + betRuleSumHtml(site, 'win-9 の合計', r.points, r.ret);
+  }
+  const yen = pts == null ? '—' : r26Yen(pts * 100);
+  return `<section class="r26-bf"><div class="r26-bfh"><span>買い目</span><span>点数</span><span>金額</span><span>払戻</span><span></span></div>`
+    + `<details class="r26-g" open><summary class="r26-gr"><span class="nm"><i class="k-w9"></i>win-9</span>`
+    + `<span class="v">${pts == null ? '—' : pts}</span><span class="v">${yen}</span>`
+    + `<span class="v${ret ? ' hit' : ''}">${showResult && pts != null ? r26Yen(ret) : '—'}</span><span class="c" aria-hidden="true">▸</span></summary>`
+    + `<div class="r26-gb">${body}</div></details></section>`;
 }
 
 // ===== 回顧を自分の印の基準にする（mockup-363〜374・2026-10-29 ユーザー決定） =====

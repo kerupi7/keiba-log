@@ -278,7 +278,10 @@ let W6_FROM = null;
 // 2行目の右端の札1枚。馬番・馬名は出さない（2026-10-07 ユーザー指示）
 function w6TagHtml(race) {
   if (race.status === 'cancelled') return '<span class="cp26">中止</span>';
-  const w = race.w6;
+  // 2026-11-12: win-9 の買い目（manifest の w9）があるレースは WIN9 の札にする。無いレース（11/13 以前）は WIN6 のまま
+  const w = race.w9 || race.w6;
+  const nm = race.w9 ? 'WIN9' : 'WIN6';
+  const cls = race.w9 ? 'w9' : 'w6';
   if (!w) {
     // 134-spec T4: 前日の先行公開はオッズの発売前で、買い目を出しようがないだけ
     if (race.odds_pending) return '<span class="cp26">オッズ待ち</span>';
@@ -287,10 +290,10 @@ function w6TagHtml(race) {
   if (w.skip) return '<span class="cp26">対象外</span>';
   if (!w.points) return '<span class="cp26">買い目なし</span>';
   if (race.status === 'final' && w.hit) {
-    return `<span class="cp26 hit">WIN6 的中 <b>${fmtYen(w.ret)}</b></span>`;
+    return `<span class="cp26 hit">${nm} 的中 <b>${fmtYen(w.ret)}</b></span>`;
   }
-  if (race.status === 'final') return '<span class="cp26 miss">WIN6 外れ</span>';
-  return `<span class="cp26 w6">WIN6 <b>${w.points}</b>点</span>`;
+  if (race.status === 'final') return `<span class="cp26 miss">${nm} 外れ</span>`;
+  return `<span class="cp26 ${cls}">${nm} <b>${w.points}</b>点</span>`;
 }
 
 // 激アツ（3連単100万超えの見込みが6%以上）。判定は keiba_publish.bigpay_for_manifest が済ませている
