@@ -205,7 +205,19 @@
     var withOdds = rows.filter(function (r) { return r.odds !== null && r.odds !== undefined; });
     var odds = withOdds.map(function (r) { return r.odds; });
     var pays = withOdds.map(function (r) { return r.odds * itemUnit(line, r); });
+    // 合成オッズ（mockup-379 案B・2026-11-26 ユーザー決定）＝ 1 ÷（1/オッズ1 ＋ 1/オッズ2 ＋ …）。
+    //   どれが当たっても同じ額が戻るように配ったとき、買った額の何倍が戻るか（「払戻をそろえる」の倍率と同じ）。
+    //   オッズの無い点が1つでもあれば出さない（一部の点だけで計算すると高く見えるため）
+    var inv = 0;
+    odds.forEach(function (o) { inv += 1 / o; });
+    var gousei = (rows.length && withOdds.length === rows.length && inv > 0) ? 1 / inv : null;
+    // 当たっても買った額（この1本の合計）より戻りが少ない点
+    var loss = {};
+    withOdds.forEach(function (r, i) { if (pays[i] < buy) loss[Simulator.itemKey(r)] = true; });
     return {
+      gousei: gousei,
+      loss: loss,
+      lossN: Object.keys(loss).length,
       rows: rows,
       units: units,
       points: rows.length,
@@ -256,9 +268,22 @@
 
     var rng = (m.lo === null) ? '<span class="bs-rng">オッズ未取得</span>'
       : '<div class="bs-rng n">' + odds1(m.lo) + '倍 〜 ' + odds1(m.hi) + '倍</div>';
-    var pay = (m.payLo === null) ? ''
-      : '<div class="bs-pay"><span class="lb">想定払戻</span><span class="v n">'
-        + yen(m.payLo) + ' 〜 ' + yen(m.payHi) + '<i>円</i></span></div>';
+    // 下の帯を左右に割る（mockup-379 案B）。左＝合成オッズ・右＝想定払戻。
+    //   ワイド・複勝は2点以上が一緒に当たることがあるので「目安」を添える（オッズは今までどおり下限）
+    var multi = line.state.betType === 'wide'
+      || (line.state.betType === 'tansho' && line.state.tanFuku === 'fukusho');
+    var pay = '';
+    if (m.payLo !== null) {
+      pay = '<div class="bs-gz"><div class="c"><span class="lb">合成オッズ'
+        + (multi ? '<span class="bs-gz-note">目安</span>' : '') + '</span>'
+        + '<span class="v n">' + (m.gousei === null ? '—' : odds1(m.gousei) + '<i>倍</i>') + '</span></div>'
+        + '<div class="c"><span class="lb">想定払戻</span><span class="v n pay">'
+        + yen(m.payLo) + ' 〜 ' + yen(m.payHi) + '<i>円</i></span></div></div>';
+      if (m.lossN) {
+        pay += '<div class="bs-gz-warn"><span class="tg">当たっても損 ' + m.lossN + '点</span>'
+          + '<span>払戻が買った ' + yen(m.buy) + '円 に届かない</span></div>';
+      }
+    }
 
     var tbl = '', alloc = '';
     if (open) {
@@ -275,6 +300,8 @@
           var mn = Math.min.apply(null, s);
           var amt = s.length <= 4 ? s.map(yen).join('・') + '円'
             : mn === mx ? '各' + yen(mx) + '円' : yen(mn) + '〜' + yen(mx) + '円';
+          // 払戻をそろえる＝合成オッズで戻る形なので、金額の代わりに倍率を出す（mockup-379 案B）
+          if (w[0] === 'pay' && m.gousei !== null) amt = '合成 ' + odds1(m.gousei) + '倍で戻る';
           return '<button type="button" class="bs-shape' + (now ? ' on' : '') + '" data-bs-alloc="' + w[0]
             + '" data-id="' + line.id + '"><span class="bars ' + w[0] + '">'
             + s.map(function (u) { return '<i style="height:' + Math.max(3, Math.round(u / mx * 26)) + 'px"></i>'; }).join('')
@@ -284,10 +311,11 @@
       tbl = '<div class="bs-tbl"><div class="bs-thead"><span>組み合わせ</span><span>オッズ</span><span>金額</span><span></span></div>'
         + m.rows.map(function (r, i) {
           var ids = r.frame || r.ids, k = Simulator.itemKey(r), u = m.units[i];
-          return '<div class="bs-trow"><span class="cmb">'
+          var bad = !!m.loss[k];
+          return '<div class="bs-trow' + (bad ? ' loss' : '') + '"><span class="cmb">'
             + (r.frame ? ids.map(wakuBox).join('<span class="bs-sep">-</span>') : seq(ids, d.ordered, byNumber))
             + '</span><span class="od n">' + odds1(r.odds) + '<i>倍</i>'
-            + (r.odds ? '<small>払戻 ' + yen(r.odds * u) + '</small>' : '') + '</span>'
+            + (r.odds ? '<small' + (bad ? ' class="bad"' : '') + '>払戻 ' + yen(r.odds * u) + (bad ? '・損' : '') + '</small>' : '') + '</span>'
             + '<span class="bs-istep">'
             + '<button type="button" data-bs-istep="-1" data-k="' + k + '" data-id="' + line.id + '" aria-label="この組み合わせを100円下げる">−</button>'
             + '<span class="v n">' + yen(u) + '</span>'
